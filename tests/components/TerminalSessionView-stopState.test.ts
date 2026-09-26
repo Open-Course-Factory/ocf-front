@@ -1153,83 +1153,106 @@ describe('TerminalSessionView — a run whose environment is being set up', () =
   })
 })
 
+
 /**
  * What Stop and Delete say depends on how the run can come back.
  *
  * Deleting a scenario terminal no longer ends the run (ocf-core MR D): a
- * normal run keeps its progress and is rebuilt at its step on resume, so the
- * confirm must say so and point at Abandon to really end it. A crash-trap run
- * is its container: deleting it ends the run. A terminal with no scenario
- * keeps today's copy.
+ * normal run keeps its progress — not the files the learner created — and is
+ * rebuilt at its step on resume, so the confirm says so and points at Abandon
+ * to really end it. A crash-trap run is its container, and a preview is never
+ * rebuilt: for both, the run ends here.
  *
  * On a persistent terminal Stop is today's pause: no confirm, straight to
  * /stop. A non-persistent terminal cannot pause — tt-backend's /stop keeps the
  * container and ocf-core's sync brings the row back as stopped (ocf-core #529)
- * — so on a scenario run Stop deletes the terminal, behind a confirm worded
- * like Delete's. The page stays: a normal run then offers the rebuild banner;
- * a crash-trap run is ended (abandoned before its terminal is deleted, as
- * ocf-core's EndCrashTrapRun does).
+ * — so on a scenario run Stop takes the terminal away behind a confirm worded
+ * for a stop, and the page stays on the run:
+ *   - a normal run: the terminal is deleted and the rebuild banner offered;
+ *   - a run that ends here: the run is abandoned, and nothing else — the
+ *     abandon endpoint deletes the terminal itself (a second DELETE answers
+ *     410 and leaves the learner stuck).
+ * There, Delete would do what Stop does, so only Stop is offered; the scenario
+ * panel's Abandon ends the run.
  */
 describe('TerminalSessionView — stop and delete copy by persistence', () => {
   const DELETE_COPY_PLAIN = 'The container disk and command history will be permanently lost.'
   const DELETE_COPY_REBUILD =
-    'Your environment will be deleted. Your progress is kept: your environment will be rebuilt at this step when you resume. To end the run, abandon it.'
-  const DELETE_COPY_CRASH_TRAPS = 'Deleting ends this run. It cannot be resumed.'
+    'Your environment will be deleted. Your progress is kept, but files you created are not: your environment will be rebuilt at this step when you resume. To end the run, abandon it.'
+  const DELETE_COPY_ENDS = 'Deleting ends this run. It cannot be resumed.'
   const STOP_COPY_REBUILD =
-    'Your environment will be deleted. Your progress is kept: when you resume, your environment will be rebuilt at this step.'
-  const STOP_COPY_CRASH_TRAPS = 'Stopping ends this run. It cannot be resumed.'
+    'Your environment will be deleted. Your progress is kept, but files you created are not: when you resume, your environment will be rebuilt at this step.'
+  const STOP_COPY_ENDS = 'Stopping ends this run. It cannot be resumed.'
 
-  // The delete confirm, rendered with its body when open.
+  // The confirm, rendered with its body, footer and title icon when open.
   const BaseModalStub = {
     name: 'BaseModal',
-    props: ['visible', 'title'],
-    template: '<div v-if="visible" class="bm-stub"><slot /><slot name="footer" /></div>'
+    props: ['visible', 'title', 'titleIcon'],
+    template: '<div v-if="visible" class="bm-stub" :data-title-icon="titleIcon"><slot /><slot name="footer" /></div>'
+  }
+
+  // The console, also recording what the page hands down for Destroy and the
+  // end of the run.
+  const TerminalViewerWithEndStub = {
+    ...TerminalViewerStub,
+    props: ['showStopButton', 'canStop', 'showDestroyButton', 'endReason'],
+    template: '<div class="tv-stub" :data-show-stop-button="String(showStopButton)" :data-can-stop="String(canStop)"' +
+      ' :data-show-destroy-button="String(showDestroyButton)" :data-end-reason="endReason"></div>'
   }
 
   function ephemeralRow() {
     return { ...terminalRow('running'), persistence_mode: 'ephemeral' }
   }
 
-  async function mountWith(options: { crashTraps?: boolean; scenario?: boolean; locale?: 'en' | 'fr'; row?: any } = {}) {
+  type RunKind = 'none' | 'normal' | 'crashTraps' | 'preview'
+
+  async function mountWith(options: { run?: RunKind; locale?: 'en' | 'fr'; row?: any } = {}) {
+    const run = options.run ?? 'normal'
     mockAxiosGet.mockResolvedValue({ data: [options.row ?? terminalRow('running')] })
-    mockGetSessionByTerminal.mockResolvedValue(options.scenario === false ? null : scenarioRun('active'))
-    const wrapper = mountView({ realPanel: true, locale: options.locale, stubs: { BaseModal: BaseModalStub } })
+    mockGetSessionByTerminal.mockResolvedValue(
+      run === 'none' ? null : { ...scenarioRun('active'), ...(run === 'preview' ? { is_preview: true } : {}) }
+    )
+    const wrapper = mountView({
+      realPanel: true,
+      locale: options.locale,
+      stubs: { BaseModal: BaseModalStub, TerminalViewer: TerminalViewerWithEndStub }
+    })
     await flushPromises()
-    if (options.scenario !== false) {
+    if (run !== 'none') {
       wrapper.findComponent({ name: 'ScenarioPanel' }).vm.$emit('scenario-info-loaded', {
-        id: 'sc1', name: 'GameShell', title: 'GameShell', crash_traps: options.crashTraps ?? false
+        id: 'sc1', name: 'GameShell', title: 'GameShell', crash_traps: run === 'crashTraps'
       })
       await flushPromises()
     }
     return wrapper
   }
 
-  async function deleteConfirmText(wrapper: ReturnType<typeof mountView>) {
-    wrapper.findComponent({ name: 'TerminalViewer' }).vm.$emit('destroy')
+  // Click Stop or Delete on the console and return the confirm that opens.
+  async function openConfirm(wrapper: ReturnType<typeof mountView>, event: 'stop' | 'destroy') {
+    wrapper.findComponent({ name: 'TerminalViewer' }).vm.$emit(event)
     await flushPromises()
     const modal = wrapper.find('.bm-stub')
     expect(modal.exists()).toBe(true)
-    return modal.text()
+    return modal
   }
 
-  // Once the terminal is deleted, ocf-core reports it gone and the run as
+  async function confirmText(wrapper: ReturnType<typeof mountView>, event: 'stop' | 'destroy') {
+    return (await openConfirm(wrapper, event)).text()
+  }
+
+  // Once the terminal is gone, ocf-core reports it deleted and the run as
   // `run` says.
-  function deletingReports(run: any) {
-    mockDeleteSession.mockImplementation(async () => {
-      mockAxiosGet.mockResolvedValue({
-        data: [{ ...ephemeralRow(), state: 'deleted', expires_at: new Date(Date.now() - 1000).toISOString() }]
-      })
-      mockGetSessionByTerminal.mockResolvedValue(run)
-      return {}
+  function terminalGoneAndRunIs(run: any) {
+    mockAxiosGet.mockResolvedValue({
+      data: [{ ...ephemeralRow(), state: 'deleted', expires_at: new Date(Date.now() - 1000).toISOString() }]
     })
+    mockGetSessionByTerminal.mockResolvedValue(run)
+    return {}
   }
 
-  async function stopConfirmText(wrapper: ReturnType<typeof mountView>) {
-    wrapper.findComponent({ name: 'TerminalViewer' }).vm.$emit('stop')
+  async function confirmCta(wrapper: ReturnType<typeof mountView>) {
+    await wrapper.find('[data-testid="confirm-delete-cta"]').trigger('click')
     await flushPromises()
-    const modal = wrapper.find('.bm-stub')
-    expect(modal.exists()).toBe(true)
-    return modal.text()
   }
 
   beforeEach(() => {
@@ -1241,62 +1264,106 @@ describe('TerminalSessionView — stop and delete copy by persistence', () => {
 
   describe('delete confirm', () => {
     it('keeps the plain copy for a terminal with no scenario', async () => {
-      const wrapper = await mountWith({ scenario: false })
+      const wrapper = await mountWith({ run: 'none' })
 
-      const text = await deleteConfirmText(wrapper)
+      const text = await confirmText(wrapper, 'destroy')
 
       expect(text).toContain(DELETE_COPY_PLAIN)
       expect(text).not.toContain(DELETE_COPY_REBUILD)
-      expect(text).not.toContain(DELETE_COPY_CRASH_TRAPS)
+      expect(text).not.toContain(DELETE_COPY_ENDS)
       wrapper.unmount()
     })
 
-    it('says a normal run is rebuilt on resume and that Abandon ends it', async () => {
+    it('says a normal run is rebuilt on resume, without its files, and that Abandon ends it', async () => {
       const wrapper = await mountWith()
 
-      const text = await deleteConfirmText(wrapper)
+      const text = await confirmText(wrapper, 'destroy')
 
       expect(text).toContain(DELETE_COPY_REBUILD)
       expect(text).not.toContain(DELETE_COPY_PLAIN)
       wrapper.unmount()
     })
 
-    it('says deleting ends a crash-trap run', async () => {
-      const wrapper = await mountWith({ crashTraps: true })
+    it.each(['crashTraps', 'preview'] as const)('says deleting ends a %s run', async (run) => {
+      const wrapper = await mountWith({ run })
 
-      const text = await deleteConfirmText(wrapper)
+      const text = await confirmText(wrapper, 'destroy')
 
-      expect(text).toContain(DELETE_COPY_CRASH_TRAPS)
+      expect(text).toContain(DELETE_COPY_ENDS)
       expect(text).not.toContain(DELETE_COPY_REBUILD)
       expect(text).not.toContain(DELETE_COPY_PLAIN)
       wrapper.unmount()
     })
 
-    it('has its own French copy for each case', async () => {
+    it('has its own French copy for each case, speaking of a session', async () => {
       const texts: string[] = []
-      for (const options of [{ scenario: false }, {}, { crashTraps: true }]) {
-        const wrapper = await mountWith({ ...options, locale: 'fr' })
-        texts.push(await deleteConfirmText(wrapper))
+      for (const run of ['none', 'normal', 'crashTraps'] as const) {
+        const wrapper = await mountWith({ run, locale: 'fr' })
+        texts.push(await confirmText(wrapper, 'destroy'))
         wrapper.unmount()
       }
-      const [plain, rebuild, crashTraps] = texts
+      const [plain, rebuild, ends] = texts
 
       expect(new Set(texts).size).toBe(3)
-      for (const text of [rebuild, crashTraps]) {
+      for (const text of [rebuild, ends]) {
         expect(text).not.toContain(DELETE_COPY_REBUILD)
-        expect(text).not.toContain(DELETE_COPY_CRASH_TRAPS)
+        expect(text).not.toContain(DELETE_COPY_ENDS)
         expect(text).not.toContain(plain)
+        expect(text).not.toMatch(/parcours/i)
+        expect(text).toMatch(/session/i)
       }
+      expect(rebuild).toMatch(/fichiers/i)
+    })
+
+    it('keeps the Delete wording and trash icon', async () => {
+      const wrapper = await mountWith()
+
+      const modal = await openConfirm(wrapper, 'destroy')
+
+      expect(modal.attributes('data-title-icon')).toContain('fa-trash')
+      const cta = wrapper.find('[data-testid="confirm-delete-cta"]')
+      expect(cta.text()).toBe('Delete')
+      expect(cta.find('i.fa-trash').exists()).toBe(true)
+      wrapper.unmount()
     })
 
     it('still deletes the terminal once confirmed', async () => {
       const wrapper = await mountWith()
-      await deleteConfirmText(wrapper)
+      await openConfirm(wrapper, 'destroy')
 
-      await wrapper.find('[data-testid="confirm-delete-cta"]').trigger('click')
-      await flushPromises()
+      await confirmCta(wrapper)
 
+      expect(mockDeleteSession).toHaveBeenCalledWith('sess-test')
       expect(mockRouterPush).toHaveBeenCalled()
+      wrapper.unmount()
+    })
+  })
+
+  describe('which buttons a run offers', () => {
+    it('offers Stop and Delete on a persistent scenario run', async () => {
+      const wrapper = await mountWith()
+
+      const console_ = wrapper.find('.tv-stub')
+      expect(console_.attributes('data-show-stop-button')).toBe('true')
+      expect(console_.attributes('data-show-destroy-button')).toBe('true')
+      wrapper.unmount()
+    })
+
+    it('offers Stop but not Delete on a non-persistent scenario run', async () => {
+      const wrapper = await mountWith({ row: ephemeralRow() })
+
+      const console_ = wrapper.find('.tv-stub')
+      expect(console_.attributes('data-show-stop-button')).toBe('true')
+      expect(console_.attributes('data-show-destroy-button')).toBe('false')
+      wrapper.unmount()
+    })
+
+    it('keeps a non-persistent terminal with no scenario as it was: Delete, no Stop', async () => {
+      const wrapper = await mountWith({ run: 'none', row: ephemeralRow() })
+
+      const console_ = wrapper.find('.tv-stub')
+      expect(console_.attributes('data-show-stop-button')).toBe('false')
+      expect(console_.attributes('data-show-destroy-button')).toBe('true')
       wrapper.unmount()
     })
   })
@@ -1304,7 +1371,6 @@ describe('TerminalSessionView — stop and delete copy by persistence', () => {
   describe('stop', () => {
     it('pauses a persistent scenario run at once, with no confirm', async () => {
       const wrapper = await mountWith()
-      expect(wrapper.find('.tv-stub').attributes('data-show-stop-button')).toBe('true')
 
       wrapper.findComponent({ name: 'TerminalViewer' }).vm.$emit('stop')
       await flushPromises()
@@ -1315,17 +1381,10 @@ describe('TerminalSessionView — stop and delete copy by persistence', () => {
       wrapper.unmount()
     })
 
-    it('offers Stop on a non-persistent scenario run', async () => {
+    it('asks first, saying a normal run is rebuilt at its step without its files', async () => {
       const wrapper = await mountWith({ row: ephemeralRow() })
 
-      expect(wrapper.find('.tv-stub').attributes('data-show-stop-button')).toBe('true')
-      wrapper.unmount()
-    })
-
-    it('asks first, saying a normal run is rebuilt at its step', async () => {
-      const wrapper = await mountWith({ row: ephemeralRow() })
-
-      const text = await stopConfirmText(wrapper)
+      const text = await confirmText(wrapper, 'stop')
 
       expect(text).toContain(STOP_COPY_REBUILD)
       expect(mockAxiosPost).not.toHaveBeenCalledWith('/terminals/sess-test/stop')
@@ -1333,39 +1392,58 @@ describe('TerminalSessionView — stop and delete copy by persistence', () => {
       wrapper.unmount()
     })
 
-    it('asks first, saying stopping ends a crash-trap run', async () => {
-      const wrapper = await mountWith({ row: ephemeralRow(), crashTraps: true })
+    it.each(['crashTraps', 'preview'] as const)('asks first, saying stopping ends a %s run', async (run) => {
+      const wrapper = await mountWith({ row: ephemeralRow(), run })
 
-      const text = await stopConfirmText(wrapper)
+      const text = await confirmText(wrapper, 'stop')
 
-      expect(text).toContain(STOP_COPY_CRASH_TRAPS)
+      expect(text).toContain(STOP_COPY_ENDS)
       expect(text).not.toContain(STOP_COPY_REBUILD)
       expect(mockDeleteSession).not.toHaveBeenCalled()
+      expect(mockAbandonSession).not.toHaveBeenCalled()
       wrapper.unmount()
     })
 
-    it('has its own French stop copy for each case', async () => {
-      const texts: string[] = []
-      for (const crashTraps of [false, true]) {
-        const wrapper = await mountWith({ row: ephemeralRow(), crashTraps, locale: 'fr' })
-        texts.push(await stopConfirmText(wrapper))
-        wrapper.unmount()
-      }
+    it('words the confirm for a stop: stop icon and a Stop button', async () => {
+      const wrapper = await mountWith({ row: ephemeralRow() })
 
-      expect(texts[0]).not.toBe(texts[1])
-      for (const text of texts) {
-        expect(text).not.toContain(STOP_COPY_REBUILD)
-        expect(text).not.toContain(STOP_COPY_CRASH_TRAPS)
-      }
+      const modal = await openConfirm(wrapper, 'stop')
+
+      expect(modal.attributes('data-title-icon')).toContain('fa-stop')
+      const cta = wrapper.find('[data-testid="confirm-delete-cta"]')
+      expect(cta.text()).toBe('Stop')
+      expect(cta.find('i.fa-stop').exists()).toBe(true)
+      expect(cta.find('i.fa-trash').exists()).toBe(false)
+      wrapper.unmount()
     })
 
-    it('deletes a normal run\'s terminal on confirm and offers the rebuild', async () => {
-      const wrapper = await mountWith({ row: ephemeralRow() })
-      deletingReports({ id: 'scen-1', status: 'active', resume_mode: 'rebuild' })
-      await stopConfirmText(wrapper)
+    it('has its own French stop copy and button, speaking of a session', async () => {
+      const texts: string[] = []
+      for (const run of ['normal', 'crashTraps'] as const) {
+        const wrapper = await mountWith({ row: ephemeralRow(), run, locale: 'fr' })
+        texts.push(await confirmText(wrapper, 'stop'))
+        expect(wrapper.find('[data-testid="confirm-delete-cta"]').text()).toBe('Arrêter')
+        wrapper.unmount()
+      }
+      const [rebuild, ends] = texts
 
-      await wrapper.find('[data-testid="confirm-delete-cta"]').trigger('click')
-      await flushPromises()
+      expect(rebuild).not.toBe(ends)
+      for (const text of texts) {
+        expect(text).not.toContain(STOP_COPY_REBUILD)
+        expect(text).not.toContain(STOP_COPY_ENDS)
+        expect(text).not.toMatch(/parcours/i)
+      }
+      expect(rebuild).toMatch(/fichiers/i)
+      expect(ends).toMatch(/session/i)
+    })
+
+    it('deletes a normal run\'s terminal on confirm and offers the rebuild, reading the run once', async () => {
+      const wrapper = await mountWith({ row: ephemeralRow() })
+      mockDeleteSession.mockImplementation(async () => terminalGoneAndRunIs({ id: 'scen-1', status: 'active', resume_mode: 'rebuild' }))
+      await openConfirm(wrapper, 'stop')
+      const readsBefore = mockGetSessionByTerminal.mock.calls.length
+
+      await confirmCta(wrapper)
 
       expect(mockDeleteSession).toHaveBeenCalledWith('sess-test')
       expect(mockAxiosPost).not.toHaveBeenCalledWith('/terminals/sess-test/stop')
@@ -1373,36 +1451,72 @@ describe('TerminalSessionView — stop and delete copy by persistence', () => {
       // The page stays on the run: its rebuild banner is the way back.
       expect(mockRouterPush).not.toHaveBeenCalled()
       expect(wrapper.find('[data-testid="rebuild-session-cta"]').exists()).toBe(true)
+      expect(mockGetSessionByTerminal.mock.calls.length - readsBefore).toBe(1)
       wrapper.unmount()
     })
 
-    it('ends a crash-trap run on confirm, then deletes its terminal', async () => {
-      const wrapper = await mountWith({ row: ephemeralRow(), crashTraps: true })
-      const order: string[] = []
-      mockAbandonSession.mockImplementation(async () => { order.push('abandon') })
-      deletingReports({ id: 'scen-1', status: 'abandoned' })
-      const deleteThenReport = mockDeleteSession.getMockImplementation()!
-      mockDeleteSession.mockImplementation(async (...args: any[]) => {
-        order.push('delete')
-        return deleteThenReport(...args)
+    it('stays on the run without a full-page reload while it reads the terminal again', async () => {
+      const wrapper = await mountWith({ row: ephemeralRow() })
+      let answer: (value: any) => void = () => {}
+      mockDeleteSession.mockImplementation(async () => {
+        terminalGoneAndRunIs({ id: 'scen-1', status: 'active', resume_mode: 'rebuild' })
+        const gone = await mockAxiosGet()
+        mockAxiosGet.mockImplementation(() => new Promise((resolve) => { answer = () => resolve(gone) }))
+        return {}
       })
-      await stopConfirmText(wrapper)
+      await openConfirm(wrapper, 'stop')
 
-      await wrapper.find('[data-testid="confirm-delete-cta"]').trigger('click')
+      await confirmCta(wrapper)
+
+      // The re-read is in flight: the console and the scenario panel stay put.
+      expect(wrapper.find('.loading-section').exists()).toBe(false)
+      expect(wrapper.find('.sp-stub').exists()).toBe(true)
+      expect(wrapper.find('.tv-stub').exists()).toBe(true)
+
+      answer(undefined)
       await flushPromises()
+      expect(wrapper.find('[data-testid="rebuild-session-cta"]').exists()).toBe(true)
+      wrapper.unmount()
+    })
+
+    it.each(['crashTraps', 'preview'] as const)('ends a %s run on confirm by abandoning it, and nothing else', async (run) => {
+      const wrapper = await mountWith({ row: ephemeralRow(), run })
+      // The abandon endpoint deletes the run's terminal itself.
+      mockAbandonSession.mockImplementation(async () => {
+        terminalGoneAndRunIs({ id: 'scen-1', status: 'abandoned' })
+      })
+      await openConfirm(wrapper, 'stop')
+
+      await confirmCta(wrapper)
 
       expect(mockAbandonSession).toHaveBeenCalledWith('scen-1')
-      expect(mockDeleteSession).toHaveBeenCalledWith('sess-test')
-      expect(order).toEqual(['abandon', 'delete'])
+      expect(mockDeleteSession).not.toHaveBeenCalled()
       expect(mockAxiosPost).not.toHaveBeenCalledWith('/terminals/sess-test/stop')
+      expect(mockRouterPush).not.toHaveBeenCalled()
+      expect(wrapper.find('.bm-stub').exists()).toBe(false)
+      expect(wrapper.find('.tv-stub').attributes('data-end-reason')).toBe('abandoned')
       expect(wrapper.find('[data-testid="rebuild-session-cta"]').exists()).toBe(false)
       expect(wrapper.find('[data-testid="resume-session-cta"]').exists()).toBe(false)
       wrapper.unmount()
     })
 
+    it('keeps the confirm open and says so when ending the run fails', async () => {
+      const wrapper = await mountWith({ row: ephemeralRow(), run: 'crashTraps' })
+      mockAbandonSession.mockRejectedValue({ response: { status: 500, data: { error_message: 'boom' } } })
+      await openConfirm(wrapper, 'stop')
+
+      await confirmCta(wrapper)
+
+      expect(mockShowError).toHaveBeenCalledTimes(1)
+      expect(wrapper.find('.bm-stub').exists()).toBe(true)
+      expect(mockDeleteSession).not.toHaveBeenCalled()
+      expect(mockRouterPush).not.toHaveBeenCalled()
+      wrapper.unmount()
+    })
+
     it('does nothing when the stop is cancelled', async () => {
       const wrapper = await mountWith({ row: ephemeralRow() })
-      await stopConfirmText(wrapper)
+      await openConfirm(wrapper, 'stop')
 
       await wrapper.find('[data-testid="cancel-delete-cta"]').trigger('click')
       await flushPromises()
@@ -1412,13 +1526,6 @@ describe('TerminalSessionView — stop and delete copy by persistence', () => {
       expect(mockAbandonSession).not.toHaveBeenCalled()
       expect(mockAxiosPost).not.toHaveBeenCalledWith('/terminals/sess-test/stop')
       expect(mockRouterPush).not.toHaveBeenCalled()
-      wrapper.unmount()
-    })
-
-    it('offers no Stop on a non-persistent terminal with no scenario', async () => {
-      const wrapper = await mountWith({ scenario: false, row: ephemeralRow() })
-
-      expect(wrapper.find('.tv-stub').attributes('data-show-stop-button')).toBe('false')
       wrapper.unmount()
     })
   })
