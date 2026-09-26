@@ -15,7 +15,8 @@
  * The backend refuses a preview for reasons an author can act on: a step it
  * does not know (400), no right to preview or no plan (403), a real run of
  * theirs already in progress (409 session_exists). Each gets its own message
- * in the author's language instead of the backend's English sentence.
+ * in the author's language; a budget refusal (403, source budget) keeps the
+ * backend's sentence, which says what to free.
  */
 
 import { describe, it, expect } from 'vitest'
@@ -26,6 +27,7 @@ import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 
 import { useScenarioEditorI18n } from '../../src/composables/useScenarioEditorI18n'
+import { previewOptions, previewRefusalKey } from '../../src/utils/scenarioPreview'
 
 const source = readFileSync(resolve(__dirname, '../../src/components/Pages/ScenarioEditor.vue'), 'utf-8')
 const template = source.slice(0, source.indexOf('<script'))
@@ -88,34 +90,42 @@ describe('ScenarioEditor.vue — one preview confirm modal, with step-specific c
 })
 
 describe('ScenarioEditor.vue — confirming previews from the chosen step', () => {
-  it('posts the step order with the preview', () => {
-    expect(previewHandler).toMatch(/scenarioSessionService\.previewScenario\(/)
-    expect(previewHandler).toMatch(/from_step_order/)
+  it('posts the chosen step with the preview', () => {
+    expect(previewHandler).toMatch(/previewOptions\(orgId, previewFromStepOrder\.value\)/)
   })
 
-  it('still runs the preview in the organization it ran in before', () => {
-    expect(previewHandler).toMatch(/organization_id/)
+  it('sends the step order, 0 included', () => {
+    expect(previewOptions('org-1', 2)).toEqual({ organization_id: 'org-1', from_step_order: 2 })
+    expect(previewOptions('org-1', 0)).toHaveProperty('from_step_order', 0)
   })
 
-  it('navigates like the whole-scenario preview', () => {
-    expect(previewHandler).toMatch(/router\.push\(/)
-    expect(previewHandler).toMatch(/name:\s*'TerminalSessionView'/)
-    expect(previewHandler).toMatch(/returnTo/)
+  it('sends no step for a whole-scenario preview', () => {
+    expect(JSON.parse(JSON.stringify(previewOptions('org-1', null)))).toEqual({ organization_id: 'org-1' })
   })
 })
 
 describe('ScenarioEditor.vue — a refused preview says why', () => {
   const REFUSALS = ['previewErrorUnknownStep', 'previewErrorForbidden', 'previewErrorSessionExists'] as const
 
-  it('tells an unknown step (400), a refusal (403) and a run in progress (409) apart', () => {
-    expect(previewHandler).toMatch(/400/)
-    expect(previewHandler).toMatch(/403/)
-    expect(previewHandler).toMatch(/409/)
-    expect(previewHandler).toMatch(/session_exists/)
+  it('maps each refusal the author can act on to its message', () => {
+    expect(previewHandler).toMatch(/previewRefusalKey\(/)
+    expect(previewRefusalKey(400, {}, 2)).toBe('scenarioEditor.previewErrorUnknownStep')
+    expect(previewRefusalKey(403, { error_message: 'Not authorized' }, null)).toBe('scenarioEditor.previewErrorForbidden')
+    expect(previewRefusalKey(409, { reason: 'session_exists' }, 0)).toBe('scenarioEditor.previewErrorSessionExists')
   })
 
-  it.each(REFUSALS)('shows its own message for %s', (key) => {
-    expect(previewHandler).toContain(`scenarioEditor.${key}`)
+  // The terminal budget is shared: the backend's sentence says what to free,
+  // and "you are not allowed" would be wrong.
+  it("keeps the backend's explanation for a budget refusal", () => {
+    expect(previewRefusalKey(403, { source: 'budget', reason: 'cpu' }, 2)).toBeNull()
+  })
+
+  it('does not call a malformed whole-scenario request an unknown step', () => {
+    expect(previewRefusalKey(400, {}, null)).toBeNull()
+  })
+
+  it('keeps any other conflict to the backend', () => {
+    expect(previewRefusalKey(409, { reason: 'archived' }, 2)).toBeNull()
   })
 
   it.each(REFUSALS)('has %s in English and French', (key) => {

@@ -27,7 +27,7 @@
       @copy-to-org="openCopyModal"
       @archive="openArchiveModal"
       @unarchive="handleUnarchive"
-      @preview="openPreviewConfirm"
+      @preview="openPreviewConfirm()"
       @reset="handleReset"
       @save="handleSave"
     />
@@ -257,6 +257,7 @@ import NodeLibraryPanel from '../GraphEditor/NodeLibraryPanel.vue'
 import type { NodeTypeDefinition } from '../GraphEditor/NodeLibraryPanel.vue'
 import FlowCanvas from '../GraphEditor/FlowCanvas.vue'
 import { receivedScriptFields, withoutUnseenScripts } from '../../utils/scenarioStepPayload'
+import { previewOptions, previewRefusalKey } from '../../utils/scenarioPreview'
 import InsertNodePicker from '../GraphEditor/InsertNodePicker.vue'
 import ScenarioStepListPanel from '../ScenarioEditor/ScenarioStepListPanel.vue'
 import ScenarioNode from '../ScenarioEditor/nodes/ScenarioNode.vue'
@@ -830,10 +831,10 @@ const handleConfirmPreview = async () => {
   isPreviewLoading.value = true
   try {
     const orgId = currentScenario.value?.organization_id || undefined
-    const result = await scenarioSessionService.previewScenario(selectedScenarioId.value, {
-      organization_id: orgId,
-      from_step_order: previewFromStepOrder.value ?? undefined
-    })
+    const result = await scenarioSessionService.previewScenario(
+      selectedScenarioId.value,
+      previewOptions(orgId, previewFromStepOrder.value)
+    )
     // Same tab, same route the launcher uses: a noopener tab would not
     // inherit a sessionStorage JWT and would land on the login screen. The
     // session view's back link brings the trainer back to this scenario.
@@ -848,19 +849,11 @@ const handleConfirmPreview = async () => {
       query: { returnTo }
     })
   } catch (err: any) {
-    // Refusals the author can act on get a message in their language; anything
-    // else keeps the backend's explanation.
-    const status = err?.response?.status
     const data = err?.response?.data
-    if (status === 400 && previewFromStepOrder.value !== null) {
-      notification.showError(t('scenarioEditor.previewErrorUnknownStep'))
-    } else if (status === 403) {
-      notification.showError(t('scenarioEditor.previewErrorForbidden'))
-    } else if (status === 409 && data?.reason === 'session_exists') {
-      notification.showError(t('scenarioEditor.previewErrorSessionExists'))
-    } else {
-      notification.showError(data?.error_message || data?.message || err?.message || t('scenarioEditor.previewError'))
-    }
+    const refusal = previewRefusalKey(err?.response?.status, data, previewFromStepOrder.value)
+    notification.showError(refusal
+      ? t(refusal)
+      : data?.error_message || data?.message || err?.message || t('scenarioEditor.previewError'))
   } finally {
     isPreviewLoading.value = false
   }
