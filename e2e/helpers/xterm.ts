@@ -105,13 +105,22 @@ export async function readFlagFromTerminal(
   stepOrder: number,
   timeoutMs = 30_000
 ): Promise<string> {
+  return readFlagFileFromTerminal(page, `/tmp/.flag_step_${stepOrder}`, timeoutMs);
+}
+
+/** Same as readFlagFromTerminal, for a flag the step declares at `path`. */
+export async function readFlagFileFromTerminal(
+  page: Page,
+  path: string,
+  timeoutMs = 30_000
+): Promise<string> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    await typeInTerminal(page, `cat /tmp/.flag_step_${stepOrder}`);
+    await typeInTerminal(page, `cat ${path}`);
     await page.waitForTimeout(1_500);
     const text = await readTerminalText(page);
     const matches = text.match(/FLAG\{[0-9a-f]{16}\}/g);
     if (matches?.length) return matches[matches.length - 1];
   }
-  throw new Error(`no FLAG{...} found in terminal for step ${stepOrder}`);
+  throw new Error(`no FLAG{...} found in terminal at ${path}`);
 }

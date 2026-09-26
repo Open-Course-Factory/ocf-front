@@ -59,6 +59,9 @@ export interface SeedStep {
   hint_content?: string;
   verify_script?: string; // empty/absent = auto-pass
   has_flag?: boolean;
+  // Where ocf-core writes the step's flag. Without one it writes nothing: the
+  // scenario's own script is expected to place it from OCF_FLAG_CURRENT.
+  flag_path?: string;
   show_immediate_feedback?: boolean;
   questions?: SeedQuestion[];
 }
@@ -100,6 +103,34 @@ export async function importScenario(
   );
   if (!response.ok()) {
     throw new Error(`import-json failed: ${response.status()} ${await response.text()}`);
+  }
+  return response.json();
+}
+
+/**
+ * Import a fixture into the PLATFORM catalogue (no organization), as an admin.
+ *
+ * Public is a platform notion since ocf-core 0.61.2: ocf-core clears
+ * `is_public` on any org scenario, so an org import is invisible to a learner
+ * outside that org unless it is assigned. A spec that needs "any learner can
+ * launch this" imports here, and tears down with deleteScenarioById.
+ */
+export async function importPlatformScenario(
+  session: ApiSession,
+  seed: SeedScenario
+): Promise<{ id: string; name: string; title: string }> {
+  const response = await session.api.post(`${API_BASE}/scenarios/import-json`, {
+    headers: authHeaders(session),
+    data: {
+      difficulty: 'beginner',
+      estimated_time: '10m',
+      instance_type: 'xs',
+      os_type: 'apk',
+      ...seed,
+    },
+  });
+  if (!response.ok()) {
+    throw new Error(`platform import-json failed: ${response.status()} ${await response.text()}`);
   }
   return response.json();
 }
