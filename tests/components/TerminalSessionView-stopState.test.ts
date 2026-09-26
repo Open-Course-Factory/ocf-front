@@ -379,6 +379,26 @@ describe('TerminalSessionView — paused scenario run', () => {
     wrapper.unmount()
   })
 
+  it('follows the scenario panel into and out of a step setup', async () => {
+    // A step's setup starts and ends while the page is open: the panel reports
+    // it, and Stop follows.
+    userSessionsReturn('running')
+    mockGetSessionByTerminal.mockResolvedValue(scenarioRun('active'))
+
+    const wrapper = mountScenarioView()
+    await flushPromises()
+    const scenarioPanel = wrapper.findComponent({ name: 'ScenarioPanel' })
+
+    scenarioPanel.vm.$emit('session-status', 'provisioning')
+    await flushPromises()
+    expect(wrapper.find('.tv-stub').attributes('data-can-stop')).toBe('false')
+
+    scenarioPanel.vm.$emit('session-status', 'active')
+    await flushPromises()
+    expect(wrapper.find('.tv-stub').attributes('data-can-stop')).not.toBe('false')
+    wrapper.unmount()
+  })
+
   it('reloads the scenario session after a successful resume', async () => {
     userSessionsReturn('stopped')
     mockGetSessionByTerminal.mockResolvedValue(scenarioRun('active'))
