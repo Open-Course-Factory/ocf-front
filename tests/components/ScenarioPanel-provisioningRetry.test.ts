@@ -27,6 +27,8 @@ const mockGetCurrentStep = vi.fn()
 const mockGetSessionInfo = vi.fn()
 const mockVerifyStep = vi.fn()
 const mockReprovisionStep = vi.fn()
+const mockSubmitFlag = vi.fn()
+const mockSubmitQuiz = vi.fn()
 
 vi.mock('../../src/services/domain/scenario', () => ({
   scenarioSessionService: {
@@ -37,6 +39,8 @@ vi.mock('../../src/services/domain/scenario', () => ({
     revealHint: vi.fn(),
     verifyStep: (...a: any[]) => mockVerifyStep(...a),
     reprovisionStep: (...a: any[]) => mockReprovisionStep(...a),
+    submitFlag: (...a: any[]) => mockSubmitFlag(...a),
+    submitQuiz: (...a: any[]) => mockSubmitQuiz(...a),
     abandonSession: vi.fn()
   }
 }))
@@ -68,8 +72,20 @@ function mountPanel(options: { props?: Record<string, unknown>; realVerify?: boo
       })],
       stubs: {
         ScenarioElapsedTimer: true,
-        ScenarioFlagSubmit: true,
-        ScenarioQuizPanel: true,
+        // Both expose what the panel lets them do, and can submit regardless —
+        // as a click racing a prop update would.
+        ScenarioFlagSubmit: {
+          name: 'ScenarioFlagSubmit',
+          props: ['isActive', 'modelValue'],
+          emits: ['update:modelValue', 'submit'],
+          template: '<button class="flag-stub" :data-active="String(isActive)" @click="$emit(\'update:modelValue\', \'FLAG{x}\'); $nextTick(() => $emit(\'submit\'))"></button>'
+        },
+        ScenarioQuizPanel: {
+          name: 'ScenarioQuizPanel',
+          props: ['isActive'],
+          emits: ['submit'],
+          template: '<button class="quiz-stub" :data-active="String(isActive)" @click="$emit(\'submit\', { q1: \'a\' })"></button>'
+        },
         ScenarioHintPanel: true,
         ProvisioningPhaseList: true,
         ScenarioVerifyResult: options.realVerify ? false : {
@@ -148,7 +164,8 @@ describe('ScenarioPanel — retrying a failed step setup', () => {
 /**
  * While the page reports the run `provisioning` — a launch still running its
  * setup, a rebuild replaying it — ocf-core refuses verify and submit with 409.
- * The panel must not offer a Verify the backend will refuse.
+ * The panel must not offer a Verify, a flag or a quiz answer the backend will
+ * refuse.
  */
 describe('ScenarioPanel — while the run is being set up', () => {
   beforeEach(() => {
@@ -179,6 +196,46 @@ describe('ScenarioPanel — while the run is being set up', () => {
     await flushPromises()
 
     expect(verifyOffered(wrapper, 'scenario-info-ack')).toBe(false)
+    wrapper.unmount()
+  })
+
+  // A flag or a quiz answer is refused the same way: neither is offered, and
+  // one sent anyway (a click racing the status) never reaches the backend.
+  it.each([
+    ['a flag', { step_type: 'flag' }, '.flag-stub', mockSubmitFlag],
+    ['a quiz answer', { step_type: 'quiz', questions: [{ id: 'q1', text: 'Q?', options: ['a', 'b'] }] }, '.quiz-stub', mockSubmitQuiz],
+  ])('does not offer to submit %s', async (_label, step, selector, submit) => {
+    mockGetCurrentStep.mockResolvedValue({ ...STEP, ...step })
+
+    const wrapper = mountPanel({ props: { sessionStatus: 'provisioning' } })
+    await flushPromises()
+
+    const control = wrapper.find(selector)
+    if (control.exists()) {
+      expect(control.attributes('data-active')).toBe('false')
+      await control.trigger('click')
+      await flushPromises()
+    }
+    expect(submit).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it.each([
+    ['a flag', { step_type: 'flag' }, '.flag-stub', mockSubmitFlag],
+    ['a quiz answer', { step_type: 'quiz', questions: [{ id: 'q1', text: 'Q?', options: ['a', 'b'] }] }, '.quiz-stub', mockSubmitQuiz],
+  ])('offers to submit %s again once the run is active', async (_label, step, selector, submit) => {
+    mockGetCurrentStep.mockResolvedValue({ ...STEP, ...step })
+    mockGetSessionInfo.mockResolvedValue({ status: 'active' })
+    ;(submit as any).mockResolvedValue({ correct: false, passed: false })
+
+    const wrapper = mountPanel({ props: { sessionStatus: 'active' } })
+    await flushPromises()
+
+    const control = wrapper.find(selector)
+    expect(control.attributes('data-active')).toBe('true')
+    await control.trigger('click')
+    await flushPromises()
+    expect(submit).toHaveBeenCalled()
     wrapper.unmount()
   })
 
