@@ -49,9 +49,10 @@ vi.mock('vue-router', () => ({
 
 const mockShowWarning = vi.fn()
 const mockShowError = vi.fn()
+const mockShowConfirm = vi.fn().mockResolvedValue(true)
 vi.mock('../../src/composables/useNotification', () => ({
   useNotification: () => ({
-    showConfirm: vi.fn().mockResolvedValue(true),
+    showConfirm: (...args: any[]) => mockShowConfirm(...args),
     showError: (...args: any[]) => mockShowError(...args),
     showSuccess: vi.fn(),
     showInfo: vi.fn(),
@@ -144,7 +145,12 @@ const ScenarioPanelStub = {
 
 // `realPanel` mounts the real TerminalSessionPanel around a stubbed console;
 // the stop-state tests only need the panel stubbed out.
-function mountView(options: { attachTo?: HTMLElement; realPanel?: boolean; locale?: 'en' | 'fr' } = {}) {
+function mountView(options: {
+  attachTo?: HTMLElement
+  realPanel?: boolean
+  locale?: 'en' | 'fr'
+  stubs?: Record<string, any>
+} = {}) {
   setActivePinia(createPinia())
   return mount(TerminalSessionView, {
     attachTo: options.attachTo,
@@ -160,7 +166,8 @@ function mountView(options: { attachTo?: HTMLElement; realPanel?: boolean; local
         'router-link': {
           props: ['to'],
           template: '<a class="router-link-stub"><slot /></a>'
-        }
+        },
+        ...options.stubs
       }
     }
   })
@@ -1139,5 +1146,146 @@ describe('TerminalSessionView — a run whose environment is being set up', () =
 
     expect(wrapper.find('.ocf-console-overlay').exists()).toBe(false)
     wrapper.unmount()
+  })
+})
+
+/**
+ * What Stop and Delete say depends on how the run can come back.
+ *
+ * Deleting a scenario terminal no longer ends the run (ocf-core MR D): a
+ * normal run keeps its progress and is rebuilt at its step on resume, so the
+ * confirm must say so and point at Abandon to really end it. A crash-trap run
+ * is its container: deleting it ends the run. A terminal with no scenario
+ * keeps today's copy.
+ *
+ * On a persistent terminal Stop is today's pause: no confirm, straight to
+ * /stop.
+ */
+describe('TerminalSessionView — stop and delete copy by persistence', () => {
+  const DELETE_COPY_PLAIN = 'The container disk and command history will be permanently lost.'
+  const DELETE_COPY_REBUILD =
+    'Your environment will be deleted. Your progress is kept: your environment will be rebuilt at this step when you resume. To end the run, abandon it.'
+  const DELETE_COPY_CRASH_TRAPS = 'Deleting ends this run. It cannot be resumed.'
+
+  // The delete confirm, rendered with its body when open.
+  const BaseModalStub = {
+    name: 'BaseModal',
+    props: ['visible', 'title'],
+    template: '<div v-if="visible" class="bm-stub"><slot /><slot name="footer" /></div>'
+  }
+
+  function ephemeralRow() {
+    return { ...terminalRow('running'), persistence_mode: 'ephemeral' }
+  }
+
+  async function mountWith(options: { crashTraps?: boolean; scenario?: boolean; locale?: 'en' | 'fr'; row?: any } = {}) {
+    mockAxiosGet.mockResolvedValue({ data: [options.row ?? terminalRow('running')] })
+    mockGetSessionByTerminal.mockResolvedValue(options.scenario === false ? null : scenarioRun('active'))
+    const wrapper = mountView({ realPanel: true, locale: options.locale, stubs: { BaseModal: BaseModalStub } })
+    await flushPromises()
+    if (options.scenario !== false) {
+      wrapper.findComponent({ name: 'ScenarioPanel' }).vm.$emit('scenario-info-loaded', {
+        id: 'sc1', name: 'GameShell', title: 'GameShell', crash_traps: options.crashTraps ?? false
+      })
+      await flushPromises()
+    }
+    return wrapper
+  }
+
+  async function deleteConfirmText(wrapper: ReturnType<typeof mountView>) {
+    wrapper.findComponent({ name: 'TerminalViewer' }).vm.$emit('destroy')
+    await flushPromises()
+    const modal = wrapper.find('.bm-stub')
+    expect(modal.exists()).toBe(true)
+    return modal.text()
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockShowConfirm.mockResolvedValue(true)
+  })
+
+  describe('delete confirm', () => {
+    it('keeps the plain copy for a terminal with no scenario', async () => {
+      const wrapper = await mountWith({ scenario: false })
+
+      const text = await deleteConfirmText(wrapper)
+
+      expect(text).toContain(DELETE_COPY_PLAIN)
+      expect(text).not.toContain(DELETE_COPY_REBUILD)
+      expect(text).not.toContain(DELETE_COPY_CRASH_TRAPS)
+      wrapper.unmount()
+    })
+
+    it('says a normal run is rebuilt on resume and that Abandon ends it', async () => {
+      const wrapper = await mountWith()
+
+      const text = await deleteConfirmText(wrapper)
+
+      expect(text).toContain(DELETE_COPY_REBUILD)
+      expect(text).not.toContain(DELETE_COPY_PLAIN)
+      wrapper.unmount()
+    })
+
+    it('says deleting ends a crash-trap run', async () => {
+      const wrapper = await mountWith({ crashTraps: true })
+
+      const text = await deleteConfirmText(wrapper)
+
+      expect(text).toContain(DELETE_COPY_CRASH_TRAPS)
+      expect(text).not.toContain(DELETE_COPY_REBUILD)
+      expect(text).not.toContain(DELETE_COPY_PLAIN)
+      wrapper.unmount()
+    })
+
+    it('has its own French copy for each case', async () => {
+      const texts: string[] = []
+      for (const options of [{ scenario: false }, {}, { crashTraps: true }]) {
+        const wrapper = await mountWith({ ...options, locale: 'fr' })
+        texts.push(await deleteConfirmText(wrapper))
+        wrapper.unmount()
+      }
+      const [plain, rebuild, crashTraps] = texts
+
+      expect(new Set(texts).size).toBe(3)
+      for (const text of [rebuild, crashTraps]) {
+        expect(text).not.toContain(DELETE_COPY_REBUILD)
+        expect(text).not.toContain(DELETE_COPY_CRASH_TRAPS)
+        expect(text).not.toContain(plain)
+      }
+    })
+
+    it('still deletes the terminal once confirmed', async () => {
+      const wrapper = await mountWith()
+      await deleteConfirmText(wrapper)
+
+      await wrapper.find('[data-testid="confirm-delete-cta"]').trigger('click')
+      await flushPromises()
+
+      expect(mockRouterPush).toHaveBeenCalled()
+      wrapper.unmount()
+    })
+  })
+
+  describe('stop', () => {
+    it('pauses a persistent scenario run at once, with no confirm', async () => {
+      const wrapper = await mountWith()
+      expect(wrapper.find('.tv-stub').attributes('data-show-stop-button')).toBe('true')
+
+      wrapper.findComponent({ name: 'TerminalViewer' }).vm.$emit('stop')
+      await flushPromises()
+
+      expect(mockShowConfirm).not.toHaveBeenCalled()
+      expect(wrapper.find('.bm-stub').exists()).toBe(false)
+      expect(mockAxiosPost).toHaveBeenCalledWith('/terminals/sess-test/stop')
+      wrapper.unmount()
+    })
+
+    it('offers no Stop on a non-persistent terminal with no scenario', async () => {
+      const wrapper = await mountWith({ scenario: false, row: ephemeralRow() })
+
+      expect(wrapper.find('.tv-stub').attributes('data-show-stop-button')).toBe('false')
+      wrapper.unmount()
+    })
   })
 })

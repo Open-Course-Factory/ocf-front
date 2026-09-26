@@ -234,6 +234,9 @@ test('learner deletes a paused run\'s terminal, rebuilds it and resumes at the s
 
   // Delete the paused terminal from its banner.
   await page.getByTestId('delete-session-cta').click();
+  // Deleting keeps the run: the confirm must not say everything is lost.
+  // (The exact copy, both languages, is pinned in the component test.)
+  await expect(page.locator('.base-modal-container')).not.toContainText(/permanently lost|perdus définitivement/i);
   await page.getByTestId('confirm-delete-cta').click();
   await page.waitForURL((url) => !url.pathname.includes(terminalId), { timeout: 30_000 });
 
