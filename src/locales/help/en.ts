@@ -178,7 +178,7 @@ export const helpEn = {
             open: "Screen icon — open the session in the page, with the command history. Available for running and stopped sessions.",
             popup: "External-link icon — open the terminal alone in a new tab. Running sessions only.",
             resume: "Play — resume a stopped session, disk and history intact.",
-            stop: "Stop — stop a running session and keep its disk. The button is greyed on an ephemeral session, with a tooltip saying why: there is no disk to keep, use Destroy.",
+            stop: "Stop — stop a running session and keep its disk. The button is greyed on an ephemeral session, with a tooltip saying why: there is no disk to keep, use Destroy. On a scenario run's page Stop is offered even so: after a confirmation it deletes the environment, and the run can be rebuilt at its step later, or ends for a crash-trap or preview run.",
             destroy: "Trash — destroy the session after a confirmation. The disk and the command history are lost.",
             more: "The ⋮ menu of a running session offers Copy link, Copy iframe code (to embed the terminal in a page of yours) and Sync."
           }
@@ -259,7 +259,7 @@ export const helpEn = {
         },
         stopGreyed: {
           title: "The Stop button is greyed",
-          description: "The session is ephemeral: there is no disk to keep, so Stop makes no sense. Use Destroy (the trash icon) to end it. To be able to stop and resume, create your next session with Keep my work in Advanced options."
+          description: "The session is ephemeral: there is no disk to keep, so Stop makes no sense. Use Destroy (the trash icon) to end it. To be able to stop and resume, create your next session with Keep my work in Advanced options. On a scenario run's page Stop is not greyed: it deletes the environment after a confirmation, and the run can be rebuilt at its step later, or ends for a crash-trap or preview run."
         },
         packages: {
           title: "Startup packages are ignored or the field is locked",
@@ -1295,7 +1295,7 @@ export const helpEn = {
           hints: "Hints, when the step has some, are revealed one level at a time with Show Hint 1, Show Hint 2… The counter reads Hints: used/total. Your trainer can see how many hints you used.",
           reset: "Reset step rebuilds the machine for the current step only, keeping what earlier steps did. Use it when you have made the step impossible to finish (a deleted file, a broken service). It asks for a confirmation.",
           preparing: "Between two steps the panel may show Preparing the next step… while it installs what the step needs. If it fails, the panel says so plainly: it is not part of the exercise. Click Restart preparation; if it keeps failing, tell your trainer.",
-          crashTraps: "Some challenge scenarios arm crash traps: a crashed container ends the run and resets your progress, and the session is always ephemeral. The scenario's briefing says so."
+          crashTraps: "Some challenge scenarios arm crash traps: a crashed container ends the run and resets your progress. A real pause can be resumed: Stop on a plan that keeps your work, or an automatic stop when idle. On a plan without persistence, stopping ends the run. The scenario's briefing says so."
         },
         endings: {
           title: "How a run ends",

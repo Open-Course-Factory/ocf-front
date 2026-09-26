@@ -178,7 +178,7 @@ export const helpFr = {
             open: "Icône écran — ouvrir la session dans la page, avec l'historique des commandes. Disponible pour les sessions en cours et arrêtées.",
             popup: "Icône lien externe — ouvrir le terminal seul dans un nouvel onglet. Sessions en cours uniquement.",
             resume: "Lecture — reprendre une session arrêtée, disque et historique intacts.",
-            stop: "Stop — arrêter une session en cours en gardant son disque. Le bouton est grisé sur une session éphémère, avec une infobulle qui explique pourquoi : il n'y a pas de disque à garder, utilisez Détruire.",
+            stop: "Stop — arrêter une session en cours en gardant son disque. Le bouton est grisé sur une session éphémère, avec une infobulle qui explique pourquoi : il n'y a pas de disque à garder, utilisez Détruire. Sur la page d'un scénario, Stop est proposé malgré tout : après confirmation, il supprime l'environnement, et l'exécution pourra être reconstruite plus tard à son étape, ou se termine pour un scénario à pièges ou un aperçu.",
             destroy: "Corbeille — détruire la session après confirmation. Le disque et l'historique des commandes sont perdus.",
             more: "Le menu ⋮ d'une session en cours propose Copier le lien, Copier le code iframe (pour intégrer le terminal dans une page à vous) et Sync."
           }
@@ -259,7 +259,7 @@ export const helpFr = {
         },
         stopGreyed: {
           title: "Le bouton Stop est grisé",
-          description: "La session est éphémère : il n'y a pas de disque à garder, Arrêter n'a donc pas de sens. Utilisez Détruire (l'icône corbeille) pour la terminer. Pour pouvoir arrêter et reprendre, créez votre prochaine session avec Conserver mon travail dans Options avancées."
+          description: "La session est éphémère : il n'y a pas de disque à garder, Arrêter n'a donc pas de sens. Utilisez Détruire (l'icône corbeille) pour la terminer. Pour pouvoir arrêter et reprendre, créez votre prochaine session avec Conserver mon travail dans Options avancées. Sur la page d'un scénario, Stop n'est pas grisé : il supprime l'environnement après confirmation, et l'exécution pourra être reconstruite plus tard à son étape, ou se termine pour un scénario à pièges ou un aperçu."
         },
         packages: {
           title: "Les paquets de démarrage sont ignorés ou le champ est verrouillé",
@@ -1295,7 +1295,7 @@ export const helpFr = {
           hints: "Les indices, quand l'étape en a, se révèlent un niveau à la fois avec Révéler l'indice 1, Révéler l'indice 2… Le compteur indique Indices : utilisés/total. Votre formateur voit combien d'indices vous avez utilisés.",
           reset: "Réinitialiser étape reconstruit la machine pour l'étape en cours seulement, en gardant ce que les étapes précédentes ont fait. Utilisez-le quand vous avez rendu l'étape impossible à finir (un fichier supprimé, un service cassé). Une confirmation est demandée.",
           preparing: "Entre deux étapes, le panneau peut afficher Préparation de l'étape suivante… pendant qu'il installe ce dont l'étape a besoin. Si cela échoue, le panneau le dit clairement : ce n'est pas une énigme. Cliquez sur Relancer la préparation ; si l'échec persiste, prévenez votre formateur.",
-          crashTraps: "Certains scénarios de type défi arment des pièges : un plantage du conteneur met fin à l'exécution et remet votre progression à zéro, et la session est toujours éphémère. Le briefing du scénario le précise."
+          crashTraps: "Certains scénarios de type défi arment des pièges : un plantage du conteneur met fin à l'exécution et remet votre progression à zéro. Une vraie pause peut être reprise : Stop avec une offre qui conserve votre travail, ou un arrêt automatique pour inactivité. Avec une offre sans persistance, arrêter met fin à l'exécution. Le briefing du scénario le précise."
         },
         endings: {
           title: "Comment une exécution se termine",
