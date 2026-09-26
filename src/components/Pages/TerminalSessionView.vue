@@ -834,11 +834,14 @@ async function detectScenarioSession() {
       scenarioProvisioningPhase.value = scenarioSession.provisioning_phase || ''
       scenarioResumeMode.value = scenarioSession.resume_mode
       terminalHadScenario.value = true
-      if (scenarioSession.status === 'provisioning') scheduleProvisioningRecheck()
     }
     if (replayFailed) await refreshSessionInfo()
   } catch {
     // Silently ignore - no scenario linked is fine
+  } finally {
+    // Whatever this read gave, keep looking while the run is being set up: a
+    // single failed lookup must not leave the build overlay up for good.
+    if (scenarioSessionStatus.value === 'provisioning') scheduleProvisioningRecheck()
   }
 }
 
