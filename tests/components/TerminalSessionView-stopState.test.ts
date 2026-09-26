@@ -798,7 +798,9 @@ describe('TerminalSessionView — a run being rebuilt', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.useFakeTimers()
+    // Timers only: a faked clock breaks vue-i18n's message compilation, and
+    // these tests read the copy.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
     terminalState = 'running'
     mockAxiosGet.mockImplementation(async (url: string) => {
       if (url !== '/terminals/user-sessions') return { data: {} }
