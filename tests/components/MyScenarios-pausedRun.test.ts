@@ -37,10 +37,11 @@ vi.mock('../../src/services/domain/scenario', () => ({
 // Start over and Abandon ask first — whichever way the page asks, the learner
 // says yes here.
 const showErrorMock = vi.fn()
+const showConfirmMock = vi.fn().mockResolvedValue(true)
 vi.mock('../../src/composables/useNotification', () => ({
   useNotification: () => ({
     showError: (...args: any[]) => showErrorMock(...args),
-    showConfirm: vi.fn().mockResolvedValue(true),
+    showConfirm: (...args: any[]) => showConfirmMock(...args),
     showSuccess: vi.fn(),
     showInfo: vi.fn(),
     showWarning: vi.fn(),
@@ -276,13 +277,21 @@ describe('MyScenarios — paused badge without a usable step count', () => {
 /**
  * A run whose container is gone but which is not over (`resume_mode:
  * 'rebuild'`): the history offers the same ways forward as the launcher card —
- * Rebuild & resume, which builds a new machine at the learner's step and opens
- * it, and Start over, which abandons the run and launches a fresh one. Abandon
- * stays. Nothing leads into the terminal that is gone: no Resume link, and the
- * card itself does not open it.
+ * Rebuild and resume, which builds a new machine at the learner's step and
+ * opens it at once (the session view shows the replay), and Start over, which
+ * abandons the run and launches a fresh one. Abandon stays. Nothing leads into
+ * the terminal that is gone: no Resume link, and the card itself is not a
+ * control.
  */
 describe('MyScenarios — a run to rebuild', () => {
-  const REBUILD_RUN = { ...BASE_RUN, resumable: true, resume_mode: 'rebuild' }
+  // GET /scenario-sessions/my also names the run's organization — the one its
+  // terminal was filed under, whose trainers supervise it — and the language
+  // it is played in (ocf-core MR D).
+  const REBUILD_RUN = { ...BASE_RUN, resumable: true, resume_mode: 'rebuild', organization_id: 'org-class', locale: 'fr' }
+
+  const refusal = (status: number, data: Record<string, unknown>) => ({ response: { status, data } })
+  const BUDGET = refusal(403, { source: 'budget', reason: 'budget_exhausted', error_code: 403, error_message: 'Resource budget exhausted' })
+  const DUNNING = refusal(402, { error_code: 'subscription_past_due', source: 'dunning', error_message: 'Your subscription payment is overdue.' })
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -290,17 +299,26 @@ describe('MyScenarios — a run to rebuild', () => {
     getMySessionsMock.mockResolvedValue([REBUILD_RUN])
     abandonSessionMock.mockResolvedValue(undefined)
     pollProvisioningStatusMock.mockResolvedValue(undefined)
+    showConfirmMock.mockResolvedValue(true)
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
   })
 
-  it('says the environment is lost and names the step it resumes at', async () => {
+  async function mountAndClick(testid: string) {
+    const wrapper = mountPage()
+    await flushPromises()
+    await wrapper.find(`[data-testid="${testid}"]`).trigger('click')
+    await flushPromises()
+    return wrapper
+  }
+
+  it('says the environment is lost, the progress kept, and at which step', async () => {
     const wrapper = mountPage()
     await flushPromises()
 
-    expect(wrapper.find('.status-badge').text()).toContain('Environment lost — rebuild and resume at step 4')
+    expect(wrapper.find('.status-badge').text()).toContain('Environment lost — progress kept (step 4)')
   })
 
   it('is listed under Active: the run is not over', async () => {
@@ -311,11 +329,13 @@ describe('MyScenarios — a run to rebuild', () => {
     expect(tab.find('.tab-count').text()).toBe('1')
   })
 
-  it('offers Rebuild & resume, Start over and Abandon — no Resume into the gone terminal', async () => {
+  it('offers Rebuild and resume, Start over and Abandon — no Resume into the gone terminal', async () => {
     const wrapper = mountPage()
     await flushPromises()
 
-    expect(wrapper.find('[data-testid="scenario-rebuild-btn"]').exists()).toBe(true)
+    const rebuild = wrapper.find('[data-testid="scenario-rebuild-btn"]')
+    expect(rebuild.exists()).toBe(true)
+    expect(rebuild.text()).toBe('Rebuild and resume')
     expect(wrapper.find('[data-testid="scenario-start-over-btn"]').exists()).toBe(true)
     expect(wrapper.find('.abandon-btn').exists()).toBe(true)
     expect(resumeLinks(wrapper)).toHaveLength(0)
@@ -334,7 +354,19 @@ describe('MyScenarios — a run to rebuild', () => {
     )
   })
 
-  it('rebuilds, waits within the returned deadline, then opens the new terminal', async () => {
+  // A card that opens nothing must not present itself as a control: no
+  // pointer cursor, no tab stop, no "button" announced to a screen reader.
+  it('does not present the card of a run to rebuild as a control', async () => {
+    const wrapper = mountPage()
+    await flushPromises()
+
+    const card = wrapper.find('.scenario-card')
+    expect(card.classes()).not.toContain('clickable')
+    expect(card.attributes('tabindex')).toBeUndefined()
+    expect(card.attributes('role')).toBeUndefined()
+  })
+
+  it('opens the new terminal as soon as the resume answers, without waiting for the replay', async () => {
     resumeSessionMock.mockResolvedValue({
       terminal_session_id: 'term-new',
       scenario_session_id: 'sess-1',
@@ -343,34 +375,82 @@ describe('MyScenarios — a run to rebuild', () => {
       provisioning_timeout_seconds: 900,
     })
 
-    const wrapper = mountPage()
-    await flushPromises()
-    await wrapper.find('[data-testid="scenario-rebuild-btn"]').trigger('click')
-    await flushPromises()
+    await mountAndClick('scenario-rebuild-btn')
 
     expect(resumeSessionMock).toHaveBeenCalledWith('sess-1')
-    expect(pollProvisioningStatusMock).toHaveBeenCalledWith(
-      'sess-1',
-      expect.any(Function),
-      expect.anything(),
-      expect.objectContaining({ deadlineSeconds: 900 })
-    )
+    expect(pollProvisioningStatusMock).not.toHaveBeenCalled()
     expect(routerPushMock).toHaveBeenCalledWith({ name: 'TerminalSessionView', params: { sessionId: 'term-new' } })
   })
 
-  it('Start over abandons the run, then launches the scenario again', async () => {
+  // The run's own organization and language, not whatever the page happens to
+  // know: without the organization the new terminal is filed under none, and
+  // the learner drops out of their trainer's live view; without the language a
+  // French learner starts over in the scenario's source language.
+  it('Start over abandons the run, then launches it again in the run\'s organization and language', async () => {
     launchScenarioMock.mockResolvedValue({ terminal_session_id: 'term-fresh', scenario_session_id: 'sess-2', status: 'active' })
 
-    const wrapper = mountPage()
-    await flushPromises()
-    await wrapper.find('[data-testid="scenario-start-over-btn"]').trigger('click')
-    await flushPromises()
+    await mountAndClick('scenario-start-over-btn')
 
     expect(abandonSessionMock).toHaveBeenCalledWith('sess-1')
-    expect(launchScenarioMock).toHaveBeenCalledWith('sc1', expect.anything())
+    expect(launchScenarioMock).toHaveBeenCalledWith('sc1', { organization_id: 'org-class', locale: 'fr' })
     expect(abandonSessionMock.mock.invocationCallOrder[0])
       .toBeLessThan(launchScenarioMock.mock.invocationCallOrder[0])
     expect(routerPushMock).toHaveBeenCalledWith({ name: 'TerminalSessionView', params: { sessionId: 'term-fresh' } })
+  })
+
+  it('explains a budget refusal of the rebuild without sending the learner to destroy their progress', async () => {
+    resumeSessionMock.mockRejectedValue(BUDGET)
+
+    await mountAndClick('scenario-rebuild-btn')
+
+    expect(showErrorMock).toHaveBeenCalledTimes(1)
+    const message = String(showErrorMock.mock.calls[0][0])
+    expect(message).toMatch(/machines are all in use right now/i)
+    expect(message).toMatch(/progress is kept/i)
+    expect(message).not.toMatch(/start over|abandon/i)
+    expect(routerPushMock).not.toHaveBeenCalled()
+  })
+
+  it('offers the subscription dashboard when the rebuild is refused for an overdue payment', async () => {
+    resumeSessionMock.mockRejectedValue(DUNNING)
+
+    await mountAndClick('scenario-rebuild-btn')
+
+    expect(showConfirmMock).toHaveBeenCalledWith(
+      expect.stringMatching(/past due/i),
+      expect.stringMatching(/Payment issue/i),
+      expect.anything()
+    )
+    expect(showErrorMock).not.toHaveBeenCalled()
+    expect(routerPushMock).toHaveBeenCalledWith('/subscription-dashboard')
+  })
+
+  it('explains a budget refusal of the new launch after Start over in launch words', async () => {
+    launchScenarioMock.mockRejectedValue(BUDGET)
+
+    await mountAndClick('scenario-start-over-btn')
+
+    expect(abandonSessionMock).toHaveBeenCalledWith('sess-1')
+    expect(showErrorMock).toHaveBeenCalledTimes(1)
+    const message = String(showErrorMock.mock.calls[0][0])
+    expect(message).toMatch(/budget|in use/i)
+    // The run a resume message would name is already abandoned.
+    expect(message).not.toMatch(/rebuil|abandon it/i)
+    expect(routerPushMock).not.toHaveBeenCalled()
+  })
+
+  it('offers the subscription dashboard when the new launch after Start over is refused for an overdue payment', async () => {
+    launchScenarioMock.mockRejectedValue(DUNNING)
+
+    await mountAndClick('scenario-start-over-btn')
+
+    expect(showConfirmMock).toHaveBeenCalledWith(
+      expect.stringMatching(/past due/i),
+      expect.stringMatching(/Payment issue/i),
+      expect.anything()
+    )
+    expect(showErrorMock).not.toHaveBeenCalled()
+    expect(routerPushMock).toHaveBeenCalledWith('/subscription-dashboard')
   })
 
   it('offers Start over on a paused run too, beside its Resume', async () => {
@@ -382,5 +462,33 @@ describe('MyScenarios — a run to rebuild', () => {
     expect(wrapper.find('[data-testid="scenario-start-over-btn"]').exists()).toBe(true)
     expect(resumeLinks(wrapper)).toHaveLength(1)
     expect(wrapper.find('[data-testid="scenario-rebuild-btn"]').exists()).toBe(false)
+  })
+
+  // Enter on a button inside the card must act on that button only: it used
+  // to bubble to the card, which opened the terminal as well.
+  it('does not open the paused run\'s terminal when Enter is pressed on its Start over', async () => {
+    getMySessionsMock.mockResolvedValue([{ ...BASE_RUN, resumable: true, resume_mode: 'paused' }])
+
+    const wrapper = mountPage()
+    await flushPromises()
+    await wrapper.find('[data-testid="scenario-start-over-btn"]').trigger('keydown', { key: 'Enter' })
+    await wrapper.find('.abandon-btn').trigger('keydown', { key: ' ' })
+    await flushPromises()
+
+    expect(routerPushMock).not.toHaveBeenCalled()
+  })
+
+  it('still opens a paused run from its card with the keyboard', async () => {
+    getMySessionsMock.mockResolvedValue([{ ...BASE_RUN, resumable: true, resume_mode: 'paused' }])
+
+    const wrapper = mountPage()
+    await flushPromises()
+    const card = wrapper.find('.scenario-card')
+    expect(card.attributes('tabindex')).toBe('0')
+    expect(card.attributes('role')).toBe('button')
+    await card.trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledWith('/terminal-session/term-1')
   })
 })

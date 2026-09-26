@@ -65,9 +65,11 @@ vi.mock('../../src/composables/useNotification', () => ({
 // Scenario service: no linked scenario unless a test links one
 const mockGetSessionByTerminal = vi.fn().mockResolvedValue(null)
 const mockResumeScenarioSession = vi.fn()
+const mockGetSessionInfo = vi.fn()
 vi.mock('../../src/services/domain/scenario', () => ({
   scenarioSessionService: {
     getSessionByTerminal: (...args: any[]) => mockGetSessionByTerminal(...args),
+    getSessionInfo: (...args: any[]) => mockGetSessionInfo(...args),
     abandonSession: vi.fn().mockResolvedValue(undefined),
     resumeSession: (...args: any[]) => mockResumeScenarioSession(...args)
   }
@@ -99,10 +101,10 @@ vi.mock('../../src/stores/currentUser', () => ({
 
 import TerminalSessionView from '../../src/components/Pages/TerminalSessionView.vue'
 
-function createTestI18n() {
+function createTestI18n(locale: 'en' | 'fr' = 'en') {
   return createI18n({
     legacy: false,
-    locale: 'en',
+    locale,
     fallbackLocale: 'en',
     messages: { en: {}, fr: {} },
     missingWarn: false,
@@ -142,12 +144,12 @@ const ScenarioPanelStub = {
 
 // `realPanel` mounts the real TerminalSessionPanel around a stubbed console;
 // the stop-state tests only need the panel stubbed out.
-function mountView(options: { attachTo?: HTMLElement; realPanel?: boolean } = {}) {
+function mountView(options: { attachTo?: HTMLElement; realPanel?: boolean; locale?: 'en' | 'fr' } = {}) {
   setActivePinia(createPinia())
   return mount(TerminalSessionView, {
     attachTo: options.attachTo,
     global: {
-      plugins: [createTestI18n()],
+      plugins: [createTestI18n(options.locale)],
       stubs: {
         TerminalSessionPanel: options.realPanel ? false : true,
         TerminalViewer: TerminalViewerStub,
@@ -272,7 +274,7 @@ describe('TerminalSessionView — stop state propagation', () => {
  *     from the run's current state and stays on its step.
  */
 
-function mountScenarioView(options: { attachTo?: HTMLElement } = {}) {
+function mountScenarioView(options: { attachTo?: HTMLElement; locale?: 'en' | 'fr' } = {}) {
   return mountView({ ...options, realPanel: true })
 }
 
@@ -725,6 +727,212 @@ describe('TerminalSessionView — a scenario run to rebuild', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="rebuild-session-cta"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+})
+
+/**
+ * The rebuild banner says what the learner gets back: a fresh machine at the
+ * step, their progress — but not files they made by hand, since only the
+ * scenario's setup scripts are replayed. And it names its button the way the
+ * launcher and the scenario history do.
+ */
+describe('TerminalSessionView — rebuild banner copy', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockAxiosGet.mockResolvedValue({
+      data: [{ session_id: 'sess-test', state: 'deleted', expires_at: new Date(Date.now() - 3600_000).toISOString() }]
+    })
+    mockGetSessionByTerminal.mockResolvedValue({ id: 'scen-1', status: 'active', resume_mode: 'rebuild' })
+  })
+
+  it('says files the learner created are not restored', async () => {
+    const wrapper = mountScenarioView()
+    await flushPromises()
+
+    const banner = wrapper.find('.ocf-console-overlay')
+    expect(banner.text()).toMatch(/progress is kept/i)
+    expect(banner.text()).toMatch(/files you created yourself are not restored/i)
+    expect(wrapper.find('[data-testid="rebuild-session-cta"]').text()).toBe('Rebuild and resume')
+    wrapper.unmount()
+  })
+
+  it('says so in French', async () => {
+    const wrapper = mountScenarioView({ locale: 'fr' })
+    await flushPromises()
+
+    const banner = wrapper.find('.ocf-console-overlay')
+    expect(banner.text()).toMatch(/progression est conservée/i)
+    expect(banner.text()).toMatch(/les fichiers que vous aviez créés ne sont pas restaurés/i)
+    expect(wrapper.find('[data-testid="rebuild-session-cta"]').text()).toBe('Reconstruire et reprendre')
+    wrapper.unmount()
+  })
+})
+
+/**
+ * The replay, shown where the learner lands.
+ *
+ * Every entry point opens the new terminal as soon as the resume answers; the
+ * run is then `provisioning` with phase `replay` while ocf-core runs the
+ * scenario setup and each step's setup script up to the learner's step —
+ * minutes, possibly. Until it is over the console is not the learner's to use
+ * (verify and submit answer 409), so the page lays the replay's progress over
+ * it, in the same `#console-overlay` slot as the paused and rebuild banners.
+ * The same holds when the learner comes back through Resume mid-replay.
+ *
+ * A replay can fail: ocf-core then deletes the new terminal and puts the run
+ * back, still rebuildable, on its old terminal id. The page must not settle on
+ * a dead console: it finds the run again and offers the rebuild, saying the
+ * attempt failed.
+ */
+describe('TerminalSessionView — a run being rebuilt', () => {
+  const replaying = {
+    id: 'scen-1',
+    status: 'provisioning',
+    provisioning_phase: 'replay',
+    resume_mode: 'live',
+    terminal_session_id: 'sess-test'
+  }
+
+  let terminalState: 'running' | 'deleted'
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers()
+    terminalState = 'running'
+    mockAxiosGet.mockImplementation(async (url: string) => {
+      if (url !== '/terminals/user-sessions') return { data: {} }
+      return { data: [{ session_id: 'sess-test', state: terminalState, expires_at: futureExpiry(), persistence_mode: 'persistent', name: 'GameShell run' }] }
+    })
+    mockGetSessionByTerminal.mockResolvedValue(replaying)
+    mockGetSessionInfo.mockResolvedValue(replaying)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  // What ocf-core leaves behind a failed replay: the new terminal deleted, the
+  // run active again on its old terminal, and rebuildable.
+  const restored = { id: 'scen-1', status: 'active', resume_mode: 'rebuild', terminal_session_id: 'term-old' }
+
+  function replayFails(byTerminal: unknown) {
+    terminalState = 'deleted'
+    mockGetSessionByTerminal.mockResolvedValue(byTerminal)
+    mockGetSessionInfo.mockResolvedValue(restored)
+  }
+
+  it('shows the replay over the console while it runs', async () => {
+    const wrapper = mountScenarioView()
+    await flushPromises()
+
+    const overlay = wrapper.find('.ocf-console-overlay')
+    expect(overlay.exists()).toBe(true)
+    expect(overlay.text()).toMatch(/rebuil/i)
+    // The console underneath is not the learner's yet.
+    expect(wrapper.find('.tv-stub').element.closest('[inert]')).not.toBeNull()
+    expect(wrapper.find('[data-testid="rebuild-session-cta"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="resume-session-cta"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('hands the console back once the replay is over', async () => {
+    const wrapper = mountScenarioView()
+    await flushPromises()
+    expect(wrapper.find('.ocf-console-overlay').exists()).toBe(true)
+
+    const done = { ...replaying, status: 'active', provisioning_phase: '' }
+    mockGetSessionByTerminal.mockResolvedValue(done)
+    mockGetSessionInfo.mockResolvedValue(done)
+    await vi.advanceTimersByTimeAsync(20_000)
+    await flushPromises()
+
+    expect(wrapper.find('.ocf-console-overlay').exists()).toBe(false)
+    expect(wrapper.find('.tv-stub').element.closest('[inert]')).toBeNull()
+    expect(mockShowError).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it.each([
+    // The run points at its old terminal again: the new id finds nothing.
+    ['the new terminal no longer finds the run', null],
+    ['the run is active on another terminal', restored],
+  ])('offers the rebuild again, and says it failed, when %s', async (_label, byTerminal) => {
+    const wrapper = mountScenarioView()
+    await flushPromises()
+
+    replayFails(byTerminal)
+    await vi.advanceTimersByTimeAsync(20_000)
+    await flushPromises()
+
+    const cta = wrapper.find('[data-testid="rebuild-session-cta"]')
+    expect(cta.exists()).toBe(true)
+    expect(cta.element.closest('.ocf-console-overlay')).not.toBeNull()
+    expect(mockShowError).toHaveBeenCalledTimes(1)
+    const message = String(mockShowError.mock.calls[0][0])
+    expect(message).toMatch(/could not be rebuilt/i)
+    expect(message).toMatch(/progress is kept/i)
+
+    // And the rebuild can be tried again from there.
+    mockResumeScenarioSession.mockResolvedValue({
+      terminal_session_id: 'term-newer', scenario_session_id: 'scen-1', status: 'provisioning', provisioning_phase: 'replay'
+    })
+    await cta.trigger('click')
+    await flushPromises()
+    expect(mockResumeScenarioSession).toHaveBeenCalledWith('scen-1')
+    expect(mockRouterReplace).toHaveBeenCalledWith({ name: 'TerminalSessionView', params: { sessionId: 'term-newer' } })
+    wrapper.unmount()
+  })
+})
+
+/**
+ * A terminal that expires while the page is open — the commonest way to meet
+ * a lost environment. At the end of the countdown the page flips to "deleted"
+ * on its own, seconds before ocf-core has caught up: asked then, the run still
+ * reads `live`. The page must read the run again once the backend confirms the
+ * terminal is gone, when it reads `rebuild`, and offer the rebuild.
+ */
+describe('TerminalSessionView — a terminal that expires while the page is open', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('offers the rebuild once the backend confirms the terminal is gone', async () => {
+    const expiresAt = Date.now() + 5_000
+    // ocf-core learns of the expiry a few seconds after the countdown ends.
+    const backendDeletedAt = expiresAt + 4_000
+    const backendDeleted = () => Date.now() >= backendDeletedAt
+    mockAxiosGet.mockImplementation(async (url: string) => {
+      if (url !== '/terminals/user-sessions') return { data: {} }
+      return {
+        data: [{
+          session_id: 'sess-test',
+          state: backendDeleted() ? 'deleted' : 'running',
+          expires_at: new Date(expiresAt).toISOString(),
+          name: 'GameShell run'
+        }]
+      }
+    })
+    mockGetSessionByTerminal.mockImplementation(async () => ({
+      id: 'scen-1',
+      status: 'active',
+      resume_mode: backendDeleted() ? 'rebuild' : 'live',
+      terminal_session_id: 'sess-test'
+    }))
+
+    const wrapper = mountScenarioView()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="rebuild-session-cta"]').exists()).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(40_000)
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="rebuild-session-cta"]').exists()).toBe(true)
     wrapper.unmount()
   })
 })
