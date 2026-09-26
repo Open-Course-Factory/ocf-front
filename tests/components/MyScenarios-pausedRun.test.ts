@@ -187,6 +187,15 @@ describe('MyScenarios — an "active" run that cannot be resumed', () => {
     expect(wrapper.find('.status-badge').text()).not.toMatch(/ended/i)
   })
 
+  it('reads a non-resumable provisioning run as ended too, as the launcher does', async () => {
+    getMySessionsMock.mockResolvedValue([{ ...BASE_RUN, status: 'provisioning', resumable: false }])
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    expect(wrapper.find('.status-badge').text()).toMatch(/ended/i)
+  })
+
   it('leaves completed runs as they were', async () => {
     getMySessionsMock.mockResolvedValue([
       { ...BASE_RUN, status: 'completed', resumable: false, completed_at: new Date().toISOString(), grade: 100 }

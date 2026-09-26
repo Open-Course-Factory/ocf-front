@@ -142,10 +142,9 @@ function createTestI18n() {
 }
 
 /**
- * Mount a connected viewer, then close its socket with the given code —
- * the shape the browser delivers when tt-backend ends the console.
+ * Mount a viewer and open its console socket.
  */
-async function closeSocketWith(code: number, props: Record<string, unknown> = {}) {
+async function openConsole(props: Record<string, unknown> = {}) {
   setActivePinia(createPinia())
   const wrapper = mount(TerminalViewer, {
     props: {
@@ -188,6 +187,16 @@ async function closeSocketWith(code: number, props: Record<string, unknown> = {}
 
   socket.onopen?.()
   await flushPromises()
+
+  return { wrapper, socket }
+}
+
+/**
+ * Mount a connected viewer, then close its socket with the given code —
+ * the shape the browser delivers when tt-backend ends the console.
+ */
+async function closeSocketWith(code: number, props: Record<string, unknown> = {}) {
+  const { wrapper, socket } = await openConsole(props)
 
   socket.onclose?.({ code, reason: '', target: socket })
   await flushPromises()
@@ -331,5 +340,28 @@ describe('TerminalViewer — ending the session from the disconnect overlay', ()
 
     expect(mockStopSession).toHaveBeenCalledWith('sess-test')
     expect(wrapper.emitted('session-stopped')).toBeTruthy()
+  })
+})
+
+/**
+ * Stop is disabled for one reason only: the scenario run is still being set
+ * up, and stopping mid-setup fails the setup. The tooltip says so without the
+ * caller having to name the reason — no page disables Stop for anything else.
+ */
+describe('TerminalViewer — disabled Stop', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    FakeWebSocket.instances = []
+    vi.stubGlobal('WebSocket', FakeWebSocket)
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+  })
+
+  it('explains that the scenario is still being set up', async () => {
+    const { wrapper } = await openConsole({ showStopButton: true, canStop: false })
+
+    const stop = wrapper.find('.terminal-controls button.btn-danger')
+    expect(stop.exists()).toBe(true)
+    expect(stop.attributes('disabled')).toBeDefined()
+    expect(stop.attributes('title')).toContain('still being set up')
   })
 })

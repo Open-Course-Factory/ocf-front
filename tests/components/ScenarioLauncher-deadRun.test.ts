@@ -62,12 +62,12 @@ vi.mock('../../src/stores/subscriptions', () => ({
 
 import ScenarioLauncher from '../../src/components/Pages/ScenarioLauncher.vue'
 
-function mountLauncher() {
+function mountLauncher(locale: 'en' | 'fr' = 'en') {
   return mount(ScenarioLauncher, {
     global: {
       plugins: [createI18n({
         legacy: false,
-        locale: 'en',
+        locale,
         fallbackLocale: 'en',
         messages: { en: {}, fr: {} },
         missingWarn: false,
@@ -76,7 +76,8 @@ function mountLauncher() {
       stubs: {
         AdminBadge: true,
         ScenarioProvisioningOverlay: true,
-        'router-link': { props: ['to'], template: '<a><slot /></a>' },
+        // Expose the target so the tests can check where Resume leads.
+        'router-link': { props: ['to'], template: '<a :data-to="JSON.stringify(to)"><slot /></a>' },
       }
     }
   })
@@ -136,5 +137,121 @@ describe('ScenarioLauncher — a run whose terminal is gone', () => {
     const relaunch = wrapper.find('[data-testid="scenario-relaunch-btn"]')
     expect(relaunch.exists()).toBe(true)
     expect(relaunch.attributes('disabled')).toBeDefined()
+  })
+})
+
+/**
+ * A paused run must read as paused, not as "in progress".
+ *
+ * When the platform stops a persistent scenario terminal (the learner's Stop,
+ * or an idle/TTL auto-stop), ocf-core keeps the run open and resumable: the
+ * container's disk is preserved and the run goes on at the same step once the
+ * terminal is started again. GET /scenario-sessions/available reports that as
+ * `active_session_resume_mode: "paused"` next to the active-session fields.
+ *
+ * The card must say so — "Paused", with the step the learner will be back at —
+ * while Resume still opens the session view, where the paused banner restarts
+ * the terminal. A live run keeps today's rendering.
+ */
+
+// The card as GET /scenario-sessions/available returns it for a scenario the
+// learner already has a run of: blocked with session_exists, naming the run.
+function cardWithRun(resumeMode: 'live' | 'paused') {
+  return {
+    id: 'sc1',
+    name: 'GameShell',
+    title: 'GameShell',
+    launchable: false,
+    block_reason: 'session_exists',
+    active_session_id: 'sess-1',
+    active_terminal_session_id: 'term-1',
+    active_session_resume_mode: resumeMode,
+  }
+}
+
+// The same run as GET /scenario-sessions/my lists it. The availability card
+// carries no step, so this is where "resume at step N" comes from. With three
+// steps done, the learner is back at step 4 — current_step 4 agrees whether
+// step orders are 0- or 1-based here.
+function myRun(resumeMode: 'live' | 'paused') {
+  return {
+    id: 'sess-1',
+    scenario_id: 'sc1',
+    scenario_title: 'GameShell',
+    status: 'active',
+    resumable: true,
+    resume_mode: resumeMode,
+    terminal_session_id: 'term-1',
+    current_step: 4,
+    total_steps: 36,
+    completed_steps: 3,
+    started_at: new Date().toISOString(),
+  }
+}
+
+describe('paused run', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('shows a paused state on the card', async () => {
+    listScenariosMock.mockResolvedValue([cardWithRun('paused')])
+    getMySessionsMock.mockResolvedValue([myRun('paused')])
+
+    const wrapper = mountLauncher()
+    await flushPromises()
+
+    const badge = wrapper.find('[data-testid="scenario-paused-badge"]')
+    expect(badge.exists()).toBe(true)
+    expect(badge.text()).toMatch(/Paused/)
+  })
+
+  it('says which step the run resumes at', async () => {
+    listScenariosMock.mockResolvedValue([cardWithRun('paused')])
+    getMySessionsMock.mockResolvedValue([myRun('paused')])
+
+    const wrapper = mountLauncher()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="scenario-card"]').text()).toMatch(/step 4\b/i)
+  })
+
+  it('shows the paused state in French', async () => {
+    listScenariosMock.mockResolvedValue([cardWithRun('paused')])
+    getMySessionsMock.mockResolvedValue([myRun('paused')])
+
+    const wrapper = mountLauncher('fr')
+    await flushPromises()
+
+    const badge = wrapper.find('[data-testid="scenario-paused-badge"]')
+    expect(badge.exists()).toBe(true)
+    expect(badge.text()).toMatch(/En pause/)
+  })
+
+  it('still resumes into the session view of that run', async () => {
+    listScenariosMock.mockResolvedValue([cardWithRun('paused')])
+    getMySessionsMock.mockResolvedValue([myRun('paused')])
+
+    const wrapper = mountLauncher()
+    await flushPromises()
+
+    const resume = wrapper.find('[data-testid="scenario-resume-btn"]')
+    expect(resume.exists()).toBe(true)
+    const to = JSON.parse(resume.attributes('data-to') as string)
+    expect(to).toEqual({ name: 'TerminalSessionView', params: { sessionId: 'term-1' } })
+    // A paused run is not a past run: no relaunch offered in its place.
+    expect(wrapper.find('[data-testid="scenario-relaunch-btn"]').exists()).toBe(false)
+  })
+
+  it('keeps today\'s rendering for a live run — no paused badge', async () => {
+    listScenariosMock.mockResolvedValue([cardWithRun('live')])
+    getMySessionsMock.mockResolvedValue([myRun('live')])
+
+    const wrapper = mountLauncher()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="scenario-paused-badge"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="scenario-resume-btn"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="scenario-card"]').text()).toContain('Scenario in progress')
   })
 })
