@@ -124,6 +124,8 @@ export interface ScenarioSessionInfo {
   // its container is gone and a new one is built at the current step. Absent
   // when the run cannot be resumed.
   resume_mode?: 'live' | 'paused' | 'rebuild'
+  // An author's preview run: never rebuilt, so losing its terminal ends it.
+  is_preview?: boolean
   /**
    * The scenario's prose in the language this session is being played in.
    *
