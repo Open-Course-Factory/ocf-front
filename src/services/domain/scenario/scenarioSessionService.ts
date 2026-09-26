@@ -152,6 +152,11 @@ export interface MyScenarioSession {
   completed_at?: string
   terminal_session_id?: string
   provisioning_phase?: string
+  // The organization the run lives in — its terminal's, whose trainers
+  // supervise it, else the scenario's — and the language it is played in.
+  // What starting it over must launch with.
+  organization_id?: string
+  locale?: string
   // Whether the learner can still return to this run. The backend decides:
   // `status` stays 'active' until something notices the terminal is gone, so
   // deriving it here offered a Resume button into a dead container.
