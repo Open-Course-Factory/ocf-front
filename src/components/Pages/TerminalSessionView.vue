@@ -120,19 +120,27 @@
             @session-warning="handleSessionWarning"
             @session-expired="handleSessionExpired"
             @session-stopped="handleSessionStopped"
+            :inert="showsPausedBanner"
           />
           <!-- A paused run: laid over its dead console rather than inserted
                above it, so nothing on the page moves when the run pauses. The
-               scenario panel stays beside it, on the step Resume goes back to. -->
+               scenario panel stays beside it, on the step Resume goes back to.
+               The console underneath is inert, so the overlay carries what
+               stays useful — the history and flags, as on a paused terminal. -->
           <div v-if="showsPausedBanner" class="ocf-paused-overlay">
             <SessionPausedBanner
-              :title="pausedTitle"
-              :body="pausedBody"
-              :resume-label="resumeLabel"
+              ref="pausedOverlayBannerRef"
+              v-bind="pausedCopy"
               :is-resuming="isResuming"
               :is-deleting="isDeleting"
               @resume="resumeSession"
               @delete="askDelete"
+            />
+            <CommandHistory :session-id="sessionInfo?.session_id" :is-active="false" />
+            <ValidatedFlags
+              v-if="scenarioBriefing?.flags_enabled"
+              :scenario-session-id="scenarioSessionId"
+              :is-active="false"
             />
           </div>
         </div>
@@ -188,9 +196,7 @@
              we must NOT offer Resume; fall through to activeEndBanner. -->
         <SessionPausedBanner
           v-if="showsPausedBanner"
-          :title="pausedTitle"
-          :body="pausedBody"
-          :resume-label="resumeLabel"
+          v-bind="pausedCopy"
           :is-resuming="isResuming"
           :is-deleting="isDeleting"
           @resume="resumeSession"
@@ -275,6 +281,7 @@ import { useLimitReachedMessage } from '../../composables/useLimitReachedMessage
 import { useDunningRejection } from '../../composables/useDunningRejection'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import SessionPausedBanner from '../Terminal/SessionPausedBanner.vue'
+import ValidatedFlags from '../Terminal/ValidatedFlags.vue'
 import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
 import BaseModal from '../Modals/BaseModal.vue'
@@ -618,9 +625,26 @@ const activeEndBanner = computed(() => {
 // (stale row, backend bug) Resume must NOT be offered; the end banner shows.
 // For a scenario run the run itself stays open: it is paused, not over.
 const showsPausedBanner = computed(() => terminalEndReason.value === 'stopped' && isPersistent.value)
-const pausedTitle = computed(() => t(scenarioSessionId.value ? 'sessionView.pausedScenarioTitle' : 'sessionView.pausedTitle'))
-const pausedBody = computed(() => t(scenarioSessionId.value ? 'sessionView.pausedScenarioBody' : 'sessionView.pausedBody'))
-const resumeLabel = computed(() => t(scenarioSessionId.value ? 'sessionView.resumeScenarioButton' : 'sessionView.resumeButton'))
+const pausedCopy = computed(() => scenarioSessionId.value
+  ? {
+      title: t('sessionView.pausedScenarioTitle'),
+      body: t('sessionView.pausedScenarioBody'),
+      resumeLabel: t('sessionView.resumeScenarioButton')
+    }
+  : {
+      title: t('sessionView.pausedTitle'),
+      body: t('sessionView.pausedBody'),
+      resumeLabel: t('sessionView.resumeButton')
+    })
+
+// The overlay covers the console the learner was typing in: move focus to
+// Resume, or it stays in a terminal that no longer answers.
+const pausedOverlayBannerRef = ref<InstanceType<typeof SessionPausedBanner> | null>(null)
+watch(showsPausedBanner, async (shown) => {
+  if (!shown) return
+  await nextTick()
+  pausedOverlayBannerRef.value?.focusResume()
+})
 
 // Stopping a run mid-setup fails the setup, so Stop waits for it to finish.
 const isScenarioProvisioning = computed(() => scenarioSessionStatus.value === 'provisioning')
@@ -825,17 +849,17 @@ function scheduleProvisioningRecheck() {
 // 4300: the learner's Stop elsewhere, an idle or TTL auto-stop). Read the
 // terminal again so the page offers Resume instead of a dead console.
 async function handleSessionStopped() {
-  const state = await refreshSessionInfo()
-  if (state === 'running') {
-    // ocf-core has not caught up with tt-backend yet — poll with backoff.
-    cancelExpiryRefreshTimeouts()
-    scheduleExpiryRefresh(0)
-    return
-  }
-  timeRemaining.value = 0
+  // No expiry is coming any more: its warnings and optimistic flip would lie.
   if (timerInterval) {
     clearInterval(timerInterval)
     timerInterval = null
+  }
+  const state = await refreshSessionInfo()
+  if (state !== 'stopped' && state !== 'deleted') {
+    // ocf-core has not caught up with tt-backend yet, or the read failed —
+    // keep reading, with the bounded backoff.
+    cancelExpiryRefreshTimeouts()
+    scheduleExpiryRefresh(0)
   }
 }
 
@@ -1378,15 +1402,11 @@ onBeforeUnmount(() => {
   inset: 0;
   z-index: 60;
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  flex-direction: column;
+  gap: var(--spacing-md);
   padding: var(--spacing-lg);
+  overflow-y: auto;
   background-color: var(--color-bg-primary);
-}
-
-.ocf-paused-overlay .session-paused-banner {
-  width: 100%;
-  max-width: 720px;
 }
 
 .recording-info-notice {

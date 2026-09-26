@@ -20,6 +20,7 @@
     </div>
     <div class="paused-actions">
       <button
+        ref="resumeButton"
         class="btn-resume"
         :disabled="isResuming || isDeleting"
         @click="emit('resume')"
@@ -42,6 +43,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 
 defineProps<{
@@ -56,6 +58,12 @@ const emit = defineEmits<{
   resume: []
   delete: []
 }>()
+
+const resumeButton = ref<HTMLButtonElement | null>(null)
+
+defineExpose({
+  focusResume: () => resumeButton.value?.focus()
+})
 
 const { t } = useTranslations({
   en: {

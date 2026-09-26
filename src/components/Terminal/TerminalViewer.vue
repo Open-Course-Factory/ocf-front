@@ -1012,6 +1012,8 @@ async function endSession() {
   } finally {
     isEndingSession.value = false
     runtimeEndReason.value = 'stopped'
+    // Same event as a platform stop for the page, which owns the Resume.
+    emit('session-stopped')
   }
 }
 

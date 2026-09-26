@@ -682,6 +682,7 @@ async function retryStepProvisioning() {
     if (result.status === 'provisioning') {
       startStepProvisioningPoll()
     } else {
+      emit('session-status', 'active')
       transitionState.value = 'loading'
       await loadCurrentStep()
     }

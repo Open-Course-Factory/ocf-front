@@ -81,11 +81,13 @@
                 data-testid="scenario-paused-badge"
               >
                 <i class="fas fa-pause-circle"></i>
-                {{ t('myScenarios.pausedAtStep', { step: session.completed_steps + 1 }) }}
+                {{ typeof session.completed_steps === 'number'
+                  ? t('myScenarios.pausedAtStep', { step: session.completed_steps + 1 })
+                  : t('myScenarios.paused') }}
               </span>
-              <span v-else class="status-badge" :class="session.status">
-                <i :class="statusIcon(session.status)"></i>
-                {{ statusLabel(session.status) }}
+              <span v-else class="status-badge" :class="displayStatus(session)">
+                <i :class="statusIcon(displayStatus(session))"></i>
+                {{ statusLabel(displayStatus(session)) }}
               </span>
             </div>
 
@@ -188,7 +190,9 @@ const { t } = useTranslations({
       attempts: 'attempt | attempts',
       bestGrade: 'Best grade',
       resume: 'Resume',
+      paused: 'Paused',
       pausedAtStep: 'Paused — resume at step {step}',
+      ended: 'Previous run ended',
       abandon: 'Abandon',
       review: 'Review',
       abandonConfirm: 'Abandon this scenario session? This cannot be undone.',
@@ -214,7 +218,9 @@ const { t } = useTranslations({
       attempts: 'tentative | tentatives',
       bestGrade: 'Meilleure note',
       resume: 'Reprendre',
+      paused: 'En pause',
       pausedAtStep: 'En pause — reprendre à l\'étape {step}',
+      ended: 'Session précédente terminée',
       abandon: 'Abandonner',
       review: 'Revoir',
       abandonConfirm: 'Abandonner cette session de scénario ? Cette action est irréversible.',
@@ -236,19 +242,27 @@ const selectedStatus = ref<'all' | 'active' | 'completed' | 'abandoned'>('all')
 
 const filteredSessions = computed(() => {
   if (selectedStatus.value === 'all') return sessions.value
-  return sessions.value.filter(s => s.status === selectedStatus.value)
+  return sessions.value.filter(s => displayStatus(s) === selectedStatus.value)
 })
 
 const statusTabs = computed(() => [
   { value: 'all' as const, label: t('myScenarios.all'), count: sessions.value.length },
-  { value: 'active' as const, label: t('myScenarios.active'), count: sessions.value.filter(s => s.status === 'active').length },
+  { value: 'active' as const, label: t('myScenarios.active'), count: sessions.value.filter(s => displayStatus(s) === 'active').length },
   { value: 'completed' as const, label: t('myScenarios.completed'), count: sessions.value.filter(s => s.status === 'completed').length },
   { value: 'abandoned' as const, label: t('myScenarios.abandoned'), count: sessions.value.filter(s => s.status === 'abandoned').length }
 ])
 
+// A run the backend reports as not resumable is over, whatever its row says:
+// `status` stays 'active' until something looks at the terminal, which is gone.
+function displayStatus(session: MyScenarioSession): string {
+  if (session.status === 'active' && !isResumable(session)) return 'ended'
+  return session.status
+}
+
 function statusIcon(status: string): string {
   switch (status) {
     case 'active': return 'fas fa-play-circle'
+    case 'ended': return 'fas fa-stop-circle'
     case 'completed': return 'fas fa-check-circle'
     case 'abandoned': return 'fas fa-times-circle'
     default: return 'fas fa-question-circle'
@@ -258,6 +272,7 @@ function statusIcon(status: string): string {
 function statusLabel(status: string): string {
   switch (status) {
     case 'active': return t('myScenarios.active')
+    case 'ended': return t('myScenarios.ended')
     case 'completed': return t('myScenarios.completed')
     case 'abandoned': return t('myScenarios.abandoned')
     default: return status
@@ -582,6 +597,11 @@ onMounted(() => {
 
 .status-badge.active i {
   color: var(--color-info);
+}
+
+.status-badge.ended {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
 }
 
 .status-badge.paused {
