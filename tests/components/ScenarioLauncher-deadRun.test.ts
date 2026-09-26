@@ -516,3 +516,92 @@ describe('run to rebuild', () => {
     expect(listScenariosMock.mock.calls.length).toBeGreaterThan(1)
   })
 })
+
+/**
+ * A launch refused for a cause that a retry cannot change keeps that cause in
+ * the learner's words — a launch's words: there is no run to abandon. "Please
+ * try again" is only for what may pass. This matters most after Start over,
+ * whose abandon has already gone through: a learner who left the class org is
+ * refused with a reason-less 403 (not a member, no access), an archived
+ * scenario with a reason-less 409.
+ */
+describe('launch refusals keep their cause', () => {
+  const refusal = (status: number, data: Record<string, unknown>) => ({ response: { status, data } })
+
+  const CASES: Array<[string, unknown, RegExp[]]> = [
+    ['the plan no longer covers the machine',
+      refusal(403, { reason: 'not_in_plan', error_message: 'Your plan does not cover the machine this scenario needs.' }),
+      [/plan no longer covers this machine/i, /ask your trainer/i]],
+    ['the learner has no access any more',
+      refusal(403, { error_message: 'No access to this scenario' }), [/ask your trainer/i]],
+    ['the learner is no longer a member of the organization',
+      refusal(403, { error_message: 'You are not a member of the requested organization' }), [/ask your trainer/i]],
+    ['the scenario was archived',
+      refusal(409, { error_message: 'scenario is archived' }), [/ask your trainer/i]],
+    ['no environment fits the scenario any more',
+      refusal(409, { error_message: 'No compatible environment available for this scenario' }), [/ask your trainer/i]],
+  ]
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    showConfirmMock.mockResolvedValue(true)
+    abandonSessionMock.mockResolvedValue(undefined)
+  })
+
+  function expectCause(expected: RegExp[], err: any) {
+    expect(showErrorMock).toHaveBeenCalledTimes(1)
+    const message = String(showErrorMock.mock.calls[0][0])
+    for (const pattern of expected) expect(message).toMatch(pattern)
+    expect(message).not.toMatch(/try again/i)
+    // No run is left to abandon or rebuild.
+    expect(message).not.toMatch(/abandon|rebuil/i)
+    expect(message).not.toContain(err.response.data.error_message)
+    expect(routerPushMock).not.toHaveBeenCalled()
+  }
+
+  it.each(CASES)('explains a launch refused because %s', async (_label, err, expected) => {
+    listScenariosMock.mockResolvedValue([SCENARIO])
+    getMySessionsMock.mockResolvedValue([])
+    launchScenarioMock.mockRejectedValue(err)
+
+    const wrapper = mountLauncher()
+    await flushPromises()
+    await wrapper.find('[data-testid="scenario-launch-btn"]').trigger('click')
+    await flushPromises()
+
+    expectCause(expected, err)
+  })
+
+  it.each(CASES)('explains the launch after Start over refused because %s', async (_label, err, expected) => {
+    listScenariosMock.mockResolvedValue([cardWithRun('rebuild')])
+    getMySessionsMock.mockResolvedValue([myRun('rebuild')])
+    launchScenarioMock.mockRejectedValue(err)
+
+    const wrapper = mountLauncher()
+    await flushPromises()
+    await wrapper.find('[data-testid="scenario-start-over-btn"]').trigger('click')
+    await flushPromises()
+
+    expect(abandonSessionMock).toHaveBeenCalledWith('sess-1')
+    expectCause(expected, err)
+  })
+
+  it.each(CASES)('explains it in French when %s', async (_label, err) => {
+    listScenariosMock.mockResolvedValue([SCENARIO])
+    getMySessionsMock.mockResolvedValue([])
+    launchScenarioMock.mockRejectedValue(err)
+
+    for (const locale of ['en', 'fr'] as const) {
+      const wrapper = mountLauncher(locale)
+      await flushPromises()
+      await wrapper.find('[data-testid="scenario-launch-btn"]').trigger('click')
+      await flushPromises()
+      wrapper.unmount()
+    }
+
+    const [english, french] = showErrorMock.mock.calls.map(([message]) => String(message))
+    expect(french).not.toBe(english)
+    expect(french).not.toMatch(/réessay/i)
+    expect(french).not.toContain((err as any).response.data.error_message)
+  })
+})

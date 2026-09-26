@@ -838,6 +838,61 @@ describe('TerminalSessionView — a run being rebuilt', () => {
     wrapper.unmount()
   })
 
+  // The replay's own words: the launch copy ("Creating terminal and preparing
+  // scenario") describes a machine being made for the first time.
+  it('titles the replay as a rebuild, not a launch', async () => {
+    const wrapper = mountScenarioView()
+    await flushPromises()
+
+    const overlay = wrapper.find('.ocf-console-overlay')
+    expect(overlay.find('h3').text()).toMatch(/rebuilding your environment/i)
+    expect(overlay.find('.provisioning-detail').text()).toMatch(/fresh machine/i)
+    expect(overlay.text()).not.toMatch(/Setting up your environment|Creating terminal and preparing scenario/)
+    wrapper.unmount()
+  })
+
+  it('titles the replay as a rebuild in French too', async () => {
+    const wrapper = mountScenarioView({ locale: 'fr' })
+    await flushPromises()
+
+    const overlay = wrapper.find('.ocf-console-overlay')
+    expect(overlay.find('h3').text()).toMatch(/reconstruction de votre environnement/i)
+    expect(overlay.find('.provisioning-detail').text()).toMatch(/nouvelle machine/i)
+    expect(overlay.text()).not.toMatch(/Préparation de votre environnement|Création du terminal/)
+    wrapper.unmount()
+  })
+
+  // The overlay makes the console inert: a single failed lookup must not leave
+  // it there for good. The page keeps looking until the run is active.
+  it.each([
+    ['the run lookup by id', () => {
+      mockGetSessionByTerminal.mockResolvedValue(null)
+      mockGetSessionInfo.mockRejectedValueOnce(new Error('network'))
+    }],
+    ['the lookup by terminal', () => {
+      mockGetSessionByTerminal.mockRejectedValueOnce(new Error('network'))
+    }],
+  ])('keeps checking the replay after %s fails once', async (_label, failOnce) => {
+    const wrapper = mountScenarioView()
+    await flushPromises()
+    expect(wrapper.find('.ocf-console-overlay').exists()).toBe(true)
+
+    failOnce()
+    await vi.advanceTimersByTimeAsync(6_000)
+    await flushPromises()
+
+    const done = { ...replaying, status: 'active', provisioning_phase: '' }
+    mockGetSessionByTerminal.mockResolvedValue(done)
+    mockGetSessionInfo.mockResolvedValue(done)
+    await vi.advanceTimersByTimeAsync(30_000)
+    await flushPromises()
+
+    expect(wrapper.find('.ocf-console-overlay').exists()).toBe(false)
+    expect(wrapper.find('.tv-stub').element.closest('[inert]')).toBeNull()
+    expect(mockShowError).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
   it('hands the console back once the replay is over', async () => {
     const wrapper = mountScenarioView()
     await flushPromises()
@@ -987,6 +1042,102 @@ describe('TerminalSessionView — a terminal the page reloads as deleted', () =>
 
     expect(wrapper.find('[data-testid="rebuild-session-cta"]').exists()).toBe(true)
     expect(mockGetSessionByTerminal.mock.calls.length - readsOnLoad).toBe(1)
+    wrapper.unmount()
+  })
+})
+
+/**
+ * Any environment build, not only a replay. Start over from the scenario
+ * history opens the new terminal at once, while the launch is still running
+ * its setup: the console is not ready, verify answers 409 and Stop is
+ * disabled. The page lays the build's progress over the console whenever the
+ * run is `provisioning` with a phase — the launch's own copy and phase list
+ * for a launch — and hands the console back once the run is active.
+ *
+ * A step change made from the page is different: the panel shows its own
+ * "preparing the next step" state and the console stays usable, so no overlay
+ * — the phase the page read on load no longer applies once the panel reports.
+ */
+describe('TerminalSessionView — a run whose environment is being set up', () => {
+  const settingUp = {
+    id: 'scen-1',
+    status: 'provisioning',
+    provisioning_phase: 'setup_script',
+    resume_mode: 'live',
+    terminal_session_id: 'sess-test'
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // Timers only: a faked clock breaks vue-i18n's message compilation.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
+    userSessionsReturn('running')
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('shows the launch setup over the console, in the launch\'s words', async () => {
+    mockGetSessionByTerminal.mockResolvedValue(settingUp)
+    mockGetSessionInfo.mockResolvedValue(settingUp)
+
+    const wrapper = mountScenarioView()
+    await flushPromises()
+
+    const overlay = wrapper.find('.ocf-console-overlay')
+    expect(overlay.exists()).toBe(true)
+    expect(overlay.find('h3').text()).toMatch(/Setting up your environment/)
+    expect(wrapper.find('.tv-stub').element.closest('[inert]')).not.toBeNull()
+
+    const done = { ...settingUp, status: 'active', provisioning_phase: '' }
+    mockGetSessionByTerminal.mockResolvedValue(done)
+    mockGetSessionInfo.mockResolvedValue(done)
+    await vi.advanceTimersByTimeAsync(20_000)
+    await flushPromises()
+
+    expect(wrapper.find('.ocf-console-overlay').exists()).toBe(false)
+    expect(mockShowError).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('shows no overlay for a step change the panel reports', async () => {
+    const active = { ...settingUp, status: 'active', provisioning_phase: '' }
+    mockGetSessionByTerminal.mockResolvedValue(active)
+    mockGetSessionInfo.mockResolvedValue(active)
+
+    const wrapper = mountScenarioView()
+    await flushPromises()
+
+    // The learner validated a step: the next one is being prepared, and the
+    // backend reports it with a phase of its own.
+    const stepSetup = { ...settingUp, provisioning_phase: 'step_setup' }
+    mockGetSessionByTerminal.mockResolvedValue(stepSetup)
+    mockGetSessionInfo.mockResolvedValue(stepSetup)
+    wrapper.findComponent({ name: 'ScenarioPanel' }).vm.$emit('session-status', 'provisioning')
+    await vi.advanceTimersByTimeAsync(20_000)
+    await flushPromises()
+
+    expect(wrapper.find('.ocf-console-overlay').exists()).toBe(false)
+    // Stop still waits for the step setup, as before.
+    expect(wrapper.find('.tv-stub').attributes('data-can-stop')).toBe('false')
+    wrapper.unmount()
+  })
+
+  it('shows no overlay for a step change in progress once the panel has reported', async () => {
+    // Opened while a step setup the learner started runs: the overlay may
+    // show (the console is not ready for that step either) — but once the
+    // panel takes over, its own indicator is the only one.
+    const stepSetup = { ...settingUp, provisioning_phase: 'step_setup' }
+    mockGetSessionByTerminal.mockResolvedValue(stepSetup)
+    mockGetSessionInfo.mockResolvedValue(stepSetup)
+
+    const wrapper = mountScenarioView()
+    await flushPromises()
+    wrapper.findComponent({ name: 'ScenarioPanel' }).vm.$emit('session-status', 'provisioning')
+    await flushPromises()
+
+    expect(wrapper.find('.ocf-console-overlay').exists()).toBe(false)
     wrapper.unmount()
   })
 })
