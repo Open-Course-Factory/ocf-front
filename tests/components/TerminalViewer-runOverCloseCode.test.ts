@@ -242,3 +242,59 @@ describe('TerminalViewer — SIGKILLed shell (close code 4137)', () => {
     expect(wrapper.html()).not.toContain('Relaunch the scenario')
   })
 })
+
+/**
+ * Close code 4300 ("session_stopped"): tt-backend closes the console this way
+ * when the PLATFORM stops the session — the learner's Stop, an idle or TTL
+ * auto-stop. It sits in the 4000-4999 band only by allocation; it is not a
+ * shell exit status, so rendering it as "the terminal shell encountered an
+ * error (code 300)" tells the learner their shell crashed when their run was
+ * merely paused. It must read as a stop, and tell the page, which owns the
+ * paused banner and its Resume.
+ */
+describe('TerminalViewer — session stopped by the platform (close code 4300)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    FakeWebSocket.instances = []
+    vi.stubGlobal('WebSocket', FakeWebSocket)
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+  })
+
+  it('shows the stopped end state, not a shell error', async () => {
+    const wrapper = await closeSocketWith(4300, { hasScenario: true })
+
+    const endState = wrapper.find('.end-state')
+    expect(endState.exists()).toBe(true)
+    expect(endState.attributes('data-reason')).toBe('stopped')
+    expect(wrapper.html()).not.toContain('encountered an error')
+    expect(wrapper.html()).not.toContain('code 300')
+  })
+
+  it('tells the page the session was stopped, so it can offer Resume', async () => {
+    const wrapper = await closeSocketWith(4300, { hasScenario: true })
+
+    expect(wrapper.emitted('session-stopped')).toBeTruthy()
+  })
+
+  it('does the same on a plain terminal', async () => {
+    const wrapper = await closeSocketWith(4300, { hasScenario: false })
+
+    expect(wrapper.find('.end-state').attributes('data-reason')).toBe('stopped')
+    expect(wrapper.html()).not.toContain('encountered an error')
+  })
+
+  it('leaves 4137 as it was: run over on a crash-trap scenario, not a stop', async () => {
+    const wrapper = await closeSocketWith(4137, { hasScenario: true, scenarioCrashTraps: true })
+
+    expect(wrapper.find('.end-state').attributes('data-reason')).toBe('run_over')
+    expect(wrapper.emitted('session-stopped')).toBeFalsy()
+  })
+
+  it('leaves 4137 as it was without crash traps: an ordinary shell error', async () => {
+    const wrapper = await closeSocketWith(4137, { hasScenario: true, scenarioCrashTraps: false })
+
+    expect(wrapper.find('.end-state').exists()).toBe(false)
+    expect(wrapper.html()).toContain('code 137')
+    expect(wrapper.emitted('session-stopped')).toBeFalsy()
+  })
+})
