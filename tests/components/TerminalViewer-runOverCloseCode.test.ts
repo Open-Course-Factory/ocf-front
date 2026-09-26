@@ -62,9 +62,11 @@ vi.mock('../../src/composables/useNotification', () => ({
   })
 }))
 
+const mockStopSession = vi.fn().mockResolvedValue({})
 vi.mock('../../src/services/domain/terminal/terminalService', () => ({
   terminalService: {
-    syncSession: vi.fn().mockResolvedValue({})
+    syncSession: vi.fn().mockResolvedValue({}),
+    stopSession: (...args: any[]) => mockStopSession(...args)
   }
 }))
 
@@ -168,7 +170,10 @@ async function closeSocketWith(code: number, props: Record<string, unknown> = {}
         // not which internal ref was set.
         TerminalEndStateOverlay: {
           props: ['reason', 'config'],
-          template: '<div class="end-state" :data-reason="reason">{{ config.title }} — {{ config.body }} — {{ config.primary.label }}</div>'
+          emits: ['action'],
+          // The secondary action carries no text, so the copy assertions above
+          // read only title, body and primary label.
+          template: '<div class="end-state" :data-reason="reason">{{ config.title }} — {{ config.body }} — {{ config.primary.label }}<button v-if="config.secondary" class="end-state-secondary" @click="$emit(\'action\', config.secondary.actionKey)"></button></div>'
         }
       }
     }
@@ -296,5 +301,35 @@ describe('TerminalViewer — session stopped by the platform (close code 4300)',
     expect(wrapper.find('.end-state').exists()).toBe(false)
     expect(wrapper.html()).toContain('code 137')
     expect(wrapper.emitted('session-stopped')).toBeFalsy()
+  })
+})
+
+/**
+ * "End session" on the disconnect overlay stops the terminal from the viewer.
+ * That is the same event as a platform stop as far as the page is concerned —
+ * the run is paused and the page owns its Resume — so the viewer has to tell
+ * the page, exactly as it does for close code 4300. Otherwise a scenario page
+ * keeps a dead console with no paused banner.
+ */
+describe('TerminalViewer — ending the session from the disconnect overlay', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockStopSession.mockResolvedValue({})
+    FakeWebSocket.instances = []
+    vi.stubGlobal('WebSocket', FakeWebSocket)
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+  })
+
+  it('tells the page the session was stopped', async () => {
+    // An abnormal close after the console was up: the disconnect end state.
+    const wrapper = await closeSocketWith(1006, { hasScenario: true })
+    expect(wrapper.find('.end-state').attributes('data-reason')).toBe('disconnected')
+    expect(wrapper.emitted('session-stopped')).toBeFalsy()
+
+    await wrapper.find('.end-state-secondary').trigger('click')
+    await flushPromises()
+
+    expect(mockStopSession).toHaveBeenCalledWith('sess-test')
+    expect(wrapper.emitted('session-stopped')).toBeTruthy()
   })
 })

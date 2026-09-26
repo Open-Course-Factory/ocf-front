@@ -132,3 +132,110 @@ describe('MyScenarios — paused and non-resumable runs', () => {
     expect(resumeLinks(wrapper)).toHaveLength(0)
   })
 })
+
+/**
+ * A run the backend reports as not resumable is over, whatever its row says:
+ * `status` stays 'active' until something looks at the terminal, which is
+ * gone. The card must say so — in the launcher's words ("Previous run ended" /
+ * "Session précédente terminée") — and the "Active" filter must not count it,
+ * or the learner is sent looking for a run they cannot open.
+ */
+describe('MyScenarios — an "active" run that cannot be resumed', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  const DEAD_RUN = { ...BASE_RUN, resumable: false }
+
+  function activeTab(wrapper: ReturnType<typeof mountPage>) {
+    return wrapper.findAll('.filter-tab').find(tab => /Active|Actifs/.test(tab.text()))!
+  }
+
+  it('reads as ended, not active', async () => {
+    getMySessionsMock.mockResolvedValue([DEAD_RUN])
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    const badge = wrapper.find('.status-badge')
+    expect(badge.text()).toMatch(/ended/i)
+    expect(badge.text()).not.toMatch(/Active/)
+  })
+
+  it('reads as ended in French', async () => {
+    getMySessionsMock.mockResolvedValue([DEAD_RUN])
+
+    const wrapper = mountPage('fr')
+    await flushPromises()
+
+    const badge = wrapper.find('.status-badge')
+    expect(badge.text()).toMatch(/terminée/i)
+    expect(badge.text()).not.toMatch(/Actif/)
+  })
+
+  it('is not counted or listed under Active', async () => {
+    getMySessionsMock.mockResolvedValue([DEAD_RUN, { ...BASE_RUN, id: 'sess-2', resumable: true, resume_mode: 'live' }])
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    const tab = activeTab(wrapper)
+    expect(tab.find('.tab-count').text()).toBe('1')
+
+    await tab.trigger('click')
+    expect(wrapper.findAll('.scenario-card')).toHaveLength(1)
+    expect(wrapper.find('.status-badge').text()).not.toMatch(/ended/i)
+  })
+
+  it('leaves completed runs as they were', async () => {
+    getMySessionsMock.mockResolvedValue([
+      { ...BASE_RUN, status: 'completed', resumable: false, completed_at: new Date().toISOString(), grade: 100 }
+    ])
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    expect(wrapper.find('.status-badge').text()).toMatch(/Completed/)
+    expect(wrapper.find('.status-badge').text()).not.toMatch(/ended/i)
+    const completedTab = wrapper.findAll('.filter-tab').find(tab => /Completed/.test(tab.text()))!
+    expect(completedTab.find('.tab-count').text()).toBe('1')
+  })
+})
+
+/**
+ * The paused badge names the step to resume at from `completed_steps`. When
+ * that field is missing or not a number the badge must fall back to a plain
+ * "Paused" — never "resume at step NaN".
+ */
+describe('MyScenarios — paused badge without a usable step count', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it.each([
+    ['missing', undefined],
+    ['not a number', 'three']
+  ])('shows a plain Paused badge when completed_steps is %s', async (_label, completedSteps) => {
+    getMySessionsMock.mockResolvedValue([
+      { ...BASE_RUN, completed_steps: completedSteps, resumable: true, resume_mode: 'paused' }
+    ])
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    const badge = wrapper.find('[data-testid="scenario-paused-badge"]')
+    expect(badge.exists()).toBe(true)
+    expect(badge.text()).toMatch(/Paused/)
+    expect(badge.text()).not.toMatch(/NaN/)
+    expect(badge.text()).not.toMatch(/step/i)
+  })
+
+  it('still names the step when completed_steps is a number', async () => {
+    getMySessionsMock.mockResolvedValue([{ ...BASE_RUN, completed_steps: 3, resumable: true, resume_mode: 'paused' }])
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="scenario-paused-badge"]').text()).toMatch(/step 4/)
+  })
+})

@@ -17,7 +17,7 @@
  *     from the run's current state and stays on its step.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
@@ -48,13 +48,15 @@ vi.mock('vue-router', () => ({
   createWebHistory: vi.fn()
 }))
 
+const mockShowWarning = vi.fn()
+const mockShowError = vi.fn()
 vi.mock('../../src/composables/useNotification', () => ({
   useNotification: () => ({
     showConfirm: vi.fn().mockResolvedValue(true),
-    showError: vi.fn(),
+    showError: (...args: any[]) => mockShowError(...args),
     showSuccess: vi.fn(),
     showInfo: vi.fn(),
-    showWarning: vi.fn(),
+    showWarning: (...args: any[]) => mockShowWarning(...args),
     showMessage: vi.fn(),
     showAlert: vi.fn(),
     showPrompt: vi.fn()
@@ -112,9 +114,10 @@ const TerminalSessionPanelStub = {
   template: '<div class="tsp-stub" :data-show-stop-button="String(showStopButton)" :data-can-stop="String(canStop)"></div>'
 }
 
-function mountView() {
+function mountView(options: { attachTo?: HTMLElement } = {}) {
   setActivePinia(createPinia())
   return mount(TerminalSessionView, {
+    ...options,
     global: {
       plugins: [createTestI18n()],
       stubs: {
@@ -133,11 +136,11 @@ function mountView() {
 
 const futureExpiry = () => new Date(Date.now() + 60 * 60 * 1000).toISOString()
 
-function terminalRow(state: 'running' | 'stopped') {
+function terminalRow(state: 'running' | 'stopped', expiresAt = futureExpiry()) {
   return {
     session_id: 'sess-test',
     state,
-    expires_at: futureExpiry(),
+    expires_at: expiresAt,
     persistence_mode: 'persistent',
     name: 'GameShell run'
   }
@@ -253,5 +256,164 @@ describe('TerminalSessionView — paused scenario run', () => {
     expect(mockGetSessionByTerminal.mock.calls.length).toBeGreaterThan(before)
     expect(mockGetSessionByTerminal).toHaveBeenLastCalledWith('sess-test')
     wrapper.unmount()
+  })
+})
+
+/**
+ * What the page does once the console reports a platform stop (4300).
+ *
+ * ocf-core learns about the stop from tt-backend a few seconds after the
+ * console closes, so the first read often still says `running`. Until the
+ * backend catches up the page must neither keep counting down to an expiry
+ * that is no longer coming (its 5-minute / 1-minute toasts, then its
+ * optimistic "expired" flip), nor give up and settle on a dead console: it
+ * keeps reading the terminal until it sees `stopped`, then offers Resume.
+ */
+describe('TerminalSessionView — waiting for the backend to confirm a platform stop', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockStartSession.mockResolvedValue({})
+    mockGetSessionByTerminal.mockResolvedValue(scenarioRun('active'))
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  // The backend answers `running` for the next `lag` reads, then `stopped`.
+  function backendConfirmsStopAfter(lag: number, expiresAt: string) {
+    let reads = 0
+    mockAxiosGet.mockImplementation(async (url: string) => {
+      if (url !== '/terminals/user-sessions') return { data: {} }
+      reads++
+      return { data: [terminalRow(reads <= lag ? 'running' : 'stopped', expiresAt)] }
+    })
+  }
+
+  it('stops the expiry countdown while the backend still reports running', async () => {
+    // Close enough to expiry that a live countdown warns on its next tick.
+    const expiresAt = new Date(Date.now() + 90 * 1000).toISOString()
+    mockAxiosGet.mockResolvedValue({ data: [terminalRow('running', expiresAt)] })
+
+    const wrapper = mountView()
+    await flushPromises()
+    mockShowWarning.mockClear()
+    mockShowError.mockClear()
+
+    backendConfirmsStopAfter(2, expiresAt)
+    wrapper.findComponent({ name: 'TerminalSessionPanel' }).vm.$emit('session-stopped')
+    await flushPromises()
+
+    await vi.advanceTimersByTimeAsync(12 * 1000)
+    await flushPromises()
+
+    expect(mockShowWarning).not.toHaveBeenCalled()
+    expect(mockShowError).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="resume-session-cta"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('keeps polling until the backend reports stopped, however long it lags', async () => {
+    const expiresAt = futureExpiry()
+    mockAxiosGet.mockResolvedValue({ data: [terminalRow('running', expiresAt)] })
+
+    const wrapper = mountView()
+    await flushPromises()
+
+    // Lags past the post-expiry backoff (~28 s over six reads).
+    backendConfirmsStopAfter(8, expiresAt)
+    wrapper.findComponent({ name: 'TerminalSessionPanel' }).vm.$emit('session-stopped')
+    await flushPromises()
+
+    await vi.advanceTimersByTimeAsync(120 * 1000)
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="resume-session-cta"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('retries when the read fails instead of settling on an ended console', async () => {
+    const expiresAt = futureExpiry()
+    mockAxiosGet.mockResolvedValue({ data: [terminalRow('running', expiresAt)] })
+
+    const wrapper = mountView()
+    await flushPromises()
+
+    mockAxiosGet.mockRejectedValueOnce(new Error('network'))
+    mockAxiosGet.mockResolvedValue({ data: [terminalRow('stopped', expiresAt)] })
+    wrapper.findComponent({ name: 'TerminalSessionPanel' }).vm.$emit('session-stopped')
+    await flushPromises()
+    const afterFailure = userSessionsCalls()
+
+    await vi.advanceTimersByTimeAsync(15 * 1000)
+    await flushPromises()
+
+    expect(userSessionsCalls()).toBeGreaterThan(afterFailure)
+    expect(wrapper.find('[data-testid="resume-session-cta"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+})
+
+/**
+ * The paused banner is laid over the dead console. Covered is not enough for
+ * a keyboard or screen-reader user: the console underneath must leave the tab
+ * order and the accessibility tree, and focus must land on Resume — otherwise
+ * it stays in a terminal that no longer answers.
+ */
+describe('TerminalSessionView — paused overlay accessibility', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockStartSession.mockResolvedValue({})
+    mockGetSessionByTerminal.mockResolvedValue(scenarioRun('active'))
+  })
+
+  function consoleIsInert(wrapper: ReturnType<typeof mountView>) {
+    return wrapper.find('.tsp-stub').element.closest('[inert]') !== null
+  }
+
+  it('makes the covered console inert while a paused run is shown', async () => {
+    userSessionsReturn('stopped')
+
+    const wrapper = mountView()
+    await flushPromises()
+
+    const cta = wrapper.find('[data-testid="resume-session-cta"]')
+    expect(cta.exists()).toBe(true)
+    expect(consoleIsInert(wrapper)).toBe(true)
+    // The overlay itself stays reachable.
+    expect(cta.element.closest('[inert]')).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('leaves the console alone while the run is live', async () => {
+    userSessionsReturn('running')
+
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect(consoleIsInert(wrapper)).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('moves focus to Resume when the console reports a platform stop', async () => {
+    userSessionsReturn('running')
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+
+    const wrapper = mountView({ attachTo: host })
+    await flushPromises()
+
+    userSessionsReturn('stopped')
+    wrapper.findComponent({ name: 'TerminalSessionPanel' }).vm.$emit('session-stopped')
+    await flushPromises()
+    await wrapper.vm.$nextTick()
+
+    const cta = wrapper.find('[data-testid="resume-session-cta"]')
+    expect(cta.exists()).toBe(true)
+    expect(document.activeElement).toBe(cta.element)
+    expect(consoleIsInert(wrapper)).toBe(true)
+    wrapper.unmount()
+    host.remove()
   })
 })
