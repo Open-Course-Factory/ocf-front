@@ -624,12 +624,7 @@ async function rebuildRun() {
   if (isResuming.value || !scenarioSessionId.value) return
   isResuming.value = true
   try {
-    const terminalId = await rebuild(scenarioSessionId.value)
-    if (terminalId) {
-      router.replace({ name: 'TerminalSessionView', params: { sessionId: terminalId } })
-    } else {
-      await detectScenarioSession()
-    }
+    if (!await rebuild(scenarioSessionId.value, { replace: true })) await detectScenarioSession()
   } finally {
     isResuming.value = false
   }

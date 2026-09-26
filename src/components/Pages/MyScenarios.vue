@@ -67,12 +67,12 @@
             v-for="session in group.sessions"
             :key="session.id"
             class="scenario-card"
-            :class="{ clickable: isResumable(session) }"
-            :tabindex="isResumable(session) ? 0 : undefined"
-            :role="isResumable(session) ? 'button' : undefined"
+            :class="{ clickable: canOpen(session) }"
+            :tabindex="canOpen(session) ? 0 : undefined"
+            :role="canOpen(session) ? 'button' : undefined"
             @click="handleCardClick(session)"
-            @keydown.enter="handleCardClick(session)"
-            @keydown.space.prevent="handleCardClick(session)"
+            @keydown.enter.self="handleCardClick(session)"
+            @keydown.space.self.prevent="handleCardClick(session)"
           >
             <div class="card-header">
               <span
@@ -128,10 +128,10 @@
                 v-if="isRebuildRun(session)"
                 class="btn btn-sm btn-primary resume-btn"
                 data-testid="scenario-rebuild-btn"
-                :disabled="isRecovering"
+                :disabled="!!recoveringRunId"
                 @click.stop="handleRebuild(session)"
               >
-                <i :class="isRecovering ? 'fas fa-spinner fa-spin' : 'fas fa-play-circle'"></i>
+                <i :class="recoveringRunId === session.id ? 'fas fa-spinner fa-spin' : 'fas fa-play-circle'"></i>
                 {{ t('myScenarios.rebuild') }}
               </button>
               <router-link
@@ -147,7 +147,7 @@
                 v-if="isPausedRun(session) || isRebuildRun(session)"
                 class="btn btn-sm btn-secondary"
                 data-testid="scenario-start-over-btn"
-                :disabled="isRecovering"
+                :disabled="!!recoveringRunId"
                 @click.stop="handleStartOver(session)"
               >
                 <i class="fas fa-redo"></i>
@@ -208,7 +208,7 @@ const { t } = useTranslations({
       attempts: 'attempt | attempts',
       bestGrade: 'Best grade',
       resume: 'Resume',
-      rebuild: 'Rebuild & resume',
+      rebuild: 'Rebuild and resume',
       startOver: 'Start over',
       abandon: 'Abandon',
       review: 'Review',
@@ -383,9 +383,14 @@ function isResumable(session: MyScenarioSession): boolean {
   return session.resumable === true
 }
 
+// A run to rebuild has no terminal to open: its buttons say what to do, and
+// the card is not a control.
+function canOpen(session: MyScenarioSession): boolean {
+  return isResumable(session) && !isRebuildRun(session) && !!session.terminal_session_id
+}
+
 function handleCardClick(session: MyScenarioSession) {
-  // A run to rebuild has no terminal to open: its buttons say what to do.
-  if (isResumable(session) && !isRebuildRun(session) && session.terminal_session_id) {
+  if (canOpen(session)) {
     router.push(`/terminal-session/${session.terminal_session_id}`)
   }
 }
@@ -402,30 +407,32 @@ async function loadSessions() {
   }
 }
 
-const isRecovering = ref(false)
+// The run whose Rebuild or Start over is under way: its button spins, and
+// every card's recovery buttons wait.
+const recoveringRunId = ref('')
 
-// Both open the run's new terminal when it is ready, or reload the list when
-// there is none — the refusal was explained, or the run changed meanwhile.
-async function openOrReload(pending: Promise<string | null>) {
-  isRecovering.value = true
+async function recover(session: MyScenarioSession, action: () => Promise<unknown>) {
+  recoveringRunId.value = session.id
   try {
-    const terminalId = await pending
-    if (terminalId) {
-      router.push({ name: 'TerminalSessionView', params: { sessionId: terminalId } })
-    } else {
-      await loadSessions()
-    }
+    await action()
   } finally {
-    isRecovering.value = false
+    recoveringRunId.value = ''
   }
 }
 
+// Refused: the list shows what became of the run.
 function handleRebuild(session: MyScenarioSession) {
-  return openOrReload(rebuild(session.id, { wait: true }))
+  return recover(session, async () => {
+    if (!await rebuild(session.id)) await loadSessions()
+  })
 }
 
+// The fresh run starts in the run's own organization and language.
 function handleStartOver(session: MyScenarioSession) {
-  return startOver(session.id, () => openOrReload(launch(session.scenario_id, {}, { wait: true })))
+  const options = { organization_id: session.organization_id, locale: session.locale }
+  return recover(session, () => startOver(session.id, async () => {
+    if (!await launch(session.scenario_id, options)) await loadSessions()
+  }))
 }
 
 async function handleAbandon(session: MyScenarioSession) {
