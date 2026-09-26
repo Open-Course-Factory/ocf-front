@@ -187,7 +187,6 @@
              we must NOT offer Resume; fall through to activeEndBanner. -->
         <SessionPausedBanner
           v-if="showsPausedBanner"
-          :scenario="!!scenarioSessionId"
           :is-resuming="isResuming"
           :is-deleting="isDeleting"
           @resume="resumeSession"
