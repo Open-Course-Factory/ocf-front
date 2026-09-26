@@ -84,7 +84,7 @@
         size="sm"
         :icon="isStopping ? 'fas fa-spinner fa-spin' : 'fas fa-stop'"
         :disabled="isStopping || !canStop"
-        :title="canStop ? t('terminal.stop') : t('terminal.stopDisabledEphemeral')"
+        :title="stopTitle"
         @click="emit('stop')"
       >
         {{ t('terminal.stop') }}
@@ -199,7 +199,7 @@
           v-if="showStopButton && isConnected"
           class="btn btn-sm btn-danger"
           :disabled="isStopping || !canStop"
-          :title="canStop ? t('terminal.stop') : t('terminal.stopDisabledEphemeral')"
+          :title="stopTitle"
           @click="emit('stop')"
         >
           <i :class="isStopping ? 'fas fa-spinner fa-spin' : 'fas fa-stop'"></i>
@@ -309,6 +309,9 @@ interface Props {
   // there is no persistent disk to preserve). Defaults true to preserve
   // existing call sites that don't care about ephemeral semantics.
   canStop?: boolean
+  // Which tooltip explains a disabled Stop: an ephemeral session has no disk
+  // to keep, and a scenario run still being set up would fail its setup.
+  stopDisabledReason?: 'ephemeral' | 'provisioning'
   // Destroy = irreversible removal of the container + disk. Available for
   // any active session (ephemeral OR persistent) so the user can terminate
   // early instead of waiting for expiry.
@@ -348,6 +351,9 @@ const emit = defineEmits<{
   destroy: []
   'session-warning': [level: 'info' | 'warning' | 'danger']
   'session-expired': []
+  // The platform stopped the session (close code 4300). The page owns what
+  // comes next — the paused banner and its Resume.
+  'session-stopped': []
 }>()
 
 const props = withDefaults(defineProps<Props>(), {
@@ -361,6 +367,7 @@ const props = withDefaults(defineProps<Props>(), {
   showStopButton: false,
   isStopping: false,
   canStop: true,
+  stopDisabledReason: 'ephemeral',
   showDestroyButton: false,
   isDestroying: false,
   useSettingsCard: false,
@@ -409,6 +416,7 @@ const { t } = useTranslations({
       reloadPage: 'Reload Page',
       stop: 'Stop',
       stopDisabledEphemeral: 'This is an ephemeral session — use Destroy to terminate it (Stop preserves a disk that does not exist here).',
+      stopDisabledProvisioning: 'The scenario is still being set up — Stop will be available once it is ready.',
       destroy: 'Destroy',
       destroyTooltip: 'Destroy this session permanently (container and data will be lost).',
       networkOn: 'Internet access: on',
@@ -450,6 +458,7 @@ const { t } = useTranslations({
       reloadPage: 'Recharger la Page',
       stop: 'Arrêter',
       stopDisabledEphemeral: 'Cette session est éphémère — utilisez Détruire pour la terminer (Arrêter conserverait un disque qui n\'existe pas ici).',
+      stopDisabledProvisioning: 'Le scénario est encore en cours de préparation — vous pourrez l\'arrêter dès qu\'il sera prêt.',
       destroy: 'Détruire',
       destroyTooltip: 'Détruire définitivement cette session (le conteneur et ses données seront perdus).',
       networkOn: 'Accès internet : activé',
@@ -483,6 +492,13 @@ const effectiveEndReason = computed<EndStateReason | ''>(() =>
   runtimeEndReason.value || props.endReason
 )
 
+const stopTitle = computed(() => {
+  if (props.canStop) return t('terminal.stop')
+  return props.stopDisabledReason === 'provisioning'
+    ? t('terminal.stopDisabledProvisioning')
+    : t('terminal.stopDisabledEphemeral')
+})
+
 const activeEndState = computed(() => {
   const reason = effectiveEndReason.value
   if (!reason) return null
@@ -513,6 +529,10 @@ const AUTO_RETRY_DELAY_MS = 2_000
 // shell (128+9 = 137) arrives as 4137. That is the signal a crash-trap payload
 // produces, and the only close code that ends a run.
 const SHELL_KILLED_CLOSE_CODE = 4137
+// tt-backend closes the console with 4300 ("session_stopped") when the
+// platform stops the session. In the 4000-4999 band by allocation only — it
+// is not a shell exit status.
+const SESSION_STOPPED_CLOSE_CODE = 4300
 let autoRetriesLeft = AUTO_RETRY_ATTEMPTS
 let autoRetryTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -871,6 +891,14 @@ async function connectToTerminal() {
         runtimeEndReason.value = 'run_over'
         showReconnectButton.value = false
         error.value = ''
+      } else if (event.code === SESSION_STOPPED_CLOSE_CODE) {
+        // The learner's Stop, an idle or TTL auto-stop: the session is paused,
+        // not broken. Reading it as a shell error told learners their shell
+        // had crashed.
+        runtimeEndReason.value = 'stopped'
+        showReconnectButton.value = false
+        error.value = ''
+        emit('session-stopped')
       // Handle container exec errors from tt-backend (custom close codes 4000-4999)
       } else if (event.code === 4127) {
         error.value = t('terminal.commandNotFound')

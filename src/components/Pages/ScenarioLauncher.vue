@@ -122,8 +122,11 @@
         <!-- Existing session notice -->
         <div v-if="getExistingSession(scenario)" class="existing-session-notice">
           <div class="existing-session-content">
-            <i :class="canResume(scenario) ? 'fas fa-play-circle' : 'fas fa-check-circle'" class="existing-session-icon"></i>
-            <span class="existing-session-text">{{ getExistingSessionLabel(scenario) }}</span>
+            <i :class="existingSessionIcon(scenario)" class="existing-session-icon"></i>
+            <span
+              class="existing-session-text"
+              :data-testid="isPaused(scenario) ? 'scenario-paused-badge' : undefined"
+            >{{ getExistingSessionLabel(scenario) }}</span>
           </div>
         </div>
 
@@ -262,6 +265,8 @@ const { t } = useTranslations({
       language: 'Language',
       languageHint: 'The scenario runs in this language. It cannot be changed once started.',
       sessionActive: 'Scenario in progress',
+      sessionPaused: 'Paused',
+      sessionPausedAtStep: 'Paused — resume at step {step}',
       alreadyRunning: 'You are already running this scenario. Resume it from its card.',
       sessionCompleted: 'Scenario completed',
       sessionAbandoned: 'Scenario abandoned',
@@ -309,6 +314,8 @@ const { t } = useTranslations({
       language: 'Langue',
       languageHint: 'Le scénario se déroule dans cette langue. Elle ne peut plus être changée une fois lancé.',
       sessionActive: 'Scénario en cours',
+      sessionPaused: 'En pause',
+      sessionPausedAtStep: 'En pause — reprendre à l\'étape {step}',
       alreadyRunning: 'Vous avez déjà un scénario en cours. Reprenez-le depuis sa carte.',
       sessionCompleted: 'Scénario terminé',
       sessionAbandoned: 'Scénario abandonné',
@@ -489,6 +496,14 @@ const existingSessionByScenario = computed(() => {
   return map
 })
 
+const mySessionById = computed(() => {
+  const map = new Map<string, any>()
+  for (const s of mySessions.value) {
+    if (s?.id) map.set(s.id, s)
+  }
+  return map
+})
+
 function getExistingSession(scenario: any): any | null {
   // The availability response reports the live run using the same rule the
   // launch path applies, in the same request that produced this card. Prefer it
@@ -497,12 +512,17 @@ function getExistingSession(scenario: any): any | null {
   // offer Launch for a scenario the learner was already running, and the launch
   // then failed.
   if (scenario.block_reason === 'session_exists' && scenario.active_session_id) {
+    // The card carries no progress; the session list does, for the step a
+    // paused run goes back to.
+    const listed = mySessionById.value.get(scenario.active_session_id)
     return {
       id: scenario.active_session_id,
       scenario_id: scenario.id,
       terminal_session_id: scenario.active_terminal_session_id,
       status: 'active',
-      resumable: true
+      resumable: true,
+      resume_mode: scenario.active_session_resume_mode,
+      completed_steps: listed?.completed_steps
     }
   }
   return existingSessionByScenario.value.get(scenario.id) || null
@@ -524,9 +544,27 @@ function isBlocked(scenario: any): boolean {
   return !scenario.launchable && scenario.block_reason !== 'session_exists'
 }
 
+// A run the platform stopped with its disk kept: Resume starts its terminal
+// again and the learner is back at the same step.
+function isPaused(scenario: any): boolean {
+  return canResume(scenario) && getExistingSession(scenario)?.resume_mode === 'paused'
+}
+
+function existingSessionIcon(scenario: any): string {
+  if (isPaused(scenario)) return 'fas fa-pause-circle'
+  return canResume(scenario) ? 'fas fa-play-circle' : 'fas fa-check-circle'
+}
+
 function getExistingSessionLabel(scenario: any): string {
   const session = getExistingSession(scenario)
   if (!session) return ''
+  if (isPaused(scenario)) {
+    // The step the learner is back at is the one after the last completed —
+    // current_step is an order whose base varies, completed_steps is a count.
+    return typeof session.completed_steps === 'number'
+      ? t('launcher.sessionPausedAtStep', { step: session.completed_steps + 1 })
+      : t('launcher.sessionPaused')
+  }
   // A run that cannot be resumed is a past run, whatever the row still says.
   if (!session.resumable && (session.status === 'active' || session.status === 'provisioning')) {
     return t('launcher.sessionEnded')

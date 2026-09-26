@@ -27,12 +27,14 @@
       :show-stop-button="showStopButton"
       :is-stopping="isStopping"
       :can-stop="canStop"
+      :stop-disabled-reason="stopDisabledReason"
       :show-destroy-button="showDestroyButton"
       :is-destroying="isDestroying"
       @stop="$emit('stop')"
       @destroy="$emit('destroy')"
       @session-warning="$emit('session-warning', $event)"
       @session-expired="$emit('session-expired')"
+      @session-stopped="$emit('session-stopped')"
     />
 
     <!-- Sub-panels: Command History + Validated Flags side by side -->
@@ -83,6 +85,8 @@ interface Props {
   // Forwarded to TerminalViewer — disables the Stop button (renders grayed)
   // when false, showing the ephemeral tooltip instead of hiding the affordance.
   canStop?: boolean
+  // Forwarded to TerminalViewer — which tooltip explains a disabled Stop.
+  stopDisabledReason?: 'ephemeral' | 'provisioning'
   // Forwarded to TerminalViewer — adds a Destroy button (irreversible removal).
   showDestroyButton?: boolean
   isDestroying?: boolean
@@ -105,6 +109,7 @@ withDefaults(defineProps<Props>(), {
   showStopButton: false,
   isStopping: false,
   canStop: true,
+  stopDisabledReason: 'ephemeral',
   showDestroyButton: false,
   isDestroying: false,
   showHistory: true,
@@ -122,6 +127,7 @@ defineEmits<{
   'recording-detected': []
   'session-warning': [level: 'info' | 'warning' | 'danger']
   'session-expired': []
+  'session-stopped': []
 }>()
 
 const terminalRef = ref<InstanceType<typeof TerminalViewer> | null>(null)

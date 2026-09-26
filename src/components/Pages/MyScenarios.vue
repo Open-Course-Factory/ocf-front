@@ -67,15 +67,23 @@
             v-for="session in group.sessions"
             :key="session.id"
             class="scenario-card"
-            :class="{ clickable: session.status === 'active' }"
-            :tabindex="session.status === 'active' ? 0 : undefined"
-            :role="session.status === 'active' ? 'button' : undefined"
+            :class="{ clickable: isResumable(session) }"
+            :tabindex="isResumable(session) ? 0 : undefined"
+            :role="isResumable(session) ? 'button' : undefined"
             @click="handleCardClick(session)"
             @keydown.enter="handleCardClick(session)"
             @keydown.space.prevent="handleCardClick(session)"
           >
             <div class="card-header">
-              <span class="status-badge" :class="session.status">
+              <span
+                v-if="isPaused(session)"
+                class="status-badge paused"
+                data-testid="scenario-paused-badge"
+              >
+                <i class="fas fa-pause-circle"></i>
+                {{ t('myScenarios.pausedAtStep', { step: session.completed_steps + 1 }) }}
+              </span>
+              <span v-else class="status-badge" :class="session.status">
                 <i :class="statusIcon(session.status)"></i>
                 {{ statusLabel(session.status) }}
               </span>
@@ -118,8 +126,8 @@
               </div>
             </div>
 
-            <!-- Actions for active sessions -->
-            <div v-if="session.status === 'active'" class="card-footer">
+            <!-- Actions for runs the learner can go back to -->
+            <div v-if="isResumable(session)" class="card-footer">
               <router-link
                 v-if="session.terminal_session_id"
                 :to="`/terminal-session/${session.terminal_session_id}`"
@@ -180,6 +188,7 @@ const { t } = useTranslations({
       attempts: 'attempt | attempts',
       bestGrade: 'Best grade',
       resume: 'Resume',
+      pausedAtStep: 'Paused — resume at step {step}',
       abandon: 'Abandon',
       review: 'Review',
       abandonConfirm: 'Abandon this scenario session? This cannot be undone.',
@@ -205,6 +214,7 @@ const { t } = useTranslations({
       attempts: 'tentative | tentatives',
       bestGrade: 'Meilleure note',
       resume: 'Reprendre',
+      pausedAtStep: 'En pause — reprendre à l\'étape {step}',
       abandon: 'Abandonner',
       review: 'Revoir',
       abandonConfirm: 'Abandonner cette session de scénario ? Cette action est irréversible.',
@@ -330,8 +340,20 @@ const groupedScenarios = computed<ScenarioGroup[]>(() => {
   })
 })
 
+// Whether the learner can go back to this run — the backend's verdict, never
+// re-derived from `status`, which stays 'active' after the terminal is gone.
+function isResumable(session: MyScenarioSession): boolean {
+  return session.resumable === true
+}
+
+// Stopped by the platform with its disk kept: resuming restarts the terminal
+// at the same step.
+function isPaused(session: MyScenarioSession): boolean {
+  return isResumable(session) && session.resume_mode === 'paused'
+}
+
 function handleCardClick(session: MyScenarioSession) {
-  if (session.status === 'active' && session.terminal_session_id) {
+  if (isResumable(session) && session.terminal_session_id) {
     router.push(`/terminal-session/${session.terminal_session_id}`)
   }
 }
@@ -560,6 +582,15 @@ onMounted(() => {
 
 .status-badge.active i {
   color: var(--color-info);
+}
+
+.status-badge.paused {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.status-badge.paused i {
+  color: var(--color-warning);
 }
 
 .status-badge.completed {

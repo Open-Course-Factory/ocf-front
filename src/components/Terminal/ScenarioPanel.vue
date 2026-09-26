@@ -373,6 +373,9 @@ const emit = defineEmits<{
   'scenario-info-loaded': [info: ScenarioInfo]
   'collapsed': [collapsed: boolean]
   'flag-validated': []
+  // The run went into, or came out of, a step's setup. The page gates Stop on
+  // it: stopping the terminal mid-setup fails the setup.
+  'session-status': [status: string]
 }>()
 
 const isReviewMode = computed(() =>
@@ -593,6 +596,7 @@ function stopStepProvisioningPoll() {
 
 function startStepProvisioningPoll(timeoutSeconds?: number) {
   transitionState.value = 'provisioning'
+  emit('session-status', 'provisioning')
   stepProvisioningPhase.value = 'step_setup'
   const ceiling = timeoutSeconds
     ? timeoutSeconds * 1000 + STEP_PROVISION_MARGIN_MS
@@ -612,10 +616,12 @@ function startStepProvisioningPoll(timeoutSeconds?: number) {
     }
     if (status === 'active') {
       stopStepProvisioningPoll()
+      emit('session-status', 'active')
       transitionState.value = 'loading'
       loadCurrentStep()
     } else if (status === 'setup_failed' || Date.now() > deadline) {
       stopStepProvisioningPoll()
+      if (status) emit('session-status', status)
       transitionState.value = 'failed'
     }
   }, STEP_PROVISION_POLL_MS)

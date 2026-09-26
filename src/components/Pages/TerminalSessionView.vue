@@ -110,6 +110,8 @@
             :show-exposed-ports="scenarioBriefing?.port_exposure_allowed ?? false"
             :show-stop-button="isPersistent"
             :is-stopping="isStopping"
+            :can-stop="!isScenarioProvisioning"
+            stop-disabled-reason="provisioning"
             :show-destroy-button="true"
             :is-destroying="isDeleting"
             @stop="stopSession"
@@ -117,7 +119,22 @@
             @recording-detected="isRecording = true"
             @session-warning="handleSessionWarning"
             @session-expired="handleSessionExpired"
+            @session-stopped="handleSessionStopped"
           />
+          <!-- A paused run: laid over its dead console rather than inserted
+               above it, so nothing on the page moves when the run pauses. The
+               scenario panel stays beside it, on the step Resume goes back to. -->
+          <div v-if="showsPausedBanner" class="ocf-paused-overlay">
+            <SessionPausedBanner
+              :title="pausedTitle"
+              :body="pausedBody"
+              :resume-label="resumeLabel"
+              :is-resuming="isResuming"
+              :is-deleting="isDeleting"
+              @resume="resumeSession"
+              @delete="askDelete"
+            />
+          </div>
         </div>
         <div v-show="!scenarioPanelCollapsed" class="panel-resize-handle" @mousedown.prevent="startPanelResize">
           <div class="resize-handle-bar"></div>
@@ -133,6 +150,7 @@
           @session-abandon-failed="handleScenarioAbandonFailed"
           @paste-command="handlePasteCommand"
           @scenario-info-loaded="handleScenarioInfoLoaded"
+          @session-status="scenarioSessionStatus = $event"
           @collapsed="scenarioPanelCollapsed = $event"
           @flag-validated="scenarioTerminalRef?.refreshFlags()"
         />
@@ -157,6 +175,7 @@
           @recording-detected="isRecording = true"
           @session-warning="handleSessionWarning"
           @session-expired="handleSessionExpired"
+          @session-stopped="handleSessionStopped"
         />
       </div>
 
@@ -167,35 +186,16 @@
              "stopped" state. Ephemeral sessions are destroyed at expiry —
              if one ever reaches state='stopped' (stale row, backend bug)
              we must NOT offer Resume; fall through to activeEndBanner. -->
-        <div v-if="terminalEndReason === 'stopped' && isPersistent" class="session-paused-banner" role="status">
-          <div class="paused-content">
-            <i class="fas fa-pause-circle paused-icon" aria-hidden="true"></i>
-            <div class="paused-text">
-              <strong>{{ t('sessionView.pausedTitle') }}</strong>
-              <span>{{ t('sessionView.pausedBody') }}</span>
-            </div>
-          </div>
-          <div class="paused-actions">
-            <button
-              class="btn-resume"
-              :disabled="isResuming || isDeleting"
-              @click="resumeSession"
-              data-testid="resume-session-cta"
-            >
-              <i class="fas" :class="isResuming ? 'fa-spinner fa-spin' : 'fa-play'"></i>
-              {{ isResuming ? t('sessionView.resuming') : t('sessionView.resumeButton') }}
-            </button>
-            <button
-              class="btn-trash"
-              :disabled="isResuming || isDeleting"
-              @click="askDelete"
-              data-testid="delete-session-cta"
-            >
-              <i class="fas fa-trash"></i>
-              {{ t('sessionView.deleteButton') }}
-            </button>
-          </div>
-        </div>
+        <SessionPausedBanner
+          v-if="showsPausedBanner"
+          :title="pausedTitle"
+          :body="pausedBody"
+          :resume-label="resumeLabel"
+          :is-resuming="isResuming"
+          :is-deleting="isDeleting"
+          @resume="resumeSession"
+          @delete="askDelete"
+        />
         <!-- Other end states: navigation-only banner -->
         <div v-else-if="activeEndBanner" class="session-end-banner" :class="activeEndBanner.toneClass" role="status">
           <div class="end-banner-left">
@@ -274,6 +274,7 @@ import { useEndStateConfig, type EndStateReason } from '../../composables/useEnd
 import { useLimitReachedMessage } from '../../composables/useLimitReachedMessage'
 import { useDunningRejection } from '../../composables/useDunningRejection'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
+import SessionPausedBanner from '../Terminal/SessionPausedBanner.vue'
 import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
 import BaseModal from '../Modals/BaseModal.vue'
@@ -329,9 +330,10 @@ const { t } = useTranslations({
       pausedTitle: 'Session paused',
       pausedBody: "The container's disk is preserved. Resume to pick up where you left off.",
       resumeButton: 'Resume session',
-      resuming: 'Resuming…',
+      pausedScenarioTitle: 'Scenario paused',
+      pausedScenarioBody: 'Your progress and your machine are kept. Resume to continue the scenario at the step you were on.',
+      resumeScenarioButton: 'Resume the scenario',
       resumeFailed: 'Resume failed',
-      deleteButton: 'Delete permanently',
       deleteFailed: 'Delete failed',
       deleteConfirmTitle: 'Delete this session?',
       deleteConfirmBody: 'The container disk and command history will be permanently lost.',
@@ -374,9 +376,10 @@ const { t } = useTranslations({
       pausedTitle: 'Session en pause',
       pausedBody: 'Le disque du conteneur est conservé. Reprenez où vous en étiez.',
       resumeButton: 'Reprendre la session',
-      resuming: 'Reprise…',
+      pausedScenarioTitle: 'Scénario en pause',
+      pausedScenarioBody: 'Votre progression et votre machine sont conservées. Reprenez pour continuer le scénario à l\'étape où vous en étiez.',
+      resumeScenarioButton: 'Reprendre le scénario',
       resumeFailed: 'Échec de la reprise',
-      deleteButton: 'Supprimer définitivement',
       deleteFailed: 'Échec de la suppression',
       deleteConfirmTitle: 'Supprimer cette session ?',
       deleteConfirmBody: 'Le disque du conteneur et l\'historique des commandes seront perdus définitivement.',
@@ -610,8 +613,20 @@ const activeEndBanner = computed(() => {
   }
 })
 
+// Stopped persistent terminal: Resume starts it again with its disk. Ephemeral
+// sessions are destroyed at expiry — if one ever reaches state='stopped'
+// (stale row, backend bug) Resume must NOT be offered; the end banner shows.
+// For a scenario run the run itself stays open: it is paused, not over.
+const showsPausedBanner = computed(() => terminalEndReason.value === 'stopped' && isPersistent.value)
+const pausedTitle = computed(() => t(scenarioSessionId.value ? 'sessionView.pausedScenarioTitle' : 'sessionView.pausedTitle'))
+const pausedBody = computed(() => t(scenarioSessionId.value ? 'sessionView.pausedScenarioBody' : 'sessionView.pausedBody'))
+const resumeLabel = computed(() => t(scenarioSessionId.value ? 'sessionView.resumeScenarioButton' : 'sessionView.resumeButton'))
+
+// Stopping a run mid-setup fails the setup, so Stop waits for it to finish.
+const isScenarioProvisioning = computed(() => scenarioSessionStatus.value === 'provisioning')
+
 async function stopSession() {
-  if (!sessionInfo.value || isStopping.value) return
+  if (!sessionInfo.value || isStopping.value || isScenarioProvisioning.value) return
 
   isStopping.value = true
   try {
@@ -652,6 +667,10 @@ async function resumeSession() {
     // After loadSession() resolves, isSessionActive flips back to true and the
     // terminal panel re-mounts (WebSocket reconnects naturally).
     await loadSession()
+    // The run the terminal belongs to may have moved on while it was paused
+    // (or been paused from elsewhere) — read it again rather than trust the
+    // state this page loaded with.
+    await detectScenarioSession()
   } catch (err: any) {
     console.error('Error resuming session:', err)
     // Dunning (past-due) 402: detect BEFORE the source→limit mapping below,
@@ -754,16 +773,7 @@ async function loadSession() {
 
     // Auto-detect linked scenario session (unless already set via query parameter or loading)
     if (!scenarioSessionId.value) {
-      try {
-        const scenarioSession = await scenarioSessionService.getSessionByTerminal(sessionId)
-        if (scenarioSession) {
-          scenarioSessionId.value = scenarioSession.id
-          scenarioSessionStatus.value = scenarioSession.status
-          terminalHadScenario.value = true
-        }
-      } catch {
-        // Silently ignore - no scenario linked is fine
-      }
+      await detectScenarioSession()
     }
 
     // Start polling for scenario if none was detected yet
@@ -781,6 +791,51 @@ async function loadSession() {
     }
   } finally {
     isLoading.value = false
+  }
+}
+
+async function detectScenarioSession() {
+  try {
+    const scenarioSession = await scenarioSessionService.getSessionByTerminal(sessionId)
+    if (scenarioSession) {
+      scenarioSessionId.value = scenarioSession.id
+      scenarioSessionStatus.value = scenarioSession.status
+      terminalHadScenario.value = true
+      if (scenarioSession.status === 'provisioning') scheduleProvisioningRecheck()
+    }
+  } catch {
+    // Silently ignore - no scenario linked is fine
+  }
+}
+
+// A run opened mid-setup keeps Stop disabled until the setup is over; the
+// status is only read on load, so look again until it has moved on.
+const PROVISIONING_RECHECK_MS = 5000
+let provisioningRecheck: ReturnType<typeof setTimeout> | null = null
+
+function scheduleProvisioningRecheck() {
+  if (provisioningRecheck) return
+  provisioningRecheck = setTimeout(() => {
+    provisioningRecheck = null
+    detectScenarioSession()
+  }, PROVISIONING_RECHECK_MS)
+}
+
+// The console closed because the platform stopped the terminal (close code
+// 4300: the learner's Stop elsewhere, an idle or TTL auto-stop). Read the
+// terminal again so the page offers Resume instead of a dead console.
+async function handleSessionStopped() {
+  const state = await refreshSessionInfo()
+  if (state === 'running') {
+    // ocf-core has not caught up with tt-backend yet — poll with backoff.
+    cancelExpiryRefreshTimeouts()
+    scheduleExpiryRefresh(0)
+    return
+  }
+  timeRemaining.value = 0
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
   }
 }
 
@@ -1028,6 +1083,10 @@ onBeforeUnmount(() => {
   cancelExpiryRefreshTimeouts()
   optimisticExpired = false
   stopScenarioSync()
+  if (provisioningRecheck) {
+    clearTimeout(provisioningRecheck)
+    provisioningRecheck = null
+  }
 })
 </script>
 
@@ -1313,111 +1372,21 @@ onBeforeUnmount(() => {
   }
 }
 
-/* Paused (stopped) banner with in-place resume / delete */
-.session-paused-banner {
+/* The paused banner laid over a scenario run's console */
+.ocf-paused-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
-  margin-bottom: var(--spacing-md);
-  border: var(--border-width-medium) solid var(--color-warning);
-  border-radius: var(--border-radius-md);
-  background-color: var(--color-bg-secondary);
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  background-color: var(--color-bg-primary);
 }
 
-.paused-content {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  flex: 1;
-  min-width: 0;
-}
-
-.paused-icon {
-  font-size: var(--font-size-xl);
-  color: var(--color-warning);
-  flex-shrink: 0;
-}
-
-.paused-text {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.paused-text strong {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-}
-
-.paused-text span {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  line-height: var(--line-height-relaxed);
-}
-
-.paused-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  flex-shrink: 0;
-}
-
-.btn-resume,
-.btn-trash {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-md);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  border: var(--border-width-medium) solid transparent;
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all var(--transition-fast);
-}
-
-.btn-resume {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-white);
-}
-
-.btn-resume:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
-  border-color: var(--color-primary-hover);
-}
-
-.btn-trash {
-  background-color: transparent;
-  border-color: var(--color-danger);
-  color: var(--color-danger);
-}
-
-.btn-trash:hover:not(:disabled) {
-  background-color: var(--color-danger);
-  color: var(--color-white);
-}
-
-.btn-resume:disabled,
-.btn-trash:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-@media (max-width: 768px) {
-  .session-paused-banner {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .paused-actions {
-    width: 100%;
-    justify-content: flex-start;
-  }
+.ocf-paused-overlay .session-paused-banner {
+  width: 100%;
+  max-width: 720px;
 }
 
 .recording-info-notice {

@@ -152,6 +152,23 @@ export interface MyScenarioSession {
   // `status` stays 'active' until something notices the terminal is gone, so
   // deriving it here offered a Resume button into a dead container.
   resumable?: boolean
+  // How a resumable run comes back: 'live' when its terminal is running,
+  // 'paused' when the platform stopped it with the disk kept — the run goes on
+  // at the same step once the terminal is started again. Absent when the run
+  // cannot be resumed.
+  resume_mode?: 'live' | 'paused'
+}
+
+// A card of GET /scenario-sessions/available. When the learner already has a
+// run of the scenario it is blocked with 'session_exists' and names that run.
+export interface AvailableScenario extends ScenarioInfo {
+  launchable: boolean
+  block_reason?: string
+  active_session_id?: string
+  active_terminal_session_id?: string
+  // Same meaning as MyScenarioSession.resume_mode, for the active run.
+  active_session_resume_mode?: 'live' | 'paused'
+  [key: string]: any
 }
 
 export interface ScenarioInfo {
@@ -185,7 +202,7 @@ export const scenarioSessionService = {
     return response.data
   },
 
-  async listScenarios(organizationId?: string): Promise<any[]> {
+  async listScenarios(organizationId?: string): Promise<AvailableScenario[]> {
     const params: Record<string, string> = {}
     if (organizationId) params.organization_id = organizationId
     const response = await axios.get('/scenario-sessions/available', { params })

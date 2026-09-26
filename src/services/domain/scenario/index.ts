@@ -10,6 +10,7 @@ export type {
   ScenarioSessionInfo,
   ScenarioInfo,
   MyScenarioSession,
+  AvailableScenario,
   ValidatedFlag
 } from './scenarioSessionService'
 export { teacherService } from './teacherService'
