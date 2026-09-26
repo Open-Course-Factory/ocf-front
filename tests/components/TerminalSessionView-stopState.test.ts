@@ -928,11 +928,63 @@ describe('TerminalSessionView — a terminal that expires while the page is open
     const wrapper = mountScenarioView()
     await flushPromises()
     expect(wrapper.find('[data-testid="rebuild-session-cta"]').exists()).toBe(false)
+    const readsOnLoad = mockGetSessionByTerminal.mock.calls.length
 
     await vi.advanceTimersByTimeAsync(40_000)
     await flushPromises()
 
     expect(wrapper.find('[data-testid="rebuild-session-cta"]').exists()).toBe(true)
+    // Read again once, when the backend confirms — not at the optimistic flip
+    // as well.
+    expect(mockGetSessionByTerminal.mock.calls.length - readsOnLoad).toBe(1)
+    wrapper.unmount()
+  })
+})
+
+/**
+ * The other way a terminal goes while the page is open: the page itself
+ * reloads it and finds it deleted — after a Stop that deletes a non-persistent
+ * terminal (F4), for one. That reload must read the run again too, through the
+ * same path as a deletion the backend confirms after an expiry: one place that
+ * turns "this terminal is gone" into "read the run's resume mode again".
+ */
+describe('TerminalSessionView — a terminal the page reloads as deleted', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    mockAxiosPost.mockReset()
+    mockAxiosPost.mockResolvedValue({ data: {} })
+  })
+
+  it('reads the run again and offers the rebuild', async () => {
+    let deleted = false
+    mockAxiosGet.mockImplementation(async (url: string) => {
+      if (url !== '/terminals/user-sessions') return { data: {} }
+      return { data: [{ session_id: 'sess-test', state: deleted ? 'deleted' : 'running', expires_at: futureExpiry(), name: 'GameShell run' }] }
+    })
+    mockGetSessionByTerminal.mockImplementation(async () => ({
+      id: 'scen-1',
+      status: 'active',
+      resume_mode: deleted ? 'rebuild' : 'live',
+      terminal_session_id: 'sess-test'
+    }))
+    // The terminal is gone once the page's own request has gone through.
+    mockAxiosPost.mockImplementation(async () => {
+      deleted = true
+      return { data: {} }
+    })
+
+    const wrapper = mountScenarioView()
+    await flushPromises()
+    const readsOnLoad = mockGetSessionByTerminal.mock.calls.length
+
+    wrapper.findComponent({ name: 'TerminalViewer' }).vm.$emit('stop')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="rebuild-session-cta"]').exists()).toBe(true)
+    expect(mockGetSessionByTerminal.mock.calls.length - readsOnLoad).toBe(1)
     wrapper.unmount()
   })
 })
