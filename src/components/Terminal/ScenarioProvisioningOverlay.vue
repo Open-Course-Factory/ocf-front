@@ -23,8 +23,8 @@
         <div class="provisioning-icon">
           <i class="fas fa-cog fa-spin"></i>
         </div>
-        <h3>{{ t('provisioning.title') }}</h3>
-        <p class="provisioning-detail">{{ t('provisioning.detail') }}</p>
+        <h3>{{ t(phase === 'replay' ? 'provisioning.rebuildTitle' : 'provisioning.title') }}</h3>
+        <p class="provisioning-detail">{{ t(phase === 'replay' ? 'provisioning.rebuildDetail' : 'provisioning.detail') }}</p>
         <ProvisioningPhaseList :phase="phase" :phases="phase === 'replay' ? REBUILD_PHASES : undefined" />
         <button
           v-if="cancellable"
@@ -97,6 +97,8 @@ const { t } = useTranslations({
     provisioning: {
       title: 'Setting up your environment...',
       detail: 'Creating terminal and preparing scenario. This may take a few minutes.',
+      rebuildTitle: 'Rebuilding your environment...',
+      rebuildDetail: 'Preparing a fresh machine at your step. This may take a few minutes.',
       ready: 'Your environment is ready!',
       cancel: 'Cancel',
       cancelling: 'Cancelling...'
@@ -106,6 +108,8 @@ const { t } = useTranslations({
     provisioning: {
       title: 'Préparation de votre environnement...',
       detail: 'Création du terminal et préparation du scénario. Cela peut prendre quelques minutes.',
+      rebuildTitle: 'Reconstruction de votre environnement...',
+      rebuildDetail: 'Préparation d\'une nouvelle machine à votre étape. Cela peut prendre quelques minutes.',
       ready: 'Votre environnement est prêt !',
       cancel: 'Annuler',
       cancelling: 'Annulation...'

@@ -144,10 +144,11 @@
                 @resume="rebuildRun"
               />
             </template>
-            <!-- The run is being rebuilt on this terminal: the console is not
-                 the learner's until the replay is over. -->
-            <template v-else-if="showsReplay" #console-overlay>
-              <ScenarioProvisioningOverlay phase="replay" />
+            <!-- The run's environment is being built on this terminal (a launch's
+                 setup, a rebuild's replay): the console is not the learner's
+                 until it is over. -->
+            <template v-else-if="showsBuild" #console-overlay>
+              <ScenarioProvisioningOverlay :phase="scenarioProvisioningPhase" />
             </template>
           </TerminalSessionPanel>
         </div>
@@ -165,7 +166,7 @@
           @session-abandon-failed="handleScenarioAbandonFailed"
           @paste-command="handlePasteCommand"
           @scenario-info-loaded="handleScenarioInfoLoaded"
-          @session-status="scenarioSessionStatus = $event"
+          @session-status="onPanelStatus"
           @collapsed="scenarioPanelCollapsed = $event"
           @flag-validated="scenarioTerminalRef?.refreshFlags()"
         />
@@ -619,7 +620,17 @@ const showsPausedBanner = computed(() => terminalEndReason.value === 'stopped' &
 const scenarioResumeMode = ref<ScenarioSessionInfo['resume_mode']>()
 const showsRebuildBanner = computed(() => effectiveState.value === 'deleted' && scenarioResumeMode.value === 'rebuild')
 const scenarioProvisioningPhase = ref('')
-const showsReplay = computed(() => scenarioSessionStatus.value === 'provisioning' && scenarioProvisioningPhase.value === 'replay')
+const showsBuild = computed(() => scenarioSessionStatus.value === 'provisioning' && !!scenarioProvisioningPhase.value)
+
+// A step change made from the page is the panel's to show, with its own
+// "preparing the next step" state, and the console stays usable: once the
+// panel reports, the phase the page read no longer applies.
+let panelReportsStatus = false
+function onPanelStatus(status: string) {
+  panelReportsStatus = true
+  scenarioSessionStatus.value = status
+  scenarioProvisioningPhase.value = ''
+}
 const { rebuild } = useScenarioRunRecovery()
 
 // The old terminal is gone: replace it in history, so Back does not lead to
@@ -823,7 +834,8 @@ async function detectScenarioSession() {
     // still rebuildable, on its old one: find the run by its id — a lookup
     // that merely failed finds it here still — and say so.
     let replayFailed = false
-    if (showsReplay.value && scenarioSession?.terminal_session_id !== sessionId) {
+    const replaying = showsBuild.value && scenarioProvisioningPhase.value === 'replay'
+    if (replaying && scenarioSession?.terminal_session_id !== sessionId) {
       scenarioSession = await scenarioSessionService.getSessionInfo(scenarioSessionId.value!)
       replayFailed = scenarioSession.terminal_session_id !== sessionId
       if (replayFailed) showErrorNotification(t('sessionView.rebuildFailed'))
@@ -831,7 +843,7 @@ async function detectScenarioSession() {
     if (scenarioSession) {
       scenarioSessionId.value = scenarioSession.id
       scenarioSessionStatus.value = scenarioSession.status
-      scenarioProvisioningPhase.value = scenarioSession.provisioning_phase || ''
+      scenarioProvisioningPhase.value = panelReportsStatus ? '' : scenarioSession.provisioning_phase || ''
       scenarioResumeMode.value = scenarioSession.resume_mode
       terminalHadScenario.value = true
     }
