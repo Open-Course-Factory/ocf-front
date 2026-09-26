@@ -341,6 +341,15 @@ export async function getTerminalSession(session: ApiSession, sessionId?: string
   return rows.find((t: any) => t.session_id === sessionId) || null;
 }
 
+/** The scenario run a terminal belongs to, as the session view reads it, or null. */
+export async function getScenarioSessionByTerminal(session: ApiSession, terminalId: string): Promise<any | null> {
+  const response = await session.api.get(`${API_BASE}/scenario-sessions/by-terminal/${terminalId}`, {
+    headers: authHeaders(session),
+  });
+  if (!response.ok()) return null;
+  return response.json();
+}
+
 /** Abandon the learner's scenario session and destroy its terminal (teardown). */
 export async function cleanupScenarioSession(session: ApiSession, scenarioId: string): Promise<void> {
   const mine = await getMyScenarioSessions(session);

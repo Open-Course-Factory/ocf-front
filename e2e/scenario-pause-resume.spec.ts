@@ -8,6 +8,7 @@ import {
   getAvailableScenario,
   getMyScenarioSessions,
   getTerminalSession,
+  getScenarioSessionByTerminal,
   cleanupScenarioSession,
   type ApiSession,
 } from './helpers/scenarioApi';
@@ -114,7 +115,8 @@ async function launchAndPauseAtFlagStep(page: Page): Promise<{ flagBefore: strin
 
   const card = page.getByTestId('scenario-card').filter({ hasText: FIXTURE_TITLE });
   await expect(card).toBeVisible({ timeout: 15_000 });
-  await card.getByTestId('scenario-launch-btn').click();
+  // A card whose previous run was abandoned offers Relaunch instead of Launch.
+  await card.getByTestId('scenario-launch-btn').or(card.getByTestId('scenario-relaunch-btn')).click();
 
   const errorToast = page.locator('.el-notification');
   await Promise.race([
@@ -237,6 +239,10 @@ test('learner deletes a paused run\'s terminal, rebuilds it and resumes at the s
 
   // The run is still open: its container is gone, so it is rebuilt.
   await expectRunResumeMode('rebuild');
+  // What the session view of the deleted terminal reads to offer the rebuild:
+  // the terminal is still listed, as deleted, and its run says how to resume.
+  expect((await getTerminalSession(learner, terminalId))?.state).toBe('deleted');
+  expect((await getScenarioSessionByTerminal(learner, terminalId))?.resume_mode).toBe('rebuild');
 
   await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
   const card = page.getByTestId('scenario-card').filter({ hasText: FIXTURE_TITLE });
