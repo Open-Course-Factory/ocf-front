@@ -120,6 +120,10 @@ export interface ScenarioSessionInfo {
   terminal_session_id?: string
   grade?: number
   provisioning_phase?: string
+  // How the run is resumed, as MyScenarioSession.resume_mode: 'rebuild' when
+  // its container is gone and a new one is built at the current step. Absent
+  // when the run cannot be resumed.
+  resume_mode?: 'live' | 'paused' | 'rebuild'
   /**
    * The scenario's prose in the language this session is being played in.
    *
