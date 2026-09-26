@@ -187,7 +187,7 @@
               class="btn btn-secondary launch-btn"
               data-testid="scenario-start-over-btn"
               :disabled="isLaunching"
-              @click="startOver(getExistingSession(scenario).id, () => handleLaunchScenario(scenario))"
+              @click="handleStartOver(scenario)"
             >
               <i class="fas fa-redo"></i>
               {{ t('launcher.startOver') }}
@@ -257,8 +257,6 @@ import type { AvailableScenario } from '../../services/domain/scenario'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
-import { useNotification } from '../../composables/useNotification'
-import { useDunningRejection } from '../../composables/useDunningRejection'
 import { useScenarioRunLabel, isPausedRun, isRebuildRun } from '../../composables/useScenarioRunLabel'
 import { useScenarioRunRecovery } from '../../composables/useScenarioRunRecovery'
 import AdminBadge from '../Common/AdminBadge.vue'
@@ -268,10 +266,8 @@ import { getSavedLocale } from '../../services/core/storage'
 import { formatMinutes } from '../../utils/formatters'
 
 const router = useRouter()
-const { showError, showConfirm } = useNotification()
-const { isDunningRejection, getDunningCopy } = useDunningRejection()
 const runLabel = useScenarioRunLabel()
-const { rebuild, startOver } = useScenarioRunRecovery()
+const { rebuild, startOver, explainRefusal } = useScenarioRunRecovery()
 const organizationsStore = useOrganizationsStore()
 const subscriptionsStore = useSubscriptionsStore()
 const currentOrgId = computed(() => organizationsStore.currentOrganization?.id || '')
@@ -288,7 +284,7 @@ const { t } = useTranslations({
       retry: 'Retry',
       launch: 'Launch',
       resume: 'Resume',
-      rebuild: 'Rebuild & resume',
+      rebuild: 'Rebuild and resume',
       startOver: 'Start over',
       review: 'Review',
       relaunch: 'Relaunch',
@@ -296,7 +292,6 @@ const { t } = useTranslations({
       language: 'Language',
       languageHint: 'The scenario runs in this language. It cannot be changed once started.',
       sessionActive: 'Scenario in progress',
-      alreadyRunning: 'You are already running this scenario. Resume it from its card.',
       sessionCompleted: 'Scenario completed',
       sessionAbandoned: 'Scenario abandoned',
       sessionExists: 'Scenario already started',
@@ -314,9 +309,6 @@ const { t } = useTranslations({
       provisioning: 'Setting up your environment...',
       provisioningDetail: 'Creating terminal and preparing scenario. This may take a few minutes.',
       provisioningSetup: 'Running scenario setup scripts... This may take a few minutes.',
-      setupFailed: 'Scenario setup failed. The environment could not be prepared.',
-      setupTimeout: 'Scenario setup timed out. Please try again.',
-      launchError: 'Failed to launch scenario.',
       difficultyBeginner: 'Beginner',
       difficultyIntermediate: 'Intermediate',
       difficultyAdvanced: 'Advanced',
@@ -344,7 +336,6 @@ const { t } = useTranslations({
       language: 'Langue',
       languageHint: 'Le scénario se déroule dans cette langue. Elle ne peut plus être changée une fois lancé.',
       sessionActive: 'Scénario en cours',
-      alreadyRunning: 'Vous avez déjà un scénario en cours. Reprenez-le depuis sa carte.',
       sessionCompleted: 'Scénario terminé',
       sessionAbandoned: 'Scénario abandonné',
       sessionExists: 'Scénario déjà lancé',
@@ -362,9 +353,6 @@ const { t } = useTranslations({
       provisioning: 'Préparation de votre environnement...',
       provisioningDetail: 'Création du terminal et préparation du scénario. Cela peut prendre quelques minutes.',
       provisioningSetup: 'Exécution des scripts de préparation du scénario... Cela peut prendre quelques minutes.',
-      setupFailed: 'La préparation du scénario a échoué. L\'environnement n\'a pas pu être configuré.',
-      setupTimeout: 'La préparation du scénario a expiré. Veuillez réessayer.',
-      launchError: 'Échec du lancement du scénario.',
       difficultyBeginner: 'Débutant',
       difficultyIntermediate: 'Intermédiaire',
       difficultyAdvanced: 'Avancé',
@@ -725,7 +713,7 @@ async function handleLaunchScenario(scenario: any) {
     if (result.status === 'provisioning') {
       await pollProvisioningStatus(result.scenario_session_id, (phase) => {
         provisioningPhase.value = phase
-      }, abortController.signal)
+      }, abortController.signal, { deadlineSeconds: result.provisioning_timeout_seconds })
     }
 
     if (abortController.signal.aborted) return
@@ -739,38 +727,10 @@ async function handleLaunchScenario(scenario: any) {
     provisioningMessage.value = ''
     provisioningPhase.value = ''
     provisioningSessionId.value = ''
-    // Dunning (past-due) 402: offer the subscription dashboard so the user can
-    // settle the overdue invoice, instead of toasting the raw backend text.
-    if (isDunningRejection(err)) {
-      const copy = getDunningCopy()
-      const confirmed = await showConfirm(copy.message, copy.title, {
-        confirmButtonText: copy.action,
-        cancelButtonText: copy.dismiss
-      })
-      if (confirmed) {
-        Promise.resolve(router.push('/subscription-dashboard')).catch(() => {})
-      }
-      return
-    }
-    // Budget rejection at launch time (structured 403, source=budget): reuse
-    // the same copy the card shows for block_reason=budget_exhausted, so the
-    // two surfaces cannot tell the user two different stories.
-    if (err.response?.status === 403 && err.response?.data?.source === 'budget') {
-      showError(`${t('launcher.unavailableBudget')} ${t('launcher.unavailableBudgetHint')}`)
-      return
-    }
-    // 409: the learner already has a run of this scenario. That is not a
-    // failure to report — the card simply predates the run. Reload so it turns
-    // into Resume, and say so.
-    if (err.response?.status === 409 && err.response?.data?.reason === 'session_exists') {
-      showError(t('launcher.alreadyRunning'))
-      await loadScenarios()
-      return
-    }
-    const msg = err.message === 'SETUP_FAILED' ? t('launcher.setupFailed')
-      : err.message === 'SETUP_TIMEOUT' ? t('launcher.setupTimeout')
-      : err.response?.data?.error_message || err.message || t('launcher.launchError')
-    showError(msg)
+    await explainRefusal(err, 'launch')
+    // The card may predate a run it did not show (session_exists), or the
+    // run may have changed: show what is there now.
+    await loadScenarios()
   } finally {
     isLaunching.value = false
     launchingScenarioId.value = ''
@@ -778,29 +738,29 @@ async function handleLaunchScenario(scenario: any) {
   }
 }
 
-// Builds the run's environment again at the learner's step, behind the same
-// overlay as a launch — but not cancellable: cancelling there abandons the run.
-async function handleRebuild(scenario: any) {
+// Rebuild and Start over keep the card busy — and every other card's launch
+// disabled — from the first click, the Start over confirm and abandon included.
+async function whileBusy(scenario: any, action: () => Promise<unknown>) {
   isLaunching.value = true
   launchingScenarioId.value = scenario.id
-  provisioningMessage.value = t('launcher.provisioningDetail')
-  provisioningPhase.value = 'terminal_creation'
   try {
-    const terminalId = await rebuild(getExistingSession(scenario).id, {
-      wait: true,
-      onPhaseChange: (phase) => { provisioningPhase.value = phase }
-    })
-    if (terminalId) {
-      router.push({ name: 'TerminalSessionView', params: { sessionId: terminalId } })
-    } else {
-      await loadScenarios()
-    }
+    await action()
   } finally {
-    provisioningMessage.value = ''
-    provisioningPhase.value = ''
     isLaunching.value = false
     launchingScenarioId.value = ''
   }
+}
+
+// Opens the new terminal as soon as the resume answers: the session view
+// shows the replay.
+function handleRebuild(scenario: any) {
+  return whileBusy(scenario, async () => {
+    if (!await rebuild(getExistingSession(scenario).id)) await loadScenarios()
+  })
+}
+
+function handleStartOver(scenario: any) {
+  return whileBusy(scenario, () => startOver(getExistingSession(scenario).id, () => handleLaunchScenario(scenario)))
 }
 
 async function handleCancelProvisioning() {
