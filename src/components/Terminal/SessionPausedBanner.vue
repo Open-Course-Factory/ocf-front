@@ -83,7 +83,7 @@ const { t } = useTranslations({
       resuming: 'Resuming…',
       deleteButton: 'Delete permanently',
       rebuildTitle: 'Environment lost',
-      rebuildBody: 'This scenario\'s machine no longer exists, but your progress is kept. Rebuild it to continue at the step you were on.',
+      rebuildBody: 'This scenario\'s machine no longer exists, but your progress is kept. Rebuilding prepares a fresh machine at the step you were on; files you created yourself are not restored.',
       rebuild: 'Rebuild and resume'
     }
   },
@@ -98,7 +98,7 @@ const { t } = useTranslations({
       resuming: 'Reprise…',
       deleteButton: 'Supprimer définitivement',
       rebuildTitle: 'Environnement perdu',
-      rebuildBody: 'La machine de ce scénario n\'existe plus, mais votre progression est conservée. Reconstruisez-la pour continuer à l\'étape où vous en étiez.',
+      rebuildBody: 'La machine de ce scénario n\'existe plus, mais votre progression est conservée. La reconstruction prépare une nouvelle machine à l\'étape où vous en étiez ; les fichiers que vous aviez créés ne sont pas restaurés.',
       rebuild: 'Reconstruire et reprendre'
     }
   }
