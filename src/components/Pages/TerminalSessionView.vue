@@ -144,6 +144,11 @@
                 @resume="rebuildRun"
               />
             </template>
+            <!-- The run is being rebuilt on this terminal: the console is not
+                 the learner's until the replay is over. -->
+            <template v-else-if="showsReplay" #console-overlay>
+              <ScenarioProvisioningOverlay phase="replay" />
+            </template>
           </TerminalSessionPanel>
         </div>
         <div v-show="!scenarioPanelCollapsed" class="panel-resize-handle" @mousedown.prevent="startPanelResize">
@@ -283,6 +288,7 @@ import { useScenarioRunRecovery } from '../../composables/useScenarioRunRecovery
 import { useDunningRejection } from '../../composables/useDunningRejection'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import SessionPausedBanner from '../Terminal/SessionPausedBanner.vue'
+import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
 import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
 import BaseModal from '../Modals/BaseModal.vue'
@@ -336,6 +342,7 @@ const { t } = useTranslations({
       gotIt: 'Got it',
       dismissNotice: 'Dismiss recording notice',
       resumeFailed: 'Resume failed',
+      rebuildFailed: 'Your environment could not be rebuilt. Your progress is kept — try again, or start over.',
       deleteFailed: 'Delete failed',
       deleteConfirmTitle: 'Delete this session?',
       deleteConfirmBody: 'The container disk and command history will be permanently lost.',
@@ -376,6 +383,7 @@ const { t } = useTranslations({
       gotIt: 'Compris',
       dismissNotice: 'Fermer la notification d\'enregistrement',
       resumeFailed: 'Échec de la reprise',
+      rebuildFailed: 'Votre environnement n\'a pas pu être reconstruit. Votre progression est conservée — réessayez, ou recommencez.',
       deleteFailed: 'Échec de la suppression',
       deleteConfirmTitle: 'Supprimer cette session ?',
       deleteConfirmBody: 'Le disque du conteneur et l\'historique des commandes seront perdus définitivement.',
@@ -610,16 +618,12 @@ const showsPausedBanner = computed(() => terminalEndReason.value === 'stopped' &
 // terminal at the learner's step.
 const scenarioResumeMode = ref<ScenarioSessionInfo['resume_mode']>()
 const showsRebuildBanner = computed(() => effectiveState.value === 'deleted' && scenarioResumeMode.value === 'rebuild')
+const scenarioProvisioningPhase = ref('')
+const showsReplay = computed(() => scenarioSessionStatus.value === 'provisioning' && scenarioProvisioningPhase.value === 'replay')
 const { rebuild } = useScenarioRunRecovery()
 
-// A terminal that goes while the page is open (TTL, deleted elsewhere) leaves
-// the run's resume mode as it was read on load: read it again.
-watch(effectiveState, (state, previous) => {
-  if (state === 'deleted' && previous && scenarioSessionId.value) detectScenarioSession()
-})
-
 // The old terminal is gone: replace it in history, so Back does not lead to
-// it. The new terminal's page waits for the rebuild with its own pollers.
+// it. The new terminal's page shows the replay.
 async function rebuildRun() {
   if (isResuming.value || !scenarioSessionId.value) return
   isResuming.value = true
@@ -631,10 +635,12 @@ async function rebuildRun() {
 }
 
 // The overlay covers the console the learner was typing in: move focus to
-// Resume, or it stays in a terminal that no longer answers.
+// Resume, or it stays in a terminal that no longer answers. Keyed by banner,
+// so a paused banner that turns into a rebuild one hands focus on too.
 const pausedOverlayBannerRef = ref<InstanceType<typeof SessionPausedBanner> | null>(null)
-watch(() => showsPausedBanner.value || showsRebuildBanner.value, async (shown) => {
-  if (!shown) return
+const consoleBanner = computed(() => showsPausedBanner.value ? 'paused' : showsRebuildBanner.value ? 'rebuild' : '')
+watch(consoleBanner, async (banner) => {
+  if (!banner) return
   await nextTick()
   pausedOverlayBannerRef.value?.focusResume()
 })
@@ -788,6 +794,8 @@ async function loadSession() {
     // Auto-detect linked scenario session (unless already set via query parameter or loading)
     if (!scenarioSessionId.value) {
       await detectScenarioSession()
+    } else {
+      await rereadRunIfGone(state)
     }
 
     // Start polling for scenario if none was detected yet
@@ -810,17 +818,35 @@ async function loadSession() {
 
 async function detectScenarioSession() {
   try {
-    const scenarioSession = await scenarioSessionService.getSessionByTerminal(sessionId)
+    let scenarioSession = await scenarioSessionService.getSessionByTerminal(sessionId)
+    // A replay that fails deletes this terminal and puts the run back,
+    // still rebuildable, on its old one: find the run by its id — a lookup
+    // that merely failed finds it here still — and say so.
+    let replayFailed = false
+    if (showsReplay.value && scenarioSession?.terminal_session_id !== sessionId) {
+      scenarioSession = await scenarioSessionService.getSessionInfo(scenarioSessionId.value!)
+      replayFailed = scenarioSession.terminal_session_id !== sessionId
+      if (replayFailed) showErrorNotification(t('sessionView.rebuildFailed'))
+    }
     if (scenarioSession) {
       scenarioSessionId.value = scenarioSession.id
       scenarioSessionStatus.value = scenarioSession.status
+      scenarioProvisioningPhase.value = scenarioSession.provisioning_phase || ''
       scenarioResumeMode.value = scenarioSession.resume_mode
       terminalHadScenario.value = true
       if (scenarioSession.status === 'provisioning') scheduleProvisioningRecheck()
     }
+    if (replayFailed) await refreshSessionInfo()
   } catch {
     // Silently ignore - no scenario linked is fine
   }
+}
+
+// A terminal found gone — deleted, expired — may leave its run rebuildable:
+// read the run again. Only once the backend says so: the page's own flip at
+// the end of the countdown comes before ocf-core has caught up.
+async function rereadRunIfGone(state?: string) {
+  if (state === 'deleted' && scenarioSessionId.value) await detectScenarioSession()
 }
 
 // A run opened mid-setup keeps Stop disabled until the setup is over; the
@@ -894,6 +920,7 @@ async function refreshSessionInfo(): Promise<string | null> {
     if (terminal.state === 'stopped' || terminal.state === 'deleted') {
       optimisticExpired = false
     }
+    await rereadRunIfGone(terminal.state)
 
     return terminal.state || null
   } catch (err) {
