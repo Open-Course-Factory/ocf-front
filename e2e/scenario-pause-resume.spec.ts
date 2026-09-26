@@ -29,9 +29,10 @@ import { adminSession } from './helpers/freshUsers';
 //
 // Requirements (local only): ocf-core on :8080, vite, tt-backend with a live
 // Incus behind it, an 'apk'-compatible distribution, a platform admin
-// (E2E_ADMIN_EMAIL), and a learner plan with data persistence (Stop only
-// exists on persistent terminals). The spec SELF-SKIPS when any of that is
-// missing. Structure copied from scenario-run.spec.ts.
+// (E2E_ADMIN_EMAIL). The spec SELF-SKIPS when that infrastructure is
+// missing. The learner's plan is part of the fixture and must have a CPU/RAM
+// budget and data persistence (Stop only exists on persistent terminals): the
+// spec FAILS, loudly, when it does not. Structure copied from scenario-run.spec.ts.
 // ---------------------------------------------------------------------------
 
 const LEARNER_EMAIL = process.env.E2E_USER || 'karim@test.ocf';
@@ -45,6 +46,7 @@ let admin: ApiSession | null = null;
 let learner: ApiSession;
 let scenarioId: string | null = null;
 let launchable = false;
+let blockReason = '';
 
 test.beforeAll(async () => {
   admin = await adminSession();
@@ -74,6 +76,7 @@ test.beforeAll(async () => {
 
   const card = await getAvailableScenario(learner, FIXTURE_TITLE);
   launchable = !!card?.launchable;
+  blockReason = card?.block_reason || '';
 });
 
 test.afterAll(async () => {
@@ -87,9 +90,15 @@ test.afterAll(async () => {
 
 test('learner pauses a scenario run and resumes it at the same step', async ({ page }) => {
   test.skip(!admin, 'no platform admin to import the fixture — set E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD');
+  // A plan that cannot fit the machine is a broken fixture, not missing
+  // infrastructure: fail on it. Only a missing image/backend skips.
+  expect(
+    ['size_over_plan', 'budget_exhausted', 'plan'],
+    `${LEARNER_EMAIL}'s plan cannot launch the fixture (${blockReason}) — give it a CPU/RAM budget`
+  ).not.toContain(blockReason);
   test.skip(
     !launchable,
-    'fixture not launchable — Tier B needs a live tt-backend + Incus with an apk distribution'
+    `fixture not launchable (${blockReason}) — Tier B needs a live tt-backend + Incus with an apk distribution`
   );
   // Two terminal starts (launch + resume) plus step transitions.
   test.setTimeout(480_000);
@@ -125,16 +134,17 @@ test('learner pauses a scenario run and resumes it at the same step', async ({ p
   await waitForLiveTerminal(page);
   const flagBefore = await readFlagFileFromTerminal(page, FLAG_PATH);
 
-  // Pause. Stop only exists on a persistent terminal: without data
-  // persistence on the learner's plan there is nothing to pause. Decided from
-  // the terminal record, not from the button being absent — a missing Stop on
-  // a persistent run is exactly the kind of regression this spec must catch.
+  // Pause. Only a persistent terminal can pause, and the learner's plan is part
+  // of the fixture: a plan without data persistence is a broken fixture, so it
+  // fails here rather than skipping — and a persistent run without a Stop
+  // button fails just below. Read from the terminal record, which carries the
+  // persistence ocf-core actually resolved for this launch (org plan included).
   const terminalId = page.url().split('/terminal-session/')[1]?.split(/[?#]/)[0];
   const terminal = await getTerminalSession(learner, terminalId);
-  test.skip(
-    terminal?.persistence_mode !== 'persistent',
-    'terminal is not persistent — the learner plan has no data persistence, so runs cannot pause'
-  );
+  expect(
+    terminal?.persistence_mode,
+    `${LEARNER_EMAIL}'s effective plan has no data persistence — enable it on the local plan, runs cannot pause without it`
+  ).toBe('persistent');
   // The accessible name carries the icon glyph before the label, so anchor
   // on the end only.
   const stopButton = page.getByRole('button', { name: /(Stop|Arrêter)$/ });
