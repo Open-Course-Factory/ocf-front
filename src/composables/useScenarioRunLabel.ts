@@ -43,8 +43,8 @@ export function useScenarioRunLabel() {
         paused: 'Paused',
         pausedAtStep: 'Paused — resume at step {step}',
         ended: 'Previous run ended',
-        rebuild: 'Environment lost — rebuild and resume',
-        rebuildAtStep: 'Environment lost — rebuild and resume at step {step}'
+        rebuild: 'Environment lost — progress kept',
+        rebuildAtStep: 'Environment lost — progress kept (step {step})'
       }
     },
     fr: {
@@ -52,8 +52,8 @@ export function useScenarioRunLabel() {
         paused: 'En pause',
         pausedAtStep: 'En pause — reprendre à l\'étape {step}',
         ended: 'Session précédente terminée',
-        rebuild: 'Environnement perdu — le reconstruire et reprendre',
-        rebuildAtStep: 'Environnement perdu — le reconstruire et reprendre à l\'étape {step}'
+        rebuild: 'Environnement perdu — progression conservée',
+        rebuildAtStep: 'Environnement perdu — progression conservée (étape {step})'
       }
     }
   })
