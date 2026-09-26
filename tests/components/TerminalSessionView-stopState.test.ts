@@ -1028,7 +1028,9 @@ describe('TerminalSessionView — a terminal the page reloads as deleted', () =>
     let deleted = false
     mockAxiosGet.mockImplementation(async (url: string) => {
       if (url !== '/terminals/user-sessions') return { data: {} }
-      return { data: [{ session_id: 'sess-test', state: deleted ? 'deleted' : 'running', expires_at: futureExpiry(), name: 'GameShell run' }] }
+      // Persistent, so Stop reloads at once; on a non-persistent run it asks
+      // first (F4's own tests cover that path).
+      return { data: [{ session_id: 'sess-test', state: deleted ? 'deleted' : 'running', expires_at: futureExpiry(), name: 'GameShell run', persistence_mode: 'persistent' }] }
     })
     mockGetSessionByTerminal.mockImplementation(async () => ({
       id: 'scen-1',
