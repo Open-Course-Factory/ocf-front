@@ -640,6 +640,8 @@
         v-if="canTestFromStep && !isNew && stepData?.entityId"
         class="btn btn-outline-primary ocf-test-from-step"
         data-testid="step-edit-test-from-step"
+        :disabled="stepIsDirty"
+        :title="stepIsDirty ? t('stepEdit.testFromStepSaveFirst') : undefined"
         @click="emit('test-from-step', stepData.order)"
       >
         <i class="fas fa-play" aria-hidden="true"></i>
@@ -749,6 +751,7 @@ const { t } = useTranslations({
       tabQuestions: 'Questions',
       saveTranslation: 'Save translation',
       testFromStep: 'Test from this step',
+      testFromStepSaveFirst: 'Save your changes first: the preview uses the saved step',
       editingIn: 'Editing in',
       originalTag: 'original',
       alsoOfferedIn: 'This scenario is also offered in',
@@ -858,6 +861,7 @@ const { t } = useTranslations({
       tabQuestions: 'Questions',
       saveTranslation: 'Enregistrer la traduction',
       testFromStep: 'Tester depuis cette étape',
+      testFromStepSaveFirst: "Enregistrez d'abord vos modifications : la prévisualisation utilise l'étape enregistrée",
       editingIn: 'Édition en',
       originalTag: 'original',
       alsoOfferedIn: 'Ce scénario est aussi proposé en',
@@ -992,6 +996,14 @@ const translationIsDirty = computed(() => {
   return (['title', 'text_content', 'hint_content', 'intro_text', 'outro_text'] as const)
     .some(field => (translationData.value[field] || '') !== (loaded[field] || ''))
 })
+
+/**
+ * Whether the step form differs from the step as it was opened. "Test from
+ * this step" previews the saved step and leaves the editor, so it waits for
+ * the edits to be saved rather than testing without them and losing them.
+ */
+const savedFormSnapshot = ref('')
+const stepIsDirty = computed(() => JSON.stringify(formData.value) !== savedFormSnapshot.value)
 
 const pendingLocaleChange = ref<string | null>(null)
 
@@ -1291,6 +1303,7 @@ watch(() => [props.visible, props.stepData, props.translation, props.locale], ()
         questions: []
       }
     }
+    savedFormSnapshot.value = JSON.stringify(formData.value)
   }
 }, { immediate: true })
 

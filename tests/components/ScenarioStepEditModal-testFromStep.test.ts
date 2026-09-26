@@ -123,14 +123,38 @@ describe('ScenarioStepEditModal — test from this step', () => {
   // Existing callers that never pass the prop must not suddenly grow a
   // button that launches terminals.
   it('is off unless the editor turns it on', () => {
-    const wrapper = mount(ScenarioStepEditModal, {
-      props: { visible: true, isNew: false, stepData: savedStep(2) },
-      global: {
-        plugins: [createTestI18n()],
-        stubs: { BaseModal: { template: '<div><slot /><slot name="footer" /></div>' } },
+    const wrapper = mountModal({ stepData: savedStep(2), canTestFromStep: undefined })
+
+    expect(wrapper.find(ACTION).exists()).toBe(false)
+  })
+
+  // The preview runs the saved step and leaves the editor: testing with
+  // unsaved edits would test the old step and lose the edits.
+  it('waits for unsaved edits to be saved', async () => {
+    const wrapper = mountModal({ stepData: savedStep(2) })
+
+    await wrapper.find('#step-title').setValue('Step 2, reworded')
+
+    const action = wrapper.find(ACTION)
+    expect(action.attributes('disabled')).toBeDefined()
+    expect(action.attributes('title')).toContain('Save your changes first')
+  })
+
+  // A freshly opened step must not look edited: the form normalises what it
+  // loads (defaults, quiz answers), and that is not an edit.
+  it('is ready on a step opened and left untouched, quiz included', () => {
+    const wrapper = mountModal({
+      stepData: {
+        ...savedStep(1),
+        stepType: 'quiz',
+        questions: [
+          { id: 'q-1', question_text: 'Which command lists files?', question_type: 'multiple_choice', options: ['ls', 'cd'], correct_answer: '0' },
+        ],
       },
     })
 
-    expect(wrapper.find(ACTION).exists()).toBe(false)
+    const action = wrapper.find(ACTION)
+    expect(action.attributes('disabled')).toBeUndefined()
+    expect(action.attributes('title')).toBeUndefined()
   })
 })
