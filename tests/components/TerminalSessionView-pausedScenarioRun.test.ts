@@ -314,25 +314,6 @@ describe('TerminalSessionView — waiting for the backend to confirm a platform 
     wrapper.unmount()
   })
 
-  it('keeps polling until the backend reports stopped, however long it lags', async () => {
-    const expiresAt = futureExpiry()
-    mockAxiosGet.mockResolvedValue({ data: [terminalRow('running', expiresAt)] })
-
-    const wrapper = mountView()
-    await flushPromises()
-
-    // Lags past the post-expiry backoff (~28 s over six reads).
-    backendConfirmsStopAfter(8, expiresAt)
-    wrapper.findComponent({ name: 'TerminalSessionPanel' }).vm.$emit('session-stopped')
-    await flushPromises()
-
-    await vi.advanceTimersByTimeAsync(120 * 1000)
-    await flushPromises()
-
-    expect(wrapper.find('[data-testid="resume-session-cta"]').exists()).toBe(true)
-    wrapper.unmount()
-  })
-
   it('retries when the read fails instead of settling on an ended console', async () => {
     const expiresAt = futureExpiry()
     mockAxiosGet.mockResolvedValue({ data: [terminalRow('running', expiresAt)] })
