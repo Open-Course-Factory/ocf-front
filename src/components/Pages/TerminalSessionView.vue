@@ -108,7 +108,7 @@
             :scenario-flags-enabled="scenarioBriefing?.flags_enabled ?? false"
             :scenario-crash-traps="scenarioBriefing?.crash_traps ?? false"
             :show-exposed-ports="scenarioBriefing?.port_exposure_allowed ?? false"
-            :show-stop-button="isPersistent"
+            :show-stop-button="true"
             :is-stopping="isStopping"
             :can-stop="!isScenarioProvisioning"
             :show-destroy-button="true"
@@ -240,12 +240,12 @@
     <!-- Trash confirmation modal -->
     <BaseModal
       :visible="showDeleteConfirm"
-      :title="t('sessionView.deleteConfirmTitle')"
+      :title="t(confirmingStop ? 'sessionView.stopConfirmTitle' : 'sessionView.deleteConfirmTitle')"
       title-icon="fas fa-trash"
       size="small"
       @close="cancelDelete"
     >
-      <p>{{ t('sessionView.deleteConfirmBody') }}</p>
+      <p>{{ deleteConfirmBody }}</p>
 
       <template #footer>
         <button
@@ -347,6 +347,11 @@ const { t } = useTranslations({
       deleteFailed: 'Delete failed',
       deleteConfirmTitle: 'Delete this session?',
       deleteConfirmBody: 'The container disk and command history will be permanently lost.',
+      deleteConfirmBodyRebuild: 'Your environment will be deleted. Your progress is kept: your environment will be rebuilt at this step when you resume. To end the run, abandon it.',
+      deleteConfirmBodyCrashTraps: 'Deleting ends this run. It cannot be resumed.',
+      stopConfirmTitle: 'Stop this session?',
+      stopConfirmBodyRebuild: 'Your environment will be deleted. Your progress is kept: when you resume, your environment will be rebuilt at this step.',
+      stopConfirmBodyCrashTraps: 'Stopping ends this run. It cannot be resumed.',
       deleteConfirmCta: 'Delete',
       cancelCta: 'Cancel'
     }
@@ -388,6 +393,11 @@ const { t } = useTranslations({
       deleteFailed: 'Échec de la suppression',
       deleteConfirmTitle: 'Supprimer cette session ?',
       deleteConfirmBody: 'Le disque du conteneur et l\'historique des commandes seront perdus définitivement.',
+      deleteConfirmBodyRebuild: 'Votre environnement sera supprimé. Votre progression est conservée : votre environnement sera reconstruit à cette étape quand vous reprendrez. Pour terminer le parcours, abandonnez-le.',
+      deleteConfirmBodyCrashTraps: 'La suppression met fin à ce parcours. Il ne pourra pas être repris.',
+      stopConfirmTitle: 'Arrêter cette session ?',
+      stopConfirmBodyRebuild: 'Votre environnement sera supprimé. Votre progression est conservée : quand vous reprendrez, votre environnement sera reconstruit à cette étape.',
+      stopConfirmBodyCrashTraps: 'L\'arrêt met fin à ce parcours. Il ne pourra pas être repris.',
       deleteConfirmCta: 'Supprimer',
       cancelCta: 'Annuler'
     }
@@ -659,8 +669,18 @@ watch(consoleBanner, async (banner) => {
 // Stopping a run mid-setup fails the setup, so Stop waits for it to finish.
 const isScenarioProvisioning = computed(() => scenarioSessionStatus.value === 'provisioning')
 
+// A non-persistent terminal cannot pause: tt-backend's /stop keeps its
+// container (ocf-core #529). On a scenario run Stop deletes the terminal
+// instead, behind the delete confirm: the run is rebuilt at its step on
+// resume, or ends if it has crash traps.
+const confirmingStop = ref(false)
+
 async function stopSession() {
   if (!sessionInfo.value || isStopping.value || isScenarioProvisioning.value) return
+  if (!isPersistent.value && scenarioSessionId.value) {
+    askDelete(true)
+    return
+  }
 
   isStopping.value = true
   try {
@@ -734,7 +754,15 @@ async function resumeSession() {
   }
 }
 
-function askDelete() {
+// What deleting does to the run: none linked, rebuilt on resume, or ended.
+const deleteConfirmBody = computed(() => {
+  if (!scenarioSessionId.value) return t('sessionView.deleteConfirmBody')
+  const outcome = scenarioBriefing.value?.crash_traps ? 'CrashTraps' : 'Rebuild'
+  return t(`sessionView.${confirmingStop.value ? 'stop' : 'delete'}ConfirmBody${outcome}`)
+})
+
+function askDelete(stop = false) {
+  confirmingStop.value = stop
   showDeleteConfirm.value = true
 }
 
@@ -747,9 +775,21 @@ async function deleteSession() {
   if (!sessionInfo.value || isDeleting.value) return
   isDeleting.value = true
   try {
+    // A crash-trap run ends before its terminal goes, as ocf-core's EndCrashTrapRun does.
+    if (confirmingStop.value && scenarioBriefing.value?.crash_traps) {
+      await scenarioSessionService.abandonSession(scenarioSessionId.value!)
+    }
     await terminalService.deleteSession(sessionInfo.value.session_id)
     showDeleteConfirm.value = false
-    router.push(backTarget.value)
+    if (!confirmingStop.value) {
+      router.push(backTarget.value)
+      return
+    }
+    // Stay on the run: loadSession finds the terminal deleted and reads the run
+    // again, which offers the rebuild or shows it ended.
+    await loadSession()
+    timeRemaining.value = 0
+    stopExpirationTimer()
   } catch (err: any) {
     console.error('Error deleting session:', err)
     showErrorNotification(
