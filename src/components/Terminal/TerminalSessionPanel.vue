@@ -10,32 +10,39 @@
 
 <template>
   <div class="terminal-session-panel">
-    <!-- Terminal Console -->
-    <TerminalViewer
-      ref="terminalRef"
-      :session-info="sessionInfo"
-      :is-recording="isRecording"
-      :end-reason="endReason"
-      :has-scenario="hasScenario"
-      :scenario-crash-traps="scenarioCrashTraps"
-      supervision-enabled
-      :exposed-ports-enabled="showExposedPorts"
-      use-settings-card
-      :title="sessionInfo?.name || ('Terminal ' + (sessionInfo?.session_id?.substring(0, 8) || ''))"
-      icon="fas fa-terminal"
-      :full-height="false"
-      :show-stop-button="showStopButton"
-      :is-stopping="isStopping"
-      :can-stop="canStop"
-      :stop-disabled-reason="stopDisabledReason"
-      :show-destroy-button="showDestroyButton"
-      :is-destroying="isDestroying"
-      @stop="$emit('stop')"
-      @destroy="$emit('destroy')"
-      @session-warning="$emit('session-warning', $event)"
-      @session-expired="$emit('session-expired')"
-      @session-stopped="$emit('session-stopped')"
-    />
+    <!-- Terminal Console. Whatever the parent lays over it (the paused banner)
+         covers the console alone and makes it inert; history and flags below
+         stay usable. -->
+    <div class="ocf-console-area">
+      <TerminalViewer
+        ref="terminalRef"
+        :inert="!!$slots['console-overlay']"
+        :session-info="sessionInfo"
+        :is-recording="isRecording"
+        :end-reason="endReason"
+        :has-scenario="hasScenario"
+        :scenario-crash-traps="scenarioCrashTraps"
+        supervision-enabled
+        :exposed-ports-enabled="showExposedPorts"
+        use-settings-card
+        :title="sessionInfo?.name || ('Terminal ' + (sessionInfo?.session_id?.substring(0, 8) || ''))"
+        icon="fas fa-terminal"
+        :full-height="false"
+        :show-stop-button="showStopButton"
+        :is-stopping="isStopping"
+        :can-stop="canStop"
+        :show-destroy-button="showDestroyButton"
+        :is-destroying="isDestroying"
+        @stop="$emit('stop')"
+        @destroy="$emit('destroy')"
+        @session-warning="$emit('session-warning', $event)"
+        @session-expired="$emit('session-expired')"
+        @session-stopped="$emit('session-stopped')"
+      />
+      <div v-if="$slots['console-overlay']" class="ocf-console-overlay">
+        <slot name="console-overlay" />
+      </div>
+    </div>
 
     <!-- Sub-panels: Command History + Validated Flags side by side -->
     <div class="sub-panels" :class="{ 'has-flags': scenarioSessionId && scenarioFlagsEnabled }">
@@ -83,10 +90,8 @@ interface Props {
   showStopButton?: boolean
   isStopping?: boolean
   // Forwarded to TerminalViewer — disables the Stop button (renders grayed)
-  // when false, showing the ephemeral tooltip instead of hiding the affordance.
+  // when false instead of hiding the affordance.
   canStop?: boolean
-  // Forwarded to TerminalViewer — which tooltip explains a disabled Stop.
-  stopDisabledReason?: 'ephemeral' | 'provisioning'
   // Forwarded to TerminalViewer — adds a Destroy button (irreversible removal).
   showDestroyButton?: boolean
   isDestroying?: boolean
@@ -109,7 +114,6 @@ withDefaults(defineProps<Props>(), {
   showStopButton: false,
   isStopping: false,
   canStop: true,
-  stopDisabledReason: 'ephemeral',
   showDestroyButton: false,
   isDestroying: false,
   showHistory: true,
@@ -198,6 +202,24 @@ defineExpose({
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+
+/* The console's slot in the column, and the anchor for what is laid over it. */
+.ocf-console-area {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ocf-console-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  background-color: var(--color-bg-primary);
 }
 
 /* History and flags are reference material, so they yield to the console rather

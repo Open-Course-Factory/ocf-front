@@ -76,18 +76,12 @@
           >
             <div class="card-header">
               <span
-                v-if="isPaused(session)"
-                class="status-badge paused"
-                data-testid="scenario-paused-badge"
+                class="status-badge"
+                :class="displayStatus(session)"
+                :data-testid="isPausedRun(session) ? 'scenario-paused-badge' : undefined"
               >
-                <i class="fas fa-pause-circle"></i>
-                {{ typeof session.completed_steps === 'number'
-                  ? t('myScenarios.pausedAtStep', { step: session.completed_steps + 1 })
-                  : t('myScenarios.paused') }}
-              </span>
-              <span v-else class="status-badge" :class="displayStatus(session)">
                 <i :class="statusIcon(displayStatus(session))"></i>
-                {{ statusLabel(displayStatus(session)) }}
+                {{ runLabel(session) || statusLabel(session.status) }}
               </span>
             </div>
 
@@ -173,8 +167,10 @@ import { useTranslations } from '../../composables/useTranslations'
 import { scenarioSessionService } from '../../services/domain/scenario'
 import type { MyScenarioSession } from '../../services/domain/scenario'
 import ProgressBar from '../Common/ProgressBar.vue'
+import { useScenarioRunLabel, isPausedRun, isEndedRun } from '../../composables/useScenarioRunLabel'
 
 const router = useRouter()
+const runLabel = useScenarioRunLabel()
 
 const { t } = useTranslations({
   en: {
@@ -190,9 +186,6 @@ const { t } = useTranslations({
       attempts: 'attempt | attempts',
       bestGrade: 'Best grade',
       resume: 'Resume',
-      paused: 'Paused',
-      pausedAtStep: 'Paused — resume at step {step}',
-      ended: 'Previous run ended',
       abandon: 'Abandon',
       review: 'Review',
       abandonConfirm: 'Abandon this scenario session? This cannot be undone.',
@@ -218,9 +211,6 @@ const { t } = useTranslations({
       attempts: 'tentative | tentatives',
       bestGrade: 'Meilleure note',
       resume: 'Reprendre',
-      paused: 'En pause',
-      pausedAtStep: 'En pause — reprendre à l\'étape {step}',
-      ended: 'Session précédente terminée',
       abandon: 'Abandonner',
       review: 'Revoir',
       abandonConfirm: 'Abandonner cette session de scénario ? Cette action est irréversible.',
@@ -242,26 +232,31 @@ const selectedStatus = ref<'all' | 'active' | 'completed' | 'abandoned'>('all')
 
 const filteredSessions = computed(() => {
   if (selectedStatus.value === 'all') return sessions.value
-  return sessions.value.filter(s => displayStatus(s) === selectedStatus.value)
+  return sessions.value.filter(s => matchesStatus(s, selectedStatus.value))
 })
 
 const statusTabs = computed(() => [
   { value: 'all' as const, label: t('myScenarios.all'), count: sessions.value.length },
-  { value: 'active' as const, label: t('myScenarios.active'), count: sessions.value.filter(s => displayStatus(s) === 'active').length },
+  { value: 'active' as const, label: t('myScenarios.active'), count: sessions.value.filter(s => matchesStatus(s, 'active')).length },
   { value: 'completed' as const, label: t('myScenarios.completed'), count: sessions.value.filter(s => s.status === 'completed').length },
   { value: 'abandoned' as const, label: t('myScenarios.abandoned'), count: sessions.value.filter(s => s.status === 'abandoned').length }
 ])
 
-// A run the backend reports as not resumable is over, whatever its row says:
-// `status` stays 'active' until something looks at the terminal, which is gone.
+// "Active" lists the runs the learner can go back to, paused ones included.
+function matchesStatus(session: MyScenarioSession, status: string): boolean {
+  return status === 'active' ? isResumable(session) : session.status === status
+}
+
 function displayStatus(session: MyScenarioSession): string {
-  if (session.status === 'active' && !isResumable(session)) return 'ended'
+  if (isPausedRun(session)) return 'paused'
+  if (isEndedRun(session)) return 'ended'
   return session.status
 }
 
 function statusIcon(status: string): string {
   switch (status) {
     case 'active': return 'fas fa-play-circle'
+    case 'paused': return 'fas fa-pause-circle'
     case 'ended': return 'fas fa-stop-circle'
     case 'completed': return 'fas fa-check-circle'
     case 'abandoned': return 'fas fa-times-circle'
@@ -272,7 +267,6 @@ function statusIcon(status: string): string {
 function statusLabel(status: string): string {
   switch (status) {
     case 'active': return t('myScenarios.active')
-    case 'ended': return t('myScenarios.ended')
     case 'completed': return t('myScenarios.completed')
     case 'abandoned': return t('myScenarios.abandoned')
     default: return status
@@ -359,12 +353,6 @@ const groupedScenarios = computed<ScenarioGroup[]>(() => {
 // re-derived from `status`, which stays 'active' after the terminal is gone.
 function isResumable(session: MyScenarioSession): boolean {
   return session.resumable === true
-}
-
-// Stopped by the platform with its disk kept: resuming restarts the terminal
-// at the same step.
-function isPaused(session: MyScenarioSession): boolean {
-  return isResumable(session) && session.resume_mode === 'paused'
 }
 
 function handleCardClick(session: MyScenarioSession) {

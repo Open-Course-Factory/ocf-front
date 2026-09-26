@@ -4,8 +4,8 @@
  * Copyright (C) 2023-2026 Solution Libre
  *
  * A stopped persistent terminal: Resume starts it again (disk kept), Delete
- * removes it. The parent words it — a bare terminal and a scenario run pause
- * for different reasons and come back to different things.
+ * removes it. A scenario run is worded as such: what is kept is the learner's
+ * progress, not just a disk.
  */
 -->
 
@@ -14,8 +14,8 @@
     <div class="paused-content">
       <i class="fas fa-pause-circle paused-icon" aria-hidden="true"></i>
       <div class="paused-text">
-        <strong>{{ title }}</strong>
-        <span>{{ body }}</span>
+        <strong>{{ t(scenario ? 'pausedBanner.scenarioTitle' : 'pausedBanner.title') }}</strong>
+        <span>{{ t(scenario ? 'pausedBanner.scenarioBody' : 'pausedBanner.body') }}</span>
       </div>
     </div>
     <div class="paused-actions">
@@ -27,7 +27,9 @@
         data-testid="resume-session-cta"
       >
         <i class="fas" :class="isResuming ? 'fa-spinner fa-spin' : 'fa-play'"></i>
-        {{ isResuming ? t('pausedBanner.resuming') : resumeLabel }}
+        {{ isResuming
+          ? t('pausedBanner.resuming')
+          : t(scenario ? 'pausedBanner.resumeScenario' : 'pausedBanner.resume') }}
       </button>
       <button
         class="btn-trash"
@@ -47,9 +49,7 @@ import { ref } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 
 defineProps<{
-  title: string
-  body: string
-  resumeLabel: string
+  scenario?: boolean
   isResuming: boolean
   isDeleting: boolean
 }>()
@@ -68,12 +68,24 @@ defineExpose({
 const { t } = useTranslations({
   en: {
     pausedBanner: {
+      title: 'Session paused',
+      body: "The container's disk is preserved. Resume to pick up where you left off.",
+      resume: 'Resume session',
+      scenarioTitle: 'Scenario paused',
+      scenarioBody: 'Your progress and your machine are kept. Resume to continue the scenario at the step you were on.',
+      resumeScenario: 'Resume the scenario',
       resuming: 'Resuming…',
       deleteButton: 'Delete permanently'
     }
   },
   fr: {
     pausedBanner: {
+      title: 'Session en pause',
+      body: 'Le disque du conteneur est conservé. Reprenez où vous en étiez.',
+      resume: 'Reprendre la session',
+      scenarioTitle: 'Scénario en pause',
+      scenarioBody: 'Votre progression et votre machine sont conservées. Reprenez pour continuer le scénario à l\'étape où vous en étiez.',
+      resumeScenario: 'Reprendre le scénario',
       resuming: 'Reprise…',
       deleteButton: 'Supprimer définitivement'
     }

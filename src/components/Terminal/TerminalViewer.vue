@@ -304,14 +304,9 @@ interface Props {
   isRecording?: boolean
   showStopButton?: boolean
   isStopping?: boolean
-  // When false, the Stop button is rendered but disabled, with a tooltip
-  // explaining why (e.g., ephemeral session — Stop is meaningless because
-  // there is no persistent disk to preserve). Defaults true to preserve
-  // existing call sites that don't care about ephemeral semantics.
+  // When false, the Stop button is rendered but disabled: a scenario run still
+  // being set up would fail its setup if stopped.
   canStop?: boolean
-  // Which tooltip explains a disabled Stop: an ephemeral session has no disk
-  // to keep, and a scenario run still being set up would fail its setup.
-  stopDisabledReason?: 'ephemeral' | 'provisioning'
   // Destroy = irreversible removal of the container + disk. Available for
   // any active session (ephemeral OR persistent) so the user can terminate
   // early instead of waiting for expiry.
@@ -367,7 +362,6 @@ const props = withDefaults(defineProps<Props>(), {
   showStopButton: false,
   isStopping: false,
   canStop: true,
-  stopDisabledReason: 'ephemeral',
   showDestroyButton: false,
   isDestroying: false,
   useSettingsCard: false,
@@ -415,7 +409,6 @@ const { t } = useTranslations({
       retry: 'Retry',
       reloadPage: 'Reload Page',
       stop: 'Stop',
-      stopDisabledEphemeral: 'This is an ephemeral session — use Destroy to terminate it (Stop preserves a disk that does not exist here).',
       stopDisabledProvisioning: 'The scenario is still being set up — Stop will be available once it is ready.',
       destroy: 'Destroy',
       destroyTooltip: 'Destroy this session permanently (container and data will be lost).',
@@ -457,7 +450,6 @@ const { t } = useTranslations({
       retry: 'Réessayer',
       reloadPage: 'Recharger la Page',
       stop: 'Arrêter',
-      stopDisabledEphemeral: 'Cette session est éphémère — utilisez Détruire pour la terminer (Arrêter conserverait un disque qui n\'existe pas ici).',
       stopDisabledProvisioning: 'Le scénario est encore en cours de préparation — vous pourrez l\'arrêter dès qu\'il sera prêt.',
       destroy: 'Détruire',
       destroyTooltip: 'Détruire définitivement cette session (le conteneur et ses données seront perdus).',
@@ -492,12 +484,9 @@ const effectiveEndReason = computed<EndStateReason | ''>(() =>
   runtimeEndReason.value || props.endReason
 )
 
-const stopTitle = computed(() => {
-  if (props.canStop) return t('terminal.stop')
-  return props.stopDisabledReason === 'provisioning'
-    ? t('terminal.stopDisabledProvisioning')
-    : t('terminal.stopDisabledEphemeral')
-})
+const stopTitle = computed(() =>
+  props.canStop ? t('terminal.stop') : t('terminal.stopDisabledProvisioning')
+)
 
 const activeEndState = computed(() => {
   const reason = effectiveEndReason.value
@@ -893,8 +882,7 @@ async function connectToTerminal() {
         error.value = ''
       } else if (event.code === SESSION_STOPPED_CLOSE_CODE) {
         // The learner's Stop, an idle or TTL auto-stop: the session is paused,
-        // not broken. Reading it as a shell error told learners their shell
-        // had crashed.
+        // not broken, so no shell error is shown.
         runtimeEndReason.value = 'stopped'
         showReconnectButton.value = false
         error.value = ''

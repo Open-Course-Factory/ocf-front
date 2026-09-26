@@ -111,7 +111,6 @@
             :show-stop-button="isPersistent"
             :is-stopping="isStopping"
             :can-stop="!isScenarioProvisioning"
-            stop-disabled-reason="provisioning"
             :show-destroy-button="true"
             :is-destroying="isDeleting"
             @stop="stopSession"
@@ -120,29 +119,21 @@
             @session-warning="handleSessionWarning"
             @session-expired="handleSessionExpired"
             @session-stopped="handleSessionStopped"
-            :inert="showsPausedBanner"
-          />
-          <!-- A paused run: laid over its dead console rather than inserted
-               above it, so nothing on the page moves when the run pauses. The
-               scenario panel stays beside it, on the step Resume goes back to.
-               The console underneath is inert, so the overlay carries what
-               stays useful — the history and flags, as on a paused terminal. -->
-          <div v-if="showsPausedBanner" class="ocf-paused-overlay">
-            <SessionPausedBanner
-              ref="pausedOverlayBannerRef"
-              v-bind="pausedCopy"
-              :is-resuming="isResuming"
-              :is-deleting="isDeleting"
-              @resume="resumeSession"
-              @delete="askDelete"
-            />
-            <CommandHistory :session-id="sessionInfo?.session_id" :is-active="false" />
-            <ValidatedFlags
-              v-if="scenarioBriefing?.flags_enabled"
-              :scenario-session-id="scenarioSessionId"
-              :is-active="false"
-            />
-          </div>
+          >
+            <!-- A paused run: laid over its dead console rather than inserted
+                 above it, so nothing on the page moves when the run pauses. The
+                 scenario panel stays beside it, on the step Resume goes back to. -->
+            <template v-if="showsPausedBanner" #console-overlay>
+              <SessionPausedBanner
+                ref="pausedOverlayBannerRef"
+                scenario
+                :is-resuming="isResuming"
+                :is-deleting="isDeleting"
+                @resume="resumeSession"
+                @delete="askDelete"
+              />
+            </template>
+          </TerminalSessionPanel>
         </div>
         <div v-show="!scenarioPanelCollapsed" class="panel-resize-handle" @mousedown.prevent="startPanelResize">
           <div class="resize-handle-bar"></div>
@@ -196,7 +187,7 @@
              we must NOT offer Resume; fall through to activeEndBanner. -->
         <SessionPausedBanner
           v-if="showsPausedBanner"
-          v-bind="pausedCopy"
+          :scenario="!!scenarioSessionId"
           :is-resuming="isResuming"
           :is-deleting="isDeleting"
           @resume="resumeSession"
@@ -281,7 +272,6 @@ import { useLimitReachedMessage } from '../../composables/useLimitReachedMessage
 import { useDunningRejection } from '../../composables/useDunningRejection'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import SessionPausedBanner from '../Terminal/SessionPausedBanner.vue'
-import ValidatedFlags from '../Terminal/ValidatedFlags.vue'
 import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
 import BaseModal from '../Modals/BaseModal.vue'
@@ -334,12 +324,6 @@ const { t } = useTranslations({
       learnMore: 'Learn more',
       gotIt: 'Got it',
       dismissNotice: 'Dismiss recording notice',
-      pausedTitle: 'Session paused',
-      pausedBody: "The container's disk is preserved. Resume to pick up where you left off.",
-      resumeButton: 'Resume session',
-      pausedScenarioTitle: 'Scenario paused',
-      pausedScenarioBody: 'Your progress and your machine are kept. Resume to continue the scenario at the step you were on.',
-      resumeScenarioButton: 'Resume the scenario',
       resumeFailed: 'Resume failed',
       deleteFailed: 'Delete failed',
       deleteConfirmTitle: 'Delete this session?',
@@ -380,12 +364,6 @@ const { t } = useTranslations({
       learnMore: 'En savoir plus',
       gotIt: 'Compris',
       dismissNotice: 'Fermer la notification d\'enregistrement',
-      pausedTitle: 'Session en pause',
-      pausedBody: 'Le disque du conteneur est conservé. Reprenez où vous en étiez.',
-      resumeButton: 'Reprendre la session',
-      pausedScenarioTitle: 'Scénario en pause',
-      pausedScenarioBody: 'Votre progression et votre machine sont conservées. Reprenez pour continuer le scénario à l\'étape où vous en étiez.',
-      resumeScenarioButton: 'Reprendre le scénario',
       resumeFailed: 'Échec de la reprise',
       deleteFailed: 'Échec de la suppression',
       deleteConfirmTitle: 'Supprimer cette session ?',
@@ -528,20 +506,11 @@ function startScenarioSync() {
 
   scenarioSyncInterval = setInterval(async () => {
     if (scenarioSessionId.value || !isSessionActive.value) {
-      if (scenarioSessionId.value || !isSessionActive.value) stopScenarioSync()
+      stopScenarioSync()
       return
     }
-    try {
-      const scenarioSession = await scenarioSessionService.getSessionByTerminal(sessionId)
-      if (scenarioSession) {
-        scenarioSessionId.value = scenarioSession.id
-        scenarioSessionStatus.value = scenarioSession.status
-        terminalHadScenario.value = true
-        stopScenarioSync()
-      }
-    } catch {
-      // Silently ignore — will retry next interval
-    }
+    await detectScenarioSession()
+    if (scenarioSessionId.value) stopScenarioSync()
   }, 10000)
 }
 
@@ -625,17 +594,6 @@ const activeEndBanner = computed(() => {
 // (stale row, backend bug) Resume must NOT be offered; the end banner shows.
 // For a scenario run the run itself stays open: it is paused, not over.
 const showsPausedBanner = computed(() => terminalEndReason.value === 'stopped' && isPersistent.value)
-const pausedCopy = computed(() => scenarioSessionId.value
-  ? {
-      title: t('sessionView.pausedScenarioTitle'),
-      body: t('sessionView.pausedScenarioBody'),
-      resumeLabel: t('sessionView.resumeScenarioButton')
-    }
-  : {
-      title: t('sessionView.pausedTitle'),
-      body: t('sessionView.pausedBody'),
-      resumeLabel: t('sessionView.resumeButton')
-    })
 
 // The overlay covers the console the learner was typing in: move focus to
 // Resume, or it stays in a terminal that no longer answers.
@@ -660,10 +618,7 @@ async function stopSession() {
     // so we still clear the stale countdown interval locally here.
     await loadSession()
     timeRemaining.value = 0
-    if (timerInterval) {
-      clearInterval(timerInterval)
-      timerInterval = null
-    }
+    stopExpirationTimer()
   } catch (err: any) {
     console.error('Error stopping session:', err)
     showErrorNotification(
@@ -850,10 +805,7 @@ function scheduleProvisioningRecheck() {
 // terminal again so the page offers Resume instead of a dead console.
 async function handleSessionStopped() {
   // No expiry is coming any more: its warnings and optimistic flip would lie.
-  if (timerInterval) {
-    clearInterval(timerInterval)
-    timerInterval = null
-  }
+  stopExpirationTimer()
   const state = await refreshSessionInfo()
   if (state !== 'stopped' && state !== 'deleted') {
     // ocf-core has not caught up with tt-backend yet, or the read failed —
@@ -951,12 +903,17 @@ function scheduleExpiryRefresh(attempt: number) {
   expiryRefreshTimeouts.add(id)
 }
 
+function stopExpirationTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
+}
+
 function startExpirationTimer(expiresAt: string) {
   const expirationTime = new Date(expiresAt).getTime()
 
-  if (timerInterval) {
-    clearInterval(timerInterval)
-  }
+  stopExpirationTimer()
 
   // Set initial value immediately (don't wait for first interval tick)
   const initialRemaining = Math.max(0, Math.floor((expirationTime - Date.now()) / 1000))
@@ -983,8 +940,7 @@ function startExpirationTimer(expiresAt: string) {
     }
 
     if (remaining <= 0) {
-      clearInterval(timerInterval!)
-      timerInterval = null
+      stopExpirationTimer()
       // Optimistically transition the local state to what the backend WILL
       // be. Without this, getEffectiveSessionState({state:'running',
       // expires_at:past}) falls into its zombie branch and returns 'deleted'
@@ -1029,10 +985,7 @@ function handleSessionWarning(level: 'info' | 'warning' | 'danger') {
 
 function handleSessionExpired() {
   timeRemaining.value = 0
-  if (timerInterval) {
-    clearInterval(timerInterval)
-    timerInterval = null
-  }
+  stopExpirationTimer()
   showWarning(t('sessionView.sessionExpiredNotice'), t('sessionView.sessionExpiredTitle'))
 }
 
@@ -1100,10 +1053,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  if (timerInterval) {
-    clearInterval(timerInterval)
-    timerInterval = null
-  }
+  stopExpirationTimer()
   cancelExpiryRefreshTimeouts()
   optimisticExpired = false
   stopScenarioSync()
@@ -1394,19 +1344,6 @@ onBeforeUnmount(() => {
     width: 100%;
     justify-content: flex-start;
   }
-}
-
-/* The paused banner laid over a scenario run's console */
-.ocf-paused-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 60;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg);
-  overflow-y: auto;
-  background-color: var(--color-bg-primary);
 }
 
 .recording-info-notice {

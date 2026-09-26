@@ -229,11 +229,13 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { scenarioSessionService, pollProvisioningStatus } from '../../services/domain/scenario'
+import type { AvailableScenario } from '../../services/domain/scenario'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { useDunningRejection } from '../../composables/useDunningRejection'
+import { useScenarioRunLabel, isPausedRun } from '../../composables/useScenarioRunLabel'
 import AdminBadge from '../Common/AdminBadge.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
 import { isAssignedSubscription } from '../../utils/subscriptionHelpers'
@@ -243,6 +245,7 @@ import { formatMinutes } from '../../utils/formatters'
 const router = useRouter()
 const { showError, showConfirm } = useNotification()
 const { isDunningRejection, getDunningCopy } = useDunningRejection()
+const runLabel = useScenarioRunLabel()
 const organizationsStore = useOrganizationsStore()
 const subscriptionsStore = useSubscriptionsStore()
 const currentOrgId = computed(() => organizationsStore.currentOrganization?.id || '')
@@ -265,12 +268,9 @@ const { t } = useTranslations({
       language: 'Language',
       languageHint: 'The scenario runs in this language. It cannot be changed once started.',
       sessionActive: 'Scenario in progress',
-      sessionPaused: 'Paused',
-      sessionPausedAtStep: 'Paused — resume at step {step}',
       alreadyRunning: 'You are already running this scenario. Resume it from its card.',
       sessionCompleted: 'Scenario completed',
       sessionAbandoned: 'Scenario abandoned',
-      sessionEnded: 'Previous run ended',
       sessionExists: 'Scenario already started',
       unavailableTitle: 'Scenario unavailable',
       unavailableNoDistribution: 'No compatible machine available for this scenario.',
@@ -314,12 +314,9 @@ const { t } = useTranslations({
       language: 'Langue',
       languageHint: 'Le scénario se déroule dans cette langue. Elle ne peut plus être changée une fois lancé.',
       sessionActive: 'Scénario en cours',
-      sessionPaused: 'En pause',
-      sessionPausedAtStep: 'En pause — reprendre à l\'étape {step}',
       alreadyRunning: 'Vous avez déjà un scénario en cours. Reprenez-le depuis sa carte.',
       sessionCompleted: 'Scénario terminé',
       sessionAbandoned: 'Scénario abandonné',
-      sessionEnded: 'Session précédente terminée',
       sessionExists: 'Scénario déjà lancé',
       unavailableTitle: 'Scénario indisponible',
       unavailableNoDistribution: 'Aucune machine compatible disponible pour ce scénario.',
@@ -504,7 +501,7 @@ const mySessionById = computed(() => {
   return map
 })
 
-function getExistingSession(scenario: any): any | null {
+function getExistingSession(scenario: AvailableScenario): any | null {
   // The availability response reports the live run using the same rule the
   // launch path applies, in the same request that produced this card. Prefer it
   // over the separately fetched session list, which is a second read of the
@@ -544,10 +541,9 @@ function isBlocked(scenario: any): boolean {
   return !scenario.launchable && scenario.block_reason !== 'session_exists'
 }
 
-// A run the platform stopped with its disk kept: Resume starts its terminal
-// again and the learner is back at the same step.
-function isPaused(scenario: any): boolean {
-  return canResume(scenario) && getExistingSession(scenario)?.resume_mode === 'paused'
+function isPaused(scenario: AvailableScenario): boolean {
+  const session = getExistingSession(scenario)
+  return !!session && isPausedRun(session)
 }
 
 function existingSessionIcon(scenario: any): string {
@@ -558,17 +554,8 @@ function existingSessionIcon(scenario: any): string {
 function getExistingSessionLabel(scenario: any): string {
   const session = getExistingSession(scenario)
   if (!session) return ''
-  if (isPaused(scenario)) {
-    // The step the learner is back at is the one after the last completed —
-    // current_step is an order whose base varies, completed_steps is a count.
-    return typeof session.completed_steps === 'number'
-      ? t('launcher.sessionPausedAtStep', { step: session.completed_steps + 1 })
-      : t('launcher.sessionPaused')
-  }
-  // A run that cannot be resumed is a past run, whatever the row still says.
-  if (!session.resumable && (session.status === 'active' || session.status === 'provisioning')) {
-    return t('launcher.sessionEnded')
-  }
+  const runState = runLabel(session)
+  if (runState) return runState
   switch (session.status) {
     case 'active':
     case 'provisioning':
