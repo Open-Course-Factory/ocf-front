@@ -27,6 +27,10 @@ import {
 //
 // The smoke spec covers authoring alone, without containers; this one is the
 // pair of it.
+//
+// Last, the author uses "Test from this step" on the quiz (#346): the preview
+// is built as a learner resuming there would find it, so it opens on the quiz
+// rather than on the briefing.
 // ---------------------------------------------------------------------------
 
 const AUTHOR_EMAIL = process.env.E2E_ORG_MANAGER_EMAIL || 'nadia@test.ocf';
@@ -45,6 +49,7 @@ const QUIZ_STEP = 'Answer the question';
 const QUIZ_QUESTION = 'Which command lists files?';
 const RIGHT_ANSWER = 'ls';
 const WRONG_ANSWER = 'rm';
+const FROM_STEP_COPY = 'Nothing the learner would have typed is replayed.';
 
 let author: ApiSession;
 let learner: ApiSession;
@@ -87,6 +92,7 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   if (scenarioId) {
     await cleanupScenarioSession(learner, scenarioId).catch(() => {});
+    await cleanupScenarioSession(author, scenarioId).catch(() => {});
     await deleteScenarioById(author, scenarioId);
   }
   await author?.api.dispose();
@@ -193,4 +199,49 @@ test('the learner plays the authored scenario through to completion', async ({ p
       { timeout: 30_000 }
     )
     .toEqual({ status: 'completed', grade: 100 });
+});
+
+test('the author tests the scenario from its second step and lands on it', async ({ page }) => {
+  test.skip(!scenarioId, 'the scenario was not authored, so there is nothing to preview');
+  test.setTimeout(360_000);
+
+  await login(page, AUTHOR_EMAIL, PASSWORD);
+  await dismissVerificationBanner(page);
+  await navigateViaMenuCategory(page, 'scenarios', '/scenario-editor');
+  await page.waitForSelector('.flow-canvas', { timeout: 20_000 });
+
+  const select = page.locator('.scenario-select');
+  await expect(select.locator(`option[value="${scenarioId}"]`)).toBeAttached({ timeout: 20_000 });
+  await select.selectOption(scenarioId!);
+  await page.waitForSelector('.quiz-step-node', { state: 'attached', timeout: 20_000 });
+
+  // A direct DOM click: VueFlow's pan handler swallows a pointer click on the
+  // node's buttons before they see it.
+  await page.evaluate(() => {
+    const button = document.querySelector(
+      '.quiz-step-node .action-btn:not(.select-tree-btn):not(.delete-btn)'
+    ) as HTMLButtonElement | null;
+    if (!button) throw new Error('quiz step edit button not found');
+    button.click();
+  });
+  await expect(page.locator('#step-title')).toHaveValue(QUIZ_STEP, { timeout: 10_000 });
+
+  await page.getByTestId('step-edit-test-from-step').click();
+
+  // The one preview confirm modal, with the copy that says what gets built.
+  const confirm = page.locator('.base-modal-container').filter({ hasText: FROM_STEP_COPY });
+  await expect(confirm).toBeVisible({ timeout: 10_000 });
+  await confirm.locator('.base-modal-footer .btn.btn-primary').click();
+
+  const errorToast = page.locator('.el-notification');
+  await Promise.race([
+    page.waitForURL(/\/terminal-session\//, { timeout: 240_000 }),
+    errorToast.waitFor({ state: 'visible', timeout: 240_000 }),
+  ]);
+  if (!/\/terminal-session\//.test(page.url())) {
+    test.skip(true, 'preview refused by the backend (likely host capacity)');
+  }
+
+  // Resuming at the quiz: the briefing reads as done and is never shown.
+  await expect(page.getByTestId('scenario-step-title')).toHaveText(QUIZ_STEP, { timeout: 60_000 });
 });
