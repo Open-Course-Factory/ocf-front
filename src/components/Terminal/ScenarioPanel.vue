@@ -217,7 +217,7 @@
                 <button
                   class="verify-btn"
                   data-testid="scenario-info-ack"
-                  :disabled="isVerifying || !isActive"
+                  :disabled="isVerifying || !canAnswer"
                   @click="ackInfoStep"
                 >
                   <i :class="isVerifying ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
@@ -262,7 +262,7 @@
             <ScenarioVerifyResult
               v-if="resolvedStepType === 'terminal'"
               class="step-action-col"
-              :is-active="isActive"
+              :is-active="canAnswer"
               :is-verifying="isVerifying"
               :result="verifyResult"
               @verify="handleVerify"
@@ -381,6 +381,10 @@ const emit = defineEmits<{
 const isReviewMode = computed(() =>
   props.sessionStatus === 'completed' || props.sessionStatus === 'abandoned'
 )
+
+// While the run is being set up (a launch's setup, a rebuild's replay) the
+// backend refuses verify with 409: do not offer it.
+const canAnswer = computed(() => props.isActive && props.sessionStatus !== 'provisioning')
 
 const { showConfirm, showError } = useNotification()
 
@@ -965,7 +969,7 @@ async function handleResetStep() {
 }
 
 async function handleVerify() {
-  if (isVerifying.value || !props.isActive) return
+  if (isVerifying.value || !canAnswer.value) return
 
   isVerifying.value = true
   verifyResult.value = null
@@ -1067,7 +1071,7 @@ async function handleAbandon() {
 // Info step: acknowledgement is handled by the existing verify endpoint —
 // the backend now auto-advances info steps on verify.
 async function ackInfoStep() {
-  if (isVerifying.value || !props.isActive) return
+  if (isVerifying.value || !canAnswer.value) return
   await handleVerify()
 }
 
