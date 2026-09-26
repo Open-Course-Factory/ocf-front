@@ -237,7 +237,7 @@
               v-else-if="resolvedStepType === 'quiz'"
               :step="currentStep!"
               :scenario-session-id="scenarioSessionId"
-              :is-active="isActive"
+              :is-active="canAnswer"
               :is-submitting="isSubmittingQuiz"
               :result="quizResult"
               :submit-error="quizSubmitError"
@@ -272,7 +272,7 @@
               v-else-if="resolvedStepType === 'flag'"
               class="step-action-col"
               v-model="flagValue"
-              :is-active="isActive"
+              :is-active="canAnswer"
               :is-submitting="isSubmittingFlag"
               :result="flagResult"
               @submit="handleSubmitFlag"
@@ -1004,7 +1004,7 @@ async function handleVerify() {
 }
 
 async function handleSubmitFlag() {
-  if (!flagValue.value.trim() || isSubmittingFlag.value || !props.isActive) return
+  if (!flagValue.value.trim() || isSubmittingFlag.value || !canAnswer.value) return
 
   isSubmittingFlag.value = true
   flagResult.value = null
@@ -1076,7 +1076,7 @@ async function ackInfoStep() {
 }
 
 async function handleSubmitQuiz(payload: Record<string, string>) {
-  if (isSubmittingQuiz.value || !props.isActive) return
+  if (isSubmittingQuiz.value || !canAnswer.value) return
   isSubmittingQuiz.value = true
   quizSubmitError.value = ''
   try {
