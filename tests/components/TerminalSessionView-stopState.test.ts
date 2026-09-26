@@ -67,21 +67,23 @@ vi.mock('../../src/composables/useNotification', () => ({
 const mockGetSessionByTerminal = vi.fn().mockResolvedValue(null)
 const mockResumeScenarioSession = vi.fn()
 const mockGetSessionInfo = vi.fn()
+const mockAbandonSession = vi.fn().mockResolvedValue(undefined)
 vi.mock('../../src/services/domain/scenario', () => ({
   scenarioSessionService: {
     getSessionByTerminal: (...args: any[]) => mockGetSessionByTerminal(...args),
     getSessionInfo: (...args: any[]) => mockGetSessionInfo(...args),
-    abandonSession: vi.fn().mockResolvedValue(undefined),
+    abandonSession: (...args: any[]) => mockAbandonSession(...args),
     resumeSession: (...args: any[]) => mockResumeScenarioSession(...args)
   }
 }))
 
 const mockStartSession = vi.fn().mockResolvedValue({})
+const mockDeleteSession = vi.fn().mockResolvedValue({})
 vi.mock('../../src/services/domain/terminal/terminalService', () => ({
   terminalService: {
     startSession: (...args: any[]) => mockStartSession(...args),
     stopSession: vi.fn().mockResolvedValue({}),
-    deleteSession: vi.fn().mockResolvedValue({}),
+    deleteSession: (...args: any[]) => mockDeleteSession(...args),
     syncSession: vi.fn().mockResolvedValue({})
   }
 }))
@@ -1159,13 +1161,21 @@ describe('TerminalSessionView — a run whose environment is being set up', () =
  * keeps today's copy.
  *
  * On a persistent terminal Stop is today's pause: no confirm, straight to
- * /stop.
+ * /stop. A non-persistent terminal cannot pause — tt-backend's /stop keeps the
+ * container and ocf-core's sync brings the row back as stopped (ocf-core #529)
+ * — so on a scenario run Stop deletes the terminal, behind a confirm worded
+ * like Delete's. The page stays: a normal run then offers the rebuild banner;
+ * a crash-trap run is ended (abandoned before its terminal is deleted, as
+ * ocf-core's EndCrashTrapRun does).
  */
 describe('TerminalSessionView — stop and delete copy by persistence', () => {
   const DELETE_COPY_PLAIN = 'The container disk and command history will be permanently lost.'
   const DELETE_COPY_REBUILD =
     'Your environment will be deleted. Your progress is kept: your environment will be rebuilt at this step when you resume. To end the run, abandon it.'
   const DELETE_COPY_CRASH_TRAPS = 'Deleting ends this run. It cannot be resumed.'
+  const STOP_COPY_REBUILD =
+    'Your environment will be deleted. Your progress is kept: when you resume, your environment will be rebuilt at this step.'
+  const STOP_COPY_CRASH_TRAPS = 'Stopping ends this run. It cannot be resumed.'
 
   // The delete confirm, rendered with its body when open.
   const BaseModalStub = {
@@ -1200,9 +1210,31 @@ describe('TerminalSessionView — stop and delete copy by persistence', () => {
     return modal.text()
   }
 
+  // Once the terminal is deleted, ocf-core reports it gone and the run as
+  // `run` says.
+  function deletingReports(run: any) {
+    mockDeleteSession.mockImplementation(async () => {
+      mockAxiosGet.mockResolvedValue({
+        data: [{ ...ephemeralRow(), state: 'deleted', expires_at: new Date(Date.now() - 1000).toISOString() }]
+      })
+      mockGetSessionByTerminal.mockResolvedValue(run)
+      return {}
+    })
+  }
+
+  async function stopConfirmText(wrapper: ReturnType<typeof mountView>) {
+    wrapper.findComponent({ name: 'TerminalViewer' }).vm.$emit('stop')
+    await flushPromises()
+    const modal = wrapper.find('.bm-stub')
+    expect(modal.exists()).toBe(true)
+    return modal.text()
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockShowConfirm.mockResolvedValue(true)
+    mockDeleteSession.mockReset().mockResolvedValue({})
+    mockAbandonSession.mockReset().mockResolvedValue(undefined)
   })
 
   describe('delete confirm', () => {
@@ -1278,6 +1310,106 @@ describe('TerminalSessionView — stop and delete copy by persistence', () => {
       expect(mockShowConfirm).not.toHaveBeenCalled()
       expect(wrapper.find('.bm-stub').exists()).toBe(false)
       expect(mockAxiosPost).toHaveBeenCalledWith('/terminals/sess-test/stop')
+      wrapper.unmount()
+    })
+
+    it('offers Stop on a non-persistent scenario run', async () => {
+      const wrapper = await mountWith({ row: ephemeralRow() })
+
+      expect(wrapper.find('.tv-stub').attributes('data-show-stop-button')).toBe('true')
+      wrapper.unmount()
+    })
+
+    it('asks first, saying a normal run is rebuilt at its step', async () => {
+      const wrapper = await mountWith({ row: ephemeralRow() })
+
+      const text = await stopConfirmText(wrapper)
+
+      expect(text).toContain(STOP_COPY_REBUILD)
+      expect(mockAxiosPost).not.toHaveBeenCalledWith('/terminals/sess-test/stop')
+      expect(mockDeleteSession).not.toHaveBeenCalled()
+      wrapper.unmount()
+    })
+
+    it('asks first, saying stopping ends a crash-trap run', async () => {
+      const wrapper = await mountWith({ row: ephemeralRow(), crashTraps: true })
+
+      const text = await stopConfirmText(wrapper)
+
+      expect(text).toContain(STOP_COPY_CRASH_TRAPS)
+      expect(text).not.toContain(STOP_COPY_REBUILD)
+      expect(mockDeleteSession).not.toHaveBeenCalled()
+      wrapper.unmount()
+    })
+
+    it('has its own French stop copy for each case', async () => {
+      const texts: string[] = []
+      for (const crashTraps of [false, true]) {
+        const wrapper = await mountWith({ row: ephemeralRow(), crashTraps, locale: 'fr' })
+        texts.push(await stopConfirmText(wrapper))
+        wrapper.unmount()
+      }
+
+      expect(texts[0]).not.toBe(texts[1])
+      for (const text of texts) {
+        expect(text).not.toContain(STOP_COPY_REBUILD)
+        expect(text).not.toContain(STOP_COPY_CRASH_TRAPS)
+      }
+    })
+
+    it('deletes a normal run\'s terminal on confirm and offers the rebuild', async () => {
+      const wrapper = await mountWith({ row: ephemeralRow() })
+      deletingReports({ id: 'scen-1', status: 'active', resume_mode: 'rebuild' })
+      await stopConfirmText(wrapper)
+
+      await wrapper.find('[data-testid="confirm-delete-cta"]').trigger('click')
+      await flushPromises()
+
+      expect(mockDeleteSession).toHaveBeenCalledWith('sess-test')
+      expect(mockAxiosPost).not.toHaveBeenCalledWith('/terminals/sess-test/stop')
+      expect(mockAbandonSession).not.toHaveBeenCalled()
+      // The page stays on the run: its rebuild banner is the way back.
+      expect(mockRouterPush).not.toHaveBeenCalled()
+      expect(wrapper.find('[data-testid="rebuild-session-cta"]').exists()).toBe(true)
+      wrapper.unmount()
+    })
+
+    it('ends a crash-trap run on confirm, then deletes its terminal', async () => {
+      const wrapper = await mountWith({ row: ephemeralRow(), crashTraps: true })
+      const order: string[] = []
+      mockAbandonSession.mockImplementation(async () => { order.push('abandon') })
+      deletingReports({ id: 'scen-1', status: 'abandoned' })
+      const deleteThenReport = mockDeleteSession.getMockImplementation()!
+      mockDeleteSession.mockImplementation(async (...args: any[]) => {
+        order.push('delete')
+        return deleteThenReport(...args)
+      })
+      await stopConfirmText(wrapper)
+
+      await wrapper.find('[data-testid="confirm-delete-cta"]').trigger('click')
+      await flushPromises()
+
+      expect(mockAbandonSession).toHaveBeenCalledWith('scen-1')
+      expect(mockDeleteSession).toHaveBeenCalledWith('sess-test')
+      expect(order).toEqual(['abandon', 'delete'])
+      expect(mockAxiosPost).not.toHaveBeenCalledWith('/terminals/sess-test/stop')
+      expect(wrapper.find('[data-testid="rebuild-session-cta"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="resume-session-cta"]').exists()).toBe(false)
+      wrapper.unmount()
+    })
+
+    it('does nothing when the stop is cancelled', async () => {
+      const wrapper = await mountWith({ row: ephemeralRow() })
+      await stopConfirmText(wrapper)
+
+      await wrapper.find('[data-testid="cancel-delete-cta"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('.bm-stub').exists()).toBe(false)
+      expect(mockDeleteSession).not.toHaveBeenCalled()
+      expect(mockAbandonSession).not.toHaveBeenCalled()
+      expect(mockAxiosPost).not.toHaveBeenCalledWith('/terminals/sess-test/stop')
+      expect(mockRouterPush).not.toHaveBeenCalled()
       wrapper.unmount()
     })
 
