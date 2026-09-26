@@ -6,16 +6,20 @@
  * A stopped persistent terminal: Resume starts it again (disk kept), Delete
  * removes it. A scenario run is worded as such: what is kept is the learner's
  * progress, not just a disk.
+ *
+ * `rebuild`: a scenario run whose terminal is gone but which is not over.
+ * There is nothing to start again or delete — Resume builds a new machine at
+ * the learner's step.
  */
 -->
 
 <template>
   <div class="session-paused-banner" role="status">
     <div class="paused-content">
-      <i class="fas fa-pause-circle paused-icon" aria-hidden="true"></i>
+      <i class="fas paused-icon" :class="rebuild ? 'fa-exclamation-circle' : 'fa-pause-circle'" aria-hidden="true"></i>
       <div class="paused-text">
-        <strong>{{ t(scenario ? 'pausedBanner.scenarioTitle' : 'pausedBanner.title') }}</strong>
-        <span>{{ t(scenario ? 'pausedBanner.scenarioBody' : 'pausedBanner.body') }}</span>
+        <strong>{{ t(rebuild ? 'pausedBanner.rebuildTitle' : scenario ? 'pausedBanner.scenarioTitle' : 'pausedBanner.title') }}</strong>
+        <span>{{ t(rebuild ? 'pausedBanner.rebuildBody' : scenario ? 'pausedBanner.scenarioBody' : 'pausedBanner.body') }}</span>
       </div>
     </div>
     <div class="paused-actions">
@@ -24,14 +28,15 @@
         class="btn-resume"
         :disabled="isResuming || isDeleting"
         @click="emit('resume')"
-        data-testid="resume-session-cta"
+        :data-testid="rebuild ? 'rebuild-session-cta' : 'resume-session-cta'"
       >
         <i class="fas" :class="isResuming ? 'fa-spinner fa-spin' : 'fa-play'"></i>
         {{ isResuming
           ? t('pausedBanner.resuming')
-          : t(scenario ? 'pausedBanner.resumeScenario' : 'pausedBanner.resume') }}
+          : t(rebuild ? 'pausedBanner.rebuild' : scenario ? 'pausedBanner.resumeScenario' : 'pausedBanner.resume') }}
       </button>
       <button
+        v-if="!rebuild"
         class="btn-trash"
         :disabled="isResuming || isDeleting"
         @click="emit('delete')"
@@ -50,8 +55,9 @@ import { useTranslations } from '../../composables/useTranslations'
 
 defineProps<{
   scenario?: boolean
+  rebuild?: boolean
   isResuming: boolean
-  isDeleting: boolean
+  isDeleting?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -75,7 +81,10 @@ const { t } = useTranslations({
       scenarioBody: 'Your progress and your machine are kept. Resume to continue the scenario at the step you were on.',
       resumeScenario: 'Resume the scenario',
       resuming: 'Resuming…',
-      deleteButton: 'Delete permanently'
+      deleteButton: 'Delete permanently',
+      rebuildTitle: 'Environment lost',
+      rebuildBody: 'This scenario\'s machine no longer exists, but your progress is kept. Rebuild it to continue at the step you were on.',
+      rebuild: 'Rebuild and resume'
     }
   },
   fr: {
@@ -87,7 +96,10 @@ const { t } = useTranslations({
       scenarioBody: 'Votre progression et votre machine sont conservées. Reprenez pour continuer le scénario à l\'étape où vous en étiez.',
       resumeScenario: 'Reprendre le scénario',
       resuming: 'Reprise…',
-      deleteButton: 'Supprimer définitivement'
+      deleteButton: 'Supprimer définitivement',
+      rebuildTitle: 'Environnement perdu',
+      rebuildBody: 'La machine de ce scénario n\'existe plus, mais votre progression est conservée. Reconstruisez-la pour continuer à l\'étape où vous en étiez.',
+      rebuild: 'Reconstruire et reprendre'
     }
   }
 })

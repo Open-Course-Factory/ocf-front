@@ -124,8 +124,18 @@
 
             <!-- Actions for runs the learner can go back to -->
             <div v-if="isResumable(session)" class="card-footer">
+              <button
+                v-if="isRebuildRun(session)"
+                class="btn btn-sm btn-primary resume-btn"
+                data-testid="scenario-rebuild-btn"
+                :disabled="isRecovering"
+                @click.stop="handleRebuild(session)"
+              >
+                <i :class="isRecovering ? 'fas fa-spinner fa-spin' : 'fas fa-play-circle'"></i>
+                {{ t('myScenarios.rebuild') }}
+              </button>
               <router-link
-                v-if="session.terminal_session_id"
+                v-else-if="session.terminal_session_id"
                 :to="`/terminal-session/${session.terminal_session_id}`"
                 class="btn btn-sm btn-primary resume-btn"
                 @click.stop
@@ -133,6 +143,16 @@
                 <i class="fas fa-play-circle"></i>
                 {{ t('myScenarios.resume') }}
               </router-link>
+              <button
+                v-if="isPausedRun(session) || isRebuildRun(session)"
+                class="btn btn-sm btn-secondary"
+                data-testid="scenario-start-over-btn"
+                :disabled="isRecovering"
+                @click.stop="handleStartOver(session)"
+              >
+                <i class="fas fa-redo"></i>
+                {{ t('myScenarios.startOver') }}
+              </button>
               <button
                 class="btn btn-sm btn-outline-danger abandon-btn"
                 @click.stop="handleAbandon(session)"
@@ -167,10 +187,12 @@ import { useTranslations } from '../../composables/useTranslations'
 import { scenarioSessionService } from '../../services/domain/scenario'
 import type { MyScenarioSession } from '../../services/domain/scenario'
 import ProgressBar from '../Common/ProgressBar.vue'
-import { useScenarioRunLabel, isPausedRun, isEndedRun } from '../../composables/useScenarioRunLabel'
+import { useScenarioRunLabel, isPausedRun, isEndedRun, isRebuildRun } from '../../composables/useScenarioRunLabel'
+import { useScenarioRunRecovery } from '../../composables/useScenarioRunRecovery'
 
 const router = useRouter()
 const runLabel = useScenarioRunLabel()
+const { rebuild, launch, startOver } = useScenarioRunRecovery()
 
 const { t } = useTranslations({
   en: {
@@ -186,6 +208,8 @@ const { t } = useTranslations({
       attempts: 'attempt | attempts',
       bestGrade: 'Best grade',
       resume: 'Resume',
+      rebuild: 'Rebuild & resume',
+      startOver: 'Start over',
       abandon: 'Abandon',
       review: 'Review',
       abandonConfirm: 'Abandon this scenario session? This cannot be undone.',
@@ -211,6 +235,8 @@ const { t } = useTranslations({
       attempts: 'tentative | tentatives',
       bestGrade: 'Meilleure note',
       resume: 'Reprendre',
+      rebuild: 'Reconstruire et reprendre',
+      startOver: 'Recommencer',
       abandon: 'Abandonner',
       review: 'Revoir',
       abandonConfirm: 'Abandonner cette session de scénario ? Cette action est irréversible.',
@@ -249,6 +275,7 @@ function matchesStatus(session: MyScenarioSession, status: string): boolean {
 
 function displayStatus(session: MyScenarioSession): string {
   if (isPausedRun(session)) return 'paused'
+  if (isRebuildRun(session)) return 'lost'
   if (isEndedRun(session)) return 'ended'
   return session.status
 }
@@ -257,6 +284,7 @@ function statusIcon(status: string): string {
   switch (status) {
     case 'active': return 'fas fa-play-circle'
     case 'paused': return 'fas fa-pause-circle'
+    case 'lost': return 'fas fa-exclamation-circle'
     case 'ended': return 'fas fa-stop-circle'
     case 'completed': return 'fas fa-check-circle'
     case 'abandoned': return 'fas fa-times-circle'
@@ -356,7 +384,8 @@ function isResumable(session: MyScenarioSession): boolean {
 }
 
 function handleCardClick(session: MyScenarioSession) {
-  if (isResumable(session) && session.terminal_session_id) {
+  // A run to rebuild has no terminal to open: its buttons say what to do.
+  if (isResumable(session) && !isRebuildRun(session) && session.terminal_session_id) {
     router.push(`/terminal-session/${session.terminal_session_id}`)
   }
 }
@@ -371,6 +400,32 @@ async function loadSessions() {
   } finally {
     isLoading.value = false
   }
+}
+
+const isRecovering = ref(false)
+
+// Both open the run's new terminal when it is ready, or reload the list when
+// there is none — the refusal was explained, or the run changed meanwhile.
+async function openOrReload(pending: Promise<string | null>) {
+  isRecovering.value = true
+  try {
+    const terminalId = await pending
+    if (terminalId) {
+      router.push({ name: 'TerminalSessionView', params: { sessionId: terminalId } })
+    } else {
+      await loadSessions()
+    }
+  } finally {
+    isRecovering.value = false
+  }
+}
+
+function handleRebuild(session: MyScenarioSession) {
+  return openOrReload(rebuild(session.id, { wait: true }))
+}
+
+function handleStartOver(session: MyScenarioSession) {
+  return startOver(session.id, () => openOrReload(launch(session.scenario_id, {}, { wait: true })))
 }
 
 async function handleAbandon(session: MyScenarioSession) {
@@ -592,12 +647,14 @@ onMounted(() => {
   color: var(--color-text-secondary);
 }
 
-.status-badge.paused {
+.status-badge.paused,
+.status-badge.lost {
   background: var(--color-warning-bg);
   color: var(--color-warning-text);
 }
 
-.status-badge.paused i {
+.status-badge.paused i,
+.status-badge.lost i {
   color: var(--color-warning);
 }
 

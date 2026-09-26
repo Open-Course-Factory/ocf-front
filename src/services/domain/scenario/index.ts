@@ -11,6 +11,7 @@ export type {
   ScenarioInfo,
   MyScenarioSession,
   AvailableScenario,
+  LaunchScenarioResponse,
   ValidatedFlag
 } from './scenarioSessionService'
 export { teacherService } from './teacherService'

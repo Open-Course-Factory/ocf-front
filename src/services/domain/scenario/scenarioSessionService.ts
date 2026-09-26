@@ -158,9 +158,10 @@ export interface MyScenarioSession {
   resumable?: boolean
   // How a resumable run comes back: 'live' when its terminal is running,
   // 'paused' when the platform stopped it with the disk kept — the run goes on
-  // at the same step once the terminal is started again. Absent when the run
-  // cannot be resumed.
-  resume_mode?: 'live' | 'paused'
+  // at the same step once the terminal is started again, 'rebuild' when its
+  // container is gone and a new one is built at the current step. Absent when
+  // the run cannot be resumed.
+  resume_mode?: 'live' | 'paused' | 'rebuild'
 }
 
 // A card of GET /scenario-sessions/available. When the learner already has a
@@ -171,7 +172,7 @@ export interface AvailableScenario extends ScenarioInfo {
   active_session_id?: string
   active_terminal_session_id?: string
   // Same meaning as MyScenarioSession.resume_mode, for the active run.
-  active_session_resume_mode?: 'live' | 'paused'
+  active_session_resume_mode?: 'live' | 'paused' | 'rebuild'
   [key: string]: any
 }
 
@@ -194,6 +195,17 @@ export interface ScenarioInfo {
   port_exposure_allowed?: boolean
 }
 
+// What launch, preview and resume answer. provisioning_timeout_seconds is set
+// only while status is 'provisioning': how long the build may take, the
+// client's poll deadline.
+export interface LaunchScenarioResponse {
+  terminal_session_id: string
+  scenario_session_id: string
+  status: string
+  provisioning_phase?: string
+  provisioning_timeout_seconds?: number
+}
+
 export const scenarioSessionService = {
   async getMyScenarioSessions(): Promise<MyScenarioSession[]> {
     const response = await axios.get('/scenario-sessions/my')
@@ -213,12 +225,7 @@ export const scenarioSessionService = {
     return response.data?.data || response.data || []
   },
 
-  async launchScenario(scenarioId: string, options?: { backend?: string; organization_id?: string; locale?: string }): Promise<{
-    terminal_session_id: string
-    scenario_session_id: string
-    status: string
-    provisioning_phase?: string
-  }> {
+  async launchScenario(scenarioId: string, options?: { backend?: string; organization_id?: string; locale?: string }): Promise<LaunchScenarioResponse> {
     const response = await axios.post('/scenario-sessions/launch', {
       scenario_id: scenarioId,
       ...options
@@ -226,11 +233,7 @@ export const scenarioSessionService = {
     return response.data
   },
 
-  async previewScenario(scenarioId: string, options?: { backend?: string; organization_id?: string }): Promise<{
-    scenario_session_id: string
-    terminal_session_id: string
-    status: string
-  }> {
+  async previewScenario(scenarioId: string, options?: { backend?: string; organization_id?: string }): Promise<LaunchScenarioResponse> {
     // Trainer-side preview: backend POST /scenarios/:id/preview creates a real
     // terminal + scenario session bypassing the assignment check.
     // Long timeout matches launchScenario — terminal provisioning takes time.
@@ -255,6 +258,18 @@ export const scenarioSessionService = {
 
   async submitQuiz(sessionId: string, answers: Record<string, string>): Promise<SubmitQuizResponse> {
     const response = await axios.post(`/scenario-sessions/${sessionId}/submit-quiz`, { answers })
+    return response.data
+  },
+
+  /**
+   * Gets the learner back into an open run whatever became of its terminal: a
+   * live one is returned as is, a paused one is started in place, and one
+   * whose container is gone is rebuilt on a new terminal at the current step
+   * (status 'provisioning', phase 'replay'). Same timeout as a launch: a
+   * rebuild creates the terminal before answering.
+   */
+  async resumeSession(sessionId: string): Promise<LaunchScenarioResponse> {
+    const response = await axios.post(`/scenario-sessions/${sessionId}/resume`, undefined, { timeout: 180000 })
     return response.data
   },
 
@@ -332,15 +347,18 @@ export const scenarioSessionService = {
  * Polls a scenario session until provisioning completes or fails.
  * Throws 'SETUP_FAILED' if setup fails, 'SETUP_TIMEOUT' if max attempts reached.
  * Accepts an optional AbortSignal to cancel polling early.
+ * `deadlineSeconds` bounds the wait by the backend's provisioning_timeout_seconds
+ * (a rebuild may take longer than a launch); without it, 120 polls of 3 s.
  */
 export async function pollProvisioningStatus(
   sessionId: string,
   onPhaseChange?: (phase: string) => void,
   abortSignal?: AbortSignal,
-  options?: { maxAttempts?: number; intervalMs?: number }
+  options?: { maxAttempts?: number; intervalMs?: number; deadlineSeconds?: number }
 ): Promise<void> {
-  const maxAttempts = options?.maxAttempts ?? 120
   const intervalMs = options?.intervalMs ?? 3000
+  const maxAttempts = options?.maxAttempts
+    ?? (options?.deadlineSeconds ? Math.ceil(options.deadlineSeconds * 1000 / intervalMs) : 120)
 
   for (let i = 0; i < maxAttempts; i++) {
     if (abortSignal?.aborted) return

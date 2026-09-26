@@ -19,6 +19,12 @@ export function isPausedRun(run: Run): boolean {
   return run.resumable === true && run.resume_mode === 'paused'
 }
 
+// Its container is gone but the run is not over: resuming builds a new one at
+// the step the learner left.
+export function isRebuildRun(run: Run): boolean {
+  return run.resumable === true && run.resume_mode === 'rebuild'
+}
+
 // A run whose row has not caught up with a terminal that is gone.
 export function isEndedRun(run: Run): boolean {
   return run.resumable !== true && (run.status === 'active' || run.status === 'provisioning')
@@ -36,14 +42,18 @@ export function useScenarioRunLabel() {
       scenarioRun: {
         paused: 'Paused',
         pausedAtStep: 'Paused — resume at step {step}',
-        ended: 'Previous run ended'
+        ended: 'Previous run ended',
+        rebuild: 'Environment lost — rebuild and resume',
+        rebuildAtStep: 'Environment lost — rebuild and resume at step {step}'
       }
     },
     fr: {
       scenarioRun: {
         paused: 'En pause',
         pausedAtStep: 'En pause — reprendre à l\'étape {step}',
-        ended: 'Session précédente terminée'
+        ended: 'Session précédente terminée',
+        rebuild: 'Environnement perdu — le reconstruire et reprendre',
+        rebuildAtStep: 'Environnement perdu — le reconstruire et reprendre à l\'étape {step}'
       }
     }
   })
@@ -53,6 +63,10 @@ export function useScenarioRunLabel() {
     if (isPausedRun(run)) {
       const step = resumeStep(run)
       return step === null ? t('scenarioRun.paused') : t('scenarioRun.pausedAtStep', { step })
+    }
+    if (isRebuildRun(run)) {
+      const step = resumeStep(run)
+      return step === null ? t('scenarioRun.rebuild') : t('scenarioRun.rebuildAtStep', { step })
     }
     if (isEndedRun(run)) return t('scenarioRun.ended')
     return ''
