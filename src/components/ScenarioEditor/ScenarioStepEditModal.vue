@@ -5,6 +5,7 @@
     size="large"
     :is-loading="isSaving"
     :error-message="errorMessage"
+    :close-on-overlay-click="false"
     @close="emit('close')"
   >
     <div class="step-edit-form">

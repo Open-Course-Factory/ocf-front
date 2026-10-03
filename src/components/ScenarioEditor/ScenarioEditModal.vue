@@ -26,6 +26,7 @@
     :cancel-text="t('scenarioEditor.cancel')"
     :is-loading="isSaving"
     :error-message="errorMessage"
+    :close-on-overlay-click="false"
     @close="emit('close')"
     @confirm="isTranslating ? handleSaveTranslation() : emit('save')"
   >
