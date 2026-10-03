@@ -201,7 +201,15 @@ async function captureScreenshot() {
   await new Promise(resolve => requestAnimationFrame(resolve))
 
   try {
-    const canvas = await html2canvas(document.body)
+    // html2canvas renders a cloned document, where CSS entry animations
+    // (Layout's fadeIn) restart from opacity 0 and get captured washed out
+    const canvas = await html2canvas(document.body, {
+      onclone: (doc) => {
+        const style = doc.createElement('style')
+        style.textContent = '*, *::before, *::after { animation: none !important; transition: none !important; }'
+        doc.head.appendChild(style)
+      },
+    })
     let dataUrl = canvas.toDataURL('image/png')
     let base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
 
