@@ -864,6 +864,18 @@ const handleAddAtCenter = (nodeType: string) => {
 
 // Node added handler
 const handleNodeAdded = (node: any) => {
+  // A step needs a scenario to belong to, and a scenario node is only ever
+  // created through the create modal, which knows where it will live.
+  if (!currentScenario.value || node.type === 'scenario') {
+    nodes.value = nodes.value.filter(n => n.id !== node.id)
+    if (!canCreateScenario.value) {
+      notification.showWarning(t('scenarioEditor.selectScenarioFirst'))
+      return
+    }
+    if (node.type !== 'scenario') notification.showInfo(t('scenarioEditor.createScenarioFirst'))
+    handleCreateNew()
+    return
+  }
   if (!canEditScenario.value) {
     // Remove the node that was just dropped — read-only mode
     nodes.value = nodes.value.filter(n => n.id !== node.id)
