@@ -4,8 +4,8 @@
  * Copyright (C) 2023-2026 Solution Libre
  *
  * Header bar of the Scenario Editor page. Shows the scenario picker, current
- * org/platform context, the read-only badge, and the action buttons (import,
- * export, copy, reset, save).
+ * org/platform context, the read-only badge, and the action buttons
+ * (export, copy, reset, save).
  *
  * The parent owns all state — the header is a pure presentational component
  * that emits intents. The selector uses v-model for two-way binding on the
@@ -105,15 +105,6 @@
             <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
           </button>
           <div v-if="showActionsMenu" class="dropdown-menu" @click.stop>
-            <button
-              v-if="canEditScenario"
-              class="dropdown-item"
-              :disabled="isImporting"
-              @click="emit('import'); showActionsMenu = false"
-            >
-              <i :class="isImporting ? 'fas fa-spinner fa-spin' : 'fas fa-file-import'" aria-hidden="true"></i>
-              <span>{{ t('scenarioEditor.import') }}</span>
-            </button>
             <button class="dropdown-item" @click="emit('export-json'); showActionsMenu = false">
               <i class="fas fa-file-code" aria-hidden="true"></i>
               <span>{{ t('scenarioEditor.exportJSON') }}</span>
@@ -189,7 +180,6 @@ interface Props {
   canCreateScenario: boolean
   canEditScenario: boolean
   canCopyToOrg: boolean
-  isImporting: boolean
   isAdmin: boolean
   nodeCount: number
   edgeCount: number
@@ -239,7 +229,6 @@ const emit = defineEmits<{
   (e: 'update:editingLocale', locale: string): void
   (e: 'select-change'): void
   (e: 'create-new'): void
-  (e: 'import'): void
   (e: 'export-json'): void
   (e: 'export-killercoda'): void
   (e: 'copy-to-org'): void
@@ -250,7 +239,7 @@ const emit = defineEmits<{
   (e: 'save'): void
 }>()
 
-// Header overflow menu (Import / Export / Copy / Reset)
+// Header overflow menu (Export / Copy / Archive / Reset)
 const showActionsMenu = ref(false)
 const actionsMenuRef = ref<HTMLElement | null>(null)
 

@@ -8,7 +8,6 @@
       :can-create-scenario="canCreateScenario"
       :can-edit-scenario="canEditScenario"
       :can-copy-to-org="!!canCopyToOrg"
-      :is-importing="isImporting"
       :is-admin="isAdmin"
       :node-count="nodes.length"
       :edge-count="edges.length"
@@ -21,7 +20,6 @@
       @update:editing-locale="editingLocale = $event"
       @select-change="handleScenarioSelect"
       @create-new="handleCreateNew"
-      @import="handleImport"
       @export-json="handleExportJSON"
       @export-killercoda="handleExportKillerCoda"
       @copy-to-org="openCopyModal"
@@ -381,7 +379,6 @@ const {
   }
 })
 const allScenarios = computed(() => scenariosStore.entities)
-const isImporting = ref(false)
 // Right step-list panel collapsed by default — discoverability comes from the
 // tooltip on the toggle. Last user choice persists in localStorage.
 const isRightPanelCollapsed = ref(true)
@@ -759,23 +756,6 @@ const handleCreateNew = () => {
   }
   showScenarioEditModal.value = true
   modalError.value = ''
-}
-
-// Import scenario
-const handleImport = async () => {
-  if (!selectedScenarioId.value) return
-  isImporting.value = true
-  try {
-    await axios.post(`/scenarios/${selectedScenarioId.value}/import`)
-    notification.showSuccess(t('scenarioEditor.importSuccess'))
-    // Reload scenario data
-    await handleScenarioSelect()
-  } catch (err) {
-    console.error('Import failed:', err)
-    notification.showError(t('scenarioEditor.importError'))
-  } finally {
-    isImporting.value = false
-  }
 }
 
 // Export handlers
