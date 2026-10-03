@@ -1500,8 +1500,25 @@ const handleSaveStep = async (formData: any) => {
         }
       }
 
+      // Provisionally last, so a failed renumber below never leaves two steps
+      // on the same order. The renumber then moves it to where it was placed.
+      const savedSteps = nodes.value.filter(n => STEP_NODE_TYPES.includes(n.data.entityType) && n.data.entityId && !n.data.isNew)
+      stepData.order = Math.max(-1, ...savedSteps.map(n => n.data.order ?? 0)) + 1
+
       const created = await scenarioStepsStore.createEntity('/scenario-steps', stepData)
       stepId = created?.id || created?.data?.id
+
+      // The reload below rebuilds the chain from the stored orders, so the
+      // chain drawn on the canvas — with the new step where it was dropped —
+      // has to be written first, by the same renumber the header Save runs.
+      const newNode = nodes.value.find(n => n.id === editingStepNodeId.value)
+      if (newNode && stepId) {
+        Object.assign(newNode.data, { entityId: stepId, isNew: false, order: stepData.order })
+        const { failed, failedLabels } = await syncOrderFromEdges()
+        if (failed > 0) {
+          notification.showError(t('scenarioEditor.orderSyncFailed', { steps: failedLabels.join(', ') }))
+        }
+      }
     } else {
       stepId = editingStep.value?.entityId || editingStep.value?.id
       if (stepId) {
