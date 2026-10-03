@@ -24,7 +24,7 @@ export function useScenarioEditorI18n() {
       saveError: 'Failed to save changes',
       loadError: 'Failed to load scenario',
       emptyTitle: 'No Nodes Yet',
-      emptyDescription: 'Select a scenario or drag node types from the library',
+      emptyDescription: 'Select a scenario or create one, then drag steps from the library onto it',
       nodeLibraryTitle: 'Nodes',
       nodeLibraryHelp: 'Drag a node type onto the canvas to create a new entity',
       nodeTypes: {
@@ -149,6 +149,8 @@ export function useScenarioEditorI18n() {
       tabsLabel: 'Scenario editor sections',
       readOnly: 'Read only',
       readOnlyWarning: 'This scenario is read-only. Copy it to your organization to edit.',
+      createScenarioFirst: 'Create the scenario first, then drag its steps onto it.',
+      selectScenarioFirst: 'Select a scenario first, then drag its steps onto it.',
       // Play as learner (preview)
       playAsStudent: 'Play as learner',
       previewConfirmTitle: 'Preview this scenario?',
@@ -177,7 +179,7 @@ export function useScenarioEditorI18n() {
       saveError: 'Échec de l\'enregistrement',
       loadError: 'Échec du chargement du scénario',
       emptyTitle: 'Aucun Nœud',
-      emptyDescription: 'Sélectionnez un scénario ou glissez des types de nœuds depuis la bibliothèque',
+      emptyDescription: 'Sélectionnez un scénario ou créez-en un, puis glissez-y des étapes depuis la bibliothèque',
       nodeLibraryTitle: 'Noeuds',
       nodeLibraryHelp: 'Glissez un type de nœud sur le canevas pour créer une nouvelle entité',
       nodeTypes: {
@@ -302,6 +304,8 @@ export function useScenarioEditorI18n() {
       tabsLabel: 'Sections de l\'éditeur de scénario',
       readOnly: 'Lecture seule',
       readOnlyWarning: 'Ce scénario est en lecture seule. Copiez-le dans votre organisation pour le modifier.',
+      createScenarioFirst: 'Créez d’abord le scénario, puis glissez-y ses étapes.',
+      selectScenarioFirst: 'Sélectionnez d’abord un scénario, puis glissez-y ses étapes.',
       // Jouer comme apprenant (prévisualisation)
       playAsStudent: 'Jouer comme apprenant',
       previewConfirmTitle: 'Prévisualiser ce scénario ?',
