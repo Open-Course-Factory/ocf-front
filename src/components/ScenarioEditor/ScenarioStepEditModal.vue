@@ -586,7 +586,8 @@
         </div>
       </div>
 
-      <!-- Flag section (only for flag type) -->
+      <!-- Flag section (only for flag type). Whether a step carries a flag is
+           derived from step_type by ocf-core, so the form never sends has_flag. -->
       <div v-if="resolvedStepType === 'flag'" class="flag-section">
         <div class="form-group">
           <label for="step-flag-path">{{ t('stepEdit.flagPath') }}</label>
@@ -608,40 +609,6 @@
             class="form-control"
             min="0"
           />
-        </div>
-      </div>
-
-      <!-- Legacy flag section (for terminal type, backward compat) -->
-      <div v-if="resolvedStepType === 'terminal'" class="flag-section">
-        <div class="form-group-inline">
-          <label class="checkbox-label">
-            <input v-model="formData.has_flag" type="checkbox" />
-            <span>{{ t('stepEdit.hasFlag') }}</span>
-          </label>
-        </div>
-
-        <div v-if="formData.has_flag" class="flag-fields">
-          <div class="form-group">
-            <label for="step-terminal-flag-path">{{ t('stepEdit.flagPath') }}</label>
-            <input
-              id="step-terminal-flag-path"
-              v-model="formData.flag_path"
-              type="text"
-              class="form-control"
-              :placeholder="t('stepEdit.flagPathPlaceholder')"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="step-terminal-flag-level">{{ t('stepEdit.flagLevel') }}</label>
-            <input
-              id="step-terminal-flag-level"
-              v-model.number="formData.flag_level"
-              type="number"
-              class="form-control"
-              min="0"
-            />
-          </div>
         </div>
       </div>
     </div>
@@ -740,7 +707,6 @@ const { t } = useTranslations({
       backgroundScriptEarlierStep: 'Does this step rely on something the learner did in an earlier step? Recreate it here if it\'s missing.',
       foregroundScript: 'Foreground Script',
       foregroundScriptPlaceholder: '#!/bin/bash\n# Script to run in the foreground...',
-      hasFlag: 'Has Flag',
       flagPath: 'Flag Path',
       flagPathPlaceholder: '/tmp/flag.txt',
       flagLevel: 'Flag Level',
@@ -852,7 +818,6 @@ const { t } = useTranslations({
       backgroundScriptEarlierStep: "Cette étape s'appuie sur ce que l'apprenant a fait à une étape précédente ? Recréez-le ici s'il manque.",
       foregroundScript: 'Script de premier plan',
       foregroundScriptPlaceholder: '#!/bin/bash\n# Script à exécuter en premier plan...',
-      hasFlag: 'A un drapeau',
       flagPath: 'Chemin du drapeau',
       flagPathPlaceholder: '/tmp/flag.txt',
       flagLevel: 'Niveau du drapeau',
@@ -1186,7 +1151,6 @@ const formData = ref<Record<string, any>>({
   verify_script: '',
   background_script: '',
   foreground_script: '',
-  has_flag: false,
   flag_path: '',
   flag_level: 0,
   show_immediate_feedback: false,
@@ -1287,7 +1251,6 @@ watch(() => [props.visible, props.stepData, props.translation, props.locale], ()
         verify_script: props.stepData.verify_script || '',
         background_script: props.stepData.background_script || '',
         foreground_script: props.stepData.foreground_script || '',
-        has_flag: props.stepData.has_flag || false,
         flag_path: props.stepData.flag_path || '',
         flag_level: props.stepData.flag_level || 0,
         show_immediate_feedback: props.stepData.show_immediate_feedback ?? false,
@@ -1314,7 +1277,6 @@ watch(() => [props.visible, props.stepData, props.translation, props.locale], ()
         verify_script: '',
         background_script: '',
         foreground_script: '',
-        has_flag: false,
         flag_path: '',
         flag_level: 0,
         show_immediate_feedback: false,
@@ -1708,39 +1670,6 @@ const handleSaveTranslation = () => {
 .flag-section {
   padding-top: 1rem;
   border-top: 1px solid var(--color-border);
-}
-
-.flag-fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-/* Reflow flag fields to single-column on phones */
-@media (max-width: 600px) {
-  .flag-fields {
-    grid-template-columns: 1fr;
-  }
-}
-
-.form-group-inline {
-  margin-bottom: 0.75rem;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-text-primary);
-}
-
-.checkbox-label input[type="checkbox"] {
-  width: 1rem;
-  height: 1rem;
-  cursor: pointer;
 }
 
 /* === Questions tab (quiz authoring) === */
