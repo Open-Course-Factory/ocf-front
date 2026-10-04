@@ -92,10 +92,15 @@ describe('ScenarioEditorHeader — archive action', () => {
   })
 
   it('hides both actions from someone who may not edit the scenario', async () => {
-    const wrapper = mountHeader({ canEditScenario: false })
+    const wrapper = mountHeader({ canEditScenario: false, canCopyToOrg: true })
     await openOverflowMenu(wrapper)
 
     expect(menuItem(wrapper, '.fa-box-archive')).toBeFalsy()
     expect(menuItem(wrapper, '.fa-rotate-left')).toBeFalsy()
+  })
+
+  it('offers no overflow menu at all when it would be empty', () => {
+    const wrapper = mountHeader({ canEditScenario: false, canCopyToOrg: false })
+    expect(wrapper.find('.dropdown-container').exists()).toBe(false)
   })
 })

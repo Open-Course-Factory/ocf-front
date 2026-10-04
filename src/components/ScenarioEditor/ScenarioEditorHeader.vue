@@ -5,7 +5,7 @@
  *
  * Header bar of the Scenario Editor page. Shows the scenario picker, current
  * org/platform context, the read-only badge, and the action buttons
- * (export, copy, reset, save).
+ * (import, export, copy, reset, save).
  *
  * The parent owns all state — the header is a pure presentational component
  * that emits intents. The selector uses v-model for two-way binding on the
@@ -90,10 +90,22 @@
 
     <!-- Right: actions -->
     <div class="header-actions">
+      <!-- Import / Export stay in place whatever is selected: Export is
+           disabled with a reason rather than hidden, so the row never shifts.
+           The import control is the parent's (it needs the user's scopes). -->
+      <slot name="import" />
+      <ScenarioExportMenu
+        :disabled="!currentScenario || !canEditScenario"
+        :disabled-reason="currentScenario ? t('scenarioEditor.exportNeedsManager') : t('scenarioEditor.exportNeedsScenario')"
+        @export="format => format === 'json' ? emit('export-json') : emit('export-killercoda')"
+      />
+      <span class="header-divider" aria-hidden="true"></span>
+
       <!-- Secondary actions live behind a ⋯ overflow menu to keep the header
            compact and to push Reset away from Save (less footgun-prone). -->
       <template v-if="selectedScenarioId">
-        <div class="dropdown-container" ref="actionsMenuRef">
+        <!-- Nothing to offer a read-only viewer with no copy target. -->
+        <div v-if="canCopyToOrg || canEditScenario" class="dropdown-container" ref="actionsMenuRef">
           <button
             class="btn-icon"
             @click.stop="showActionsMenu = !showActionsMenu"
@@ -105,19 +117,11 @@
             <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
           </button>
           <div v-if="showActionsMenu" class="dropdown-menu" @click.stop>
-            <button class="dropdown-item" @click="emit('export-json'); showActionsMenu = false">
-              <i class="fas fa-file-code" aria-hidden="true"></i>
-              <span>{{ t('scenarioEditor.exportJSON') }}</span>
-            </button>
-            <button class="dropdown-item" @click="emit('export-killercoda'); showActionsMenu = false">
-              <i class="fas fa-file-archive" aria-hidden="true"></i>
-              <span>{{ t('scenarioEditor.exportKillerCoda') }}</span>
-            </button>
             <button v-if="canCopyToOrg" class="dropdown-item" @click="emit('copy-to-org'); showActionsMenu = false">
               <i class="fas fa-copy" aria-hidden="true"></i>
               <span>{{ t('scenarioEditor.copyToOrg') }}</span>
             </button>
-            <div v-if="canEditScenario" class="dropdown-divider"></div>
+            <div v-if="canEditScenario && canCopyToOrg" class="dropdown-divider"></div>
             <button
               v-if="canEditScenario && !currentScenario?.archived_at"
               class="dropdown-item"
@@ -170,6 +174,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import AdminBadge from '../Common/AdminBadge.vue'
+import ScenarioExportMenu from './ScenarioExportMenu.vue'
 import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 
 interface Props {
@@ -239,7 +244,7 @@ const emit = defineEmits<{
   (e: 'save'): void
 }>()
 
-// Header overflow menu (Export / Copy / Archive / Reset)
+// Header overflow menu (Copy / Archive / Reset)
 const showActionsMenu = ref(false)
 const actionsMenuRef = ref<HTMLElement | null>(null)
 

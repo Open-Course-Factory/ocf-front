@@ -20,15 +20,19 @@
       @update:editing-locale="editingLocale = $event"
       @select-change="handleScenarioSelect"
       @create-new="handleCreateNew"
-      @export-json="handleExportJSON"
-      @export-killercoda="handleExportKillerCoda"
+      @export-json="currentScenario && exportScenario(currentScenario, 'json')"
+      @export-killercoda="currentScenario && exportScenario(currentScenario, 'killercoda')"
       @copy-to-org="openCopyModal"
       @archive="openArchiveModal"
       @unarchive="handleUnarchive"
       @preview="openPreviewConfirm()"
       @reset="handleReset"
       @save="handleSave"
-    />
+    >
+      <template #import>
+        <ScenarioImportButton @imported="handleImported" />
+      </template>
+    </ScenarioEditorHeader>
 
     <div class="editor-container">
       <!-- Left Panel: Node Library -->
@@ -248,6 +252,7 @@ import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useScenarioCreateScopes } from '../../composables/useScenarioCreateScopes'
 import { useNotification } from '../../composables/useNotification'
+import { useScenarioExport } from '../../composables/useScenarioExport'
 import { useScenarioGraph, STEP_NODE_TYPES, isFirstStepNode } from '../../composables/useScenarioGraph'
 import { useResizablePanel } from '../../composables/useResizablePanel'
 import NodeLibraryPanel from '../GraphEditor/NodeLibraryPanel.vue'
@@ -266,6 +271,7 @@ import QuizStepNode from '../ScenarioEditor/nodes/QuizStepNode.vue'
 import ScenarioStepEditModal from '../ScenarioEditor/ScenarioStepEditModal.vue'
 import ScenarioEditModal from '../ScenarioEditor/ScenarioEditModal.vue'
 import ScenarioEditorHeader from '../ScenarioEditor/ScenarioEditorHeader.vue'
+import ScenarioImportButton from '../ScenarioEditor/ScenarioImportButton.vue'
 import { scenarioTranslationService } from '../../services/domain/scenario'
 import type { LocaleCoverage, StepTranslation, ScenarioTranslation } from '../../services/domain/scenario'
 import BaseModal from '../Modals/BaseModal.vue'
@@ -284,6 +290,7 @@ const scenarioStepsStore = useScenarioStepsStore()
 const organizationsStore = useOrganizationsStore()
 const { isAdmin } = useAdminViewMode()
 const notification = useNotification()
+const { exportScenario } = useScenarioExport()
 
 // Where a new or imported scenario may go — see useScenarioCreateScopes.
 const {
@@ -669,41 +676,12 @@ const handleCreateNew = () => {
   modalError.value = ''
 }
 
-// Export handlers
-const handleExportJSON = async () => {
-  if (!selectedScenarioId.value) return
-  try {
-    const response = await axios.get(`/scenarios/${selectedScenarioId.value}/export`, { params: { format: 'json' } })
-    const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${currentScenario.value?.name || 'scenario'}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-  } catch (err) {
-    console.error('Export JSON failed:', err)
-    notification.showError(t('scenarioEditor.exportError'))
-  }
-}
-
-const handleExportKillerCoda = async () => {
-  if (!selectedScenarioId.value) return
-  try {
-    const response = await axios.get(`/scenarios/${selectedScenarioId.value}/export`, {
-      params: { format: 'killerkoda' },
-      responseType: 'blob'
-    })
-    const url = URL.createObjectURL(response.data)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${currentScenario.value?.name || 'scenario'}.tar.gz`
-    a.click()
-    URL.revokeObjectURL(url)
-  } catch (err) {
-    console.error('Export KillerCoda failed:', err)
-    notification.showError(t('scenarioEditor.exportError'))
-  }
+// An imported scenario is opened straight away: the import was done to work on it.
+const handleImported = async (scenario: { id: string }) => {
+  await scenariosStore.loadEntitiesIncludingArchived('/scenarios?include=steps')
+  selectedScenarioId.value = scenario.id
+  await handleScenarioSelect()
+  notification.showSuccess(t('scenarioEditor.importSuccess'))
 }
 
 // "Play as learner" — launch a trainer-side preview session in a new tab.

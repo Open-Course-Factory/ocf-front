@@ -121,6 +121,37 @@
   cursor: not-allowed;
 }
 
+/* Compact outlined button with an icon and a label, for secondary toolbar
+   actions (scenario Import / Export). Prefixed: Bootstrap's own
+   .btn-outline-* rules are loaded globally and win over ours. Qualified
+   with `button` to outrank the global `[type="button"] { color: inherit }`. */
+button.ocf-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  background: transparent;
+  border: var(--border-width-thin) solid var(--color-primary);
+  border-radius: var(--border-radius-md);
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+button.ocf-btn-outline:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+button.ocf-btn-outline:disabled {
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
 /* === FORMS === */
 /* Note: Core form styles are in forms-common.css */
 

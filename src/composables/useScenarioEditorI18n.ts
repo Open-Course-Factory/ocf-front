@@ -137,9 +137,9 @@ export function useScenarioEditorI18n() {
       portExposureAllowedHint: 'Learners on a plan with the feature may publish a port of the lab at a public URL.',
       isPublic: 'Public (available to all users)',
       // Export
-      exportJSON: 'Export as JSON',
-      exportKillerCoda: 'Export as KillerCoda archive',
-      exportError: 'Failed to export scenario',
+      exportNeedsScenario: 'Select a scenario to export it',
+      exportNeedsManager: 'Only someone who manages this scenario can export it',
+      importSuccess: 'Scenario imported',
       // Panel
       expandPanel: 'Expand panel',
       collapsePanel: 'Collapse panel',
@@ -293,9 +293,9 @@ export function useScenarioEditorI18n() {
       portExposureAllowedHint: 'Les apprenants dont le forfait le permet peuvent publier un port du lab sur une URL publique.',
       isPublic: 'Public (disponible pour tous les utilisateurs)',
       // Export
-      exportJSON: 'Exporter en JSON',
-      exportKillerCoda: 'Exporter au format KillerCoda',
-      exportError: 'Échec de l\'exportation du scénario',
+      exportNeedsScenario: 'Sélectionnez un scénario pour l\'exporter',
+      exportNeedsManager: 'Seule une personne qui gère ce scénario peut l\'exporter',
+      importSuccess: 'Scénario importé',
       // Panneau
       expandPanel: 'Déplier le panneau',
       collapsePanel: 'Replier le panneau',
