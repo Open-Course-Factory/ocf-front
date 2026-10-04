@@ -12,6 +12,9 @@ import {
   getAvailableScenario,
   getMyScenarioSessions,
   cleanupScenarioSession,
+  ensureOrgMembership,
+  removeOrgMembership,
+  getUserId,
   type ApiSession,
 } from './helpers/scenarioApi';
 import { readFlagFileFromTerminal, typeInTerminal, waitForLiveTerminal } from './helpers/xterm';
@@ -49,6 +52,7 @@ let orgDisplayName = '';
 let groupId: string | null = null;
 let scenarioId: string | null = null;
 let assignmentId: string | null = null;
+let grantedMembership: string | null = null;
 let launchable = false;
 let blockReason = '';
 let completed = false;
@@ -76,6 +80,11 @@ test.beforeAll(async () => {
   orgId = org.id;
   orgDisplayName = org.displayName;
   groupId = group.group_id;
+
+  // Being in the class does not make the learner a member of its org, and an
+  // org scenario launches only for org members. Granted here, removed after —
+  // a membership the learner already had is left alone.
+  grantedMembership = await ensureOrgMembership(trainer, orgId, await getUserId(learner));
 
   const scenario = await importScenario(trainer, orgId, {
     title: FIXTURE_TITLE,
@@ -127,6 +136,7 @@ test.afterAll(async () => {
     if (orgId) await deleteScenario(trainer, orgId, scenarioId);
   }
   if (assignmentId) await deleteAssignment(trainer, assignmentId);
+  if (grantedMembership) await removeOrgMembership(trainer, grantedMembership);
   await trainer?.api.dispose();
   await learner?.api.dispose();
 });
