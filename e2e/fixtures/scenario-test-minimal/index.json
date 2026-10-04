@@ -1,0 +1,48 @@
+{
+  "title": "Linux Basics - Minimal Test",
+  "description": "A minimal 3-step scenario for testing the scenario engine end-to-end.",
+  "difficulty": "beginner",
+  "time_minutes": 10,
+  "details": {
+    "intro": {
+      "text": "intro.md"
+    },
+    "steps": [
+      {
+        "title": "Create a file",
+        "text": "step1/text.md",
+        "verify": "step1/verify.sh",
+        "hint": "step1/hint.md",
+        "has_flag": false
+      },
+      {
+        "title": "Write content to the file",
+        "text": "step2/text.md",
+        "verify": "step2/verify.sh",
+        "hint": "step2/hint.md",
+        "has_flag": false
+      },
+      {
+        "title": "Find the hidden flag",
+        "text": "step3/text.md",
+        "verify": "step3/verify.sh",
+        "hint": "step3/hint.md",
+        "has_flag": true,
+        "flag_path": "/tmp/.secret_flag"
+      }
+    ],
+    "finish": {
+      "text": "finish.md"
+    }
+  },
+  "backend": {
+    "imageid": "debian-12"
+  },
+  "extensions": {
+    "ocf": {
+      "flags": true,
+      "crash_traps": false,
+      "gsh_enabled": false
+    }
+  }
+}
