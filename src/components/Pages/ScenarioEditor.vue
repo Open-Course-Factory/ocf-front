@@ -710,42 +710,12 @@ const handleSaveStep = async (formData: any) => {
   }
 }
 
-async function duplicateSelectedStep() {
+// Duplicating is copying the step right after itself: the server copies it
+// whole — scripts, hints, questions, translations — as the library does.
+function duplicateSelectedStep() {
   const step = editingStep.value
-  if (!step?.id || !currentScenario.value) return
-  if (!(await unsavedGuard.confirmDiscard())) return
-  try {
-    const copyFields = withoutUnseenScripts({
-      scenario_id: currentScenario.value.id,
-      step_type: step.step_type,
-      title: t('scenarioEditor.copyOfStep', { title: step.title || '' }),
-      order: Math.max(-1, ...outline.value.filter(s => s.id).map(s => s.order)) + 1,
-      text_content: step.text_content,
-      hint_content: step.hint_content,
-      verify_script: step.verify_script,
-      background_script: step.background_script,
-      foreground_script: step.foreground_script,
-      flag_path: step.flag_path,
-      flag_level: step.flag_level,
-      show_immediate_feedback: step.show_immediate_feedback,
-      intro_effect: step.intro_effect,
-      intro_text: step.intro_text,
-      outro_effect: step.outro_effect,
-      outro_text: step.outro_text
-    }, step._receivedFields ?? [])
-    const created = await scenarioStepsStore.createEntity('/scenario-steps', copyFields)
-    const copyId = created?.id || created?.data?.id
-    if (!copyId) return
-    if (step.questions?.length) {
-      await scenarioStepService.syncQuestions(copyId, [], step.questions.map(({ id: _id, ...q }: any) => q))
-    }
-    const copy = { ...outline.value[selectedIndex.value], id: copyId, key: copyId, order: copyFields.order, title: copyFields.title }
-    outline.value = insertStep(outline.value, copy, selectedIndex.value + 1)
-    await persistOutlineOrder()
-    await refreshAfterWrite(copyId)
-  } catch (err: any) {
-    notification.showError(err.response?.data?.error_message || err.message || t('scenarioEditor.saveError'))
-  }
+  if (!step?.id) return
+  return copyLibrarySteps([step.id], selectedIndex.value + 1)
 }
 
 const stepPendingDelete = ref<OutlineStep | null>(null)
