@@ -22,7 +22,6 @@
 import { defineStore } from "pinia"
 import { computed } from 'vue'
 import { useBaseStore } from "./baseStore"
-import { useProjectFilesStore } from "./projectFiles"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
 import { formatMcpuAsVcpu, effectiveCpuMcpu } from '../utils/formatters'
@@ -61,12 +60,6 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 intro_text: 'Introduction Text',
                 finishText: 'Finish Text',
                 finish_text: 'Finish Text',
-                setupScriptId: 'Setup Script',
-                setup_script_id: 'Setup Script',
-                introFileId: 'Intro File',
-                intro_file_id: 'Intro File',
-                finishFileId: 'Finish File',
-                finish_file_id: 'Finish File',
                 createdById: 'Created By',
                 created_by_id: 'Created By',
                 createdAt: 'Created At',
@@ -125,12 +118,6 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 intro_text: 'Texte d\'introduction',
                 finishText: 'Texte de fin',
                 finish_text: 'Texte de fin',
-                setupScriptId: 'Script d\'installation',
-                setup_script_id: 'Script d\'installation',
-                introFileId: 'Fichier d\'introduction',
-                intro_file_id: 'Fichier d\'introduction',
-                finishFileId: 'Fichier de fin',
-                finish_file_id: 'Fichier de fin',
                 createdById: 'Créé par',
                 created_by_id: 'Créé par',
                 createdAt: 'Date de création',
@@ -165,13 +152,6 @@ export const useScenariosStore = defineStore('scenarios', () => {
 
     // Scenarios archive through the framework routes (ocf-core#489).
     base.archivable.value = true
-
-    const projectFilesStore = useProjectFilesStore()
-    base.parentEntitiesStores = new Map<string, any>([
-        ["setup_script_id", projectFilesStore],
-        ["intro_file_id", projectFilesStore],
-        ["finish_file_id", projectFilesStore],
-    ])
 
     const fieldList = computed(() => buildFieldList([
         field('id').hidden().readonly(),
@@ -238,9 +218,6 @@ export const useScenariosStore = defineStore('scenarios', () => {
         field('port_exposure_allowed', t('scenarios.portExposureAllowed')).checkbox().visible().creatable().updatable(),
         field('allowed_flag_paths', t('scenarios.allowed_flag_paths')).input().visible().creatable().updatable()
             .hint(t('scenarios.allowedFlagPathsHelp')),
-        field('setup_script_id', t('scenarios.setupScriptId')).type('multi-select').visible().creatable().updatable(),
-        field('intro_file_id', t('scenarios.introFileId')).type('multi-select').visible().creatable().updatable(),
-        field('finish_file_id', t('scenarios.finishFileId')).type('multi-select').visible().creatable().updatable(),
         field('intro_text', t('scenarios.introText')).textarea().hidden(),
         field('finish_text', t('scenarios.finishText')).textarea().hidden(),
         field('created_by_id', t('scenarios.createdById')).input().visible().readonly(),
