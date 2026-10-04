@@ -23,7 +23,6 @@ import { defineStore } from "pinia"
 import { computed } from 'vue'
 import { useBaseStore } from "./baseStore"
 import { useScenariosStore } from "./scenarios"
-import { useProjectFilesStore } from "./projectFiles"
 import { useScenarioStepHintsStore } from "./scenarioStepHints"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
@@ -50,16 +49,6 @@ export const useScenarioStepsStore = defineStore('scenario-steps', () => {
                 background_script: 'Background Script',
                 foregroundScript: 'Foreground Script',
                 foreground_script: 'Foreground Script',
-                verifyScriptId: 'Verify Script File',
-                verify_script_id: 'Verify Script File',
-                backgroundScriptId: 'Background Script File',
-                background_script_id: 'Background Script File',
-                foregroundScriptId: 'Foreground Script File',
-                foreground_script_id: 'Foreground Script File',
-                textFileId: 'Text File',
-                text_file_id: 'Text File',
-                hintFileId: 'Hint File',
-                hint_file_id: 'Hint File',
                 hasFlag: 'Has Flag',
                 has_flag: 'Has Flag',
                 flagPath: 'Flag Path',
@@ -85,16 +74,6 @@ export const useScenarioStepsStore = defineStore('scenario-steps', () => {
                 background_script: 'Script d\'arrière-plan',
                 foregroundScript: 'Script de premier plan',
                 foreground_script: 'Script de premier plan',
-                verifyScriptId: 'Fichier script de vérification',
-                verify_script_id: 'Fichier script de vérification',
-                backgroundScriptId: 'Fichier script d\'arrière-plan',
-                background_script_id: 'Fichier script d\'arrière-plan',
-                foregroundScriptId: 'Fichier script de premier plan',
-                foreground_script_id: 'Fichier script de premier plan',
-                textFileId: 'Fichier texte',
-                text_file_id: 'Fichier texte',
-                hintFileId: 'Fichier d\'indice',
-                hint_file_id: 'Fichier d\'indice',
                 hasFlag: 'A un drapeau',
                 has_flag: 'A un drapeau',
                 flagPath: 'Chemin du drapeau',
@@ -105,14 +84,8 @@ export const useScenarioStepsStore = defineStore('scenario-steps', () => {
         }
     })
 
-    const projectFilesStore = useProjectFilesStore()
     base.parentEntitiesStores = new Map<string, any>([
         ["scenario_id", useScenariosStore()],
-        ["verify_script_id", projectFilesStore],
-        ["background_script_id", projectFilesStore],
-        ["foreground_script_id", projectFilesStore],
-        ["text_file_id", projectFilesStore],
-        ["hint_file_id", projectFilesStore],
     ])
     base.subEntitiesStores = new Map<string, any>([
         ["scenarioStepHints", useScenarioStepHintsStore()],
@@ -123,11 +96,6 @@ export const useScenarioStepsStore = defineStore('scenario-steps', () => {
         field('scenario_id', t('scenarioSteps.scenarioId')).type('multi-select').visible().creatable().required(),
         field('order', t('scenarioSteps.order')).input().visible().creatable().updatable().required(),
         field('title', t('scenarioSteps.title')).input().visible().creatable().updatable().required(),
-        field('text_file_id', t('scenarioSteps.textFileId')).type('multi-select').visible().creatable().updatable(),
-        field('hint_file_id', t('scenarioSteps.hintFileId')).type('multi-select').visible().creatable().updatable(),
-        field('verify_script_id', t('scenarioSteps.verifyScriptId')).type('multi-select').visible().creatable().updatable(),
-        field('background_script_id', t('scenarioSteps.backgroundScriptId')).type('multi-select').visible().creatable().updatable(),
-        field('foreground_script_id', t('scenarioSteps.foregroundScriptId')).type('multi-select').visible().creatable().updatable(),
         field('text_content', t('scenarioSteps.textContent')).textarea().hidden(),
         field('hint_content', t('scenarioSteps.hintContent')).textarea().hidden(),
         field('verify_script', t('scenarioSteps.verifyScript')).textarea().hidden(),

@@ -32,17 +32,6 @@ vi.mock('../../src/services/demo', () => ({
   simulateDelay: vi.fn()
 }))
 
-// Mock projectFiles store used as parent entity
-vi.mock('../../src/stores/projectFiles', () => ({
-  useProjectFilesStore: vi.fn(() => ({
-    entities: [],
-    fieldList: new Map(),
-    isLoading: ref(false),
-    error: ref(''),
-    loadAll: vi.fn()
-  }))
-}))
-
 import axios from 'axios'
 import { useScenariosStore } from '../../src/stores/scenarios'
 
@@ -154,18 +143,6 @@ describe('scenarios store', () => {
       expect(idField!.toBeEdited).toBe(false)
     })
 
-    it('parent entity fields are multi-select type', () => {
-      const store = useScenariosStore()
-
-      const setupScript = store.fieldList.get('setup_script_id')
-      const introFile = store.fieldList.get('intro_file_id')
-      const finishFile = store.fieldList.get('finish_file_id')
-
-      expect(setupScript?.type).toBe('multi-select')
-      expect(introFile?.type).toBe('multi-select')
-      expect(finishFile?.type).toBe('multi-select')
-    })
-
     it('instance_type field is a searchable-select', () => {
       const store = useScenariosStore()
       const instanceField = store.fieldList.get('instance_type')
@@ -187,17 +164,6 @@ describe('scenarios store', () => {
         expect(f!.toBeSet).toBe(true) // creatable
         expect(f!.toBeEdited).toBe(true) // updatable
       }
-    })
-  })
-
-  describe('parent entity stores', () => {
-    it('registers projectFilesStore for setup_script_id, intro_file_id, finish_file_id', () => {
-      const store = useScenariosStore()
-
-      expect(store.parentEntitiesStores).toBeDefined()
-      expect(store.parentEntitiesStores.has('setup_script_id')).toBe(true)
-      expect(store.parentEntitiesStores.has('intro_file_id')).toBe(true)
-      expect(store.parentEntitiesStores.has('finish_file_id')).toBe(true)
     })
   })
 
