@@ -16,11 +16,12 @@
 
 <template>
   <button
+    v-if="!bare"
     type="button"
     class="ocf-btn-outline"
     data-testid="scenario-import-btn"
     :title="t('scenarioImport.buttonTitle')"
-    @click="openChooser"
+    @click="openChooser()"
   >
     <i class="fas fa-file-import" aria-hidden="true"></i>
     <span>{{ t('scenarioImport.button') }}</span>
@@ -91,6 +92,11 @@ import ScenarioScopeSelect from './ScenarioScopeSelect.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useScenarioCreateScopes } from '../../composables/useScenarioCreateScopes'
 
+defineProps<{
+  // No button of its own: a menu opens it through `openChooser`.
+  bare?: boolean
+}>()
+
 const emit = defineEmits<{
   (e: 'imported', scenario: any): void
 }>()
@@ -145,7 +151,8 @@ const groupId = computed(() => destination.value?.kind === 'group' ? destination
 
 // The scope lists are loaded on open rather than on mount: the button sits on
 // pages (the catalogue) that otherwise never need the user's classes.
-async function openChooser() {
+async function openChooser(preset?: 'killercoda' | 'json') {
+  if (preset) format.value = preset
   showChooser.value = true
   isLoadingScopes.value = true
   try {
@@ -162,6 +169,8 @@ function continueToUpload() {
   if (format.value === 'json') showJSONModal.value = true
   else showUploadModal.value = true
 }
+
+defineExpose({ openChooser })
 
 function onImported(scenario: any) {
   showUploadModal.value = false

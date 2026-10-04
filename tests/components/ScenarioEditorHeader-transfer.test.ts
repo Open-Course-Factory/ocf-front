@@ -26,6 +26,7 @@ function mountHeader(overrides: Record<string, unknown> = {}): VueWrapper {
       canCreateScenario: true,
       canEditScenario: true,
       canCopyToOrg: true,
+      canExport: true,
       isAdmin: false,
       canPreview: true,
       isPreviewLoading: false,
@@ -65,7 +66,7 @@ describe('ScenarioEditorHeader — import and export', () => {
   })
 
   it('disables Export, with the reason, on a scenario the user cannot manage', async () => {
-    const wrapper = mountHeader({ canEditScenario: false })
+    const wrapper = mountHeader({ canEditScenario: false, canExport: false })
     expect(exportButton(wrapper).attributes('disabled')).toBeDefined()
     expect(exportButton(wrapper).attributes('title')).toBe('Only someone who manages this scenario can export it')
 

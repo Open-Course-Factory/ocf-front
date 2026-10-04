@@ -66,13 +66,20 @@ describe('ScenarioRail', () => {
     expect(text).toContain('Labinux')
   })
 
-  it('offers the settings pencil and the classes only to a manager', () => {
+  it('offers the settings pencil only to a manager, the classes to everyone', () => {
     const manager = mountRail()
     expect(manager.find('[data-testid="rail-edit-settings"]').exists()).toBe(true)
-    expect(manager.findComponent({ name: 'ScenarioClassesPanel' }).exists()).toBe(true)
 
+    // A teacher assigns a colleague's lab, or a platform one, to their class.
     const reader = mountRail({ canManage: false })
     expect(reader.find('[data-testid="rail-edit-settings"]').exists()).toBe(false)
-    expect(reader.findComponent({ name: 'ScenarioClassesPanel' }).exists()).toBe(false)
+    expect(reader.findComponent({ name: 'ScenarioClassesPanel' }).exists()).toBe(true)
+  })
+
+  it('says what an unset system or size does instead of a dash', () => {
+    const text = mountRail({ scenario: { id: 'sc-2', is_public: true } }).get('[data-testid="rail-settings"]').text()
+    expect(text).toContain('First compatible distribution')
+    expect(text).toContain("The distribution's default size")
+    expect(text).not.toMatch(/—/)
   })
 })

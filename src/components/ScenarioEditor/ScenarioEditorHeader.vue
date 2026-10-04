@@ -76,13 +76,13 @@
            The import and AI controls are the parent's (they need its scopes). -->
       <slot name="import" />
       <ScenarioExportMenu
-        :disabled="!currentScenario || !canEditScenario"
+        :disabled="!currentScenario || !canExport"
         :disabled-reason="currentScenario ? t('scenarioEditor.exportNeedsManager') : t('scenarioEditor.exportNeedsScenario')"
         @export="format => format === 'json' ? emit('export-json') : emit('export-killercoda')"
       />
       <slot name="ai" />
 
-      <div v-if="currentScenario && (canCopyToOrg || canEditScenario)" ref="actionsMenuRef" class="dropdown-container">
+      <div v-if="currentScenario && (canCopyToOrg || canRetire)" ref="actionsMenuRef" class="dropdown-container">
         <button
           type="button"
           class="btn-icon"
@@ -101,7 +101,7 @@
             <span>{{ t('scenarioEditor.copyToOrg') }}</span>
           </button>
           <button
-            v-if="canEditScenario && !currentScenario.archived_at"
+            v-if="canRetire && !currentScenario.archived_at"
             class="ocf-header-menu-item"
             @click="emit('archive'); showActionsMenu = false"
           >
@@ -109,7 +109,7 @@
             <span>{{ t('scenarioEditor.archive') }}</span>
           </button>
           <button
-            v-if="canEditScenario && currentScenario.archived_at"
+            v-if="canRetire && currentScenario.archived_at"
             class="ocf-header-menu-item"
             @click="emit('unarchive'); showActionsMenu = false"
           >
@@ -117,7 +117,7 @@
             <span>{{ t('scenarioEditor.unarchive') }}</span>
           </button>
           <button
-            v-if="canEditScenario"
+            v-if="canRetire"
             class="ocf-header-menu-item is-danger"
             data-testid="scenario-delete"
             @click="emit('delete'); showActionsMenu = false"
@@ -129,12 +129,11 @@
       </div>
 
       <button
-        v-if="canEditScenario"
         type="button"
         class="ocf-btn-play"
         data-testid="scenario-play-btn"
         :disabled="!canPreview || isPreviewLoading"
-        :title="canPreview ? undefined : t('scenarioEditor.playNeedsSteps')"
+        :title="canPreview ? undefined : (playDisabledReason || t('scenarioEditor.playNeedsSteps'))"
         @click="emit('preview')"
       >
         <i :class="isPreviewLoading ? 'fas fa-spinner fa-spin' : 'fas fa-play'" aria-hidden="true"></i>
@@ -158,8 +157,14 @@ interface Props {
   canCreateScenario: boolean
   canEditScenario: boolean
   canCopyToOrg: boolean
+  /** Export reaches further than editing (an org's teachers export colleagues' labs). */
+  canExport?: boolean
+  /** Archive, restore and delete: the author or an org manager. */
+  canRetire?: boolean
   isAdmin: boolean
   canPreview: boolean
+  /** Why Play is disabled, when it is not for want of steps. */
+  playDisabledReason?: string
   isPreviewLoading: boolean
   healthAvailable?: boolean
   blockingCount?: number
@@ -169,6 +174,9 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  playDisabledReason: '',
+  canExport: false,
+  canRetire: false,
   healthAvailable: false,
   blockingCount: 0,
   warningCount: 0,

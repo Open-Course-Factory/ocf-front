@@ -29,7 +29,7 @@
       <button type="button" :title="t('scenarioEditor.railSettings')" @click="collapsed = false">
         <i class="fas fa-sliders" aria-hidden="true"></i>
       </button>
-      <button v-if="canManage" type="button" :title="t('scenarioEditor.railClasses')" @click="collapsed = false">
+      <button type="button" :title="t('scenarioEditor.railClasses')" @click="collapsed = false">
         <i class="fas fa-users" aria-hidden="true"></i>
       </button>
     </div>
@@ -75,7 +75,8 @@
         </dl>
       </section>
 
-      <ScenarioClassesPanel v-if="canManage" :scenario="scenario" />
+      <!-- Teachers assign any lab they can see, theirs or not. -->
+      <ScenarioClassesPanel :scenario="scenario" />
     </div>
   </aside>
 </template>
@@ -132,8 +133,11 @@ const settingRows = computed(() => {
   const flagSteps = props.steps.filter(step => step.step_type === 'flag').length
   const features = featureList(s.required_features)
   const rows = [
-    { label: t('scenarioEditor.settingSystem'), value: OS_LABELS[s.os_type] || s.os_type || '—' },
-    { label: t('scenarioEditor.settingSize'), value: s.instance_type || '—' },
+    // Never a bare dash: say what an unset value does (ocf-core's
+    // ScenarioProvisioningService picks the first compatible distribution, at
+    // that distribution's default size).
+    { label: t('scenarioEditor.settingSystem'), value: OS_LABELS[s.os_type] || s.os_type || t('scenarioEditor.firstCompatibleSystem') },
+    { label: t('scenarioEditor.settingSize'), value: s.instance_type || t('scenarioEditor.distributionDefaultSize') },
     { label: t('scenarioEditor.settingFeatures'), value: features.length ? features.join(', ') : t('scenarioEditor.none') },
     { label: t('scenarioEditor.settingFlags'), value: flagSteps ? t('scenarioEditor.flagSteps', { count: String(flagSteps) }) : (s.flags_enabled ? t('scenarioEditor.enabled') : t('scenarioEditor.none')) },
     { label: t('scenarioEditor.settingVisibility'), value: s.is_public ? t('scenarioEditor.visibilityPublic') : (props.orgName || t('scenarioEditor.visibilityPrivate')) }

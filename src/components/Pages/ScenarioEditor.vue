@@ -8,8 +8,11 @@
       :can-create-scenario="canCreateScenario"
       :can-edit-scenario="canEditScenario"
       :can-copy-to-org="canCopyToOrg"
+      :can-export="!!currentScenario && canExportScenario(currentScenario)"
+      :can-retire="!!currentScenario && canRetireScenario(currentScenario)"
       :is-admin="isAdmin"
       :can-preview="canPreviewScenario"
+      :play-disabled-reason="canPlayScenario ? '' : t('scenarioEditor.playNeedsAccess')"
       :is-preview-loading="isPreviewLoading"
       :health-available="health.available.value"
       :blocking-count="health.blockingCount.value"
@@ -26,10 +29,10 @@
       @preview="openPreviewConfirm()"
     >
       <template #import>
-        <ScenarioImportButton @imported="openImported" />
+        <ScenarioImportMenu @imported="(scenario, source) => openImported(scenario, source === 'ai' ? 'scenarioEditor.aiCreateSuccess' : 'scenarioEditor.importSuccess')" />
       </template>
       <template #ai>
-        <ScenarioAiButtons :scenario="currentScenario" :can-manage="canEditScenario" @imported="onAiImported" />
+        <ScenarioAiButtons :scenario="currentScenario" :can-manage="canEditScenario" only="improve" @imported="onAiImported" />
       </template>
     </ScenarioEditorHeader>
 
@@ -43,7 +46,7 @@
           <i class="fas fa-plus" aria-hidden="true"></i> {{ t('scenarioEditor.createScenario') }}
         </button>
         <ScenarioImportButton @imported="openImported" />
-        <ScenarioAiButtons :scenario="null" :can-manage="false" create-only @imported="onAiImported" />
+        <ScenarioAiButtons :scenario="null" :can-manage="false" only="create" @imported="onAiImported" />
       </div>
     </section>
 
@@ -64,7 +67,7 @@
 
       <main class="ocf-workbench-center">
         <ScenarioStepEditor
-          v-if="editingStep"
+          v-if="editingStep && canEditScenario"
           :step-data="editingStep"
           :is-new="!editingStep.id"
           :is-first-step="selectedIndex === 0"
@@ -87,7 +90,19 @@
           @delete="requestDeleteStep"
         />
 
-        <!-- Someone who may only read a scenario is not sent its steps. -->
+        <!-- A colleague's lab: its content is shown, as the learner reads it. -->
+        <div v-else-if="editingStep" class="ocf-readonly-step" data-testid="readonly-step">
+          <p class="ocf-readonly-banner">
+            <i class="fas fa-lock" aria-hidden="true"></i>
+            <span>{{ t('scenarioEditor.readOnlyStepBanner') }}</span>
+            <button v-if="canCopyToOrg" type="button" class="ocf-btn-primary" data-testid="duplicate-into-org" @click="showDuplicateModal = true">
+              <i class="fas fa-copy" aria-hidden="true"></i> {{ t('scenarioEditor.duplicateIntoMyOrg') }}
+            </button>
+          </p>
+          <StepLearnerPreview :title="editingStep.title || ''" :text="editingStep.text_content || ''" />
+        </div>
+
+        <!-- A platform scenario's steps are sent only to its managers. -->
         <div v-else-if="!canEditScenario" class="ocf-workbench-placeholder" data-testid="readonly-state">
           <i class="fas fa-lock" aria-hidden="true"></i>
           <h2>{{ t('scenarioEditor.readOnlyTitle') }}</h2>
@@ -262,6 +277,9 @@ import ScenarioEditorHeader from '../ScenarioEditor/ScenarioEditorHeader.vue'
 import ScenarioImportButton from '../ScenarioEditor/ScenarioImportButton.vue'
 import ScenarioAiButtons from '../ScenarioEditor/ScenarioAiButtons.vue'
 import ScenarioDuplicateModal from '../ScenarioEditor/ScenarioDuplicateModal.vue'
+import ScenarioImportMenu from '../ScenarioEditor/ScenarioImportMenu.vue'
+import StepLearnerPreview from '../ScenarioEditor/StepLearnerPreview.vue'
+import { useScenarioEditorAccess } from '../../composables/useScenarioEditorAccess'
 import BaseModal from '../Modals/BaseModal.vue'
 import { scenarioTranslationService, scenarioSessionService, scenarioStepService } from '../../services/domain/scenario'
 import type { LocaleCoverage, StepTranslation, ScenarioTranslation } from '../../services/domain/scenario'
@@ -279,6 +297,8 @@ const organizationsStore = useOrganizationsStore()
 const { isAdmin } = useAdminViewMode()
 const notification = useNotification()
 const { exportScenario } = useScenarioExport()
+// Who may export, archive or delete goes beyond who may edit: see the helpers.
+const { canExportScenario, canRetireScenario } = useScenarioEditorAccess()
 
 // Where a new or imported scenario may go — see useScenarioCreateScopes.
 const {
@@ -289,6 +309,7 @@ const {
   canCreateScenario,
   parseScopeKey,
   pickDefaultScopeKey,
+  copyScopesFor,
   loadScopeSources,
 } = useScenarioCreateScopes()
 
@@ -303,12 +324,11 @@ const health = useScenarioHealth(computed(() => (currentScenario.value?.can_mana
 // memberships disagreed with the hooks in both directions.
 const canEditScenario = computed(() => !!currentScenario.value?.can_manage)
 
-// A copy goes to an organization or class the user manages, other than the
-// scenario's own organization.
-const canCopyToOrg = computed(() =>
-  !!currentScenario.value &&
-  orgScopes.value.filter(o => o.id !== currentScenario.value?.organization_id).length + groupScopes.value.length > 0
-)
+// Somewhere to put a copy — the same rule the duplicate modal offers.
+const canCopyToOrg = computed(() => {
+  const { orgs, groups } = copyScopesFor(currentScenario.value)
+  return orgs.length + groups.length > 0
+})
 
 const currentScenarioOrgName = computed<string | null>(() => {
   const orgId = currentScenario.value?.organization_id
@@ -337,14 +357,16 @@ const stepSaveError = ref('')
 const unsavedGuard = useUnsavedChangesGuard(stepDirty)
 
 const saveState = computed(() => {
-  if (!editingStep.value) return null
+  // Nothing to save on a step the user only reads.
+  if (!editingStep.value || !canEditScenario.value) return null
   if (isSavingStep.value || pendingOrderWrites.value > 0) return 'saving'
   return stepDirty.value || !editingStep.value.id ? 'dirty' : 'saved'
 })
 
-const canPreviewScenario = computed(() =>
-  canEditScenario.value && outline.value.some(step => step.id)
-)
+// Playing a lab follows the same reach as exporting it: its managers, and its
+// organization's teachers (ocf-core opens preview at teacher).
+const canPlayScenario = computed(() => !!currentScenario.value && canExportScenario(currentScenario.value))
+const canPreviewScenario = computed(() => canPlayScenario.value && outline.value.some(step => step.id))
 
 // ---- Languages ----
 
@@ -1125,6 +1147,29 @@ const handleConfirmPreview = async () => {
 .ocf-workbench-hint {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+}
+
+.ocf-readonly-step {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.ocf-readonly-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin: 0 0 var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  font-size: var(--font-size-sm);
+}
+
+.ocf-readonly-banner .ocf-btn-primary {
+  margin-left: auto;
 }
 
 .ocf-btn-primary {

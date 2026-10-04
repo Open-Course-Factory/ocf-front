@@ -10,7 +10,7 @@
 -->
 
 <template>
-  <section class="ocf-rail-section" data-testid="rail-classes">
+  <section v-if="teacherGroups.groups.length" class="ocf-rail-section" data-testid="rail-classes">
     <h3 class="ocf-rail-heading"><i class="fas fa-users" aria-hidden="true"></i> {{ t('scenarioEditor.railClasses') }}</h3>
     <ul v-if="assignedClasses.length" class="ocf-rail-classes">
       <li v-for="group in assignedClasses" :key="group.group_id">

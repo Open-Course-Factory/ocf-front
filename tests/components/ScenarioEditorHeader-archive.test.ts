@@ -40,6 +40,7 @@ function mountHeader(overrides: Record<string, unknown> = {}): VueWrapper {
       canCreateScenario: true,
       canEditScenario: true,
       canCopyToOrg: false,
+      canRetire: true,
       isAdmin: false,
       canPreview: true,
       isPreviewLoading: false,
@@ -89,8 +90,8 @@ describe('ScenarioEditorHeader — archive action', () => {
     expect(mountHeader({ currentScenario: archivedScenario }).find('.archived-badge').exists()).toBe(true)
   })
 
-  it('hides both actions from someone who may not edit the scenario', async () => {
-    const wrapper = mountHeader({ canEditScenario: false, canCopyToOrg: true })
+  it('hides both actions from someone who may not retire the scenario', async () => {
+    const wrapper = mountHeader({ canEditScenario: false, canRetire: false, canCopyToOrg: true })
     await openOverflowMenu(wrapper)
 
     expect(menuItem(wrapper, '.fa-box-archive')).toBeFalsy()
@@ -98,7 +99,7 @@ describe('ScenarioEditorHeader — archive action', () => {
   })
 
   it('offers no overflow menu at all when it would be empty', () => {
-    const wrapper = mountHeader({ canEditScenario: false, canCopyToOrg: false })
+    const wrapper = mountHeader({ canEditScenario: false, canRetire: false, canCopyToOrg: false })
     expect(wrapper.find('.dropdown-container').exists()).toBe(false)
   })
 })

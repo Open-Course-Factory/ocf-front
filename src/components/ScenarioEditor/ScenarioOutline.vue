@@ -32,7 +32,8 @@
     </button>
 
     <div class="ocf-outline-meta">
-      <span>{{ t('scenarioEditor.stepCount', { count: String(steps.length) }) }}</span>
+      <span v-if="editable || steps.length">{{ t('scenarioEditor.stepCount', { count: String(steps.length) }) }}</span>
+      <span v-else data-testid="outline-steps-hidden">{{ t('scenarioEditor.stepsAfterDuplicate') }}</span>
       <span v-if="editable && steps.length > 1"><i class="fas fa-grip-lines" aria-hidden="true"></i> {{ t('scenarioEditor.dragToReorder') }}</span>
     </div>
 

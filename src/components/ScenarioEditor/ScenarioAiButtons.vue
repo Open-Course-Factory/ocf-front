@@ -12,6 +12,7 @@
 
 <template>
   <button
+    v-if="only !== 'improve'"
     type="button"
     class="ocf-btn-outline"
     data-testid="scenario-ai-create-btn"
@@ -22,7 +23,7 @@
     <span>{{ t('scenarioAi.create') }}</span>
   </button>
   <button
-    v-if="!createOnly"
+    v-if="only !== 'create'"
     type="button"
     class="ocf-btn-outline"
     data-testid="scenario-ai-improve-btn"
@@ -53,8 +54,9 @@ const props = defineProps<{
   scenario: { id: string; title: string; organization_id?: string | null } | null
   /** The scenario's `can_manage` verdict, as the editor computes it. */
   canManage: boolean
-  // The editor's empty state offers creating only: there is nothing to improve.
-  createOnly?: boolean
+  // One of the two only: the editor's empty state creates, its header improves
+  // (creating sits in the header's Import menu).
+  only?: 'create' | 'improve'
 }>()
 
 const emit = defineEmits<{

@@ -112,4 +112,11 @@ describe('ScenarioOutline', () => {
     expect(wrapper.get('[data-testid="outline-scenario-card"]').attributes('disabled')).toBeDefined()
     wrapper.unmount()
   })
+
+  it('says when a read-only scenario hides its steps, rather than counting zero', () => {
+    const wrapper = mountOutline({ editable: false, canEditSettings: false, steps: [] })
+    expect(wrapper.get('[data-testid="outline-steps-hidden"]').text()).toContain('once you have duplicated it')
+    expect(wrapper.text()).not.toContain('0 step')
+    wrapper.unmount()
+  })
 })
