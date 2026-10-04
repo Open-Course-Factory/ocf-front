@@ -13,6 +13,7 @@
  */
 
 import type {
+  ScenarioInfo,
   SessionStepDetail,
   SessionStepQuestionDetail,
   SessionCommand
@@ -189,4 +190,11 @@ export function commandsForStepFromList(
   const startSec = startMs / 1000
   const endSec = endMs / 1000
   return list.filter(c => c.executed_at >= startSec && c.executed_at < endSec)
+}
+
+// The learner's validated-flags panel. ocf-core issues a flag for every flag
+// step whether or not flags_enabled is set, and says so in has_flag_steps;
+// a backend that predates the field leaves flags_enabled as the only signal.
+export function showsValidatedFlags(scenario?: ScenarioInfo | null): boolean {
+  return !!scenario?.flags_enabled || !!scenario?.has_flag_steps
 }

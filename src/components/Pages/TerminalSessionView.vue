@@ -105,7 +105,7 @@
             :end-reason="terminalEndReason"
             :has-scenario="terminalHadScenario"
             :scenario-session-id="scenarioSessionId"
-            :scenario-flags-enabled="scenarioBriefing?.flags_enabled ?? false"
+            :scenario-flags-enabled="showsValidatedFlags(scenarioBriefing)"
             :scenario-crash-traps="scenarioBriefing?.crash_traps ?? false"
             :show-exposed-ports="scenarioBriefing?.port_exposure_allowed ?? false"
             :show-stop-button="true"
@@ -294,6 +294,7 @@ import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import { getEffectiveSessionState } from '../../utils/sessionState'
+import { showsValidatedFlags } from '../../utils/scenarioDisplay'
 
 const route = useRoute()
 const router = useRouter()
