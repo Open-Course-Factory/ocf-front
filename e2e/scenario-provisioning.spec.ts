@@ -68,10 +68,15 @@ test.describe('Scenario per-step provisioning', () => {
     // the panel keeps its exact box, the terminal keeps its vertical
     // geometry. (The terminal's x wobbles ±3px with the nav sidebar's
     // content-driven width — outside the scenario layout, not asserted.)
-    expect(await panel.boundingBox()).toEqual(panelValidated);
+    // toBeCloseTo(_, 0) allows sub-pixel rounding (< 0.5px) and nothing a
+    // learner could see.
+    const panelDuring = await panel.boundingBox();
+    for (const key of ['x', 'y', 'width', 'height'] as const) {
+      expect(panelDuring![key], `panel ${key}`).toBeCloseTo(panelValidated![key], 0);
+    }
     const terminalDuring = await terminalArea.boundingBox();
-    expect(terminalDuring!.y).toBe(terminalValidated!.y);
-    expect(terminalDuring!.height).toBe(terminalValidated!.height);
+    expect(terminalDuring!.y).toBeCloseTo(terminalValidated!.y, 0);
+    expect(terminalDuring!.height).toBeCloseTo(terminalValidated!.height, 0);
 
     // Provisioning resolves (2 mock polls) and the next step loads
     await expect(page.getByTestId('scenario-step-title')).toHaveText('Heavy step', {
