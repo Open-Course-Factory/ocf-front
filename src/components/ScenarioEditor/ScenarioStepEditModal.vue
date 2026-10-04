@@ -676,6 +676,7 @@ import BaseModal from '../Modals/BaseModal.vue'
 import TabStrip from '../Common/TabStrip.vue'
 import TranslationPane from './TranslationPane.vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { BANNER_EFFECTS } from '../../utils/scenarioAiPrompt'
 
 const STEP_TYPES = ['terminal', 'flag', 'info', 'quiz'] as const
 type StepType = typeof STEP_TYPES[number]
@@ -1134,10 +1135,6 @@ interface QuestionData {
   points: number
 }
 
-// Effect names accepted by ocf-banner in the container. Kept in step with the
-// tool rather than invented here: an unknown name draws nothing, and the
-// failure is silent from the trainer's side.
-const BANNER_EFFECTS = ['decrypt', 'slide', 'unstable', 'fireworks', 'burn', 'rings', 'beams', 'matrix', 'rain'] as const
 
 // Mirrors the 500-char cap on the backend DTO so a trainer hits the field
 // limit while typing instead of a 400 on save.
