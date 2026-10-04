@@ -58,26 +58,12 @@
       </label>
     </fieldset>
 
-    <div class="form-group">
-      <label for="import-destination">{{ t('scenarioImport.destination') }}</label>
-      <select
-        id="import-destination"
-        v-model="destinationKey"
-        class="form-control"
-        :disabled="availableCreateScopes.length === 0"
-      >
-        <optgroup v-if="platformScopeAvailable" :label="t('scenarioEditor.scopePlatform')">
-          <option value="platform:*">🛡️ {{ t('scenarioEditor.platformOnly') }}</option>
-        </optgroup>
-        <optgroup v-if="orgScopes.length" :label="t('scenarioEditor.scopeOrganizations')">
-          <option v-for="s in orgScopes" :key="`org:${s.id}`" :value="`org:${s.id}`">{{ s.name }}</option>
-        </optgroup>
-        <optgroup v-if="groupScopes.length" :label="t('scenarioEditor.scopeGroups')">
-          <option v-for="s in groupScopes" :key="`group:${s.id}`" :value="`group:${s.id}`">{{ s.name }}</option>
-        </optgroup>
-      </select>
-      <p class="form-hint">{{ destinationHint }}</p>
-    </div>
+    <ScenarioScopeSelect
+      id="import-destination"
+      v-model="destinationKey"
+      :label="t('scenarioImport.destination')"
+      :empty-hint="t('scenarioImport.noDestination')"
+    />
   </BaseModal>
 
   <ScenarioUploadModal
@@ -101,16 +87,14 @@ import { ref, computed } from 'vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import ScenarioUploadModal from '../Modals/ScenarioUploadModal.vue'
 import ScenarioJSONImportModal from '../Modals/ScenarioJSONImportModal.vue'
+import ScenarioScopeSelect from './ScenarioScopeSelect.vue'
 import { useTranslations } from '../../composables/useTranslations'
-import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 import { useScenarioCreateScopes } from '../../composables/useScenarioCreateScopes'
 
 const emit = defineEmits<{
   (e: 'imported', scenario: any): void
 }>()
 
-// Registers the shared scenarioEditor.* namespace for the scope labels and hints.
-useScenarioEditorI18n()
 const { t } = useTranslations({
   en: {
     scenarioImport: {
@@ -146,15 +130,7 @@ const { t } = useTranslations({
   }
 })
 
-const {
-  orgScopes,
-  groupScopes,
-  platformScopeAvailable,
-  availableCreateScopes,
-  parseScopeKey,
-  pickDefaultScopeKey,
-  loadScopeSources,
-} = useScenarioCreateScopes()
+const { parseScopeKey, pickDefaultScopeKey, loadScopeSources } = useScenarioCreateScopes()
 
 const showChooser = ref(false)
 const showUploadModal = ref(false)
@@ -166,14 +142,6 @@ const destinationKey = ref('')
 const destination = computed(() => parseScopeKey(destinationKey.value))
 const organizationId = computed(() => destination.value?.kind === 'org' ? destination.value.id : undefined)
 const groupId = computed(() => destination.value?.kind === 'group' ? destination.value.id : undefined)
-
-const destinationHint = computed(() => {
-  const scope = destination.value
-  if (!scope) return availableCreateScopes.value.length === 0 ? t('scenarioImport.noDestination') : ''
-  if (scope.kind === 'platform') return t('scenarioEditor.scopeHintPlatform')
-  if (scope.kind === 'org') return t('scenarioEditor.scopeHintOrg', { name: scope.name })
-  return t('scenarioEditor.scopeHintGroup', { name: scope.name })
-})
 
 // The scope lists are loaded on open rather than on mount: the button sits on
 // pages (the catalogue) that otherwise never need the user's classes.
