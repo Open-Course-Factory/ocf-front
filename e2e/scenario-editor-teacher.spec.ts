@@ -46,6 +46,7 @@ const COLLEAGUE_TEXT = 'Everything here belongs to a colleague.';
 const PUBLIC_TITLE = `E2E public lab ${STAMP}`;
 const PUBLIC_STEP = 'A step worth reusing';
 const PUBLIC_TEXT = 'Taken from the platform catalogue.';
+const PUBLIC_VERIFY = 'test -f /tmp/reused';
 
 let manager: ApiSession;
 let teacher: ApiSession | null = null;
@@ -86,7 +87,7 @@ test.beforeAll(async ({ browser }) => {
     publicLabId = (await importScenario(admin, null, {
       title: PUBLIC_TITLE,
       is_public: true,
-      steps: [{ title: PUBLIC_STEP, step_type: 'info', text_content: PUBLIC_TEXT }],
+      steps: [{ title: PUBLIC_STEP, step_type: 'terminal', text_content: PUBLIC_TEXT, verify_script: PUBLIC_VERIFY }],
     })).id;
     await admin.api.dispose();
   }
@@ -154,7 +155,9 @@ test("a teacher reads a colleague's lab, cannot retire it, and duplicates it to 
   // Read only, with the content shown as the learner reads it.
   await expect(page.getByTestId('readonly-step')).toBeVisible({ timeout: 20_000 });
   await expect(page.getByTestId('step-preview')).toContainText(COLLEAGUE_TEXT);
-  await expect(page.locator('#step-title')).toHaveCount(0);
+  // The same editor, read only: shown, nothing to save.
+  await expect(page.locator('#step-title')).toHaveAttribute('readonly', '');
+  await expect(page.getByTestId('step-edit-save')).toHaveCount(0);
   await expect(page.getByTestId('outline-add-step')).toHaveCount(0);
 
   // Exporting a colleague's lab is allowed; archiving or deleting it is not.
@@ -169,7 +172,9 @@ test("a teacher reads a colleague's lab, cannot retire it, and duplicates it to 
   await page.locator('.base-modal-footer .btn.btn-primary').first().click();
 
   // The copy opens, and it is the teacher's to edit.
+  await expect(page).not.toHaveURL(new RegExp(colleagueLabId!), { timeout: 20_000 });
   await expect(page.locator('#step-title')).toHaveValue(COLLEAGUE_STEP, { timeout: 20_000 });
+  await expect(page.locator('#step-title')).toBeEditable();
   const copyId = new URL(page.url()).searchParams.get('scenarioId');
   expect(copyId).not.toBe(colleagueLabId);
   createdByTeacher.push(copyId!);
@@ -189,7 +194,16 @@ test("a teacher reads a public scenario's steps and copies one into their own sc
   await page.getByTestId('scenario-picker').selectOption(publicLabId!);
   await expect(outlineTitles(page)).toHaveText([PUBLIC_STEP], { timeout: 20_000 });
   await expect(page.getByTestId('step-preview')).toContainText(PUBLIC_TEXT);
-  await expect(page.locator('#step-title')).toHaveCount(0);
+  await expect(page.getByTestId('step-edit-save')).toHaveCount(0);
+  // Its scripts too: what a duplicate would carry.
+  await page.locator('#tab-verify').click();
+  await expect(page.locator('#step-verify-script')).toHaveValue(PUBLIC_VERIFY);
+  await expect(page.locator('#step-verify-script')).toBeDisabled();
+  // And its settings, to read.
+  await page.getByTestId('outline-scenario-card').click();
+  await expect(page.locator('.base-modal-footer .btn-primary')).toHaveCount(0);
+  await expect(page.locator('#scenario-name')).toBeDisabled();
+  await page.locator('.base-modal-close').click();
 
   // Copying from the library warns that a step may lean on its scenario's setup.
   // (Checked below, once a step is ticked.)
@@ -207,9 +221,12 @@ test("a teacher reads a public scenario's steps and copies one into their own sc
   await page.getByTestId('step-library-insert').click();
 
   await expect(outlineTitles(page)).toHaveText(['First words', PUBLIC_STEP], { timeout: 20_000 });
-  // The copy is the teacher's: it opens editable, with the source's text.
+  // The copy is the teacher's: it opens editable, with the source's text and script.
   await expect(page.locator('#step-title')).toHaveValue(PUBLIC_STEP);
   await expect(page.locator('#step-text-content')).toHaveValue(PUBLIC_TEXT);
+  await expect(page.locator('#step-text-content')).toBeEditable();
+  await page.locator('#tab-verify').click();
+  await expect(page.locator('#step-verify-script')).toHaveValue(PUBLIC_VERIFY);
 });
 
 test("Play on a public scenario follows the catalogue's verdict", async ({ page }) => {
