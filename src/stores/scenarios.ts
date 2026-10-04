@@ -249,16 +249,23 @@ export const useScenariosStore = defineStore('scenarios', () => {
     ]))
 
     /**
-     * The editor's scenario picker must keep offering archived scenarios —
-     * that is where Restore lives — while the admin list decides for itself
-     * through its own toggle. The flag is scoped to this one load so the
-     * list's toggle state is left exactly as it was.
+     * Every scenario the editor may open, with its steps (the step list panel
+     * shows them for each scenario), across all pages: a single GET stops at
+     * the backend's default page size of 20, and the picker silently lost the
+     * rest.
+     *
+     * The picker must keep offering archived scenarios — that is where
+     * Restore lives — while the admin list decides for itself through its own
+     * toggle. The flag is scoped to this one load so the list's toggle state
+     * is left exactly as it was.
      */
-    const loadEntitiesIncludingArchived = async (endpoint: string) => {
+    const loadEntitiesIncludingArchived = async () => {
         const previous = base.includeArchived.value
         base.includeArchived.value = true
         try {
-            return await base.loadEntities(endpoint)
+            const all = await base.fetchAllEntities('/scenarios', { include: 'steps' })
+            base.entities.splice(0, base.entities.length, ...all)
+            return all
         } finally {
             base.includeArchived.value = previous
         }

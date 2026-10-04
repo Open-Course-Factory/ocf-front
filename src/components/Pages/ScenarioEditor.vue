@@ -571,7 +571,7 @@ onMounted(async () => {
   // Memberships and groups are required to render the create-scope picker;
   // organizations are required to resolve org names. All three are independent.
   await Promise.all([
-    scenariosStore.loadEntitiesIncludingArchived('/scenarios?include=steps'),
+    scenariosStore.loadEntitiesIncludingArchived(),
     loadScopeSources(),
     // Best-effort: if the sizes endpoint isn't deployed yet (404/403), fall back to plain text input.
     terminalService.getSizes()
@@ -678,7 +678,7 @@ const handleCreateNew = () => {
 
 // An imported scenario is opened straight away: the import was done to work on it.
 const handleImported = async (scenario: { id: string }) => {
-  await scenariosStore.loadEntitiesIncludingArchived('/scenarios?include=steps')
+  await scenariosStore.loadEntitiesIncludingArchived()
   selectedScenarioId.value = scenario.id
   await handleScenarioSelect()
   notification.showSuccess(t('scenarioEditor.importSuccess'))
@@ -1110,7 +1110,7 @@ const handleSaveScenario = async () => {
         if (newId) {
           selectedScenarioId.value = newId
           // Reload
-          await scenariosStore.loadEntitiesIncludingArchived('/scenarios?include=steps')
+          await scenariosStore.loadEntitiesIncludingArchived()
           await handleScenarioSelect()
           router.replace({ query: { scenarioId: newId } })
         }
@@ -1444,7 +1444,7 @@ const handleSaveStep = async (formData: any) => {
     if (selectedScenarioId.value) {
       await Promise.all([
         handleScenarioSelect(),
-        scenariosStore.loadEntitiesIncludingArchived('/scenarios?include=steps')
+        scenariosStore.loadEntitiesIncludingArchived()
       ])
     }
 
@@ -1485,7 +1485,7 @@ const handleCopyToOrg = async () => {
     await axios.post(`${base}/scenarios/${currentScenario.value.id}/duplicate`)
     notification.showSuccess(t('scenarioEditor.copySuccess'))
     // Reload scenarios to show the new duplicate
-    await scenariosStore.loadEntitiesIncludingArchived('/scenarios?include=steps')
+    await scenariosStore.loadEntitiesIncludingArchived()
     closeCopyModal()
   } catch (err: any) {
     console.error('Copy to org failed:', err)
@@ -1506,7 +1506,7 @@ const openArchiveModal = () => {
 }
 
 const reloadAfterArchiveChange = async () => {
-  await scenariosStore.loadEntitiesIncludingArchived('/scenarios?include=steps')
+  await scenariosStore.loadEntitiesIncludingArchived()
   if (currentScenario.value?.id) {
     const refreshed = scenariosStore.entities.find((s: any) => s.id === currentScenario.value.id)
     if (refreshed) currentScenario.value = refreshed
