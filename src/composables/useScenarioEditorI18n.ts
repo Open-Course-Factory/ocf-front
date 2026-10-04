@@ -140,6 +140,8 @@ export function useScenarioEditorI18n() {
       exportNeedsScenario: 'Select a scenario to export it',
       exportNeedsManager: 'Only someone who manages this scenario can export it',
       importSuccess: 'Scenario imported',
+      aiCreateSuccess: 'Scenario created from your AI',
+      aiUpdateSuccess: 'Scenario updated from your AI',
       // Panel
       expandPanel: 'Expand panel',
       collapsePanel: 'Collapse panel',
@@ -296,6 +298,8 @@ export function useScenarioEditorI18n() {
       exportNeedsScenario: 'Sélectionnez un scénario pour l\'exporter',
       exportNeedsManager: 'Seule une personne qui gère ce scénario peut l\'exporter',
       importSuccess: 'Scénario importé',
+      aiCreateSuccess: 'Scénario créé depuis votre IA',
+      aiUpdateSuccess: 'Scénario mis à jour depuis votre IA',
       // Panneau
       expandPanel: 'Déplier le panneau',
       collapsePanel: 'Replier le panneau',

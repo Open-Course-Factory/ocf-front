@@ -31,6 +31,11 @@
     >
       <template #import>
         <ScenarioImportButton @imported="handleImported" />
+        <ScenarioAiButtons
+          :scenario="currentScenario"
+          :can-manage="canEditScenario"
+          @imported="(scenario, mode) => handleImported(scenario, mode === 'improve' ? 'scenarioEditor.aiUpdateSuccess' : 'scenarioEditor.aiCreateSuccess')"
+        />
       </template>
     </ScenarioEditorHeader>
 
@@ -272,6 +277,7 @@ import ScenarioStepEditModal from '../ScenarioEditor/ScenarioStepEditModal.vue'
 import ScenarioEditModal from '../ScenarioEditor/ScenarioEditModal.vue'
 import ScenarioEditorHeader from '../ScenarioEditor/ScenarioEditorHeader.vue'
 import ScenarioImportButton from '../ScenarioEditor/ScenarioImportButton.vue'
+import ScenarioAiButtons from '../ScenarioEditor/ScenarioAiButtons.vue'
 import { scenarioTranslationService } from '../../services/domain/scenario'
 import type { LocaleCoverage, StepTranslation, ScenarioTranslation } from '../../services/domain/scenario'
 import BaseModal from '../Modals/BaseModal.vue'
@@ -677,11 +683,11 @@ const handleCreateNew = () => {
 }
 
 // An imported scenario is opened straight away: the import was done to work on it.
-const handleImported = async (scenario: { id: string }) => {
+const handleImported = async (scenario: { id: string }, successKey = 'scenarioEditor.importSuccess') => {
   await scenariosStore.loadEntitiesIncludingArchived()
   selectedScenarioId.value = scenario.id
   await handleScenarioSelect()
-  notification.showSuccess(t('scenarioEditor.importSuccess'))
+  notification.showSuccess(t(successKey))
 }
 
 // "Play as learner" — launch a trainer-side preview session in a new tab.
