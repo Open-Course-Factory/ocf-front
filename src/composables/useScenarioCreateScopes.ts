@@ -5,14 +5,15 @@
  * or a class the user manages. Shared by the editor's create flow and the
  * scenario import, which write to the same three places:
  *   - platform → POST /scenarios[/upload|/import-json]                 (admin only)
- *   - org      → POST /organizations/:id/scenarios[/upload|/import-json] (org manager+)
+ *   - org      → POST /organizations/:id/scenarios[/upload|/import-json] (org teacher+)
  *   - group    → POST /groups/:id/scenarios[/upload|/import-json]        (group manager+, auto-assigns)
  *
  * Both scope lists trust the backend's `user_member_id` filter applied by
- * GET /organizations and GET /class-groups: they only return entities the
- * user can act on, so nothing is re-filtered here (#216 — filtering by
+ * GET /organizations and GET /class-groups (#216 — filtering by
  * `owner_user_id === userId` was creator-match, not membership-match, and hid
- * groups the user was added to but didn't create).
+ * groups the user was added to but didn't create). Organisations are narrowed
+ * by role on top: membership alone is any role, and ocf-core authors scenarios
+ * in an org from teacher up (admins: any org).
  *
  * Scope keys (`org:<id>`, `group:<id>`, `platform:*`) are what the pickers bind.
  */
@@ -42,10 +43,12 @@ export function useScenarioCreateScopes() {
   })
 
   const orgScopes = computed<Array<{ id: string; name: string }>>(() =>
-    organizationsStore.userOrganizations.map((o: any) => ({
-      id: o.id,
-      name: o.display_name || o.name || `Organization ${String(o.id).slice(0, 8)}`,
-    })),
+    organizationsStore.userOrganizations
+      .filter((o: any) => isAdmin.value || membershipsStore.canAuthorInOrg(o.id))
+      .map((o: any) => ({
+        id: o.id,
+        name: o.display_name || o.name || `Organization ${String(o.id).slice(0, 8)}`,
+      })),
   )
 
   const groupScopes = computed<Array<{ id: string; name: string }>>(() =>
@@ -91,9 +94,9 @@ export function useScenarioCreateScopes() {
   }
 
   const pickDefaultScopeKey = (): string => {
-    // 1. currentOrganization if user can manage it
+    // 1. currentOrganization if the user may author in it
     const currentOrgId = organizationsStore.currentOrganization?.id
-    if (currentOrgId && membershipsStore.canManageOrg(currentOrgId)) {
+    if (currentOrgId && orgScopes.value.some(o => o.id === currentOrgId)) {
       return `org:${currentOrgId}`
     }
     // 2. first available org scope
