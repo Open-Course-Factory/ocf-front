@@ -16,6 +16,7 @@
       type="button"
       class="ocf-btn-outline"
       data-testid="scenario-import-menu"
+      :aria-label="t('scenarioImportMenu.import')"
       aria-haspopup="true"
       :aria-expanded="open"
       :title="t('scenarioImportMenu.title')"

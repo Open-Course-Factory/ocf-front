@@ -16,6 +16,7 @@
       type="button"
       class="ocf-btn-outline"
       data-testid="scenario-export-btn"
+      :aria-label="t('scenarioExportMenu.export')"
       :disabled="disabled"
       :title="disabled ? disabledReason : t('scenarioExportMenu.export')"
       aria-haspopup="true"

@@ -464,7 +464,8 @@ onUnmounted(() => document.removeEventListener('click', handleDocumentClick))
   }
 }
 
-/* Narrow screens: button labels give way to their icons. */
+/* Narrow screens: button labels give way to their icons. Each keeps its name
+   in aria-label and its explanation in a title tooltip. */
 @media (max-width: 1500px) {
   .ocf-header-actions :deep(.ocf-btn-outline span) {
     display: none;

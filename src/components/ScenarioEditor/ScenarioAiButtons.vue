@@ -16,6 +16,7 @@
     type="button"
     class="ocf-btn-outline"
     data-testid="scenario-ai-create-btn"
+    :aria-label="t('scenarioAi.create')"
     :title="t('scenarioAi.createTitleAttr')"
     @click="mode = 'create'"
   >
@@ -27,6 +28,7 @@
     type="button"
     class="ocf-btn-outline"
     data-testid="scenario-ai-improve-btn"
+    :aria-label="t('scenarioAi.improve')"
     :disabled="!!improveDisabledReason"
     :title="improveDisabledReason || t('scenarioAi.improveTitleAttr')"
     @click="mode = 'improve'"

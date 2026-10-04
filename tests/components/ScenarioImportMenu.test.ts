@@ -32,6 +32,8 @@ function mountMenu() {
 describe('ScenarioImportMenu', () => {
   it('opens the file import with the format picked in the menu', async () => {
     const wrapper = mountMenu()
+    // Named even when a narrow header shows only its icon.
+    expect(wrapper.get('[data-testid="scenario-import-menu"]').attributes('aria-label')).toBe('Import')
     await wrapper.get('[data-testid="scenario-import-menu"]').trigger('click')
     await wrapper.get('[data-testid="scenario-import-menu-json"]').trigger('click')
     await wrapper.get('[data-testid="scenario-import-menu"]').trigger('click')
