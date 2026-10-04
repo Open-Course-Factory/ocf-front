@@ -99,15 +99,3 @@ describe('ScenarioEditorHeader — archive action', () => {
     expect(menuItem(wrapper, '.fa-rotate-left')).toBeFalsy()
   })
 })
-
-// The menu once offered Import, which posted to /scenarios/:id/import — a route
-// ocf-core never had, so it always failed. KillerCoda/JSON import lives in the
-// class and organization Scenarios tabs.
-describe('ScenarioEditorHeader — no dead Import action', () => {
-  it('offers no Import in the overflow menu', async () => {
-    const wrapper = mountHeader()
-    await openOverflowMenu(wrapper)
-
-    expect(menuItem(wrapper, '.fa-file-import')).toBeFalsy()
-  })
-})
