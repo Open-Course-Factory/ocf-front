@@ -247,9 +247,12 @@ async function handleUpload() {
     uploadedScenario.value = responseData
     uploadSuccess.value = true
   } catch (err: any) {
-    errorMessage.value = err.response?.data?.error_message ||
-      err.response?.data?.message ||
-      t('scenarioUpload.uploadError')
+    // A 413 may come from a proxy in front of ocf-core, with no JSON body.
+    errorMessage.value = err.response?.status === 413
+      ? t('scenarioUpload.fileTooLarge')
+      : err.response?.data?.error_message ||
+        err.response?.data?.message ||
+        t('scenarioUpload.uploadError')
   } finally {
     isUploading.value = false
   }

@@ -276,9 +276,12 @@ async function handleImport() {
     importedScenario.value = response
     importSuccess.value = true
   } catch (err: any) {
-    errorMessage.value = err.response?.data?.error_message ||
-      err.response?.data?.message ||
-      t('jsonImport.importError')
+    // A 413 may come from a proxy in front of ocf-core, with no JSON body.
+    errorMessage.value = err.response?.status === 413
+      ? t('jsonImport.fileTooLarge')
+      : err.response?.data?.error_message ||
+        err.response?.data?.message ||
+        t('jsonImport.importError')
   } finally {
     isImporting.value = false
   }
