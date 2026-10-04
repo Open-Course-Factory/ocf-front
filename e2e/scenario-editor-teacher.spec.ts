@@ -191,6 +191,9 @@ test("a teacher reads a public scenario's steps and copies one into their own sc
   await expect(page.getByTestId('step-preview')).toContainText(PUBLIC_TEXT);
   await expect(page.locator('#step-title')).toHaveCount(0);
 
+  // Copying from the library warns that a step may lean on its scenario's setup.
+  // (Checked below, once a step is ticked.)
+
   // Their own scenario: copy the public step after its first step.
   await page.getByTestId('scenario-picker').selectOption(createdByTeacher[0]);
   await expect(outlineTitles(page)).toHaveText(['First words'], { timeout: 20_000 });
@@ -200,10 +203,37 @@ test("a teacher reads a public scenario's steps and copies one into their own sc
   await page.getByTestId(`step-library-scenario-${publicLabId}`).click();
   const step = page.getByTestId('step-library').locator('.ocf-library-step').filter({ hasText: PUBLIC_STEP });
   await step.locator('input[type="checkbox"]').check();
+  await expect(page.getByTestId('step-library-notice')).toBeVisible();
   await page.getByTestId('step-library-insert').click();
 
   await expect(outlineTitles(page)).toHaveText(['First words', PUBLIC_STEP], { timeout: 20_000 });
   // The copy is the teacher's: it opens editable, with the source's text.
   await expect(page.locator('#step-title')).toHaveValue(PUBLIC_STEP);
   await expect(page.locator('#step-text-content')).toHaveValue(PUBLIC_TEXT);
+});
+
+test("Play on a public scenario follows the catalogue's verdict", async ({ page }) => {
+  test.skip(!teacher || !publicLabId, 'needs the teacher and a public lab');
+  await openEditorAsTeacher(page);
+  await page.getByTestId('scenario-picker').selectOption(publicLabId!);
+  await expect(outlineTitles(page)).toHaveText([PUBLIC_STEP], { timeout: 20_000 });
+
+  // Preview is not theirs on a platform scenario; launching is the catalogue's
+  // call (GET /scenario-sessions/available), so the spec asks it too. A stack
+  // with no terminal backend or plan answers "not launchable".
+  const available = await teacher!.api.get(`${API_BASE}/scenario-sessions/available`, {
+    headers: { Authorization: `Bearer ${teacher!.token}` },
+  });
+  const cards = available.ok() ? await available.json() : [];
+  const launchable = !!(Array.isArray(cards) ? cards : cards?.data || []).find((c: any) => c.id === publicLabId)?.launchable;
+
+  const play = page.getByTestId('scenario-play-btn');
+  if (!launchable) {
+    await expect(play).toBeDisabled();
+    return;
+  }
+  await expect(play).toBeEnabled({ timeout: 10_000 });
+  await play.click();
+  await expect(page).toHaveURL(new RegExp(`/scenarios\\?scenario=${publicLabId}`));
+  await expect(page.locator(`[data-scenario-id="${publicLabId}"]`)).toHaveClass(/scenario-card--focused/);
 });
