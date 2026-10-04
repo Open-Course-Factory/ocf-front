@@ -1542,6 +1542,11 @@ const handleSaveTranslation = () => {
   cursor: default;
 }
 
+/* An empty field read only is empty, not an invitation to type an example. */
+.ocf-step-fields:disabled .form-control::placeholder {
+  color: transparent;
+}
+
 .ocf-step-editor {
   display: flex;
   flex-direction: column;

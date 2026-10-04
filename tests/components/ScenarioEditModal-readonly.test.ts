@@ -36,6 +36,7 @@ describe('ScenarioEditModal — read only', () => {
     expect((wrapper.get('#scenario-setup-script').element as HTMLTextAreaElement).value).toBe('apt-get install -y nginx')
     expect(wrapper.find('.base-modal-footer .btn-primary').exists()).toBe(false)
     expect(wrapper.find('#tab-vocabulary').exists()).toBe(false)
+    expect(wrapper.find('#tab-messages').exists()).toBe(false)
   })
 
   it('is the ordinary settings form otherwise', () => {

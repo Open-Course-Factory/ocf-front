@@ -741,13 +741,13 @@ const allTabs = computed(() => [
 // At create time, only show General + Content — the Setup/Options tabs are
 // hidden until first save to reduce friction (Marc: "I have to fill 12 fields
 // before I have anything to save").
-// A new scenario has no vocabulary yet; a read-only one's is not the
-// reader's to load or edit.
+// A new scenario has no vocabulary yet; a read-only one's (and the messages
+// written with it) is not the reader's to load or edit.
 const tabs = computed(() =>
   model.value.isNew
     ? allTabs.value.filter(tab => tab.key === 'general' || tab.key === 'content')
     : props.readonly
-      ? allTabs.value.filter(tab => tab.key !== 'vocabulary')
+      ? allTabs.value.filter(tab => tab.key !== 'vocabulary' && tab.key !== 'messages')
       : allTabs.value
 )
 
@@ -776,6 +776,11 @@ watch(() => props.visible, (vis) => {
   color: var(--color-text-primary);
   background: var(--color-bg-secondary);
   cursor: default;
+}
+
+/* An empty field read only is empty, not an invitation to type an example. */
+.ocf-scn-fields:disabled .form-control::placeholder {
+  color: transparent;
 }
 
 .ocf-scn-locale {
