@@ -132,7 +132,9 @@ describe('ScenarioImportButton — destination decides the endpoint', () => {
     await pickFile(wrapper, archive())
     await clickImport(wrapper)
 
-    expect(wrapper.find('.error-message').text()).toContain('File exceeds the 10 MB size limit.')
+    // The server's limit, not the 10 MB the modal checks before sending.
+    expect(wrapper.find('.error-message').text()).toContain('too large for the server')
+    expect(wrapper.find('.error-message').text()).not.toContain('10 MB')
     expect(wrapper.emitted('imported')).toBeUndefined()
   })
 })

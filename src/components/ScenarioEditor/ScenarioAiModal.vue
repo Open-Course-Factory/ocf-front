@@ -210,6 +210,7 @@ import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 import { useLocale } from '../../composables/useLocale'
 import { useScenarioCreateScopes } from '../../composables/useScenarioCreateScopes'
 import { useScenarioAiTranslations } from '../../composables/useScenarioAiTranslations'
+import { useScenarioImportError } from '../../composables/useScenarioImportError'
 import { teacherService } from '../../services/domain/scenario'
 import { useScenarioAiCatalog } from '../../composables/useScenarioAiCatalog'
 import { scenarioImportProblems } from '../../utils/scenarioImportProblems'
@@ -240,6 +241,7 @@ const emit = defineEmits<{
 }>()
 
 useScenarioEditorI18n()
+const describeImportError = useScenarioImportError()
 const { t } = useScenarioAiTranslations()
 // The user's chosen UI language, as the language selector and preferences set it.
 const { currentLocale } = useLocale()
@@ -383,8 +385,7 @@ async function importAnswer() {
   } catch (err: any) {
     problems.value = scenarioImportProblems(err)
     if (problems.value.length) errorMessage.value = t('scenarioAi.refused', { count: problems.value.length })
-    else if (err.response?.status === 413) errorMessage.value = t('scenarioAi.tooLarge')
-    else errorMessage.value = err.response?.data?.error_message || t('scenarioAi.importError')
+    else errorMessage.value = describeImportError(err, t('scenarioAi.importError'))
   } finally {
     busy.value = false
   }

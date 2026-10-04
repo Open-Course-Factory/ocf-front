@@ -58,7 +58,6 @@ export function useScenarioAiTranslations() {
         cancel: 'Cancel',
         copyFix: 'Copy these errors for your AI',
         refused: 'The platform refused this answer ({count} problem(s)). Fix them, or hand them back to your AI:',
-        tooLarge: 'The scenario is too large to import.',
         importError: 'The scenario could not be imported.',
         exportError: 'The scenario could not be read.'
       }
@@ -116,7 +115,6 @@ export function useScenarioAiTranslations() {
         cancel: 'Annuler',
         copyFix: 'Copier ces erreurs pour votre IA',
         refused: 'La plateforme a refusé cette réponse ({count} problème(s)). Corrigez-les, ou rendez-les à votre IA :',
-        tooLarge: 'Le scénario est trop volumineux pour être importé.',
         importError: "Le scénario n'a pas pu être importé.",
         exportError: "Le scénario n'a pas pu être lu."
       }

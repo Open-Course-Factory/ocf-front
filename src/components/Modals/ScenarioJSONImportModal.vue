@@ -118,6 +118,7 @@ import { ref } from 'vue'
 import BaseModal from './BaseModal.vue'
 import ScenarioImportProblems from '../ScenarioEditor/ScenarioImportProblems.vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { useScenarioImportError } from '../../composables/useScenarioImportError'
 import { teacherService } from '../../services/domain/scenario'
 import { scenarioImportProblems } from '../../utils/scenarioImportProblems'
 
@@ -134,6 +135,7 @@ const emit = defineEmits<{
   imported: [scenario: any]
 }>()
 
+const describeImportError = useScenarioImportError()
 const { t } = useTranslations({
   en: {
     jsonImport: {
@@ -276,12 +278,7 @@ async function handleImport() {
     importSuccess.value = true
   } catch (err: any) {
     problems.value = scenarioImportProblems(err)
-    // A 413 may come from a proxy in front of ocf-core, with no JSON body.
-    errorMessage.value = err.response?.status === 413
-      ? t('jsonImport.fileTooLarge')
-      : err.response?.data?.error_message ||
-        err.response?.data?.message ||
-        t('jsonImport.importError')
+    errorMessage.value = describeImportError(err, t('jsonImport.importError'))
   } finally {
     isImporting.value = false
   }

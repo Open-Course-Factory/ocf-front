@@ -110,6 +110,7 @@
 import { ref } from 'vue'
 import BaseModal from './BaseModal.vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { useScenarioImportError } from '../../composables/useScenarioImportError'
 import { teacherService } from '../../services/domain/scenario'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
@@ -125,6 +126,7 @@ const emit = defineEmits<{
   uploaded: [scenario: any]
 }>()
 
+const describeImportError = useScenarioImportError()
 const { t } = useTranslations({
   en: {
     scenarioUpload: {
@@ -247,12 +249,7 @@ async function handleUpload() {
     uploadedScenario.value = responseData
     uploadSuccess.value = true
   } catch (err: any) {
-    // A 413 may come from a proxy in front of ocf-core, with no JSON body.
-    errorMessage.value = err.response?.status === 413
-      ? t('scenarioUpload.fileTooLarge')
-      : err.response?.data?.error_message ||
-        err.response?.data?.message ||
-        t('scenarioUpload.uploadError')
+    errorMessage.value = describeImportError(err, t('scenarioUpload.uploadError'))
   } finally {
     isUploading.value = false
   }
