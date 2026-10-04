@@ -39,6 +39,12 @@ vi.mock('../../src/composables/useScenarioCreateScopes', () => ({
   }),
 }))
 
+// The step-effects flag, as the feature flag service would answer it.
+const stepEffects = { value: false }
+vi.mock('../../src/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ createReactiveFlag: () => computed(() => stepEffects.value) })
+}))
+
 import ScenarioAiModal from '../../src/components/ScenarioEditor/ScenarioAiModal.vue'
 import { buildFixPrompt } from '../../src/utils/scenarioAiPrompt'
 
@@ -215,5 +221,28 @@ describe('ScenarioAiModal — prompt language', () => {
 
     await wrapper.findAll('.base-modal-footer .btn-secondary')[0].trigger('click')
     expect(promptText(wrapper)).toContain('Vous êtes un formateur Linux expert et vous améliorez')
+  })
+})
+
+describe('ScenarioAiModal — step effects follow their flag', () => {
+  async function promptShown(): Promise<string> {
+    const wrapper = mountModal({ mode: 'create' })
+    await wrapper.setProps({ visible: true })
+    await flushPromises()
+    await wrapper.find('#ai-description').setValue('Teach cron jobs')
+    await wrapper.find('[data-testid="scenario-ai-next"]').trigger('click')
+    await flushPromises()
+    return (wrapper.find('[data-testid="scenario-ai-prompt"]').element as HTMLTextAreaElement).value
+  }
+
+  it('does not ask for intro and outro effects while the flag is off', async () => {
+    stepEffects.value = false
+    expect(await promptShown()).not.toContain('intro_effect')
+  })
+
+  it('does once it is on', async () => {
+    stepEffects.value = true
+    expect(await promptShown()).toContain('intro_effect')
+    stepEffects.value = false
   })
 })

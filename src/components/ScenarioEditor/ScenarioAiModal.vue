@@ -203,6 +203,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
 import BaseModal from '../Modals/BaseModal.vue'
+import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import ScenarioScopeSelect from './ScenarioScopeSelect.vue'
 import ScenarioImportProblems from './ScenarioImportProblems.vue'
 import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
@@ -230,6 +231,8 @@ const props = defineProps<{
   /** The scenario to improve; ignored when creating. */
   scenario?: { id: string; title: string; organization_id?: string | null } | null
 }>()
+
+const stepEffectsEnabled = useFeatureFlags().createReactiveFlag('scenario_step_effects')
 
 const emit = defineEmits<{
   close: []
@@ -268,8 +271,10 @@ const canWritePrompt = computed(() =>
 // Computed rather than written once, so that switching the prompt language —
 // or going back to change the brief — rewrites the prompt in place.
 const prompt = computed(() => {
-  if (props.mode === 'create') return catalog.value ? buildCreatePrompt(brief, catalog.value, promptLanguage.value) : ''
-  return original.value ? buildImprovePrompt(instruction.value, original.value, catalog.value, promptLanguage.value) : ''
+  // Step banners are only advertised while the editor offers them.
+  const options = { effects: stepEffectsEnabled.value }
+  if (props.mode === 'create') return catalog.value ? buildCreatePrompt(brief, catalog.value, promptLanguage.value, options) : ''
+  return original.value ? buildImprovePrompt(instruction.value, original.value, catalog.value, promptLanguage.value, options) : ''
 })
 
 watch(promptLanguage, language => {

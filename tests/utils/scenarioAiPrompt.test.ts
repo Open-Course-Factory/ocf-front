@@ -143,12 +143,25 @@ describe('the prompt in French and in English', () => {
     features: [{ key: 'docker', name: 'Docker', min_size_key: 'M', always_available: true }]
   }
 
-  it('states every contract rule in both languages: the same field names, enum values and encodings', () => {
-    const create = (l: 'en' | 'fr') => buildCreatePrompt({ ...brief, language: 'en' }, catalog, l)
+  it.each([false, true])('states every contract rule in both languages, step effects %s: the same field names, enum values and encodings', (effects) => {
+    const create = (l: 'en' | 'fr') => buildCreatePrompt({ ...brief, language: 'en' }, catalog, l, { effects })
     expect(contractTokens(create('fr'))).toEqual(contractTokens(create('en')))
-    const improve = (l: 'en' | 'fr') => buildImprovePrompt('x', { title: 'T', steps: [] }, catalog, l)
+    const improve = (l: 'en' | 'fr') => buildImprovePrompt('x', { title: 'T', steps: [] }, catalog, l, { effects })
     expect(contractTokens(improve('fr'))).toEqual(contractTokens(improve('en')))
-    for (const effect of BANNER_EFFECTS) expect(create('fr')).toContain(effect)
+  })
+
+  // Step banners are behind the scenario_step_effects flag: off (the default),
+  // the prompt does not advertise them; the importer still accepts them.
+  it('asks for step effects only when they are offered', () => {
+    for (const lang of ['en', 'fr'] as const) {
+      const off = buildCreatePrompt(brief, catalog, lang)
+      expect(off).not.toContain('intro_effect')
+      expect(off).not.toContain('"outro_text"')
+      const on = buildCreatePrompt(brief, catalog, lang, { effects: true })
+      expect(on).toContain('intro_effect')
+      expect(on).toContain('"outro_text"')
+      for (const effect of BANNER_EFFECTS) expect(on).toContain(effect)
+    }
   })
 
   it('names enough of the contract for the comparison to mean something', () => {

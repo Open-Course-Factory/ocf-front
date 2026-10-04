@@ -42,6 +42,12 @@ export interface ScenarioAiCatalog {
   features?: Array<{ key: string; name?: string; description?: string; min_size_key?: string; always_available?: boolean }>
 }
 
+/** What the platform offers that the prompt should advertise. */
+export interface PromptOptions {
+  // Step banners (intro/outro effects), behind the scenario_step_effects flag.
+  effects?: boolean
+}
+
 export interface ScenarioAiBrief {
   description: string
   language: ScenarioAiLanguage
@@ -59,7 +65,9 @@ export interface ScenarioAiBrief {
  */
 interface PromptText {
   languageNames: Record<ScenarioAiLanguage, string>
-  contract: string
+  // `effects`: whether step banners are offered (the scenario_step_effects
+  // flag). Off, the fields are not advertised; the importer still accepts them.
+  contract: (effects: boolean) => string
   rules: string
   createRole: string
   improveRole: string
@@ -91,7 +99,7 @@ interface PromptText {
 
 const EN: PromptText = {
   languageNames: { fr: 'French', en: 'English' },
-  contract: `## The JSON format
+  contract: effects => `## The JSON format
 
 Answer with ONE JSON object. Every field not marked required may be left out.
 
@@ -129,11 +137,11 @@ Step fields:
 - "background_script" (bash): runs as root when the learner reaches the step, before they see it. Prepares that step's situation.
 - "background_timeout_seconds" (integer): leave out unless a background script needs more than a minute.
 - "foreground_script": leave out. It is typed into the learner's live shell.
-- "intro_effect", "outro_effect": leave out unless asked; otherwise one of ${BANNER_EFFECTS.join(', ')}. "intro_text", "outro_text": the banner's words (max 500 characters).
-- "show_immediate_feedback" (boolean): quiz steps — true shows right/wrong after each answer.
+${effects ? `- "intro_effect", "outro_effect": leave out unless asked; otherwise one of ${BANNER_EFFECTS.join(', ')}. "intro_text", "outro_text": the banner's words (max 500 characters).
+` : ''}- "show_immediate_feedback" (boolean): quiz steps — true shows right/wrong after each answer.
 - "flag_path" (string): flag steps only. See the flag rules below.
 - "questions" (array): quiz steps only, at least one. See the quiz rules below.
-- "translations" (array): this step's text in other languages: [{"locale", "title", "text_content", "hint_content", "intro_text", "outro_text"}]. At most one entry per locale. Scripts are never translated.
+- "translations" (array): this step's text in other languages: [{"locale", "title", "text_content", "hint_content"${effects ? ', "intro_text", "outro_text"' : ''}}]. At most one entry per locale. Scripts are never translated.
 
 Never include ids, "order" on steps, an organization, "is_public" or any flag value.`,
   rules: `## How the platform runs a scenario
@@ -205,7 +213,7 @@ The learner gets ONE Linux container (an LXC system container) and a root shell 
 
 const FR: PromptText = {
   languageNames: { fr: 'français', en: 'anglais' },
-  contract: `## Le format JSON
+  contract: effects => `## Le format JSON
 
 Répondez avec UN SEUL objet JSON. Tout champ qui n'est pas marqué obligatoire peut être omis.
 
@@ -243,11 +251,11 @@ Champs d'une étape :
 - "background_script" (bash) : s'exécute en root quand l'apprenant arrive à l'étape, avant qu'il ne la voie. Prépare la situation de l'étape.
 - "background_timeout_seconds" (entier) : à omettre, sauf si un script d'arrière-plan a besoin de plus d'une minute.
 - "foreground_script" : à omettre. Il est tapé dans le shell de l'apprenant.
-- "intro_effect", "outro_effect" : à omettre sauf demande ; sinon l'une des valeurs ${BANNER_EFFECTS.join(', ')}. "intro_text", "outro_text" : le texte de la bannière (500 caractères au plus).
-- "show_immediate_feedback" (booléen) : étapes quiz — true indique juste/faux après chaque réponse.
+${effects ? `- "intro_effect", "outro_effect" : à omettre sauf demande ; sinon l'une des valeurs ${BANNER_EFFECTS.join(', ')}. "intro_text", "outro_text" : le texte de la bannière (500 caractères au plus).
+` : ''}- "show_immediate_feedback" (booléen) : étapes quiz — true indique juste/faux après chaque réponse.
 - "flag_path" (chaîne) : étapes à drapeau uniquement. Voir les règles des drapeaux ci-dessous.
 - "questions" (tableau) : étapes quiz uniquement, au moins une. Voir les règles des quiz ci-dessous.
-- "translations" (tableau) : les textes de l'étape dans d'autres langues : [{"locale", "title", "text_content", "hint_content", "intro_text", "outro_text"}]. Une entrée au plus par langue. Les scripts ne se traduisent jamais.
+- "translations" (tableau) : les textes de l'étape dans d'autres langues : [{"locale", "title", "text_content", "hint_content"${effects ? ', "intro_text", "outro_text"' : ''}}]. Une entrée au plus par langue. Les scripts ne se traduisent jamais.
 
 N'incluez jamais d'identifiants, d'"order" sur les étapes, d'organisation, d'"is_public" ni aucune valeur de drapeau.`,
   rules: `## Comment la plateforme exécute un scénario
@@ -495,7 +503,7 @@ function catalogSection(text: PromptText, catalog?: ScenarioAiCatalog | null): s
  * description. `promptLanguage` is the language of the instructions; the
  * brief's own `language` is the language of the scenario's content.
  */
-export function buildCreatePrompt(brief: ScenarioAiBrief, catalog: ScenarioAiCatalog | null | undefined, promptLanguage: ScenarioAiLanguage): string {
+export function buildCreatePrompt(brief: ScenarioAiBrief, catalog: ScenarioAiCatalog | null | undefined, promptLanguage: ScenarioAiLanguage, options: PromptOptions = {}): string {
   const text = PROMPT_TEXT[promptLanguage]
   const types = brief.stepTypes.length ? brief.stepTypes : SCENARIO_AI_STEP_TYPES
   return [
@@ -505,7 +513,7 @@ export function buildCreatePrompt(brief: ScenarioAiBrief, catalog: ScenarioAiCat
 ${brief.description.trim()}
 
 ${text.labLines(text.languageNames[brief.language], brief.language, brief.level, brief.stepCount, types.join(', '))}`,
-    text.contract,
+    text.contract(options.effects ?? false),
     text.rules,
     catalogSection(text, catalog),
     `${text.exampleHeading}
@@ -520,7 +528,7 @@ ${text.createAnswer} ${text.answerFormat}`
 }
 
 /** The prompt that asks an assistant to change an existing scenario, given as its JSON export. */
-export function buildImprovePrompt(instruction: string, scenario: unknown, catalog: ScenarioAiCatalog | null | undefined, promptLanguage: ScenarioAiLanguage): string {
+export function buildImprovePrompt(instruction: string, scenario: unknown, catalog: ScenarioAiCatalog | null | undefined, promptLanguage: ScenarioAiLanguage, options: PromptOptions = {}): string {
   const text = PROMPT_TEXT[promptLanguage]
   return [
     text.improveRole,
@@ -529,7 +537,7 @@ export function buildImprovePrompt(instruction: string, scenario: unknown, catal
 ${instruction.trim()}
 
 ${text.changeRules}`,
-    text.contract,
+    text.contract(options.effects ?? false),
     text.rules,
     catalogSection(text, catalog),
     `${text.currentHeading}
