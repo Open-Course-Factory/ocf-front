@@ -153,11 +153,7 @@
               ></textarea>
             </template>
           </div>
-          <div class="ocf-content-preview" data-testid="step-preview">
-            <p class="ocf-pane-label"><i class="fas fa-eye" aria-hidden="true"></i> {{ t('stepEdit.learnerSees') }}</p>
-            <h3 class="ocf-preview-title">{{ previewTitle }}</h3>
-            <div class="markdown-content" v-html="previewHtml"></div>
-          </div>
+          <StepLearnerPreview class="ocf-content-preview" :title="previewTitle" :text="previewText" />
         </div>
 
         <!-- Hints tab -->
@@ -705,7 +701,7 @@ import TabStrip from '../Common/TabStrip.vue'
 import TranslationPane from './TranslationPane.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { BANNER_EFFECTS } from '../../utils/scenarioAiPrompt'
-import { renderStepMarkdown } from '../../utils/killercodaMarkdown'
+import StepLearnerPreview from './StepLearnerPreview.vue'
 import { TYPE_ICONS, resolveStepType, type StepType } from '../../utils/scenarioOutline'
 
 const { t } = useTranslations({
@@ -764,7 +760,6 @@ const { t } = useTranslations({
       duplicate: 'Duplicate',
       delete: 'Delete',
       markdown: 'Markdown',
-      learnerSees: 'What the learner sees',
       revert: 'Undo changes',
       discardDraft: 'Discard',
       // Step type labels
@@ -873,7 +868,6 @@ const { t } = useTranslations({
       duplicate: 'Dupliquer',
       delete: 'Supprimer',
       markdown: 'Markdown',
-      learnerSees: 'Ce que voit l’apprenant',
       revert: 'Annuler les modifications',
       discardDraft: 'Abandonner',
       // Step type labels
@@ -1277,10 +1271,9 @@ watch(isDirty, dirty => emit('update:dirty', dirty), { immediate: true })
 
 // Rendered with the learner's own pipeline, from whichever language is edited.
 const previewTitle = computed(() => (isTranslating.value && translationData.value.title) || formData.value.title)
-const previewHtml = computed(() => renderStepMarkdown(
-  (isTranslating.value ? translationData.value.text_content : formData.value.text_content) || '',
-  previewTitle.value
-))
+const previewText = computed(() =>
+  (isTranslating.value ? translationData.value.text_content : formData.value.text_content) || ''
+)
 
 const showMoreMenu = ref(false)
 const moreMenuRef = ref<HTMLElement | null>(null)
@@ -1593,9 +1586,19 @@ const handleSaveTranslation = () => {
   color: var(--color-danger);
 }
 
+/* The instructions take the height left under the tabs: the Markdown grows to
+   the footer and the preview scrolls on its own. */
+.tab-content:has(.ocf-content-panel) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 .tab-panel.ocf-content-panel {
+  flex: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-template-rows: minmax(0, 1fr);
   gap: var(--spacing-lg);
   min-height: 24rem;
 }
@@ -1619,7 +1622,7 @@ const handleSaveTranslation = () => {
   width: 100%;
   max-width: none;
   min-height: 22rem;
-  resize: vertical;
+  resize: none;
   font-family: var(--font-family-monospace);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
@@ -1627,16 +1630,11 @@ const handleSaveTranslation = () => {
 
 .ocf-content-preview {
   min-width: 0;
+  overflow-y: auto;
   padding-left: var(--spacing-lg);
   border-left: 1px solid var(--color-border-light);
   color: var(--color-text-primary);
   line-height: var(--line-height-relaxed);
-}
-
-.ocf-preview-title {
-  margin: var(--spacing-sm) 0;
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
 }
 
 .ocf-step-footer {
@@ -1659,6 +1657,7 @@ const handleSaveTranslation = () => {
 @media (max-width: 1100px) {
   .tab-panel.ocf-content-panel {
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
   }
 
   .ocf-content-preview {
@@ -2475,4 +2474,3 @@ const handleSaveTranslation = () => {
   margin: 0;
 }
 </style>
-<style scoped src="../Terminal/scenarioMarkdown.css"></style>
