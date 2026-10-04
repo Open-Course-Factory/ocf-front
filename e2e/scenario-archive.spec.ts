@@ -58,10 +58,18 @@ function scenarioCard(page: Page, title: string) {
  * Re-enter the launcher the way a learner would after doing something else, so
  * the page refetches its scenario list. Specs never page.goto() inside the
  * product, and a reload would not show WHERE the user went.
+ *
+ * Each hop waits for its page: clicked back to back, the router cancels the
+ * still-pending lazy /my-scenarios navigation, the /scenarios click is then a
+ * duplicate of the current route, and the launcher never remounts — the stale
+ * list still shows an archived card.
  */
 async function revisitLauncher(page: Page): Promise<void> {
   await navigateViaMenuCategory(page, 'scenarios', '/my-scenarios');
+  await expect(page).toHaveURL(/\/my-scenarios$/);
   await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
+  await expect(page).toHaveURL(/\/scenarios$/);
+  await expect(page.locator('.loading-section')).toHaveCount(0, { timeout: 15_000 });
 }
 
 test.beforeAll(async () => {
