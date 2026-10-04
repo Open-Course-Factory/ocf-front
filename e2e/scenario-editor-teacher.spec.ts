@@ -26,7 +26,9 @@ import {
 //  - opens a colleague's lab read only, with its steps shown as the learner
 //    reads them, and may duplicate it into the organization — the copy is
 //    theirs to edit;
-//  - may not archive or delete the colleague's lab.
+//  - may not archive or delete the colleague's lab;
+//  - reads a public platform scenario's steps without editing them, and
+//    copies one of them into their own scenario through the step library.
 // The teacher is a fresh account made a teacher of nadia's organization for
 // the run; everything the run creates is deleted on the way out.
 // No container is provisioned.
@@ -41,12 +43,16 @@ const OWN_TITLE = `E2E teacher lab ${STAMP}`;
 const COLLEAGUE_TITLE = `E2E colleague lab ${STAMP}`;
 const COLLEAGUE_STEP = 'Read the briefing';
 const COLLEAGUE_TEXT = 'Everything here belongs to a colleague.';
+const PUBLIC_TITLE = `E2E public lab ${STAMP}`;
+const PUBLIC_STEP = 'A step worth reusing';
+const PUBLIC_TEXT = 'Taken from the platform catalogue.';
 
 let manager: ApiSession;
 let teacher: ApiSession | null = null;
 let orgId = '';
 let membershipId: string | null = null;
 let colleagueLabId: string | null = null;
+let publicLabId: string | null = null;
 const createdByTeacher: string[] = [];
 
 test.describe.configure({ mode: 'serial' });
@@ -73,12 +79,24 @@ test.beforeAll(async ({ browser }) => {
     title: COLLEAGUE_TITLE,
     steps: [{ title: COLLEAGUE_STEP, step_type: 'info', text_content: COLLEAGUE_TEXT }],
   })).id;
+
+  // A public platform scenario, which only an administrator can publish.
+  const admin = await adminSession();
+  if (admin) {
+    publicLabId = (await importScenario(admin, null, {
+      title: PUBLIC_TITLE,
+      is_public: true,
+      steps: [{ title: PUBLIC_STEP, step_type: 'info', text_content: PUBLIC_TEXT }],
+    })).id;
+    await admin.api.dispose();
+  }
 });
 
 test.afterAll(async () => {
   const admin = await adminSession();
   for (const id of createdByTeacher) await deleteScenarioById(admin ?? manager, id);
   if (colleagueLabId) await deleteScenarioById(manager, colleagueLabId);
+  if (publicLabId && admin) await deleteScenarioById(admin, publicLabId);
   if (membershipId) await removeOrgMembership(manager, membershipId);
   if (admin) {
     // Registration gave the teacher a personal organization; it goes with them.
@@ -160,4 +178,32 @@ test("a teacher reads a colleague's lab, cannot retire it, and duplicates it to 
   await page.locator('#step-text-content').fill('Now mine.');
   await saveStep(page);
   await expect(page.getByTestId('step-preview')).toContainText('Now mine.');
+});
+
+test("a teacher reads a public scenario's steps and copies one into their own scenario", async ({ page }) => {
+  test.skip(!teacher || !publicLabId || !createdByTeacher[0], 'needs the teacher, their scenario and a public lab');
+  test.setTimeout(120_000);
+  await openEditorAsTeacher(page);
+
+  // Read only, its outline and content visible.
+  await page.getByTestId('scenario-picker').selectOption(publicLabId!);
+  await expect(outlineTitles(page)).toHaveText([PUBLIC_STEP], { timeout: 20_000 });
+  await expect(page.getByTestId('step-preview')).toContainText(PUBLIC_TEXT);
+  await expect(page.locator('#step-title')).toHaveCount(0);
+
+  // Their own scenario: copy the public step after its first step.
+  await page.getByTestId('scenario-picker').selectOption(createdByTeacher[0]);
+  await expect(outlineTitles(page)).toHaveText(['First words'], { timeout: 20_000 });
+  const library = page.locator('#tab-library');
+  if (!(await library.isVisible())) await page.getByTestId('rail-strip-library').click();
+  else await library.click();
+  await page.getByTestId(`step-library-scenario-${publicLabId}`).click();
+  const step = page.getByTestId('step-library').locator('.ocf-library-step').filter({ hasText: PUBLIC_STEP });
+  await step.locator('input[type="checkbox"]').check();
+  await page.getByTestId('step-library-insert').click();
+
+  await expect(outlineTitles(page)).toHaveText(['First words', PUBLIC_STEP], { timeout: 20_000 });
+  // The copy is the teacher's: it opens editable, with the source's text.
+  await expect(page.locator('#step-title')).toHaveValue(PUBLIC_STEP);
+  await expect(page.locator('#step-text-content')).toHaveValue(PUBLIC_TEXT);
 });
