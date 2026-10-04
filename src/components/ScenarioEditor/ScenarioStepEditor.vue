@@ -212,9 +212,31 @@
           aria-labelledby="tab-verify"
         >
           <div v-if="!isTranslating" class="form-group">
-            <label for="step-verify-script">{{ t('stepEdit.verifyScript') }}</label>
+            <div class="ocf-script-toolbar">
+              <label for="step-verify-script">{{ t('stepEdit.verifyScript') }}</label>
+              <DropdownMenu v-if="!readonly" align="right">
+                <template #trigger>
+                  <button type="button" class="ocf-btn-ghost" data-testid="verify-template-menu">
+                    <i class="fas fa-puzzle-piece" aria-hidden="true"></i>
+                    {{ t('stepEdit.insertTemplate') }}
+                    <i class="fas fa-caret-down" aria-hidden="true"></i>
+                  </button>
+                </template>
+                <button
+                  v-for="tpl in VERIFY_TEMPLATES"
+                  :key="tpl.key"
+                  type="button"
+                  class="ocf-dropdown-item"
+                  :data-testid="`verify-template-${tpl.key}`"
+                  @click="insertVerifyTemplate(tpl)"
+                >
+                  {{ tpl.label[uiLocale] }}
+                </button>
+              </DropdownMenu>
+            </div>
             <textarea
               id="step-verify-script"
+              ref="verifyScriptRef"
               v-model="formData.verify_script"
               class="form-control textarea-full script-textarea"
               rows="14"
@@ -712,16 +734,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import TabStrip from '../Common/TabStrip.vue'
+import DropdownMenu from '../Common/DropdownMenu.vue'
 import TranslationPane from './TranslationPane.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { BANNER_EFFECTS } from '../../utils/scenarioAiPrompt'
 import StepLearnerPreview from './StepLearnerPreview.vue'
 import { TYPE_ICONS, resolveStepType, type StepType } from '../../utils/scenarioOutline'
+import { VERIFY_TEMPLATES, insertSnippet, templateLocale, type VerifyTemplate } from '../../utils/verifyTemplates'
 
-const { t } = useTranslations({
+const { t, locale: i18nLocale } = useTranslations({
   en: {
     stepEdit: {
       title: 'Title',
@@ -732,6 +756,7 @@ const { t } = useTranslations({
       hintContentPlaceholder: 'Enter hints for the learner...',
       verifyScript: 'Verify Script',
       verifyScriptPlaceholder: '#!/bin/bash\n# Script to verify step completion...',
+      insertTemplate: 'Insert a template',
       backgroundScript: 'Background Script',
       backgroundScriptPlaceholder: '#!/bin/bash\n# Make sure this step can be played, even on a rebuilt machine.\n# Create what\'s missing; never overwrite the learner\'s work.\nmkdir -p /srv/app\n[ -f /srv/app/app.conf ] {\'|\'}{\'|\'} echo "port=8080" > /srv/app/app.conf',
       backgroundScriptGuidance: 'Runs before the step starts, and again, in order, if the learner\'s machine is rebuilt. Create what\'s missing, never overwrite what exists — running it twice must be harmless.',
@@ -842,6 +867,7 @@ const { t } = useTranslations({
       hintContentPlaceholder: 'Saisir les indices pour l’apprenant...',
       verifyScript: 'Script de vérification',
       verifyScriptPlaceholder: '#!/bin/bash\n# Script pour vérifier la complétion de l’étape...',
+      insertTemplate: 'Insérer un modèle',
       backgroundScript: 'Script d’arrière-plan',
       backgroundScriptPlaceholder: '#!/bin/bash\n# L\'étape doit rester jouable, même sur une machine reconstruite.\n# Créer ce qui manque, sans jamais écraser le travail de l\'apprenant.\nmkdir -p /srv/app\n[ -f /srv/app/app.conf ] {\'|\'}{\'|\'} echo "port=8080" > /srv/app/app.conf',
       backgroundScriptGuidance: "S'exécute avant le début de l'étape, puis de nouveau, dans l'ordre, si la machine de l'apprenant est reconstruite. Créez ce qui manque sans jamais écraser l'existant — le lancer deux fois ne doit rien casser.",
@@ -1039,6 +1065,28 @@ const savedFormSnapshot = ref('')
 const stepIsDirty = computed(() => JSON.stringify(formData.value) !== savedFormSnapshot.value)
 
 const pendingLocaleChange = ref<string | null>(null)
+
+// ---- Verify script templates ----
+
+const verifyScriptRef = ref<HTMLTextAreaElement | null>(null)
+const uiLocale = computed(() => templateLocale(i18nLocale.value))
+
+/**
+ * Inserts a check at the caret, its learner message in the scenario's own
+ * language, and selects the first value the author has to fill in.
+ */
+async function insertVerifyTemplate(tpl: VerifyTemplate) {
+  const textarea = verifyScriptRef.value
+  const { text, selection } = insertSnippet(
+    formData.value.verify_script || '',
+    textarea?.selectionStart ?? 0,
+    tpl.script(templateLocale(props.defaultLocale))
+  )
+  formData.value.verify_script = text
+  await nextTick()
+  textarea?.focus()
+  textarea?.setSelectionRange(selection.start, selection.end)
+}
 
 function requestLocale(locale: string) {
   if (locale === props.locale) return
@@ -1928,6 +1976,13 @@ const handleSaveTranslation = () => {
   resize: vertical;
   min-height: 80px;
   width: 100%;
+}
+
+.ocf-script-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
 }
 
 .script-textarea {
