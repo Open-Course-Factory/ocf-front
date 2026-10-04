@@ -180,6 +180,9 @@ export interface AvailableScenario extends ScenarioInfo {
   active_terminal_session_id?: string
   // Same meaning as MyScenarioSession.resume_mode, for the active run.
   active_session_resume_mode?: 'live' | 'paused' | 'rebuild'
+  // The backend's CanManageScenario verdict for the caller, as on
+  // GET /scenarios/:id. Absent from an ocf-core that does not send it yet.
+  can_manage?: boolean
   [key: string]: any
 }
 

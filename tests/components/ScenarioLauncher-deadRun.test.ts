@@ -68,6 +68,16 @@ vi.mock('../../src/stores/subscriptions', () => ({
   useSubscriptionsStore: () => ({ currentSubscription: null })
 }))
 
+// The catalogue's authoring controls (Import, the access rule behind them)
+// pull in the router and the membership stores; a learner's view is tested here.
+vi.mock('../../src/composables/useScenarioEditorAccess', async () => {
+  const { ref } = await import('vue')
+  return { useScenarioEditorAccess: () => ({ canAccessScenarioEditor: ref(false) }) }
+})
+vi.mock('../../src/components/ScenarioEditor/ScenarioImportButton.vue', () => ({
+  default: { template: '<button />' }
+}))
+
 import ScenarioLauncher from '../../src/components/Pages/ScenarioLauncher.vue'
 
 function mountLauncher(locale: 'en' | 'fr' = 'en') {

@@ -9,9 +9,14 @@
 
 <template>
   <div class="scenario-launcher">
-    <div class="page-header">
-      <h2>{{ t('launcher.title') }}</h2>
-      <p class="page-subtitle">{{ t('launcher.subtitle') }}</p>
+    <div class="page-header ocf-launcher-header">
+      <div>
+        <h2>{{ t('launcher.title') }}</h2>
+        <p class="page-subtitle">{{ t('launcher.subtitle') }}</p>
+      </div>
+      <!-- Same rule as the editor's menu entry: whoever may author scenarios
+           may bring one in. Learners see the catalogue unchanged. -->
+      <ScenarioImportButton v-if="canAccessScenarioEditor" @imported="handleImported" />
     </div>
 
     <div v-if="isLoading" class="loading-section">
@@ -234,6 +239,11 @@
             <i class="fas fa-ban"></i>
             {{ t('launcher.unavailable') }}
           </div>
+
+          <!-- can_manage arrives with the card, so the row never pops in later. -->
+          <div v-if="scenario.can_manage" class="ocf-card-manage-row">
+            <ScenarioExportMenu @export="format => exportScenario(scenario, format)" />
+          </div>
         </div>
       </div>
     </div>
@@ -260,6 +270,11 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useScenarioRunLabel, isPausedRun, isRebuildRun } from '../../composables/useScenarioRunLabel'
 import { useScenarioRunRecovery } from '../../composables/useScenarioRunRecovery'
 import AdminBadge from '../Common/AdminBadge.vue'
+import ScenarioImportButton from '../ScenarioEditor/ScenarioImportButton.vue'
+import ScenarioExportMenu from '../ScenarioEditor/ScenarioExportMenu.vue'
+import { useScenarioEditorAccess } from '../../composables/useScenarioEditorAccess'
+import { useScenarioExport } from '../../composables/useScenarioExport'
+import { useNotification } from '../../composables/useNotification'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
 import { isAssignedSubscription } from '../../utils/subscriptionHelpers'
 import { getSavedLocale } from '../../services/core/storage'
@@ -271,6 +286,10 @@ const { rebuild, startOver, explainRefusal } = useScenarioRunRecovery()
 const organizationsStore = useOrganizationsStore()
 const subscriptionsStore = useSubscriptionsStore()
 const currentOrgId = computed(() => organizationsStore.currentOrganization?.id || '')
+
+const { canAccessScenarioEditor } = useScenarioEditorAccess()
+const { exportScenario } = useScenarioExport()
+const notification = useNotification()
 
 const isAssigned = computed(() => isAssignedSubscription(subscriptionsStore.currentSubscription))
 
@@ -313,6 +332,7 @@ const { t } = useTranslations({
       difficultyIntermediate: 'Intermediate',
       difficultyAdvanced: 'Advanced',
       searchPlaceholder: 'Search scenarios...',
+      imported: 'Scenario imported',
       noMatchingScenarios: 'No matching scenarios',
       imageTitle: 'Image this scenario will run on',
       sizeTitle: 'Machine size this scenario will run at',
@@ -357,6 +377,7 @@ const { t } = useTranslations({
       difficultyIntermediate: 'Intermédiaire',
       difficultyAdvanced: 'Avancé',
       searchPlaceholder: 'Rechercher des scénarios...',
+      imported: 'Scénario importé',
       noMatchingScenarios: 'Aucun scénario trouvé',
       imageTitle: 'Image sur laquelle ce scénario va démarrer',
       sizeTitle: 'Taille de machine sur laquelle ce scénario va démarrer',
@@ -788,6 +809,11 @@ async function handleCancelProvisioning() {
   await loadScenarios()
 }
 
+function handleImported() {
+  notification.showSuccess(t('launcher.imported'))
+  loadScenarios()
+}
+
 onMounted(() => {
   loadScenarios()
 })
@@ -808,6 +834,13 @@ watch(currentOrgId, () => {
 
 .page-header {
   margin-bottom: var(--spacing-lg);
+}
+
+.ocf-launcher-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-md);
 }
 
 .page-header h2 {
@@ -1090,6 +1123,12 @@ watch(currentOrgId, () => {
 /* Card actions */
 .card-actions {
   padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+}
+
+.ocf-card-manage-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--spacing-sm);
 }
 
 .launch-btn {
