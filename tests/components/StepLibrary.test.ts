@@ -109,4 +109,14 @@ describe('StepLibrary', () => {
     await rows.find(r => r.text().includes('Climb'))!.trigger('dragstart', { dataTransfer })
     expect(JSON.parse(data[LIBRARY_DRAG_TYPE])).toEqual(['p1'])
   })
+
+  it('warns, in a line reserved from the start, that copied steps may rely on their scenario’s setup', async () => {
+    const wrapper = mountLibrary()
+    const notice = wrapper.get('[data-testid="step-library-notice"]')
+    expect(notice.classes()).toContain('is-hidden')
+    await wrapper.get('[data-testid="step-library-scenario-platform"]').trigger('click')
+    await wrapper.get('[data-testid="step-library-pick-p1"]').setValue(true)
+    expect(notice.classes()).not.toContain('is-hidden')
+    expect(notice.text()).toContain('test from the copied step')
+  })
 })

@@ -227,6 +227,8 @@ const settingRows = computed(() => {
   flex-direction: column;
   gap: var(--spacing-lg);
   padding: var(--spacing-md);
+  /* Room for the app's floating feedback button, so nothing sits under it. */
+  padding-bottom: 4.5rem;
 }
 
 .ocf-rail-library {

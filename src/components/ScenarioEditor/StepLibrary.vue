@@ -41,6 +41,11 @@
       </button>
     </div>
 
+    <!-- Reserved line, so the list below never moves when it appears. -->
+    <p class="ocf-library-notice" :class="{ 'is-hidden': !picked.length }" data-testid="step-library-notice">
+      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i> {{ t('scenarioEditor.libraryDependsOnSetup') }}
+    </p>
+
     <div class="ocf-library-list">
       <p v-if="!groups.length" class="ocf-library-empty">{{ t('scenarioEditor.libraryEmpty') }}</p>
       <section v-for="group in groups" :key="group.key" class="ocf-library-group">
@@ -90,7 +95,7 @@
 
     <!-- Reserved: the preview keeps its place, filled or not. -->
     <div class="ocf-library-preview">
-      <StepLearnerPreview v-if="previewed" :title="previewed.title || ''" :text="previewed.text_content || ''" />
+      <StepLearnerPreview v-if="previewed" :title="previewed.title || ''" :text="previewed.text_content || ''" :translations="previewed.translations" />
       <p v-else class="ocf-library-empty">{{ t('scenarioEditor.libraryPreviewHint') }}</p>
     </div>
   </div>
@@ -303,6 +308,19 @@ function onDragStart(event: DragEvent, id: string) {
   border-radius: var(--border-radius-sm);
   background: var(--color-surface);
   font-size: var(--font-size-sm);
+}
+
+.ocf-library-notice {
+  margin: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  font-size: var(--font-size-xs);
+}
+
+.ocf-library-notice.is-hidden {
+  visibility: hidden;
 }
 
 .ocf-library-empty {
