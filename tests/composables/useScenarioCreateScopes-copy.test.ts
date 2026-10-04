@@ -79,3 +79,17 @@ describe('useScenarioCreateScopes.groupScopes', () => {
   })
 })
 
+// ocf-core's /users/me sends no group memberships today; the class list's own
+// members carry the caller's role, and the pickers read it from there.
+describe('useScenarioCreateScopes.groupScopes — role from the class member list', () => {
+  it('offers a class the member list says the user manages, not one they attend', () => {
+    useUserMembershipsStore().groupMemberships = []
+    ;(useClassGroupsStore() as any).entities.splice(0, Infinity,
+      { id: 'class-m', name: 'Managed', organization_id: 'org-a', members: [{ user_id: 'user-1', role: 'manager', is_active: true }] },
+      { id: 'class-s', name: 'Attended', organization_id: 'org-a', members: [{ user_id: 'user-1', role: 'member', is_active: true }] },
+      { id: 'class-x', name: 'Left', organization_id: 'org-a', members: [{ user_id: 'user-1', role: 'manager', is_active: false }] },
+    )
+    expect(ids(useScenarioCreateScopes().groupScopes.value)).toEqual(['class-m'])
+  })
+})
+

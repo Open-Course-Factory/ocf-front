@@ -22,6 +22,8 @@ import { computed } from 'vue'
 import { useOrganizationsStore } from '../stores/organizations'
 import { useClassGroupsStore } from '../stores/classGroups'
 import { useUserMembershipsStore } from '../stores/userMemberships'
+import { useCurrentUserStore } from '../stores/currentUser'
+import { isRoleAtLeast } from '../utils/roles'
 import { useAdminViewMode } from './useAdminViewMode'
 import { useScenarioEditorAccess } from './useScenarioEditorAccess'
 
@@ -34,6 +36,7 @@ export function useScenarioCreateScopes() {
   const organizationsStore = useOrganizationsStore()
   const classGroupsStore = useClassGroupsStore()
   const membershipsStore = useUserMembershipsStore()
+  const currentUser = useCurrentUserStore()
   const { isAdmin } = useAdminViewMode()
   const { canAccessScenarioEditor } = useScenarioEditorAccess()
 
@@ -53,8 +56,16 @@ export function useScenarioCreateScopes() {
   )
 
   // The classes the user manages: the only ones a scenario may be put in.
+  // The caller's role is read from the class's own member list, which
+  // GET /class-groups carries, then from /users/me's group memberships —
+  // which ocf-core currently sends empty (its ClassGroup preload fails), so
+  // relying on it alone would offer no class at all.
   const managedGroups = computed<any[]>(() =>
-    allGroups.value.filter((g: any) => isAdmin.value || membershipsStore.canManageGroup(g.id)),
+    allGroups.value.filter((g: any) => {
+      if (isAdmin.value || membershipsStore.canManageGroup(g.id)) return true
+      const own = (g.members || []).find((m: any) => m.user_id === currentUser.userId && m.is_active !== false)
+      return isRoleAtLeast(own?.role, 'manager')
+    }),
   )
 
   const groupScopes = computed<Array<{ id: string; name: string }>>(() =>
