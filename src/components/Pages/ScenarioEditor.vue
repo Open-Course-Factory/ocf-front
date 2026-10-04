@@ -11,7 +11,7 @@
       :can-export="!!currentScenario && canExportScenario(currentScenario)"
       :can-retire="!!currentScenario && canRetireScenario(currentScenario)"
       :is-admin="isAdmin"
-      :can-preview="canPreviewScenario"
+      :can-preview="canPreviewScenario || launchableInCatalogue"
       :play-disabled-reason="canPlayScenario ? '' : t('scenarioEditor.playNeedsAccess')"
       :is-preview-loading="isPreviewLoading"
       :health-available="health.available.value"
@@ -26,7 +26,7 @@
       @archive="showArchiveModal = true"
       @unarchive="handleUnarchive"
       @delete="showDeleteScenarioModal = true"
-      @preview="openPreviewConfirm()"
+      @preview="play"
     >
       <template #import>
         <ScenarioImportMenu @imported="(scenario, source) => openImported(scenario, source === 'ai' ? 'scenarioEditor.aiCreateSuccess' : 'scenarioEditor.importSuccess')" />
@@ -101,7 +101,7 @@
               <i class="fas fa-copy" aria-hidden="true"></i> {{ t('scenarioEditor.duplicateIntoMyOrg') }}
             </button>
           </p>
-          <StepLearnerPreview :title="editingStep.title || ''" :text="editingStep.text_content || ''" />
+          <StepLearnerPreview :title="editingStep.title || ''" :text="editingStep.text_content || ''" :translations="editingStep.translations" />
         </div>
 
         <!-- A platform scenario's steps are sent only to its managers. -->
@@ -257,7 +257,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { useScenariosStore } from '../../stores/scenarios'
@@ -381,6 +381,28 @@ const saveState = computed(() => {
 // organization's teachers (ocf-core opens preview at teacher).
 const canPlayScenario = computed(() => !!currentScenario.value && canExportScenario(currentScenario.value))
 const canPreviewScenario = computed(() => canPlayScenario.value && outline.value.some(step => step.id))
+
+// A scenario the user may not preview may still be one the catalogue lets
+// them launch (a public one, say): the launcher's own verdict, `launchable` on
+// GET /scenario-sessions/available, read once per scenario opened.
+const launchableInCatalogue = ref(false)
+watch(() => currentScenario.value?.id, async id => {
+  launchableInCatalogue.value = false
+  if (!id || canPreviewScenario.value) return
+  const available = await scenarioSessionService
+    .listScenarios(organizationsStore.currentOrganization?.id)
+    .catch(() => [])
+  if (currentScenario.value?.id === id) {
+    launchableInCatalogue.value = !!available.find((s: any) => s.id === id)?.launchable
+  }
+})
+
+// Play previews what the user may preview; anything else they may launch is
+// launched where launching lives, from its card in the catalogue.
+function play() {
+  if (canPreviewScenario.value) openPreviewConfirm()
+  else if (launchableInCatalogue.value) router.push({ name: 'ScenarioLauncher', query: { scenario: currentScenario.value.id } })
+}
 
 // ---- Languages ----
 

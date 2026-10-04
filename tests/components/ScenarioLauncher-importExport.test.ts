@@ -13,7 +13,8 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { ref } from 'vue'
 
-vi.mock('vue-router', () => ({ useRouter: () => ({ push: vi.fn() }) }))
+const routeQuery: Record<string, string> = {}
+vi.mock('vue-router', () => ({ useRouter: () => ({ push: vi.fn() }), useRoute: () => ({ query: routeQuery }) }))
 
 vi.mock('../../src/composables/useNotification', () => ({
   useNotification: () => ({
@@ -129,3 +130,17 @@ describe('ScenarioLauncher — import and export', () => {
     expect(downloadJSONMock).toHaveBeenCalledWith({ title: 'My lab', steps: [] }, 'my-lab.json')
   })
 })
+
+// The editor's Play, on a scenario its author may launch but not preview, brings
+// them to its card here: ?scenario=<id> picks it out.
+describe('ScenarioLauncher — a card asked for in the URL', () => {
+  it('marks the card the editor sent the author to', async () => {
+    routeQuery.scenario = MINE.id
+    listScenariosMock.mockResolvedValue([MINE])
+    const wrapper = mountLauncher()
+    await flushPromises()
+    expect(wrapper.get(`[data-scenario-id="${MINE.id}"]`).classes()).toContain('scenario-card--focused')
+    delete routeQuery.scenario
+  })
+})
+

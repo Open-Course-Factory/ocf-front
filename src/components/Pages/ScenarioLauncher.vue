@@ -62,7 +62,8 @@
         class="scenario-card"
         data-testid="scenario-card"
         :data-scenario-name="scenario.name || scenario.title"
-        :class="{ 'scenario-card--unavailable': isBlocked(scenario) && !getExistingSession(scenario), 'scenario-card--active': !!getExistingSession(scenario) }"
+        :data-scenario-id="scenario.id"
+        :class="{ 'scenario-card--focused': scenario.id === focusedScenarioId, 'scenario-card--unavailable': isBlocked(scenario) && !getExistingSession(scenario), 'scenario-card--active': !!getExistingSession(scenario) }"
       >
         <div class="card-header">
           <div class="card-title-row">
@@ -260,8 +261,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { scenarioSessionService, pollProvisioningStatus } from '../../services/domain/scenario'
 import type { AvailableScenario } from '../../services/domain/scenario'
 import { useOrganizationsStore } from '../../stores/organizations'
@@ -281,6 +282,7 @@ import { getSavedLocale } from '../../services/core/storage'
 import { formatMinutes } from '../../utils/formatters'
 
 const router = useRouter()
+const route = useRoute()
 const runLabel = useScenarioRunLabel()
 const { rebuild, startOver, explainRefusal } = useScenarioRunRecovery()
 const organizationsStore = useOrganizationsStore()
@@ -387,6 +389,15 @@ const { t } = useTranslations({
 })
 
 const scenarios = ref<any[]>([])
+
+// ?scenario=<id> — the editor's Play, for a scenario it may not preview,
+// brings the author to that card: launching stays the catalogue's own flow.
+const focusedScenarioId = computed(() => (route.query.scenario as string) || '')
+watch(() => scenarios.value, async () => {
+  if (!focusedScenarioId.value) return
+  await nextTick()
+  document.querySelector(`[data-scenario-id="${CSS.escape(focusedScenarioId.value)}"]`)?.scrollIntoView?.({ block: 'center' })
+})
 const mySessions = ref<any[]>([])
 
 // True when the scenario's declared size is not the one it will run at, which
@@ -1080,6 +1091,10 @@ watch(currentOrgId, () => {
 }
 
 /* Active session card */
+.scenario-card--focused {
+  box-shadow: 0 0 0 3px var(--color-primary);
+}
+
 .scenario-card--active {
   border-color: var(--color-primary);
 }

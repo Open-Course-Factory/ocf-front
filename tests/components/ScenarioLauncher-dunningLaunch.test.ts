@@ -24,6 +24,7 @@ import { createI18n } from 'vue-i18n'
 const mockRouterPush = vi.fn()
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: mockRouterPush }),
+  useRoute: () => ({ query: {} }),
 }))
 
 const showErrorSpy = vi.fn()
