@@ -62,6 +62,9 @@ test.describe('Scenario editor access', () => {
   // A reload is a cold load: the guard runs while the login bootstrap is still
   // loading the memberships, and used to decide on empty lists now and then —
   // sending the manager to their sessions.
+  // The real failure: one failed memberships load was persisted as "loaded,
+  // no memberships" and replayed on every refresh, so the guard refused a
+  // manager without asking the server. Each reload starts from that copy.
   test('an organization manager stays on the editor across cold reloads', async ({ page }) => {
     test.setTimeout(240_000);
     await login(page, ORG_MANAGER_EMAIL, ORG_MANAGER_PASSWORD, { redirect: EDITOR_ROUTE });
@@ -69,6 +72,9 @@ test.describe('Scenario editor access', () => {
     await expect(page.getByTestId('scenario-picker')).toBeVisible({ timeout: 15_000 });
 
     for (let i = 0; i < 20; i++) {
+      await page.evaluate(() => localStorage.setItem('pinia_state_userMemberships', JSON.stringify({
+        orgMemberships: [], groupMemberships: [], isLoaded: true, isLoading: false, error: '',
+      })));
       await page.reload();
       await expect(page.getByTestId('scenario-picker'), `reload ${i + 1}`).toBeVisible({ timeout: 15_000 });
       await expect(page).toHaveURL(/\/scenario-editor/);
