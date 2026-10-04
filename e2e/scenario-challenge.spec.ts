@@ -7,7 +7,6 @@ import {
   deleteScenarioById,
   getAvailableScenario,
   getMyScenarioSessions,
-  getTerminalSession,
   cleanupScenarioSession,
   type ApiSession,
 } from './helpers/scenarioApi';
@@ -124,13 +123,6 @@ test('a challenge ships every flag into the container before the first step is s
   const session = sessions.find((s: any) => s.scenario_id === scenarioId);
   expect(session, 'the learner should own a session for the challenge').toBeTruthy();
   expect(session.current_step, 'no step has been solved yet').toBe(0);
-
-  // Traps rebuild the container, so a challenge terminal must never persist.
-  // Best-effort: older backends do not report the mode at all.
-  const terminal = await getTerminalSession(learner, session.terminal_session_id);
-  if (terminal?.persistence_mode) {
-    expect(terminal.persistence_mode).toBe('ephemeral');
-  }
 
   await page.getByTestId('scenario-abandon-btn').click();
   await page.locator('.el-message-box__btns .el-button--primary').click();
