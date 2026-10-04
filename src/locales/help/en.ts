@@ -1329,8 +1329,8 @@ export const helpEn = {
         layout: {
           title: "The editor at a glance",
           description: "The page has three columns. Left, the outline: a card summing up the scenario (click it to open its settings), then the steps as a numbered list. Centre, the step you selected, edited in place: its title, its tabs, and beside the Markdown, what the learner will read. Right, the checks, the scenario's settings in plain words, and the classes it is assigned to; on a narrow screen this column folds into icons.",
-          header: "The top bar holds the scenario selector (your scenarios first, then the platform's), Create a scenario, the organisation, whether the scenario is ready to play, whether the open step is saved, Import, Export, Create with AI, Improve with AI, a ⋯ menu with copy, archive and delete, and Play as learner.",
-          readOnly: "A scenario you may not edit (a platform scenario, or one from another organisation) opens read-only: its card and settings show, its steps do not. Duplicate into my organization makes an editable copy in an organisation or class of yours, and opens it."
+          header: "The top bar holds the scenario selector (your scenarios first, then the platform's), Create a scenario, the organisation, whether the scenario is ready to play, whether the open step is saved, Import (a KillerCoda archive, a JSON file, or Create with AI), Export, Improve with AI, a ⋯ menu with copy, archive and delete, and Play as learner.",
+          readOnly: "A scenario you may not edit (a platform scenario, or one from another organisation) opens read-only: a colleague's lab shows its steps as the learner reads them; a platform scenario shows its card and settings only. Duplicate into my organization makes an editable copy in an organisation or class of yours, and opens it."
         },
         scenario: {
           title: "Create a scenario",
