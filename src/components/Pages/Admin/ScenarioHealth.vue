@@ -14,13 +14,7 @@
 import axios from 'axios'
 import { useTranslations } from '../../../composables/useTranslations'
 import HealthReport from '../../Admin/HealthReport.vue'
-
-interface Finding {
-  code: string
-  severity: string
-  locale?: string
-  detail?: string
-}
+import { useScenarioHealthSentence, type ScenarioHealthFinding as Finding } from '../../../composables/useScenarioHealthSentence'
 
 interface ScenarioHealth {
   scenario_id: string
@@ -46,13 +40,6 @@ const { t } = useTranslations({
       offered: 'Offered',
       blocking: 'Blocking',
       warning: 'Warning',
-      codes: {
-        locale_not_offered: 'Declared in {locale}, and the launcher does not offer it — the card shows no language choice and the scenario plays in its own language.',
-        lexicon_incomplete: 'The {locale} vocabulary is incomplete, so the setup script cannot build the world: the learner gets an empty container.',
-        no_steps: 'The scenario has no steps. Launching it provisions a container with nothing to do in it.',
-        step_without_verification: 'Steps a learner cannot get past — a quiz with no questions: {detail}.',
-        step_without_verification_warning: "Terminal steps with no verify script: Verify always passes them, so nothing checks the learner's work: {detail}."
-      },
       why: 'Why',
       affected: 'Steps'
     }
@@ -70,38 +57,13 @@ const { t } = useTranslations({
       offered: 'Proposées',
       blocking: 'Bloquant',
       warning: 'Avertissement',
-      codes: {
-        locale_not_offered: 'Déclaré en {locale}, et le lanceur ne le propose pas — la carte n\'affiche aucun choix de langue et le scénario se joue dans la sienne.',
-        lexicon_incomplete: 'Le vocabulaire {locale} est incomplet : le script d\'installation ne peut pas construire le monde et l\'apprenant reçoit un conteneur vide.',
-        no_steps: "Le scénario n'a aucune étape. Le lancer provisionne un conteneur où il n'y a rien à faire.",
-        step_without_verification: "Étapes qu'un apprenant ne peut pas franchir — un quiz sans question : {detail}.",
-        step_without_verification_warning: "Étapes terminal sans script de vérification : « Vérifier » les valide toujours, rien ne contrôle le travail de l'apprenant : {detail}."
-      },
       why: 'Pourquoi',
       affected: 'Étapes'
     }
   }
 })
 
-/**
- * The sentence for a finding, with the numbers the server filled in.
- *
- * Written here rather than sent by the server so it reads in the operator's
- * language; the server sends a stable code and the parts it alone can know.
- *
- * step_without_verification comes at two severities that mean different
- * things (CheckScenarioHealth): blocking is a step with no way past it, a
- * warning is a terminal step that passes unchecked. Each has its sentence.
- */
-function sentence(finding: Finding): string {
-  const key = finding.code === 'step_without_verification' && finding.severity === 'warning'
-    ? 'step_without_verification_warning'
-    : finding.code
-  return t(`health.codes.${key}`, {
-    locale: finding.locale || '',
-    detail: finding.detail || '',
-  })
-}
+const { sentence } = useScenarioHealthSentence()
 
 async function load(): Promise<ScenarioHealth[]> {
   const response = await axios.get('/scenarios/health')
