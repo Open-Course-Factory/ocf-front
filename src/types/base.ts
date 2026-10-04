@@ -29,3 +29,9 @@ export interface UserSummary {
   display_name: string
   email: string
 }
+
+/**
+ * A member's rank inside one organization or group — ranked by
+ * `isRoleAtLeast` (utils/roles.ts), as in ocf-core's roleHierarchy.
+ */
+export type MemberRole = 'owner' | 'manager' | 'teacher' | 'member'

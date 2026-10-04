@@ -5,6 +5,7 @@ import { useStoreTranslations } from '../composables/useTranslations'
 import { useCurrentUserStore } from './currentUser'
 import { isDemoMode, logDemoAction } from '../services/demo'
 import type { User, UserEffectiveFeatures } from '../types'
+import { isRoleAtLeast } from '../utils/roles'
 
 // Never persisted: everything here is what the backend decides for the
 // signed-in user and is reloaded at boot. A restored `can_run_classrooms`
@@ -318,7 +319,7 @@ export const usePermissionsStore = defineStore('permissions', () => {
     const membership = currentUser.value.organization_memberships?.find(
       m => m.organization_id === organizationId
     )
-    return membership?.role === 'owner' || membership?.role === 'manager'
+    return isRoleAtLeast(membership?.role, 'manager')
   }
 
   const isOrganizationMember = (organizationId: string): boolean => {
@@ -356,7 +357,7 @@ export const usePermissionsStore = defineStore('permissions', () => {
     const membership = currentUser.value.group_memberships?.find(
       m => m.group_id === groupId
     )
-    return membership?.role === 'owner' || membership?.role === 'manager'
+    return isRoleAtLeast(membership?.role, 'manager')
   }
 
   const isGroupMember = (groupId: string): boolean => {

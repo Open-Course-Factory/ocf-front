@@ -2,7 +2,7 @@
  * Organization type definitions
  */
 
-import type { BaseEntity } from './base'
+import type { BaseEntity, MemberRole } from './base'
 import type { SubscriptionPlan } from './subscription'
 import type { GroupSummary } from './group'
 import type { User } from './user'
@@ -47,7 +47,7 @@ export interface Organization extends BaseEntity {
 export interface OrganizationMembership extends BaseEntity {
   organization_id: string
   user_id: string
-  role: 'owner' | 'manager' | 'member'
+  role: MemberRole
   invited_by?: string
   joined_at: string
   is_active: boolean

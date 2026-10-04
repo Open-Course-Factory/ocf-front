@@ -2,7 +2,7 @@
  * User type definitions
  */
 
-import type { BaseEntity, Role } from './base'
+import type { BaseEntity, MemberRole, Role } from './base'
 import type { OrganizationMembership } from './organization'
 import type { GroupMembership } from './group'
 import type { Subscription, SubscriptionPlan } from './subscription'
@@ -44,7 +44,7 @@ export interface User extends BaseEntity {
 export interface OrganizationFeatureSource {
   organization_id: string
   organization_name: string
-  role: 'owner' | 'manager' | 'member'
+  role: MemberRole
   contributing_features: string[]
 }
 

@@ -23,15 +23,10 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import axios from 'axios'
 import { isDemoMode } from '../services/demo'
+import { isRoleAtLeast } from '../utils/roles'
+import type { MemberRole } from '../types/base'
 
-export type MembershipRole = 'owner' | 'manager' | 'teacher' | 'member'
-
-// Mirrors ocf-core's roleHierarchy (src/auth/access/helpers.go) — one rank
-// table for org and group roles. An unknown role ranks 0, as there.
-const ROLE_PRIORITY: Record<string, number> = { member: 10, teacher: 30, manager: 50, owner: 100 }
-
-const isRoleAtLeast = (role: MembershipRole | null, min: MembershipRole): boolean =>
-  !!role && (ROLE_PRIORITY[role] ?? 0) >= ROLE_PRIORITY[min]
+export type MembershipRole = MemberRole
 
 export interface OrgMembership {
   organization_id: string

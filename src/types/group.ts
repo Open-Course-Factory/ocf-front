@@ -2,7 +2,7 @@
  * Group and group membership type definitions
  */
 
-import type { BaseEntity } from './base'
+import type { BaseEntity, MemberRole } from './base'
 
 /**
  * Class Group entity (for team/class management)
@@ -47,7 +47,7 @@ export interface ClassGroup extends BaseEntity {
 export interface GroupMember extends BaseEntity {
   group_id: string
   user_id: string
-  role: 'owner' | 'manager' | 'member'
+  role: MemberRole
   invited_by?: string
   joined_at?: string
   is_active: boolean
@@ -60,7 +60,7 @@ export interface GroupMember extends BaseEntity {
 export interface GroupMembership extends BaseEntity {
   group_id: string
   user_id: string
-  role: 'owner' | 'manager' | 'member'
+  role: MemberRole
   joined_at: string
 }
 
