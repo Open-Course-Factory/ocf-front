@@ -11,7 +11,7 @@ import {
   type ApiSession,
 } from './helpers/scenarioApi';
 import { adminSession } from './helpers/freshUsers';
-import { readFlagFromTerminal, typeInTerminal, waitForLiveTerminal } from './helpers/xterm';
+import { readFlagFileFromTerminal, typeInTerminal, waitForLiveTerminal } from './helpers/xterm';
 
 // ---------------------------------------------------------------------------
 // Tier B recipe spec — one real end-to-end scenario run, containers included.
@@ -38,6 +38,7 @@ const PASSWORD = process.env.E2E_PASS || 'OcfTest2026!';
 
 const RUN_STAMP = Date.now().toString(36);
 const FIXTURE_TITLE = `E2E linear run ${RUN_STAMP}`;
+const FLAG_PATH = '/tmp/e2e-run-flag';
 
 let admin: ApiSession | null = null;
 let learner: ApiSession;
@@ -69,6 +70,7 @@ test.beforeAll(async () => {
         title: 'Capture the flag',
         step_type: 'flag',
         has_flag: true,
+        flag_path: FLAG_PATH,
         text_content: 'The flag hides in /tmp — cat it and submit.',
       },
       {
@@ -158,7 +160,7 @@ test('learner launches, follows and completes a real scenario', async ({ page })
   const mine = await getMyScenarioSessions(learner);
   const session = mine.find((s) => s.scenario_id === scenarioId);
   expect(session, 'learner should have a scenario session by now').toBeTruthy();
-  const flag = await readFlagFromTerminal(page, session!.current_step);
+  const flag = await readFlagFileFromTerminal(page, FLAG_PATH);
   await page.getByTestId('scenario-flag-input').fill(flag);
   await page.getByTestId('scenario-flag-submit').click();
   await expect(page.getByTestId('scenario-step-title')).toHaveText('Final quiz', {

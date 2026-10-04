@@ -96,19 +96,11 @@ export async function waitForLiveTerminal(page: Page, timeoutMs = 60_000): Promi
 }
 
 /**
- * Read a deployed scenario flag the way a student does: `cat` its file and
- * scrape the FLAG{16 hex} token from the buffer. Retries because standard-mode
- * flag deployment happens asynchronously on step transition.
+ * Read a deployed scenario flag the way a student does: `cat` the file the
+ * step declares in `flag_path` and scrape the FLAG{16 hex} token from the
+ * buffer. Retries because flag deployment happens asynchronously on step
+ * transition. A flag step without `flag_path` deploys no file at all.
  */
-export async function readFlagFromTerminal(
-  page: Page,
-  stepOrder: number,
-  timeoutMs = 30_000
-): Promise<string> {
-  return readFlagFileFromTerminal(page, `/tmp/.flag_step_${stepOrder}`, timeoutMs);
-}
-
-/** Same as readFlagFromTerminal, for a flag the step declares at `path`. */
 export async function readFlagFileFromTerminal(
   page: Page,
   path: string,
