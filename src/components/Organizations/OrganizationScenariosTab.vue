@@ -45,10 +45,13 @@ interface OrgScenario {
   created_at?: string
   archived_at?: string | null
   can_manage?: boolean
+  // CanRunScenario: who may export it. Absent on an older backend.
+  can_run?: boolean
 }
 
-// Only mounted for org teachers and up (OrganizationDetail), who all import and
-// export; archive and delete stay with the author and org managers, per scenario.
+// Only mounted for org teachers and up (OrganizationDetail), who all import;
+// export follows each scenario's can_run, archive and delete stay with the
+// author and org managers.
 const props = defineProps<{
   organizationId: string
 }>()
@@ -396,6 +399,8 @@ onMounted(() => {
           </div>
         </div>
         <div class="scenario-actions">
+          <!-- Export follows can_run; a backend without it offers it to all who see the tab. -->
+          <template v-if="scenario.can_run ?? true">
           <button
             @click="handleExportJSON(scenario)"
             class="btn btn-sm btn-outline"
@@ -412,6 +417,7 @@ onMounted(() => {
             <i class="fas fa-file-archive"></i>
             {{ t('orgScenarios.exportKillercoda') }}
           </button>
+          </template>
           <button
             v-if="canRetire(scenario) && !scenario.archived_at"
             @click="handleArchive(scenario)"

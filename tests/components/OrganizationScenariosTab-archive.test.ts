@@ -190,3 +190,30 @@ describe('OrganizationScenariosTab — a teacher retires only their own scenario
     expect(wrapper.find('.tab-header-actions .fa-file-import').exists()).toBe(true)
   })
 })
+
+// Export follows ocf-core's CanRunScenario, sent as can_run; a backend that
+// predates the field keeps offering it to everyone who sees the tab.
+describe('OrganizationScenariosTab — export follows can_run', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    canRetireScenarioMock.mockReturnValue(false)
+  })
+
+  it('offers export where can_run is true, not where it is false', async () => {
+    orgListScenariosMock.mockResolvedValue([
+      { ...activeScenario, can_run: true },
+      { ...activeScenario, id: 'sc-hidden', title: 'Not Runnable', can_run: false }
+    ])
+    const wrapper = await mountTab()
+    const actions = (title: string) => wrapper.findAll('.scenario-card').find(c => c.text().includes(title))!.find('.scenario-actions')
+    expect(actions('Docker Basics').find('.fa-file-download').exists()).toBe(true)
+    expect(actions('Not Runnable').find('.fa-file-download').exists()).toBe(false)
+  })
+
+  it('offers it as before when the backend sends no can_run', async () => {
+    orgListScenariosMock.mockResolvedValue([activeScenario])
+    const wrapper = await mountTab()
+    expect(wrapper.find('.scenario-actions .fa-file-download').exists()).toBe(true)
+  })
+})
+

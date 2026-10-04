@@ -241,8 +241,9 @@
             {{ t('launcher.unavailable') }}
           </div>
 
-          <!-- can_manage arrives with the card, so the row never pops in later. -->
-          <div v-if="scenario.can_manage" class="ocf-card-manage-row">
+          <!-- can_run arrives with the card (can_manage on a backend that
+               predates it), so the row never pops in later. -->
+          <div v-if="scenario.can_run ?? scenario.can_manage" class="ocf-card-manage-row">
             <ScenarioExportMenu @export="format => exportScenario(scenario, format)" />
           </div>
         </div>

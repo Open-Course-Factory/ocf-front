@@ -54,7 +54,7 @@ import { useAdminViewMode } from './useAdminViewMode'
 export interface ScenarioEditorAccess {
   canAccessScenarioEditor: ComputedRef<boolean>
   canRetireScenario: (scenario: { can_manage?: boolean, organization_id?: string | null }) => boolean
-  canExportScenario: (scenario: { can_manage?: boolean, organization_id?: string | null }) => boolean
+  canExportScenario: (scenario: { can_manage?: boolean, can_run?: boolean, organization_id?: string | null }) => boolean
 }
 
 export function useScenarioEditorAccess(): ScenarioEditorAccess {
@@ -95,9 +95,12 @@ export function useScenarioEditorAccess(): ScenarioEditorAccess {
     return !!scenario.organization_id && membershipsStore.canManageOrg(scenario.organization_id)
   }
 
-  // Export goes further than editing: ocf-core lets an org's teachers export a
-  // colleague's lab of that org. A platform scenario stays its managers' own.
+  // Export (and play) goes further than editing: it is ocf-core's
+  // CanRunScenario, sent as `can_run` on every scenario. A backend that
+  // predates the field gets the rule it used to mean: its managers, and the
+  // teachers of its organization.
   const canExportScenario: ScenarioEditorAccess['canExportScenario'] = scenario => {
+    if (typeof scenario.can_run === 'boolean') return scenario.can_run
     if (shouldShowAllData.value || scenario.can_manage) return true
     return !!scenario.organization_id && membershipsStore.canAuthorInOrg(scenario.organization_id)
   }

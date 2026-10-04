@@ -115,6 +115,20 @@ describe('ScenarioLauncher — import and export', () => {
     expect(card(wrapper, 'public-lab').find('[data-testid="scenario-export-btn"]').exists()).toBe(false)
   })
 
+  // can_run (CanRunScenario) decides when the backend sends it: a colleague's
+  // lab the user may run but not manage is exportable, and the reverse is not.
+  it('follows can_run over can_manage when the card carries it', async () => {
+    canAccessScenarioEditor.value = true
+    listScenariosMock.mockResolvedValue([
+      { ...PUBLIC, name: 'colleague-lab', can_manage: false, can_run: true },
+      { ...MINE, name: 'not-runnable', can_manage: true, can_run: false },
+    ])
+    const wrapper = mountLauncher()
+    await flushPromises()
+    expect(card(wrapper, 'colleague-lab').find('[data-testid="scenario-export-btn"]').exists()).toBe(true)
+    expect(card(wrapper, 'not-runnable').find('[data-testid="scenario-export-btn"]').exists()).toBe(false)
+  })
+
   it('downloads the managed scenario as JSON named after it', async () => {
     canAccessScenarioEditor.value = true
     exportJSONMock.mockResolvedValue({ title: 'My lab', steps: [] })

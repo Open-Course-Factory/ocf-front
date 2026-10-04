@@ -183,6 +183,9 @@ export interface AvailableScenario extends ScenarioInfo {
   // The backend's CanManageScenario verdict for the caller, as on
   // GET /scenarios/:id. Absent from an ocf-core that does not send it yet.
   can_manage?: boolean
+  // CanRunScenario for the caller: may play it and export it. Absent from an
+  // ocf-core that predates it.
+  can_run?: boolean
   [key: string]: any
 }
 

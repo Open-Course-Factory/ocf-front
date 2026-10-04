@@ -388,3 +388,25 @@ describe('useScenarioEditorAccess.canExportScenario', () => {
     expect(useScenarioEditorAccess().canExportScenario({ organization_id: 'org-1' })).toBe(false)
   })
 })
+
+// ocf-core's own verdict (CanRunScenario), when it sends one, wins over the
+// local fallback rule.
+describe('useScenarioEditorAccess.canExportScenario — can_run', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    useAdminViewMode().resetViewMode()
+    localStorage.clear()
+    const user = useCurrentUserStore()
+    user.userId = 'user-1'
+    user.userRoles = []
+    useUserMembershipsStore().orgMemberships = [{ organization_id: 'org-1', role: 'teacher' }]
+  })
+
+  it('follows can_run whichever way it goes', () => {
+    const { canExportScenario } = useScenarioEditorAccess()
+    expect(canExportScenario({ can_run: true, organization_id: null })).toBe(true)
+    expect(canExportScenario({ can_run: false, organization_id: 'org-1' })).toBe(false)
+    expect(canExportScenario({ can_run: false, can_manage: true, organization_id: 'org-1' })).toBe(false)
+  })
+})
+

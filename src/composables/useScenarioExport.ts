@@ -2,9 +2,10 @@
  * useScenarioExport
  * ─────────────────
  * Downloads a scenario as a KillerCoda archive or as OCF JSON through
- * GET /scenarios/:id/export. The backend answers only callers that may manage
- * the scenario (CanManageScenario, the same verdict as the scenario's
- * `can_manage`), so callers offer it only when `can_manage` is true.
+ * GET /scenarios/:id/export. The backend answers callers that may run the
+ * scenario (CanRunScenario — its managers, and the teachers of its
+ * organization), the verdict each scenario carries as `can_run`; callers offer
+ * export only when it is true.
  */
 import { teacherService } from '../services/domain/scenario'
 import { downloadBlob, downloadJSON } from '../utils/download'
