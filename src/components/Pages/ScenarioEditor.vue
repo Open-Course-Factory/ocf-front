@@ -67,8 +67,18 @@
       />
 
       <main class="ocf-workbench-center">
+        <!-- A scenario the user only reads (a colleague's lab, a platform one):
+             the same editor, read only, under a banner offering the copy. -->
+        <p v-if="editingStep && !canEditScenario" class="ocf-readonly-banner" data-testid="readonly-step">
+          <i class="fas fa-lock" aria-hidden="true"></i>
+          <span>{{ t(currentScenario.organization_id ? 'scenarioEditor.readOnlyStepBanner' : 'scenarioEditor.readOnlyPlatformBanner') }}</span>
+          <button v-if="canCopyToOrg" type="button" class="ocf-btn-primary" data-testid="duplicate-into-org" @click="showDuplicateModal = true">
+            <i class="fas fa-copy" aria-hidden="true"></i> {{ t('scenarioEditor.duplicateIntoMyOrg') }}
+          </button>
+        </p>
         <ScenarioStepEditor
-          v-if="editingStep && canEditScenario"
+          v-if="editingStep"
+          :readonly="!canEditScenario"
           :step-data="editingStep"
           :is-new="!editingStep.id"
           :is-first-step="selectedIndex === 0"
@@ -91,20 +101,7 @@
           @delete="requestDeleteStep"
         />
 
-        <!-- A scenario the user only reads (a colleague's lab, a platform one):
-             its steps are shown as the learner reads them. -->
-        <div v-else-if="editingStep" class="ocf-readonly-step" data-testid="readonly-step">
-          <p class="ocf-readonly-banner">
-            <i class="fas fa-lock" aria-hidden="true"></i>
-            <span>{{ t(currentScenario.organization_id ? 'scenarioEditor.readOnlyStepBanner' : 'scenarioEditor.readOnlyPlatformBanner') }}</span>
-            <button v-if="canCopyToOrg" type="button" class="ocf-btn-primary" data-testid="duplicate-into-org" @click="showDuplicateModal = true">
-              <i class="fas fa-copy" aria-hidden="true"></i> {{ t('scenarioEditor.duplicateIntoMyOrg') }}
-            </button>
-          </p>
-          <StepLearnerPreview :title="editingStep.title || ''" :text="editingStep.text_content || ''" :translations="editingStep.translations" />
-        </div>
-
-        <!-- A platform scenario's steps are sent only to its managers. -->
+        <!-- Its steps are not sent to this reader (a learner, say). -->
         <div v-else-if="!canEditScenario" class="ocf-workbench-placeholder" data-testid="readonly-state">
           <i class="fas fa-lock" aria-hidden="true"></i>
           <h2>{{ t('scenarioEditor.readOnlyTitle') }}</h2>
@@ -153,7 +150,7 @@
     <ScenarioEditModal
       :visible="showScenarioEditModal"
       :editing-scenario="editingScenario"
-      :title="editingScenario?.isNew ? t('scenarioEditor.createScenario') : t('scenarioEditor.editScenario')"
+      :title="editingScenario?.isNew ? t('scenarioEditor.createScenario') : canEditScenario ? t('scenarioEditor.editScenario') : t('scenarioEditor.railSettings')"
       :is-saving="isSaving"
       :error-message="modalError"
       :org-scopes="orgScopes"
@@ -164,6 +161,7 @@
       :current-scenario-org-label="currentScenarioOrgLabel"
       :sizes="sizes"
       :aria-label="t('scenarioEditor.tabsLabel')"
+      :readonly="!editingScenario?.isNew && !canEditScenario"
       :locale="editingLocale"
       :default-locale="scenarioDefaultLocale"
       :translation="editingScenarioTranslation"
@@ -291,7 +289,6 @@ import ScenarioImportButton from '../ScenarioEditor/ScenarioImportButton.vue'
 import ScenarioAiButtons from '../ScenarioEditor/ScenarioAiButtons.vue'
 import ScenarioDuplicateModal from '../ScenarioEditor/ScenarioDuplicateModal.vue'
 import ScenarioImportMenu from '../ScenarioEditor/ScenarioImportMenu.vue'
-import StepLearnerPreview from '../ScenarioEditor/StepLearnerPreview.vue'
 import StepLibrary from '../ScenarioEditor/StepLibrary.vue'
 import { useScenarioEditorAccess } from '../../composables/useScenarioEditorAccess'
 import BaseModal from '../Modals/BaseModal.vue'
@@ -525,11 +522,18 @@ async function openScenario(id: string | null, stepKey?: string | null) {
     }
     await loadTranslationCoverage()
     let steps = scenario.steps || scenario.scenario_steps || []
-    // A scenario the user cannot edit comes without its steps; its outline
-    // (safe fields only) is what a reader may see. Refused — to a learner, say —
-    // the editor keeps the "steps appear once duplicated" fallback.
-    if (!steps.length && !scenario.can_manage) {
-      steps = await scenarioStepService.loadOutline(scenario.id).catch(() => [])
+    // A scenario the user cannot edit comes without its steps; its read-only
+    // copy carries them in full, with the setup script the settings show.
+    // Refused — to a learner, say — the editor keeps the "steps appear once
+    // duplicated" fallback.
+    if (!scenario.can_manage) {
+      const readOnly = await scenarioStepService.loadReadOnly(scenario.id).catch(() => null)
+      if (readOnly) {
+        steps = readOnly.steps
+        if (currentScenario.value?.id === scenario.id) {
+          currentScenario.value = { ...currentScenario.value, setup_script: readOnly.setup_script }
+        }
+      }
     }
     outline.value = toOutlineSteps(steps)
     const keep = outline.value.find(step => step.key === stepKey) || outline.value[0] || null
@@ -648,7 +652,7 @@ async function copyLibrarySteps(stepIds: string[], index: number) {
       source_step_ids: stepIds,
       position
     })
-    const copies = response.data?.steps || response.data?.data || response.data
+    const copies = response.data?.steps
     notification.showSuccess(t('scenarioEditor.libraryCopied', { count: String(stepIds.length) }))
     await refreshAfterWrite(Array.isArray(copies) && copies[0]?.id ? copies[0].id : selectedKey.value)
   } catch (err: any) {
@@ -888,9 +892,10 @@ const handleCreateNew = async () => {
   showScenarioEditModal.value = true
 }
 
+// Managers edit the settings; anyone else who sees the scenario reads them.
 async function openScenarioSettings() {
   const scenario = currentScenario.value
-  if (!scenario || !canEditScenario.value) return
+  if (!scenario) return
   editingScenario.value = {
     ...Object.fromEntries(SCENARIO_FIELDS.map(field => [field, scenario[field] ?? ''])),
     difficulty: scenario.difficulty || 'beginner',
@@ -905,7 +910,7 @@ async function openScenarioSettings() {
     isNew: false
   }
   editingScenarioTranslation.value = null
-  if (isTranslating.value) {
+  if (isTranslating.value && canEditScenario.value) {
     editingScenarioTranslation.value = await scenarioTranslationService
       .getScenarioTranslation(scenario.id, editingLocale.value)
       .catch(() => null)
@@ -1226,18 +1231,11 @@ const handleConfirmPreview = async () => {
   color: var(--color-text-muted);
 }
 
-.ocf-readonly-step {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: var(--spacing-md) var(--spacing-lg);
-}
-
 .ocf-readonly-banner {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  margin: 0 0 var(--spacing-lg);
+  margin: var(--spacing-md) var(--spacing-lg) 0;
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--border-radius-md);
   background: var(--color-warning-bg);

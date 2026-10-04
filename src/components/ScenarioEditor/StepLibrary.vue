@@ -8,10 +8,9 @@
  * as the learner reads it, tick steps and insert them after the selected one —
  * or drag them onto the outline.
  *
- * Steps come from the scenario list for the user's own scenarios, and from the
- * step outline (safe fields only: no scripts, no answers) for the others,
- * fetched when one is opened. The copy itself happens server-side, which is
- * where the scripts are. Emits the ids to copy.
+ * Steps come from the scenario list for the user's own scenarios, and from
+ * the read-only endpoint for the others, fetched when one is opened. The copy
+ * itself happens server-side. Emits the ids to copy.
  */
 -->
 
@@ -174,7 +173,7 @@ async function toggle(id: string) {
   if (!scenario || knownSteps(scenario)) return
   loading.value = new Set(loading.value).add(id)
   try {
-    loaded.value = { ...loaded.value, [id]: toOutlineSteps(await scenarioStepService.loadOutline(id)) }
+    loaded.value = { ...loaded.value, [id]: toOutlineSteps((await scenarioStepService.loadReadOnly(id)).steps) }
   } catch {
     loaded.value = { ...loaded.value, [id]: [] }
   } finally {

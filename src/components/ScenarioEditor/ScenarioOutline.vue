@@ -18,8 +18,7 @@
       type="button"
       class="ocf-outline-card"
       data-testid="outline-scenario-card"
-      :disabled="!canEditSettings"
-      :title="canEditSettings ? t('scenarioEditor.editSettings') : undefined"
+      :title="canEditSettings ? t('scenarioEditor.editSettings') : t('scenarioEditor.viewSettings')"
       @click="emit('edit-settings')"
     >
       <span class="ocf-outline-card-title">{{ scenario.title || scenario.name }}</span>
@@ -81,10 +80,10 @@
           <span class="ocf-outline-title">{{ step.title || t('scenarioEditor.untitledStep') }}</span>
           <span class="ocf-outline-indicators">
             <span v-if="!step.id" class="ocf-outline-draft">{{ t('scenarioEditor.draft') }}</span>
-            <i v-if="step.hint_content || step.hint_count" class="fas fa-lightbulb" :title="t('scenarioEditor.hasHints')" aria-hidden="true"></i>
+            <i v-if="step.hint_content" class="fas fa-lightbulb" :title="t('scenarioEditor.hasHints')" aria-hidden="true"></i>
             <i v-if="step.step_type === 'flag'" class="fas fa-key" :title="t('scenarioEditor.hasFlag')" aria-hidden="true"></i>
-            <span v-if="step.step_type === 'quiz' && (step.questions?.length || step.question_count)" class="ocf-outline-qcount">
-              {{ t('scenarioEditor.questionCount', { count: String(step.questions?.length || step.question_count) }) }}
+            <span v-if="step.step_type === 'quiz' && step.questions?.length" class="ocf-outline-qcount">
+              {{ t('scenarioEditor.questionCount', { count: String(step.questions.length) }) }}
             </span>
             <span
               v-if="step.id && translationStates[step.id] && translationStates[step.id] !== 'translated'"
@@ -261,11 +260,8 @@ function resetDrag() {
   cursor: pointer;
 }
 
-.ocf-outline-card:disabled {
-  cursor: default;
-}
 
-.ocf-outline-card:not(:disabled):hover {
+.ocf-outline-card:hover {
   border-color: var(--color-primary);
 }
 

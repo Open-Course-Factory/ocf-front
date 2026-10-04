@@ -66,13 +66,14 @@ describe('ScenarioRail', () => {
     expect(text).toContain('Labinux')
   })
 
-  it('offers the settings pencil only to a manager, the classes to everyone', () => {
+  it('offers the settings to edit to a manager and to read to anyone, the classes to everyone', () => {
     const manager = mountRail()
     expect(manager.find('[data-testid="rail-edit-settings"]').exists()).toBe(true)
 
     // A teacher assigns a colleague's lab, or a platform one, to their class.
+    // A reader opens the same settings, to read them.
     const reader = mountRail({ canManage: false })
-    expect(reader.find('[data-testid="rail-edit-settings"]').exists()).toBe(false)
+    expect(reader.get('[data-testid="rail-edit-settings"]').attributes('aria-label')).toBe('See the scenario settings')
     expect(reader.findComponent({ name: 'ScenarioClassesPanel' }).exists()).toBe(true)
   })
 

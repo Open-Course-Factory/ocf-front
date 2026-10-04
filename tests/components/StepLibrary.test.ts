@@ -8,9 +8,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 
-const loadOutline = vi.fn()
+const readOnlySteps = vi.fn()
 vi.mock('../../src/services/domain/scenario', () => ({
-  scenarioStepService: { loadOutline: (id: string) => loadOutline(id) }
+  scenarioStepService: { loadReadOnly: async (id: string) => ({ setup_script: '', steps: await readOnlySteps(id) }) }
 }))
 import { createTestI18n } from '../helpers/entityModalHelper'
 
@@ -34,7 +34,7 @@ const scenarios = [
   { id: 'current', title: 'Being edited', can_manage: true, steps: [{ id: 'x1', order: 0, title: 'Own step' }] }
 ]
 
-beforeEach(() => loadOutline.mockReset())
+beforeEach(() => readOnlySteps.mockReset())
 
 function mountLibrary(props: Record<string, unknown> = {}) {
   return mount(StepLibrary, {
@@ -52,16 +52,16 @@ describe('StepLibrary', () => {
   })
 
   it('fetches the outline of a scenario the list sent without steps, on opening it, once', async () => {
-    loadOutline.mockResolvedValue([{ id: 'pub1', order: 0, title: 'Public step', step_type: 'info', text_content: 'Safe text' }])
+    readOnlySteps.mockResolvedValue([{ id: 'pub1', order: 0, title: 'Public step', step_type: 'info', text_content: 'Safe text' }])
     const wrapper = mountLibrary()
-    expect(loadOutline).not.toHaveBeenCalled()
+    expect(readOnlySteps).not.toHaveBeenCalled()
     await wrapper.get('[data-testid="step-library-scenario-public"]').trigger('click')
     await flushPromises()
-    expect(loadOutline).toHaveBeenCalledWith('public')
+    expect(readOnlySteps).toHaveBeenCalledWith('public')
     expect(wrapper.text()).toContain('Public step')
     await wrapper.get('[data-testid="step-library-scenario-public"]').trigger('click')
     await wrapper.get('[data-testid="step-library-scenario-public"]').trigger('click')
-    expect(loadOutline).toHaveBeenCalledTimes(1)
+    expect(readOnlySteps).toHaveBeenCalledTimes(1)
   })
 
   it('lists a scenario’s steps in order once expanded, and previews one as the learner reads it', async () => {

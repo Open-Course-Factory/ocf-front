@@ -70,13 +70,13 @@
         <h3 class="ocf-rail-heading">
           <i class="fas fa-sliders" aria-hidden="true"></i> {{ t('scenarioEditor.railSettings') }}
           <button
-            v-if="canManage"
             type="button"
             class="ocf-rail-edit"
             data-testid="rail-edit-settings"
-            :aria-label="t('scenarioEditor.editSettings')"
+            :aria-label="canManage ? t('scenarioEditor.editSettings') : t('scenarioEditor.viewSettings')"
+            :title="canManage ? t('scenarioEditor.editSettings') : t('scenarioEditor.viewSettings')"
             @click="emit('edit-settings')"
-          ><i class="fas fa-pen" aria-hidden="true"></i></button>
+          ><i :class="canManage ? 'fas fa-pen' : 'fas fa-eye'" aria-hidden="true"></i></button>
         </h3>
         <dl class="ocf-rail-settings">
           <template v-for="row in settingRows" :key="row.label">

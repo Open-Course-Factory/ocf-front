@@ -59,14 +59,22 @@ export const scenarioStepService = {
   },
 
   /**
-   * What each step of a scenario is, without how it is graded — no scripts,
-   * hints or answers (GET /scenarios/:id/step-outline). Offered to anyone who
-   * may author somewhere, for scenarios they can read but not edit: the
-   * read-only outline and the step library are built on it.
+   * A scenario the user may read but not edit, in full: its setup script and
+   * its steps in the editor's own shape — scripts, hints, questions with their
+   * answers, effects (GET /scenarios/:id/steps/read-only). Offered to anyone
+   * who may author somewhere: it is what they would get by duplicating it, so
+   * the read-only editor and the step library are built on it.
    */
-  async loadOutline(scenarioId: string): Promise<any[]> {
-    const response = await axios.get(`/scenarios/${scenarioId}/step-outline`)
-    return Array.isArray(response.data) ? response.data : []
+  async loadReadOnly(scenarioId: string): Promise<{ setup_script: string; steps: any[] }> {
+    const response = await axios.get(`/scenarios/${scenarioId}/steps/read-only`)
+    const steps = Array.isArray(response.data?.steps) ? response.data.steps : []
+    return {
+      setup_script: response.data?.setup_script || '',
+      steps: steps.map((step: any) => ({
+        ...step,
+        questions: Array.isArray(step.questions) ? step.questions.map(deserializeQuestion) : []
+      }))
+    }
   },
 
   /**

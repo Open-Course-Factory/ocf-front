@@ -35,6 +35,7 @@ export function useScenarioEditorI18n() {
       stepsAfterDuplicate: 'Its steps show once you have duplicated it.',
       outlineLabel: 'Scenario steps',
       editSettings: 'Edit the scenario settings',
+      viewSettings: 'See the scenario settings',
       sizeChip: 'Size {size}',
       stepCount: '{count} step(s)',
       dragToReorder: 'drag to reorder',
@@ -122,6 +123,7 @@ export function useScenarioEditorI18n() {
       // Modal
       saveEntity: 'Save',
       cancel: 'Cancel',
+      close: 'Close',
       scenarioName: 'Name',
       enterName: 'Enter scenario name...',
       scenarioTitle: 'Title',
@@ -255,6 +257,7 @@ export function useScenarioEditorI18n() {
       stepsAfterDuplicate: 'Ses étapes apparaissent une fois le scénario dupliqué.',
       outlineLabel: 'Étapes du scénario',
       editSettings: 'Modifier les réglages du scénario',
+      viewSettings: 'Voir les réglages du scénario',
       sizeChip: 'Taille {size}',
       stepCount: '{count} étape(s)',
       dragToReorder: 'glisser pour réordonner',
@@ -342,6 +345,7 @@ export function useScenarioEditorI18n() {
       // Modal
       saveEntity: 'Enregistrer',
       cancel: 'Annuler',
+      close: 'Fermer',
       scenarioName: 'Nom',
       enterName: 'Saisir le nom du scénario...',
       scenarioTitle: 'Titre',

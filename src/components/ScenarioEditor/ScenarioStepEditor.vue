@@ -11,7 +11,7 @@
         class="ocf-step-title-input"
         :aria-label="t('stepEdit.title')"
         :placeholder="t('stepEdit.titlePlaceholder')"
-        :readonly="isTranslating"
+        :readonly="isTranslating || readonly"
       />
       <span class="ocf-step-type-chip">{{ stepTypeLabel }}</span>
       <!-- Only a step the backend knows has an order to start from. -->
@@ -27,7 +27,7 @@
         <i class="fas fa-play" aria-hidden="true"></i>
         {{ t('stepEdit.testFromStep') }}
       </button>
-      <div v-if="!isNew" ref="moreMenuRef" class="ocf-step-more">
+      <div v-if="!isNew && !readonly" ref="moreMenuRef" class="ocf-step-more">
         <button
           type="button"
           class="ocf-btn-ghost"
@@ -56,7 +56,7 @@
            mode in one place and seeing it take effect in another is how the
            translation view came to look like it did not exist. Repeating it
            here, beside the content it governs, is what makes it findable. -->
-      <div v-if="locales.length > 1" class="ocf-step-locale" data-testid="step-edit-locale-switch">
+      <div v-if="locales.length > 1 && !readonly" class="ocf-step-locale" data-testid="step-edit-locale-switch">
         <span class="ocf-step-locale-label">
           <i class="fas fa-language" aria-hidden="true"></i>
           {{ t('stepEdit.editingIn') }}
@@ -78,7 +78,7 @@
 
       <!-- Authoring a scenario that is also offered elsewhere: say so, rather
            than leaving the translation view to be discovered. -->
-      <p v-if="!isTranslating && otherLocales.length" class="ocf-translate-hint">
+      <p v-if="!isTranslating && otherLocales.length && !readonly" class="ocf-translate-hint">
         {{ t('stepEdit.alsoOfferedIn') }}
         <button
           v-for="code in otherLocales"
@@ -93,12 +93,28 @@
       </p>
 
       <!-- Tabs -->
-      <TabStrip
-        v-model="activeTab"
-        :tabs="visibleTabs"
-        :aria-label="t('stepEdit.tabsLabel')"
-      />
+      <div class="ocf-step-tabs">
+        <TabStrip
+          v-model="activeTab"
+          :tabs="visibleTabs"
+          :aria-label="t('stepEdit.tabsLabel')"
+        />
+        <!-- Read only, the fields cannot be selected: the tab's text is copied from here. -->
+        <button
+          v-if="readonly && copyableText"
+          type="button"
+          class="ocf-btn-ghost"
+          data-testid="step-edit-copy"
+          @click="copyTabText"
+        >
+          <i :class="copied ? 'fas fa-check' : 'fas fa-copy'" aria-hidden="true"></i>
+          {{ copied ? t('stepEdit.copied') : t('stepEdit.copyTab') }}
+        </button>
+      </div>
 
+      <!-- One editor for reading and writing: read only, a disabled fieldset
+           turns every field and action of every tab off at once. -->
+      <fieldset class="ocf-step-fields" :disabled="readonly">
       <!-- Tab content -->
       <div class="tab-content">
         <!-- Scripts are one logic shared by every language: what they check is
@@ -635,10 +651,11 @@
           />
         </div>
       </div>
+      </fieldset>
     </div>
 
     <!-- Left-aligned: the app's floating feedback button owns the bottom-right corner. -->
-    <footer class="ocf-step-footer">
+    <footer v-if="!readonly" class="ocf-step-footer">
       <button
         type="button"
         class="btn btn-primary"
@@ -756,6 +773,8 @@ const { t } = useTranslations({
       sharedBody: 'Scripts check the same thing in every language, because they name objects from the scenario\'s Vocabulary rather than rooms. Translate those names in the scenario\'s Vocabulary tab; the script itself is edited on the original.',
       tabsLabel: 'Step editor sections',
       editorLabel: 'Step editor',
+      copyTab: 'Copy',
+      copied: 'Copied',
       moreActions: 'More step actions',
       duplicate: 'Duplicate',
       delete: 'Delete',
@@ -864,6 +883,8 @@ const { t } = useTranslations({
       sharedBody: "Les scripts vérifient la même chose dans toutes les langues, car ils nomment les objets depuis le Vocabulaire du scénario plutôt que des pièces. Traduisez ces noms dans l'onglet Vocabulaire ; le script lui-même se modifie sur l'original.",
       tabsLabel: 'Sections de l’éditeur d’étape',
       editorLabel: 'Éditeur d’étape',
+      copyTab: 'Copier',
+      copied: 'Copié',
       moreActions: 'Autres actions sur l’étape',
       duplicate: 'Dupliquer',
       delete: 'Supprimer',
@@ -949,6 +970,8 @@ interface Props {
    * `order` is missing on a new step.
    */
   isFirstStep?: boolean
+  /** Shown, not edited: a scenario the user may read but not change. */
+  readonly?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -964,7 +987,8 @@ const props = withDefaults(defineProps<Props>(), {
   defaultLocaleLabel: '',
   locales: () => [],
   canTestFromStep: false,
-  isFirstStep: false
+  isFirstStep: false,
+  readonly: false
 })
 
 const emit = defineEmits<{
@@ -1271,6 +1295,30 @@ watch(isDirty, dirty => emit('update:dirty', dirty), { immediate: true })
 
 // Rendered with the learner's own pipeline, from whichever language is edited.
 const previewTitle = computed(() => (isTranslating.value && translationData.value.title) || formData.value.title)
+// The text the read-only copy button takes from the open tab.
+const TAB_TEXT_FIELDS: Record<string, string> = {
+  content: 'text_content',
+  hints: 'hint_content',
+  verify: 'verify_script',
+  background: 'background_script',
+  foreground: 'foreground_script'
+}
+const copyableText = computed(() => {
+  const field = TAB_TEXT_FIELDS[activeTab.value]
+  return field ? (formData.value[field] as string) || '' : ''
+})
+const copied = ref(false)
+watch(activeTab, () => { copied.value = false })
+
+async function copyTabText() {
+  try {
+    await navigator.clipboard.writeText(copyableText.value)
+    copied.value = true
+  } catch {
+    copied.value = false
+  }
+}
+
 const previewText = computed(() =>
   (isTranslating.value ? translationData.value.text_content : formData.value.text_content) || ''
 )
@@ -1464,6 +1512,36 @@ const handleSaveTranslation = () => {
 </script>
 
 <style scoped>
+.ocf-step-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-sm);
+}
+
+.ocf-step-tabs > :first-child {
+  flex: 1;
+}
+
+/* A fieldset only to disable at once; it draws nothing of its own. */
+.ocf-step-fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+/* Read only, the content still reads as content, not as a greyed-out form. */
+.ocf-step-fields:disabled .form-control {
+  opacity: 1;
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+  cursor: default;
+}
+
 .ocf-step-editor {
   display: flex;
   flex-direction: column;

@@ -109,7 +109,8 @@ describe('ScenarioOutline', () => {
     expect(wrapper.find('[data-testid="outline-add-step"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="outline-insert-0"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="outline-move-up-1"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="outline-scenario-card"]').attributes('disabled')).toBeDefined()
+    // The settings still open, to be read.
+    expect(wrapper.get('[data-testid="outline-scenario-card"]').attributes('title')).toBe('See the scenario settings')
     wrapper.unmount()
   })
 

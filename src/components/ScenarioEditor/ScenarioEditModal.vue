@@ -22,8 +22,8 @@
     :title="title"
     size="large"
     :show-default-footer="true"
-    :confirm-text="isTranslating ? t('scenarioEditor.saveTranslation') : t('scenarioEditor.saveEntity')"
-    :cancel-text="t('scenarioEditor.cancel')"
+    :confirm-text="readonly ? '' : isTranslating ? t('scenarioEditor.saveTranslation') : t('scenarioEditor.saveEntity')"
+    :cancel-text="readonly ? t('scenarioEditor.close') : t('scenarioEditor.cancel')"
     :is-loading="isSaving"
     :error-message="errorMessage"
     :close-on-overlay-click="false"
@@ -40,7 +40,7 @@
 
     <!-- Which language the scenario's own text is being edited in. The same
          choice as the header, repeated beside the content it governs. -->
-    <div v-if="offeredLocales.length > 1" class="ocf-scn-locale" data-testid="scenario-edit-locale-switch">
+    <div v-if="offeredLocales.length > 1 && !readonly" class="ocf-scn-locale" data-testid="scenario-edit-locale-switch">
       <span class="ocf-scn-locale-label">
         <i class="fas fa-language" aria-hidden="true"></i>
         {{ t('scenarioEditor.editingIn') }}
@@ -60,6 +60,8 @@
       </button>
     </div>
 
+    <!-- Read only, one disabled fieldset turns every field of every tab off. -->
+    <fieldset class="ocf-scn-fields" :disabled="readonly">
     <!-- General tab -->
     <div
       v-show="activeTab === 'general'"
@@ -490,6 +492,7 @@
         </label>
       </div>
     </div>
+    </fieldset>
   </BaseModal>
 
   <!-- Switching language rebuilds the form from the other language's text. -->
@@ -550,6 +553,8 @@ interface Props {
   sizes?: Size[]
   // Optional ARIA label override; defaults to a generic editor name.
   ariaLabel?: string
+  /** Shown, not edited: the settings of a scenario the user may only read. */
+  readonly?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -561,7 +566,8 @@ const props = withDefaults(defineProps<Props>(), {
   defaultLocale: '',
   translation: undefined,
   localeLabel: '',
-  defaultLocaleLabel: ''
+  defaultLocaleLabel: '',
+  readonly: false
 })
 
 const emit = defineEmits<{
@@ -735,10 +741,14 @@ const allTabs = computed(() => [
 // At create time, only show General + Content — the Setup/Options tabs are
 // hidden until first save to reduce friction (Marc: "I have to fill 12 fields
 // before I have anything to save").
+// A new scenario has no vocabulary yet; a read-only one's is not the
+// reader's to load or edit.
 const tabs = computed(() =>
   model.value.isNew
     ? allTabs.value.filter(tab => tab.key === 'general' || tab.key === 'content')
-    : allTabs.value
+    : props.readonly
+      ? allTabs.value.filter(tab => tab.key !== 'vocabulary')
+      : allTabs.value
 )
 
 const isPlatformScenario = computed(() =>
@@ -752,6 +762,22 @@ watch(() => props.visible, (vis) => {
 </script>
 
 <style scoped>
+/* A fieldset only to disable at once; it draws nothing of its own. */
+.ocf-scn-fields {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+/* Read only, the settings still read as content, not as a greyed-out form. */
+.ocf-scn-fields:disabled .form-control {
+  opacity: 1;
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+  cursor: default;
+}
+
 .ocf-scn-locale {
   display: flex;
   align-items: center;
