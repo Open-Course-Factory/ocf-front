@@ -972,6 +972,8 @@ interface Props {
   isFirstStep?: boolean
   /** Shown, not edited: a scenario the user may read but not change. */
   readonly?: boolean
+  /** The Effects tab, behind the scenario_step_effects flag (the page reads it). */
+  showEffects?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -988,7 +990,8 @@ const props = withDefaults(defineProps<Props>(), {
   locales: () => [],
   canTestFromStep: false,
   isFirstStep: false,
-  readonly: false
+  readonly: false,
+  showEffects: false
 })
 
 const emit = defineEmits<{
@@ -1118,7 +1121,12 @@ const visibleTabs = computed(() => {
     quiz: ['content', 'hints', 'questions', 'effects']
   }
   const allowed = tabMap[resolvedStepType.value]
-  return allTabs.value.filter(tab => allowed.includes(tab.key))
+  return allTabs.value.filter(tab => allowed.includes(tab.key) && (tab.key !== 'effects' || props.showEffects))
+})
+
+// A tab that disappears (the flag turned off) gives way to the instructions.
+watch(() => visibleTabs.value.map(tab => tab.key), keys => {
+  if (!keys.includes(activeTab.value)) activeTab.value = 'content'
 })
 
 type StoredCorrectAnswer = number | number[] | string

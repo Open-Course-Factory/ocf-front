@@ -67,6 +67,7 @@ export interface FeatureFlags {
   // Scenario features
   scenarios: FeatureFlagConfig
   scenario_conception: FeatureFlagConfig
+  scenario_step_effects: FeatureFlagConfig
 
   // Documentation features
   help_documentation: FeatureFlagConfig
@@ -145,6 +146,13 @@ export class FeatureFlagService {
         type: 'ops',
         allowedRoles: ['administrator', 'member'],
         controlledFeatures: ['scenario_editor']
+      },
+      scenario_step_effects: {
+        enabled: false,
+        description: 'Show the Effects tab in the scenario step editor',
+        type: 'ops',
+        allowedRoles: ['administrator', 'member'],
+        controlledFeatures: ['scenario_step_effects']
       },
       // Documentation Features (can start enabled)
       help_documentation: {

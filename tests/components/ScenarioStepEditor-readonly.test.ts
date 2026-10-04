@@ -18,7 +18,7 @@ const step = {
 
 function mountEditor(readonly: boolean) {
   return mount(ScenarioStepEditor, {
-    props: { stepData: step, readonly, locales: ['en', 'fr'], defaultLocale: 'en' },
+    props: { stepData: step, readonly, showEffects: true, locales: ['en', 'fr'], defaultLocale: 'en' },
     global: { plugins: [createTestI18n()] },
     attachTo: document.body
   })

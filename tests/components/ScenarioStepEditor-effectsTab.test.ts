@@ -49,7 +49,8 @@ function createTestI18n() {
 async function mountOnEffectsTab(stepData: Record<string, unknown> | null = null) {
   const wrapper = mount(ScenarioStepEditor, {
     props: {
-
+      // The tab is behind the scenario_step_effects flag; the page passes it.
+      showEffects: true,
       isNew: stepData === null,
       stepType: 'terminal',
       stepData,
@@ -127,3 +128,32 @@ describe('ScenarioStepEditor — Effects tab', () => {
     expect(wrapper.find('.ocf-effects-note').exists()).toBe(true)
   })
 })
+
+describe('ScenarioStepEditor — Effects tab behind scenario_step_effects', () => {
+  const tabsOf = (showEffects: boolean, readonly = false) => mount(ScenarioStepEditor, {
+    props: { stepData: { step_type: 'terminal', title: 'T' }, showEffects, readonly },
+    global: { plugins: [createTestI18n()] },
+  }).findAll('.tab-strip__btn').map(b => b.text())
+
+  it('offers no Effects tab while the flag is off, editing or reading', () => {
+    expect(tabsOf(false)).not.toContain('Effects')
+    expect(tabsOf(false, true)).not.toContain('Effects')
+  })
+
+  it('offers it once the flag is on', () => {
+    expect(tabsOf(true)).toContain('Effects')
+    expect(tabsOf(true, true)).toContain('Effects')
+  })
+
+  it('falls back to the instructions when the open Effects tab goes away', async () => {
+    const wrapper = mount(ScenarioStepEditor, {
+      props: { stepData: { step_type: 'terminal', title: 'T' }, showEffects: true },
+      global: { plugins: [createTestI18n()] },
+    })
+    await wrapper.get('#tab-effects').trigger('click')
+    await wrapper.setProps({ showEffects: false })
+    expect(wrapper.get('#tab-content').attributes('aria-selected')).toBe('true')
+    expect(wrapper.find('#panel-effects').exists()).toBe(false)
+  })
+})
+

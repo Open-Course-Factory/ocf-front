@@ -79,6 +79,7 @@
         <ScenarioStepEditor
           v-if="editingStep"
           :readonly="!canEditScenario"
+          :show-effects="stepEffectsEnabled"
           :step-data="editingStep"
           :is-new="!editingStep.id"
           :is-first-step="selectedIndex === 0"
@@ -291,6 +292,7 @@ import ScenarioDuplicateModal from '../ScenarioEditor/ScenarioDuplicateModal.vue
 import ScenarioImportMenu from '../ScenarioEditor/ScenarioImportMenu.vue'
 import StepLibrary from '../ScenarioEditor/StepLibrary.vue'
 import { useScenarioEditorAccess } from '../../composables/useScenarioEditorAccess'
+import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import BaseModal from '../Modals/BaseModal.vue'
 import { scenarioTranslationService, scenarioSessionService, scenarioStepService } from '../../services/domain/scenario'
 import type { LocaleCoverage, StepTranslation, ScenarioTranslation } from '../../services/domain/scenario'
@@ -310,6 +312,8 @@ const notification = useNotification()
 const { exportScenario } = useScenarioExport()
 // Who may export, archive or delete goes beyond who may edit: see the helpers.
 const { canExportScenario, canRetireScenario } = useScenarioEditorAccess()
+// Step banners (the editor's Effects tab) are behind a flag, off by default.
+const stepEffectsEnabled = useFeatureFlags().createReactiveFlag('scenario_step_effects')
 
 // Where a new or imported scenario may go — see useScenarioCreateScopes.
 const {
