@@ -211,3 +211,34 @@ describe('useUserMembershipsStore.loadMemberships', () => {
     expect(store.error).not.toBe('')
   })
 })
+
+describe('useUserMembershipsStore role predicates', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  /**
+   * BEHAVIOR PROTECTED: scenario authoring opens at teacher (ocf-core's
+   * RoleMinimumForClassrooms), organisation administration stays at manager.
+   * A teacher is an author but not an admin; a member is neither.
+   */
+  it.each([
+    ['member', false, false],
+    ['teacher', true, false],
+    ['manager', true, true],
+    ['owner', true, true],
+  ] as const)('org %s: canAuthorInOrg=%s, canManageOrg=%s', (role, author, manage) => {
+    const store = useUserMembershipsStore()
+    store.orgMemberships = [{ organization_id: 'org-1', role }]
+
+    expect(store.canAuthorInOrg('org-1')).toBe(author)
+    expect(store.canManageOrg('org-1')).toBe(manage)
+  })
+
+  it('grants nothing in an organisation the user does not belong to', () => {
+    const store = useUserMembershipsStore()
+    store.orgMemberships = [{ organization_id: 'org-1', role: 'owner' }]
+
+    expect(store.canAuthorInOrg('org-2')).toBe(false)
+  })
+})

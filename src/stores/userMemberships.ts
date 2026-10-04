@@ -24,7 +24,14 @@ import { ref } from 'vue'
 import axios from 'axios'
 import { isDemoMode } from '../services/demo'
 
-export type MembershipRole = 'owner' | 'manager' | 'member'
+export type MembershipRole = 'owner' | 'manager' | 'teacher' | 'member'
+
+// Mirrors ocf-core's roleHierarchy (src/auth/access/helpers.go) — one rank
+// table for org and group roles. An unknown role ranks 0, as there.
+const ROLE_PRIORITY: Record<string, number> = { member: 10, teacher: 30, manager: 50, owner: 100 }
+
+const isRoleAtLeast = (role: MembershipRole | null, min: MembershipRole): boolean =>
+  !!role && (ROLE_PRIORITY[role] ?? 0) >= ROLE_PRIORITY[min]
 
 export interface OrgMembership {
   organization_id: string
@@ -113,15 +120,13 @@ export const useUserMembershipsStore = defineStore('userMemberships', () => {
     return m?.role ?? null
   }
 
-  const canManageOrg = (orgId: string): boolean => {
-    const r = getOrgRole(orgId)
-    return r === 'manager' || r === 'owner'
-  }
+  const canManageOrg = (orgId: string): boolean => isRoleAtLeast(getOrgRole(orgId), 'manager')
 
-  const canManageGroup = (groupId: string): boolean => {
-    const r = getGroupRole(groupId)
-    return r === 'manager' || r === 'owner'
-  }
+  // Scenario authoring opens at teacher, like ocf-core's RoleMinimumForClassrooms:
+  // writing labs belongs with running classes, not with administering the org.
+  const canAuthorInOrg = (orgId: string): boolean => isRoleAtLeast(getOrgRole(orgId), 'teacher')
+
+  const canManageGroup = (groupId: string): boolean => isRoleAtLeast(getGroupRole(groupId), 'manager')
 
   const reset = () => {
     orgMemberships.value = []
@@ -145,6 +150,7 @@ export const useUserMembershipsStore = defineStore('userMemberships', () => {
     getOrgRole,
     getGroupRole,
     canManageOrg,
+    canAuthorInOrg,
     canManageGroup,
   }
 })

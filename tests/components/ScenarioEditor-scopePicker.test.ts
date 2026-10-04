@@ -120,7 +120,7 @@ describe('ScenarioEditor.vue — scope picker trusts backend filter (#216)', () 
    * BEHAVIOR PROTECTED: `orgScopes` MUST source from
    * `organizationsStore.userOrganizations` (the backend-filtered list).
    * The backend's GET /organizations applies the same MembershipConfig
-   * filter, so the frontend doesn't need to re-filter.
+   * filter; only the role is narrowed on top (next test).
    */
   it('orgScopes sources from organizationsStore.userOrganizations', () => {
     const orgScopesMatch = scopeBlock.match(
@@ -129,5 +129,25 @@ describe('ScenarioEditor.vue — scope picker trusts backend filter (#216)', () 
     expect(orgScopesMatch).not.toBeNull()
     const body = orgScopesMatch![0]
     expect(body).toMatch(/organizationsStore\.userOrganizations/)
+  })
+
+  /**
+   * BEHAVIOR PROTECTED: an organisation is a destination for an org teacher,
+   * manager or owner (ocf-core authors scenarios from teacher up), never for a
+   * plain member — membership alone is any role. Admins keep every org.
+   * The role rule itself is pinned in tests/stores/userMemberships.test.ts.
+   *
+   * GUT-CHECK: back to `canManageOrg`, teachers lose their org; no filter,
+   * members are offered an org the API refuses.
+   */
+  it('orgScopes keeps only organisations the user may author in', () => {
+    const body = scopeBlock.match(/const\s+orgScopes\s*=\s*computed[\s\S]*?(?=const\s+groupScopes)/)![0]
+    expect(body).toMatch(/\.filter\(\(o: any\) => isAdmin\.value \|\| membershipsStore\.canAuthorInOrg\(o\.id\)\)/)
+  })
+
+  it('defaults to the current organisation only when it is an authoring scope', () => {
+    const picker = fileContent.match(/const pickDefaultScopeKey = [\s\S]*?\n\}/)?.[0] ?? ''
+    expect(picker).toMatch(/orgScopes\.value\.some\(o => o\.id === currentOrgId\)/)
+    expect(picker).not.toMatch(/canManageOrg/)
   })
 })

@@ -33,7 +33,8 @@
  *     `owner_user_id === useCurrentUserStore.userId` (legacy fixtures
  *     where only ownership is set).
  *   - `useUserMembershipsStore.orgMemberships` has a row with role
- *     `manager` or `owner` (DB-backed source of truth).
+ *     `teacher` or above (DB-backed source of truth) — ocf-core opens
+ *     scenario authoring at teacher.
  *   - `useUserMembershipsStore.groupMemberships` has a row with role
  *     `manager` or `owner`.
  *
@@ -52,6 +53,7 @@ import { useAdminViewMode } from './useAdminViewMode'
 
 export interface ScenarioEditorAccess {
   canAccessScenarioEditor: ComputedRef<boolean>
+  canRetireScenario: (scenario: { created_by_id?: string, organization_id?: string | null }) => boolean
 }
 
 export function useScenarioEditorAccess(): ScenarioEditorAccess {
@@ -75,14 +77,23 @@ export function useScenarioEditorAccess(): ScenarioEditorAccess {
 
     // 3. /me/memberships — DB-backed org memberships (canonical source)
     const orgMs = membershipsStore.orgMemberships || []
-    if (orgMs.some(m => m.role === 'manager' || m.role === 'owner')) return true
+    if (orgMs.some(m => membershipsStore.canAuthorInOrg(m.organization_id))) return true
 
     // 4. /me/memberships — DB-backed group memberships
     const groupMs = membershipsStore.groupMemberships || []
-    if (groupMs.some(m => m.role === 'manager' || m.role === 'owner')) return true
+    if (groupMs.some(m => membershipsStore.canManageGroup(m.group_id))) return true
 
     return false
   })
 
-  return { canAccessScenarioEditor }
+  // Archive, restore and delete: a teacher edits any scenario of their org but
+  // retires only their own; org managers retire any. Mirrors ocf-core's
+  // archive/delete hooks — change both together.
+  const canRetireScenario: ScenarioEditorAccess['canRetireScenario'] = scenario => {
+    if (shouldShowAllData.value) return true
+    if (currentUser.userId && scenario.created_by_id === currentUser.userId) return true
+    return !!scenario.organization_id && membershipsStore.canManageOrg(scenario.organization_id)
+  }
+
+  return { canAccessScenarioEditor, canRetireScenario }
 }

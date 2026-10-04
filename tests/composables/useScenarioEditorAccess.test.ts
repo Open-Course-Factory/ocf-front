@@ -249,9 +249,25 @@ describe('useScenarioEditorAccess (real stores + real admin-view-mode)', () => {
   })
 
   /**
+   * BEHAVIOR PROTECTED: An org teacher authors scenarios (ocf-core opens
+   * scenario authoring at teacher), so the editor MUST open for them.
+   */
+  it('returns true when orgMemberships has a teacher role', () => {
+    const user = useCurrentUserStore()
+    user.userId = 'user-1'
+    user.userRoles = []
+
+    const memberships = useUserMembershipsStore()
+    memberships.orgMemberships = [{ organization_id: 'org-1', role: 'teacher' }]
+
+    const { canAccessScenarioEditor } = useScenarioEditorAccess()
+    expect(canAccessScenarioEditor.value).toBe(true)
+  })
+
+  /**
    * BEHAVIOR PROTECTED: Plain `member` role on either side does NOT grant
-   * access. Only `manager` and `owner` qualify, matching the existing
-   * `canManageOrg` / `canManageGroup` helpers in the memberships store.
+   * access: org teacher+ and group manager+ qualify, matching
+   * `canAuthorInOrg` / `canManageGroup` in the memberships store.
    */
   it('returns false when memberships only contain member-level roles', () => {
     const user = useCurrentUserStore()
@@ -293,5 +309,59 @@ describe('useScenarioEditorAccess (real stores + real admin-view-mode)', () => {
 
     await nextTick()
     expect(canAccessScenarioEditor.value).toBe(true)
+  })
+})
+
+describe('useScenarioEditorAccess.canRetireScenario (archive, restore, delete)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    useAdminViewMode().resetViewMode()
+    localStorage.clear()
+  })
+
+  const teacherIn = (orgId: string) => {
+    const user = useCurrentUserStore()
+    user.userId = 'teacher-1'
+    user.userRoles = []
+    useUserMembershipsStore().orgMemberships = [{ organization_id: orgId, role: 'teacher' }]
+  }
+
+  /**
+   * BEHAVIOR PROTECTED: a teacher edits any scenario of their org but
+   * retires only their own — ocf-core refuses the rest, so the UI must not
+   * offer it.
+   */
+  it('lets a teacher retire their own scenario but not a colleague\'s', () => {
+    teacherIn('org-1')
+    const { canRetireScenario } = useScenarioEditorAccess()
+
+    expect(canRetireScenario({ created_by_id: 'teacher-1', organization_id: 'org-1' })).toBe(true)
+    expect(canRetireScenario({ created_by_id: 'someone-else', organization_id: 'org-1' })).toBe(false)
+  })
+
+  it('lets an org manager retire any scenario of their org, and only of it', () => {
+    const user = useCurrentUserStore()
+    user.userId = 'manager-1'
+    user.userRoles = []
+    useUserMembershipsStore().orgMemberships = [{ organization_id: 'org-1', role: 'manager' }]
+    const { canRetireScenario } = useScenarioEditorAccess()
+
+    expect(canRetireScenario({ created_by_id: 'someone-else', organization_id: 'org-1' })).toBe(true)
+    expect(canRetireScenario({ created_by_id: 'someone-else', organization_id: 'org-2' })).toBe(false)
+    expect(canRetireScenario({ created_by_id: 'someone-else', organization_id: null })).toBe(false)
+  })
+
+  it('lets a platform administrator retire anything', () => {
+    const user = useCurrentUserStore()
+    user.userId = 'admin-1'
+    user.userRoles = ['administrator']
+    const { canRetireScenario } = useScenarioEditorAccess()
+
+    expect(canRetireScenario({ created_by_id: 'someone-else', organization_id: null })).toBe(true)
+  })
+
+  it('never matches a missing creator to a signed-out user', () => {
+    const { canRetireScenario } = useScenarioEditorAccess()
+    expect(canRetireScenario({ organization_id: 'org-1' })).toBe(false)
   })
 })

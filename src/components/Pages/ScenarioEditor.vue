@@ -7,6 +7,7 @@
       :scenario-org-name="currentScenario ? getScenarioOrgName(currentScenario) : null"
       :can-create-scenario="canCreateScenario"
       :can-edit-scenario="canEditScenario"
+      :can-retire-scenario="canRetireCurrentScenario"
       :can-copy-to-org="!!canCopyToOrg"
       :is-importing="isImporting"
       :is-admin="isAdmin"
@@ -289,7 +290,7 @@ const organizationsStore = useOrganizationsStore()
 const classGroupsStore = useClassGroupsStore()
 const membershipsStore = useUserMembershipsStore()
 const { isAdmin } = useAdminViewMode()
-const { canAccessScenarioEditor } = useScenarioEditorAccess()
+const { canAccessScenarioEditor, canRetireScenario } = useScenarioEditorAccess()
 const notification = useNotification()
 
 // Custom node types for VueFlow
@@ -507,6 +508,9 @@ const getScenarioOrgName = (scenario: any): string | null => {
 // memberships disagreed with the hooks in both directions: org members got
 // controls that 403, class managers were shown read-only on their own labs.
 const canEditScenario = computed(() => !!currentScenario.value?.can_manage)
+const canRetireCurrentScenario = computed(() =>
+  !!currentScenario.value && canRetireScenario(currentScenario.value)
+)
 
 // Copy targets are the create scopes minus the scenario's own organisation:
 // an org manager copies into another org they manage, a teacher copies a
@@ -523,7 +527,7 @@ const canCopyToOrg = computed(() =>
 // Scope picker for creating new scenarios.
 // A scope describes where the new scenario lives. Endpoints are selected accordingly:
 //   - platform → POST /scenarios            (admin only)
-//   - org      → POST /organizations/:id/scenarios  (org manager+)
+//   - org      → POST /organizations/:id/scenarios  (org teacher+)
 //   - group    → POST /groups/:id/scenarios         (group manager+, auto-assigns)
 type CreateScope =
   | { kind: 'platform' }
@@ -537,17 +541,18 @@ const allGroups = computed<any[]>(() => {
 })
 
 // Both `orgScopes` and `groupScopes` trust the backend's `user_member_id`
-// filter applied by GET /organizations and GET /api/v1/class-groups. The
-// list endpoints already join group_members / organization_members and
-// only return entities the user can act on. No frontend re-filtering is
-// needed (#216 — previously we filtered by `owner_user_id === userId`,
-// which is creator-match, not membership-match, and hid groups the user
-// was added to but didn't create).
+// filter applied by GET /organizations and GET /api/v1/class-groups (#216 —
+// filtering by `owner_user_id === userId` was creator-match, not
+// membership-match, and hid groups the user was added to but didn't create).
+// Organisations are narrowed by role on top: membership alone is any role, and
+// ocf-core authors scenarios in an org from teacher up (admins: any org).
 const orgScopes = computed<Array<{ id: string; name: string }>>(() =>
-  organizationsStore.userOrganizations.map((o: any) => ({
-    id: o.id,
-    name: o.display_name || o.name || `Organization ${String(o.id).slice(0, 8)}`,
-  })),
+  organizationsStore.userOrganizations
+    .filter((o: any) => isAdmin.value || membershipsStore.canAuthorInOrg(o.id))
+    .map((o: any) => ({
+      id: o.id,
+      name: o.display_name || o.name || `Organization ${String(o.id).slice(0, 8)}`,
+    })),
 )
 
 const groupScopes = computed<Array<{ id: string; name: string }>>(() =>
@@ -595,9 +600,9 @@ const parseScopeKey = (key: string | undefined | null): CreateScope | null => {
 }
 
 const pickDefaultScopeKey = (): string => {
-  // 1. currentOrganization if user can manage it
+  // 1. currentOrganization if the user may author in it
   const currentOrgId = organizationsStore.currentOrganization?.id
-  if (currentOrgId && membershipsStore.canManageOrg(currentOrgId)) {
+  if (currentOrgId && orgScopes.value.some(o => o.id === currentOrgId)) {
     return `org:${currentOrgId}`
   }
   // 2. first available org scope

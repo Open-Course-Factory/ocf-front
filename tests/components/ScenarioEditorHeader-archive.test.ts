@@ -39,6 +39,7 @@ function mountHeader(overrides: Record<string, unknown> = {}): VueWrapper {
       scenarioOrgName: null,
       canCreateScenario: true,
       canEditScenario: true,
+      canRetireScenario: true,
       canCopyToOrg: false,
       isImporting: false,
       isAdmin: false,
@@ -93,10 +94,22 @@ describe('ScenarioEditorHeader — archive action', () => {
   })
 
   it('hides both actions from someone who may not edit the scenario', async () => {
-    const wrapper = mountHeader({ canEditScenario: false })
+    const wrapper = mountHeader({ canEditScenario: false, canRetireScenario: false })
     await openOverflowMenu(wrapper)
 
     expect(menuItem(wrapper, '.fa-box-archive')).toBeFalsy()
     expect(menuItem(wrapper, '.fa-rotate-left')).toBeFalsy()
+  })
+
+  // A teacher edits any scenario of their organisation but archives only their own.
+  it('hides both actions from an editor who may not retire the scenario', async () => {
+    for (const currentScenario of [activeScenario, archivedScenario]) {
+      const wrapper = mountHeader({ currentScenario, canRetireScenario: false })
+      await openOverflowMenu(wrapper)
+
+      expect(menuItem(wrapper, '.fa-box-archive')).toBeFalsy()
+      expect(menuItem(wrapper, '.fa-rotate-left')).toBeFalsy()
+      expect(menuItem(wrapper, '.fa-undo'), 'editing actions stay').toBeTruthy()
+    }
   })
 })
