@@ -64,7 +64,8 @@
         <span>{{ t('jsonImport.preview', { title: parsedData.title, steps: parsedData.steps?.length || 0 }) }}</span>
       </div>
 
-      <div v-if="errorMessage" class="error-message">
+      <ScenarioImportProblems v-if="problems.length" :title="errorMessage || ''" :problems="problems" />
+      <div v-else-if="errorMessage" class="error-message">
         <i class="fas fa-exclamation-triangle"></i>
         {{ errorMessage }}
       </div>
@@ -115,8 +116,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import BaseModal from './BaseModal.vue'
+import ScenarioImportProblems from '../ScenarioEditor/ScenarioImportProblems.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { teacherService } from '../../services/domain/scenario'
+import { scenarioImportProblems } from '../../utils/scenarioImportProblems'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
@@ -180,6 +183,7 @@ const parsedData = ref<any>(null)
 const isDragging = ref(false)
 const isImporting = ref(false)
 const errorMessage = ref<string | null>(null)
+const problems = ref<string[]>([])
 const importSuccess = ref(false)
 const importedScenario = ref<any>(null)
 
@@ -262,6 +266,7 @@ async function handleImport() {
 
   isImporting.value = true
   errorMessage.value = null
+  problems.value = []
 
   try {
     importedScenario.value = await teacherService.importScenarioJSONInto(
@@ -270,6 +275,7 @@ async function handleImport() {
     )
     importSuccess.value = true
   } catch (err: any) {
+    problems.value = scenarioImportProblems(err)
     // A 413 may come from a proxy in front of ocf-core, with no JSON body.
     errorMessage.value = err.response?.status === 413
       ? t('jsonImport.fileTooLarge')
@@ -300,6 +306,7 @@ function resetState() {
   isDragging.value = false
   isImporting.value = false
   errorMessage.value = null
+  problems.value = []
   importSuccess.value = false
   importedScenario.value = null
   if (fileInput.value) {
