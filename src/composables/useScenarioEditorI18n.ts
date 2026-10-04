@@ -151,6 +151,7 @@ export function useScenarioEditorI18n() {
       readOnlyWarning: 'This scenario is read-only. Copy it to your organization to edit.',
       createScenarioFirst: 'Create the scenario first, then drag its steps onto it.',
       selectScenarioFirst: 'Select a scenario first, then drag its steps onto it.',
+      cannotCreateScenario: 'You are not allowed to create scenarios.',
       // Play as learner (preview)
       playAsStudent: 'Play as learner',
       previewConfirmTitle: 'Preview this scenario?',
@@ -306,6 +307,7 @@ export function useScenarioEditorI18n() {
       readOnlyWarning: 'Ce scénario est en lecture seule. Copiez-le dans votre organisation pour le modifier.',
       createScenarioFirst: 'Créez d’abord le scénario, puis glissez-y ses étapes.',
       selectScenarioFirst: 'Sélectionnez d’abord un scénario, puis glissez-y ses étapes.',
+      cannotCreateScenario: 'Vous n’êtes pas autorisé à créer des scénarios.',
       // Jouer comme apprenant (prévisualisation)
       playAsStudent: 'Jouer comme apprenant',
       previewConfirmTitle: 'Prévisualiser ce scénario ?',

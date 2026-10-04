@@ -869,7 +869,9 @@ const handleNodeAdded = (node: any) => {
   if (!currentScenario.value || node.type === 'scenario') {
     nodes.value = nodes.value.filter(n => n.id !== node.id)
     if (!canCreateScenario.value) {
-      notification.showWarning(t('scenarioEditor.selectScenarioFirst'))
+      notification.showWarning(t(node.type === 'scenario'
+        ? 'scenarioEditor.cannotCreateScenario'
+        : 'scenarioEditor.selectScenarioFirst'))
       return
     }
     if (node.type !== 'scenario') notification.showInfo(t('scenarioEditor.createScenarioFirst'))
