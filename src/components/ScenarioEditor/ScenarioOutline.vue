@@ -45,13 +45,13 @@
         :class="{
           'is-selected': step.key === selectedKey,
           'is-dragging': dragIndex === index,
-          'is-drop-before': dropIndex === index && dragIndex !== null && dragIndex !== index
+          'is-drop-before': dropIndex === index && dragIndex !== index
         }"
         :draggable="editable"
         :data-testid="`outline-step-${index}`"
         @dragstart="onDragStart($event, index)"
-        @dragover.prevent="onDragOver(index)"
-        @drop.prevent="onDrop(index)"
+        @dragover.prevent="onDragOver($event, index)"
+        @drop.prevent="onDrop($event, index)"
         @dragend="resetDrag"
       >
         <!-- Overlay on the gap above the row: hovering reveals it, nothing moves. -->
@@ -81,10 +81,10 @@
           <span class="ocf-outline-title">{{ step.title || t('scenarioEditor.untitledStep') }}</span>
           <span class="ocf-outline-indicators">
             <span v-if="!step.id" class="ocf-outline-draft">{{ t('scenarioEditor.draft') }}</span>
-            <i v-if="step.hint_content" class="fas fa-lightbulb" :title="t('scenarioEditor.hasHints')" aria-hidden="true"></i>
+            <i v-if="step.hint_content || step.hint_count" class="fas fa-lightbulb" :title="t('scenarioEditor.hasHints')" aria-hidden="true"></i>
             <i v-if="step.step_type === 'flag'" class="fas fa-key" :title="t('scenarioEditor.hasFlag')" aria-hidden="true"></i>
-            <span v-if="step.step_type === 'quiz' && step.questions?.length" class="ocf-outline-qcount">
-              {{ t('scenarioEditor.questionCount', { count: String(step.questions.length) }) }}
+            <span v-if="step.step_type === 'quiz' && (step.questions?.length || step.question_count)" class="ocf-outline-qcount">
+              {{ t('scenarioEditor.questionCount', { count: String(step.questions?.length || step.question_count) }) }}
             </span>
             <span
               v-if="step.id && translationStates[step.id] && translationStates[step.id] !== 'translated'"
@@ -116,7 +116,14 @@
       </li>
     </ol>
 
-    <div v-if="editable" class="ocf-outline-add">
+    <div
+      v-if="editable"
+      class="ocf-outline-add"
+      :class="{ 'is-drop-target': dropIndex === steps.length }"
+      @dragover.prevent="onDragOver($event, steps.length)"
+      @dragleave="dropIndex = null"
+      @drop.prevent="onDrop($event, steps.length)"
+    >
       <button type="button" class="ocf-outline-add-btn" data-testid="outline-add-step" @click="openPicker(steps.length)">
         <i class="fas fa-plus" aria-hidden="true"></i> {{ t('scenarioEditor.addStep') }}
       </button>
@@ -128,7 +135,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
-import { TYPE_ICONS, type OutlineStep, type StepType } from '../../utils/scenarioOutline'
+import { LIBRARY_DRAG_TYPE, TYPE_ICONS, type OutlineStep, type StepType } from '../../utils/scenarioOutline'
 import StepTypePicker from './StepTypePicker.vue'
 
 const props = withDefaults(defineProps<{
@@ -146,6 +153,8 @@ const emit = defineEmits<{
   select: [key: string]
   move: [from: number, to: number]
   insert: [index: number, type: StepType]
+  // Steps dragged in from the step library, to copy at `index`.
+  'insert-copies': [index: number, stepIds: string[]]
   'edit-settings': []
 }>()
 
@@ -202,14 +211,26 @@ function onDragStart(event: DragEvent, index: number) {
   event.dataTransfer.setData('text/x-ocf-step-index', String(index))
 }
 
-function onDragOver(index: number) {
-  if (dragIndex.value !== null) dropIndex.value = index
+const fromLibrary = (event: DragEvent) => !!event.dataTransfer?.types.includes(LIBRARY_DRAG_TYPE)
+
+function onDragOver(event: DragEvent, index: number) {
+  if (dragIndex.value !== null || (props.editable && fromLibrary(event))) dropIndex.value = index
 }
 
-function onDrop(index: number) {
+function onDrop(event: DragEvent, index: number) {
   const from = dragIndex.value
   resetDrag()
-  if (from !== null && from !== index) emit('move', from, index)
+  if (from !== null) {
+    if (from !== index && index < props.steps.length) emit('move', from, index)
+    return
+  }
+  if (!props.editable || !fromLibrary(event)) return
+  try {
+    const ids = JSON.parse(event.dataTransfer!.getData(LIBRARY_DRAG_TYPE))
+    if (Array.isArray(ids) && ids.length) emit('insert-copies', index, ids)
+  } catch {
+    // Not a library drag after all: nothing to insert.
+  }
 }
 
 function resetDrag() {
@@ -443,6 +464,11 @@ function resetDrag() {
   color: var(--color-text-secondary);
   cursor: pointer;
   font-size: var(--font-size-sm);
+}
+
+.ocf-outline-add.is-drop-target .ocf-outline-add-btn {
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg);
 }
 
 .ocf-outline-add-btn:hover {

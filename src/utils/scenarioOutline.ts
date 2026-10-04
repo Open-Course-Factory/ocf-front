@@ -18,6 +18,9 @@ export const TYPE_ICONS: Record<StepType, string> = {
   quiz: 'fas fa-question'
 }
 
+/** The drag type the outline accepts step-library steps under (a JSON array of step ids). */
+export const LIBRARY_DRAG_TYPE = 'text/x-ocf-library-steps'
+
 export function resolveStepType(step: { step_type?: string } | null | undefined): StepType {
   const type = step?.step_type
   return (STEP_TYPES as readonly string[]).includes(type || '') ? type as StepType : 'terminal'
@@ -61,6 +64,14 @@ export function moveStep<T>(list: T[], from: number, to: number): T[] {
 export function insertStep<T>(list: T[], step: T, index: number): T[] {
   const at = Math.max(0, Math.min(index, list.length))
   return [...list.slice(0, at), step, ...list.slice(at)]
+}
+
+/**
+ * The server-side position of outline index `index`: drafts are not on the
+ * server, so only the saved steps before it count.
+ */
+export function savedPosition(steps: OutlineStep[], index: number): number {
+  return steps.slice(0, index).filter(step => step.id).length
 }
 
 /**

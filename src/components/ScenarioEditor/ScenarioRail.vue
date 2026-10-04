@@ -32,9 +32,20 @@
       <button type="button" :title="t('scenarioEditor.railClasses')" @click="collapsed = false">
         <i class="fas fa-users" aria-hidden="true"></i>
       </button>
+      <button v-if="$slots.library" type="button" :title="t('scenarioEditor.railLibrary')" data-testid="rail-strip-library" @click="collapsed = false; tab = 'library'">
+        <i class="fas fa-book-open" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div v-else-if="$slots.library && tab === 'library'" class="ocf-rail-body ocf-rail-library">
+      <TabStrip v-model="tab" :tabs="tabs" :aria-label="t('scenarioEditor.railLabel')" />
+      <div id="panel-library" role="tabpanel" aria-labelledby="tab-library" class="ocf-rail-library-panel">
+        <slot name="library" />
+      </div>
     </div>
 
     <div v-else class="ocf-rail-body">
+      <TabStrip v-if="$slots.library" v-model="tab" :tabs="tabs" :aria-label="t('scenarioEditor.railLabel')" />
       <section v-if="healthAvailable" class="ocf-rail-section" data-testid="rail-checks">
         <h3 class="ocf-rail-heading"><i class="fas fa-stethoscope" aria-hidden="true"></i> {{ t('scenarioEditor.railChecks') }}</h3>
         <p v-if="!findings.length" class="ocf-rail-finding is-ok">
@@ -84,6 +95,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import ScenarioClassesPanel from './ScenarioClassesPanel.vue'
+import TabStrip from '../Common/TabStrip.vue'
 import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 import { useScenarioHealthSentence, type ScenarioHealthFinding } from '../../composables/useScenarioHealthSentence'
 import type { OutlineStep } from '../../utils/scenarioOutline'
@@ -101,6 +113,14 @@ const emit = defineEmits<{ 'edit-settings': [] }>()
 
 const { t } = useScenarioEditorI18n()
 const { sentence } = useScenarioHealthSentence()
+
+// The step library is a second tab, offered (through its slot) only on a
+// scenario the user may edit.
+const tab = ref<'overview' | 'library'>('overview')
+const tabs = computed(() => [
+  { key: 'overview', label: t('scenarioEditor.railOverview') },
+  { key: 'library', label: t('scenarioEditor.railLibrary') }
+])
 
 // Folded by default on a screen too narrow for three columns.
 const collapsed = ref(typeof window !== 'undefined' && window.innerWidth < 1500)
@@ -207,6 +227,22 @@ const settingRows = computed(() => {
   flex-direction: column;
   gap: var(--spacing-lg);
   padding: var(--spacing-md);
+}
+
+.ocf-rail-library {
+  flex: 1;
+  min-height: 0;
+  gap: var(--spacing-sm);
+}
+
+.ocf-rail-library-panel {
+  flex: 1;
+  min-height: 0;
+}
+
+/* The tab strip sits beside the fold toggle. */
+.ocf-rail-body :deep(.tab-strip) {
+  margin-right: 2.25rem;
 }
 
 .ocf-rail-finding {

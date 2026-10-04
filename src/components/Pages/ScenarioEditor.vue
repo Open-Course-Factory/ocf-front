@@ -62,6 +62,7 @@
         @select="requestStep"
         @move="moveOutlineStep"
         @insert="insertDraft"
+        @insert-copies="(index, ids) => copyLibrarySteps(ids, index)"
         @edit-settings="openScenarioSettings"
       />
 
@@ -90,11 +91,12 @@
           @delete="requestDeleteStep"
         />
 
-        <!-- A colleague's lab: its content is shown, as the learner reads it. -->
+        <!-- A scenario the user only reads (a colleague's lab, a platform one):
+             its steps are shown as the learner reads them. -->
         <div v-else-if="editingStep" class="ocf-readonly-step" data-testid="readonly-step">
           <p class="ocf-readonly-banner">
             <i class="fas fa-lock" aria-hidden="true"></i>
-            <span>{{ t('scenarioEditor.readOnlyStepBanner') }}</span>
+            <span>{{ t(currentScenario.organization_id ? 'scenarioEditor.readOnlyStepBanner' : 'scenarioEditor.readOnlyPlatformBanner') }}</span>
             <button v-if="canCopyToOrg" type="button" class="ocf-btn-primary" data-testid="duplicate-into-org" @click="showDuplicateModal = true">
               <i class="fas fa-copy" aria-hidden="true"></i> {{ t('scenarioEditor.duplicateIntoMyOrg') }}
             </button>
@@ -135,7 +137,17 @@
         :can-manage="canEditScenario"
         :org-name="currentScenarioOrgName"
         @edit-settings="openScenarioSettings"
-      />
+      >
+        <template v-if="canEditScenario" #library>
+          <StepLibrary
+            :scenarios="allScenarios"
+            :current-scenario-id="currentScenario.id"
+            :insert-after="libraryInsertIndex"
+            :busy="isCopyingSteps"
+            @insert="ids => copyLibrarySteps(ids, libraryInsertIndex)"
+          />
+        </template>
+      </ScenarioRail>
     </div>
 
     <ScenarioEditModal
@@ -265,6 +277,7 @@ import {
   insertStep,
   moveStep,
   renumberSteps,
+  savedPosition,
   toOutlineSteps,
   type OutlineStep,
   type StepType
@@ -279,6 +292,7 @@ import ScenarioAiButtons from '../ScenarioEditor/ScenarioAiButtons.vue'
 import ScenarioDuplicateModal from '../ScenarioEditor/ScenarioDuplicateModal.vue'
 import ScenarioImportMenu from '../ScenarioEditor/ScenarioImportMenu.vue'
 import StepLearnerPreview from '../ScenarioEditor/StepLearnerPreview.vue'
+import StepLibrary from '../ScenarioEditor/StepLibrary.vue'
 import { useScenarioEditorAccess } from '../../composables/useScenarioEditorAccess'
 import BaseModal from '../Modals/BaseModal.vue'
 import { scenarioTranslationService, scenarioSessionService, scenarioStepService } from '../../services/domain/scenario'
@@ -488,7 +502,14 @@ async function openScenario(id: string | null, stepKey?: string | null) {
       editingLocale.value = scenario.default_locale || ''
     }
     await loadTranslationCoverage()
-    outline.value = toOutlineSteps(scenario.steps || scenario.scenario_steps || [])
+    let steps = scenario.steps || scenario.scenario_steps || []
+    // A scenario the user cannot edit comes without its steps; its outline
+    // (safe fields only) is what a reader may see. Refused — to a learner, say —
+    // the editor keeps the "steps appear once duplicated" fallback.
+    if (!steps.length && !scenario.can_manage) {
+      steps = await scenarioStepService.loadOutline(scenario.id).catch(() => [])
+    }
+    outline.value = toOutlineSteps(steps)
     const keep = outline.value.find(step => step.key === stepKey) || outline.value[0] || null
     await selectStepData(keep)
   } catch (err) {
@@ -522,7 +543,9 @@ async function selectStepData(step: OutlineStep | null) {
     editingStep.value = null
     return
   }
-  if (!step.id) {
+  // A draft, or a step of a scenario the user only reads: the list already
+  // holds everything shown (the read-only list carries no scripts to fetch).
+  if (!step.id || !canEditScenario.value) {
     editingStep.value = { ...step }
     return
   }
@@ -579,6 +602,38 @@ async function insertDraft(index: number, type: StepType) {
   const draft = draftStep(type)
   outline.value = insertStep(outline.value, draft, at)
   await selectStepData(draft)
+}
+
+// ---- Copying steps from the step library ----
+
+// The library inserts after the selected step, or at the end with none.
+const libraryInsertIndex = computed(() => (selectedIndex.value >= 0 ? selectedIndex.value + 1 : outline.value.length))
+const isCopyingSteps = ref(false)
+
+/**
+ * Copies library steps into this scenario at outline position `index`. The
+ * server copies them, scripts included — the browser never sees those — and
+ * places them; the editor then reloads and opens the first copy.
+ */
+async function copyLibrarySteps(stepIds: string[], index: number) {
+  if (!currentScenario.value || !stepIds.length) return
+  if (!(await unsavedGuard.confirmDiscard())) return
+  const position = savedPosition(outline.value, index)
+  dropUnsavedDraft()
+  isCopyingSteps.value = true
+  try {
+    const response = await axios.post(`/scenarios/${currentScenario.value.id}/steps/copy`, {
+      source_step_ids: stepIds,
+      position
+    })
+    const copies = response.data?.steps || response.data?.data || response.data
+    notification.showSuccess(t('scenarioEditor.libraryCopied', { count: String(stepIds.length) }))
+    await refreshAfterWrite(Array.isArray(copies) && copies[0]?.id ? copies[0].id : selectedKey.value)
+  } catch (err: any) {
+    notification.showError(err.response?.data?.error_message || t('scenarioEditor.libraryCopyError'))
+  } finally {
+    isCopyingSteps.value = false
+  }
 }
 
 // ---- Step save, duplicate, delete ----

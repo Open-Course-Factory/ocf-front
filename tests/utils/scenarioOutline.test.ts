@@ -12,7 +12,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 const patchMock = vi.fn()
 vi.mock('axios', () => ({ default: { patch: (...args: any[]) => patchMock(...args) } }))
 
-import { draftStep, insertStep, moveStep, renumberSteps, toOutlineSteps } from '../../src/utils/scenarioOutline'
+import { draftStep, insertStep, moveStep, renumberSteps, savedPosition, toOutlineSteps } from '../../src/utils/scenarioOutline'
 
 const steps = () => toOutlineSteps([
   { id: 'c', order: 2, title: 'Third', step_type: 'quiz' },
@@ -88,5 +88,14 @@ describe('renumberSteps', () => {
 
     expect(result).toEqual({ patched: 1, failedLabels: ['First'] })
     expect(list.map(s => s.order)).toEqual([0, 0, 2])
+  })
+})
+
+describe('savedPosition', () => {
+  it('counts only the saved steps before an outline index', () => {
+    const list = insertStep(steps(), draftStep('info'), 1) // a, draft, b, c
+    expect(savedPosition(list, 0)).toBe(0)
+    expect(savedPosition(list, 2)).toBe(1)
+    expect(savedPosition(list, 4)).toBe(3)
   })
 })

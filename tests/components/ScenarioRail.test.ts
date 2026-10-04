@@ -82,4 +82,18 @@ describe('ScenarioRail', () => {
     expect(text).toContain("The distribution's default size")
     expect(text).not.toMatch(/—/)
   })
+
+  it('offers the step library as a second tab only when given one', async () => {
+    expect(mountRail().find('#tab-library').exists()).toBe(false)
+
+    const wrapper = mount(ScenarioRail, {
+      props: { scenario, steps: [], findings: [], healthAvailable: true, canManage: true, orgName: null },
+      slots: { library: '<div data-testid="library-body">library</div>' },
+      global: { plugins: [createTestI18n()], stubs: { ScenarioClassesPanel: true } }
+    })
+    expect(wrapper.find('[data-testid="library-body"]').exists()).toBe(false)
+    await wrapper.get('#tab-library').trigger('click')
+    expect(wrapper.find('[data-testid="library-body"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="rail-settings"]').exists()).toBe(false)
+  })
 })

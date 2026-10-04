@@ -59,6 +59,17 @@ export const scenarioStepService = {
   },
 
   /**
+   * What each step of a scenario is, without how it is graded — no scripts,
+   * hints or answers (GET /scenarios/:id/step-outline). Offered to anyone who
+   * may author somewhere, for scenarios they can read but not edit: the
+   * read-only outline and the step library are built on it.
+   */
+  async loadOutline(scenarioId: string): Promise<any[]> {
+    const response = await axios.get(`/scenarios/${scenarioId}/step-outline`)
+    return Array.isArray(response.data) ? response.data : []
+  },
+
+  /**
    * Brings a step's quiz questions in line with `newQuestions`, matching by id:
    * a new question is POSTed, a kept one PATCHed, a removed one DELETEd. The
    * calls are independent and run together; any failure is thrown, naming

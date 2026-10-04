@@ -119,4 +119,25 @@ describe('ScenarioOutline', () => {
     expect(wrapper.text()).not.toContain('0 step')
     wrapper.unmount()
   })
+
+  it('copies steps dropped from the library at the place they land', async () => {
+    const wrapper = mountOutline()
+    const dataTransfer = { types: ['text/x-ocf-library-steps'], getData: () => JSON.stringify(['lib-1', 'lib-2']) }
+    const items = wrapper.findAll('.ocf-outline-item')
+    await items[1].trigger('dragover', { dataTransfer })
+    expect(items[1].classes()).toContain('is-drop-before')
+    await items[1].trigger('drop', { dataTransfer })
+    await wrapper.get('.ocf-outline-add').trigger('drop', { dataTransfer })
+    expect(wrapper.emitted('insert-copies')).toEqual([[1, ['lib-1', 'lib-2']], [3, ['lib-1', 'lib-2']]])
+    expect(wrapper.emitted('move')).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('takes no library drop on a scenario the user cannot edit', async () => {
+    const wrapper = mountOutline({ editable: false, canEditSettings: false })
+    const dataTransfer = { types: ['text/x-ocf-library-steps'], getData: () => '["lib-1"]' }
+    await wrapper.findAll('.ocf-outline-item')[0].trigger('drop', { dataTransfer })
+    expect(wrapper.emitted('insert-copies')).toBeUndefined()
+    wrapper.unmount()
+  })
 })
