@@ -25,3 +25,19 @@ export function previewRefusalKey(status: number | undefined, data: any, fromSte
   if (status === 409 && data?.reason === 'session_exists') return 'scenarioEditor.previewErrorSessionExists'
   return null
 }
+
+/**
+ * Why a "Test this check" run was refused, as a key under `verifyTester`, or
+ * 'noPreview' when the preview has to be (re)started first.
+ *
+ * 404 and 409 both mean the preview is no longer there to run on: gone, or
+ * no longer active (POST /scenario-sessions/:id/test-verify).
+ */
+export function testVerifyRefusalKey(status: number | undefined, axiosCode?: string): string {
+  if (status === 404 || status === 409) return 'noPreview'
+  if (status === 403) return 'errorForbidden'
+  if (status === 413) return 'errorTooLarge'
+  if (status === 429) return 'errorRateLimited'
+  if (axiosCode === 'ECONNABORTED') return 'errorTimeout'
+  return 'errorFailed'
+}

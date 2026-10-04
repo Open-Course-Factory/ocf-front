@@ -60,6 +60,14 @@ export interface RevealHintResponse {
   total: number
 }
 
+/** A candidate verify script run on a preview (POST /scenario-sessions/:id/test-verify). */
+export interface TestVerifyResponse {
+  passed: boolean
+  exit_code: number
+  output: string
+  duration_ms: number
+}
+
 export interface VerifyStepResponse {
   passed: boolean
   output?: string
@@ -169,6 +177,8 @@ export interface MyScenarioSession {
   // container is gone and a new one is built at the current step. Absent when
   // the run cannot be resumed.
   resume_mode?: 'live' | 'paused' | 'rebuild'
+  // An author's "Play as learner" run rather than a learner's.
+  is_preview?: boolean
 }
 
 // A card of GET /scenario-sessions/available. When the learner already has a
@@ -264,6 +274,12 @@ export const scenarioSessionService = {
 
   async verifyStep(sessionId: string): Promise<VerifyStepResponse> {
     const response = await axios.post(`/scenario-sessions/${sessionId}/verify`)
+    return response.data
+  },
+
+  /** Runs `script` in a preview's container; the session itself does not move. */
+  async testVerifyScript(sessionId: string, script: string): Promise<TestVerifyResponse> {
+    const response = await axios.post(`/scenario-sessions/${sessionId}/test-verify`, { script }, { timeout: 30000 })
     return response.data
   },
 

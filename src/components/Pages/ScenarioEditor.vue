@@ -95,11 +95,14 @@
           :default-locale-label="localeLabel(scenarioDefaultLocale)"
           :locales="scenarioLocales"
           :can-test-from-step="canPreviewScenario"
+          :scenario-id="selectedScenarioId || ''"
+          :started-check-preview-id="checkPreviewSessionId"
           @update:dirty="stepDirty = $event"
           @save="handleSaveStep"
           @save-translation="handleSaveStepTranslation"
           @update:locale="handleEditingLocaleChange"
           @test-from-step="openPreviewConfirm"
+          @start-check-preview="order => openPreviewConfirm(order, true)"
           @duplicate="duplicateSelectedStep"
           @delete="requestDeleteStep"
         />
@@ -253,6 +256,7 @@
       @confirm="handleConfirmPreview"
     >
       <p>{{ previewFromStepOrder === null ? t('scenarioEditor.previewConfirmBody') : t('scenarioEditor.previewFromStepConfirmBody') }}</p>
+      <p v-if="previewStaysInEditor">{{ t('scenarioEditor.previewForCheckBody') }}</p>
     </BaseModal>
   </div>
 </template>
@@ -1070,10 +1074,15 @@ const showPreviewConfirmModal = ref(false)
 const isPreviewLoading = ref(false)
 // The step a "Test from this step" preview starts at; null previews the whole scenario.
 const previewFromStepOrder = ref<number | null>(null)
+// A preview started for "Test this check" keeps the author in the editor,
+// where the unsaved script is: the step editor runs the check once it is up.
+const previewStaysInEditor = ref(false)
+const checkPreviewSessionId = ref<string | null>(null)
 
-const openPreviewConfirm = (fromStepOrder: number | null = null) => {
+const openPreviewConfirm = (fromStepOrder: number | null = null, staysInEditor = false) => {
   if (!canPreviewScenario.value) return
   previewFromStepOrder.value = fromStepOrder
+  previewStaysInEditor.value = staysInEditor
   showPreviewConfirmModal.value = true
 }
 
@@ -1081,6 +1090,7 @@ const closePreviewConfirm = () => {
   if (isPreviewLoading.value) return
   showPreviewConfirmModal.value = false
   previewFromStepOrder.value = null
+  previewStaysInEditor.value = false
 }
 
 const handleConfirmPreview = async () => {
@@ -1092,6 +1102,12 @@ const handleConfirmPreview = async () => {
       selectedScenarioId.value,
       previewOptions(orgId, previewFromStepOrder.value)
     )
+    if (previewStaysInEditor.value) {
+      checkPreviewSessionId.value = result.scenario_session_id
+      showPreviewConfirmModal.value = false
+      previewStaysInEditor.value = false
+      return
+    }
     // Same tab, same route the launcher uses: a noopener tab would not
     // inherit a sessionStorage JWT and would land on the login screen. The
     // session view's back link brings the trainer back to this scenario.

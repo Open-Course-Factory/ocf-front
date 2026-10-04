@@ -242,6 +242,14 @@
               rows="14"
               :placeholder="t('stepEdit.verifyScriptPlaceholder')"
             ></textarea>
+            <VerifyScriptTester
+              v-if="scenarioId"
+              :scenario-id="scenarioId"
+              :script="formData.verify_script || ''"
+              :started-preview-id="startedCheckPreviewId"
+              :disabled="readonly"
+              @start-preview="emit('start-check-preview', stepData?.id ? stepData.order : null)"
+            />
           </div>
         </div>
 
@@ -738,6 +746,7 @@ import { ref, watch, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import TabStrip from '../Common/TabStrip.vue'
 import DropdownMenu from '../Common/DropdownMenu.vue'
+import VerifyScriptTester from './VerifyScriptTester.vue'
 import TranslationPane from './TranslationPane.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { BANNER_EFFECTS } from '../../utils/scenarioAiPrompt'
@@ -1000,6 +1009,10 @@ interface Props {
   readonly?: boolean
   /** The Effects tab, behind the scenario_step_effects flag (the page reads it). */
   showEffects?: boolean
+  /** The scenario being edited: "Test this check" runs on its preview. */
+  scenarioId?: string
+  /** A preview the page started for "Test this check", without leaving the editor. */
+  startedCheckPreviewId?: string | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -1017,7 +1030,9 @@ const props = withDefaults(defineProps<Props>(), {
   canTestFromStep: false,
   isFirstStep: false,
   readonly: false,
-  showEffects: false
+  showEffects: false,
+  scenarioId: '',
+  startedCheckPreviewId: null
 })
 
 const emit = defineEmits<{
@@ -1028,6 +1043,7 @@ const emit = defineEmits<{
   (e: 'save-translation', data: any): void
   (e: 'update:locale', locale: string): void
   (e: 'test-from-step', order: number): void
+  (e: 'start-check-preview', fromStepOrder: number | null): void
 }>()
 
 /**
