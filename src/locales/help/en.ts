@@ -1328,13 +1328,13 @@ export const helpEn = {
         },
         layout: {
           title: "The editor at a glance",
-          description: "The page has three areas. Left, the Nodes library: drag a node type onto the canvas, or click it to add one at the centre. Centre, the canvas: nodes and the links between them. Right, a foldable list of every scenario and its steps, from which you can drag steps of other scenarios into yours as templates.",
-          header: "The top bar holds the scenario selector, Create New, the language selector when the scenario is multilingual, a node and link counter, Play as learner, Reset layout, Save changes and a ⋮ menu with the export, copy, archive and import actions.",
-          readOnly: "A scenario you may not edit (a platform scenario, or one from another organisation) opens read-only, with a banner. Copy to organization in the ⋮ menu makes an editable copy of it in one of yours."
+          description: "The page has three columns. Left, the outline: a card summing up the scenario (click it to open its settings), then the steps as a numbered list. Centre, the step you selected, edited in place: its title, its tabs, and beside the Markdown, what the learner will read. Right, the checks, the scenario's settings in plain words, and the classes it is assigned to; on a narrow screen this column folds into icons.",
+          header: "The top bar holds the scenario selector (your scenarios first, then the platform's), Create a scenario, the organisation, whether the scenario is ready to play, whether the open step is saved, Import, Export, Create with AI, Improve with AI, a ⋯ menu with copy, archive and delete, and Play as learner.",
+          readOnly: "A scenario you may not edit (a platform scenario, or one from another organisation) opens read-only: its card and settings show, its steps do not. Duplicate into my organization makes an editable copy in an organisation or class of yours, and opens it."
         },
         scenario: {
           title: "Create a scenario",
-          description: "Click Create New. The scenario dialog has tabs:",
+          description: "Click Create a scenario. The scenario dialog has tabs:",
           general: "General — name, title, difficulty, estimated time, description, and Where to create: an organisation, one of your classes (the scenario is then assigned to that class automatically), or the platform for administrators.",
           content: "Content — Markdown texts: the introduction shown before the first step (the briefing), the completion text, the objectives and the prerequisites.",
           setup: "Setup — the global setup script, run once when the learner's terminal is created, before step 1. Use it to install packages and lay out files.",
@@ -1344,19 +1344,19 @@ export const helpEn = {
         },
         steps: {
           title: "Add steps",
-          description: "Drag a step type from the library onto the canvas, or hover a link and click its + to insert a step between two others. Four types exist; the type decides which tabs the step dialog shows.",
-          terminal: "Terminal — the learner works in the machine and clicks Verify. Tabs: Content, Hints, Verify, Background, Foreground, Effects.",
-          info: "Info — text to read, nothing to do. Tabs: Content, Effects.",
-          flag: "Flag — the learner submits an answer. Tabs: Content, Hints, Background, Effects, plus the flag path and level.",
-          quiz: "Quiz — questions. Tabs: Content, Hints, Questions, Effects."
+          description: "Click Add a step under the list and pick a type, or hover between two steps and click the + to insert one there. The new step opens in the centre; it is written when you save it. Four types exist; the type decides which tabs the step shows.",
+          terminal: "Terminal — the learner works in the machine and clicks Verify. Tabs: Instructions, Hints, Verification, Setup, Demonstration, Effects.",
+          info: "Info — text to read, nothing to do. Tabs: Instructions, Effects.",
+          flag: "Flag — the learner submits an answer. Tabs: Instructions, Hints, Setup, Effects, plus the flag path and level.",
+          quiz: "Quiz — questions. Tabs: Instructions, Hints, Questions, Effects."
         },
         stepDialog: {
           title: "Fill in a step",
-          content: "Content — the title and the instructions, in Markdown. A command tagged with the KillerCoda exec marker — the command in backticks, immediately followed by the word exec in double braces — becomes click-to-paste in the player.",
+          content: "Instructions — the instructions, in Markdown, with what the learner will see rendered beside them; the title is edited at the top of the step. A command tagged with the KillerCoda exec marker — the command in backticks, immediately followed by the word exec in double braces — becomes click-to-paste in the player.",
           hints: "Hints — the progressive hints, revealed level by level. Separate levels with ### Hint 1, ### Hint 2 headings (or ### Indice 1 in French); a hint text with no heading is a single level.",
           verify: "Verify — a shell script run in the container when the learner clicks Verify. Exit code 0 validates the step; anything else keeps the learner on it. Print what you check: the output helps them.",
-          background: "Background — a script run in the container when the learner reaches the step, in the background: start a service, plant a file, break something on purpose. It runs again if the learner's machine is rebuilt: see Setup scripts that survive a rebuild, below.",
-          foreground: "Foreground — commands typed into the learner's live shell when they reach the step, as if they had typed them. Keep it short; they see it happen.",
+          background: "Setup — a script run in the container when the learner reaches the step, in the background: start a service, plant a file, break something on purpose. It runs again if the learner's machine is rebuilt: see Setup scripts that survive a rebuild, below.",
+          foreground: "Demonstration — commands typed into the learner's live shell when they reach the step, as if they had typed them. Keep it short; they see it happen.",
           flag: "Flag steps — tick Has flag and give a Flag path: when the learner reaches the step, a FLAG token unique to their session, is written to that file in the container, and the step is validated when they submit it. Flag level is a free number kept with the step.",
           questions: "Questions — for a quiz: add questions, pick a type (multiple choice, multi-answer, true/false, free text), mark the correct options, optionally give points and an explanation. Show feedback after submission switches the quiz from exam mode (score only) to learning mode (answers and explanations shown).",
           effects: "Effects — an intro effect drawn in the terminal when the learner arrives on the step, and an outro effect once they validate it, each with a short text. Purely visual."
@@ -1383,8 +1383,8 @@ export const helpEn = {
         },
         chaining: {
           title: "Chain the steps and save",
-          description: "Steps run in one direction, from the scenario node to the last step. Draw a link from a step's output to the next step's input; a step can lead to only one next step and the chain cannot loop. Steps left unconnected are appended at the end when you save, with a warning naming them. Save changes writes the order; Reset layout only rearranges the canvas.",
-          reorder: "To move a step, delete its links and draw new ones, or drop it on a link: the editor rewires the chain around it."
+          description: "Steps run in the order of the list. Drag a step to another place, or use the arrows that appear on hover (Alt+Up and Alt+Down from the keyboard): the new order is saved at once. A step's own changes are saved with its Save button; the top bar says when something is not saved, and the editor asks before you leave a step with unsaved changes.",
+          reorder: "Duplicate and Delete are in the step's ⋯ menu. Deleting a step closes the gap: the steps after it move up."
         },
         preview: {
           title: "Play it as a learner",

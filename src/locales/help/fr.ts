@@ -1328,13 +1328,13 @@ export const helpFr = {
         },
         layout: {
           title: "L'éditeur en un coup d'œil",
-          description: "La page a trois zones. À gauche, la bibliothèque de nœuds : glissez un type de nœud sur le canevas, ou cliquez dessus pour l'ajouter au centre. Au centre, le canevas : les nœuds et les liens entre eux. À droite, une liste repliable de tous les scénarios et de leurs étapes, depuis laquelle vous pouvez glisser des étapes d'autres scénarios dans le vôtre comme modèles.",
-          header: "La barre du haut contient le sélecteur de scénario, Créer Nouveau, le sélecteur de langue quand le scénario est multilingue, un compteur de nœuds et de liens, Jouer comme apprenant, Réinitialiser, Enregistrer et un menu ⋮ avec les actions d'export, de copie, d'archivage et d'import.",
-          readOnly: "Un scénario que vous ne pouvez pas modifier (un scénario de la plateforme, ou celui d'une autre organisation) s'ouvre en lecture seule, avec un bandeau. Copier vers une organisation, dans le menu ⋮, en crée une copie modifiable dans l'une des vôtres."
+          description: "La page a trois colonnes. À gauche, le plan : une carte qui résume le scénario (cliquez-la pour ouvrir ses réglages), puis les étapes en liste numérotée. Au centre, l'étape choisie, modifiée sur place : son titre, ses onglets, et à côté du Markdown, ce que lira l'apprenant. À droite, les contrôles, les réglages du scénario en clair et les classes auxquelles il est assigné ; sur un écran étroit, cette colonne se replie en icônes.",
+          header: "La barre du haut contient le sélecteur de scénario (vos scénarios d'abord, puis ceux de la plateforme), Créer un scénario, l'organisation, si le scénario est prêt à jouer, si l'étape ouverte est enregistrée, Importer, Exporter, Créer avec l'IA, Améliorer avec l'IA, un menu ⋯ avec copie, archivage et suppression, et Jouer comme apprenant.",
+          readOnly: "Un scénario que vous ne pouvez pas modifier (un scénario de la plateforme, ou celui d'une autre organisation) s'ouvre en lecture seule : sa carte et ses réglages s'affichent, pas ses étapes. Dupliquer dans mon organisation en crée une copie modifiable dans une de vos organisations ou classes, et l'ouvre."
         },
         scenario: {
           title: "Créer un scénario",
-          description: "Cliquez sur Créer Nouveau. La fenêtre du scénario a des onglets :",
+          description: "Cliquez sur Créer un scénario. La fenêtre du scénario a des onglets :",
           general: "Général — nom, titre, difficulté, durée estimée, description, et Emplacement de création : une organisation, une de vos classes (le scénario lui est alors attribué automatiquement), ou la plateforme pour les administrateurs.",
           content: "Contenu — des textes en Markdown : l'introduction affichée avant la première étape (le briefing), le texte de fin, les objectifs et les prérequis.",
           setup: "Installation — le script d'installation global, exécuté une fois à la création du terminal de l'apprenant, avant l'étape 1. Servez-vous-en pour installer des paquets et disposer des fichiers.",
@@ -1344,19 +1344,19 @@ export const helpFr = {
         },
         steps: {
           title: "Ajouter des étapes",
-          description: "Glissez un type d'étape depuis la bibliothèque sur le canevas, ou survolez un lien et cliquez sur son + pour insérer une étape entre deux autres. Il existe quatre types ; le type décide des onglets que la fenêtre d'étape affiche.",
-          terminal: "Terminal — l'apprenant travaille dans la machine et clique sur Vérifier. Onglets : Contenu, Indices, Vérification, Arrière-plan, Premier plan, Effets.",
-          info: "Info — du texte à lire, rien à faire. Onglets : Contenu, Effets.",
-          flag: "Flag — l'apprenant soumet une réponse. Onglets : Contenu, Indices, Arrière-plan, Effets, plus le chemin et le niveau du flag.",
-          quiz: "Quiz — des questions. Onglets : Contenu, Indices, Questions, Effets."
+          description: "Cliquez sur Ajouter une étape sous la liste et choisissez un type, ou survolez l'espace entre deux étapes et cliquez sur le + pour en insérer une. La nouvelle étape s'ouvre au centre ; elle est écrite quand vous l'enregistrez. Il existe quatre types ; le type décide des onglets que l'étape affiche.",
+          terminal: "Terminal — l'apprenant travaille dans la machine et clique sur Vérifier. Onglets : Consigne, Indices, Vérification, Préparation, Démonstration, Effets.",
+          info: "Info — du texte à lire, rien à faire. Onglets : Consigne, Effets.",
+          flag: "Flag — l'apprenant soumet une réponse. Onglets : Consigne, Indices, Préparation, Effets, plus le chemin et le niveau du flag.",
+          quiz: "Quiz — des questions. Onglets : Consigne, Indices, Questions, Effets."
         },
         stepDialog: {
           title: "Remplir une étape",
-          content: "Contenu — le titre et les consignes, en Markdown. Une commande marquée avec le marqueur exec de KillerCoda — la commande entre accents graves, immédiatement suivie du mot exec entre doubles accolades — devient cliquable dans le lecteur.",
+          content: "Consigne — les consignes, en Markdown, avec à côté leur rendu tel que l'apprenant le verra ; le titre se modifie en haut de l'étape. Une commande marquée avec le marqueur exec de KillerCoda — la commande entre accents graves, immédiatement suivie du mot exec entre doubles accolades — devient cliquable dans le lecteur.",
           hints: "Indices — les indices progressifs, révélés niveau par niveau. Séparez les niveaux par des titres ### Indice 1, ### Indice 2 (ou ### Hint 1 en anglais) ; un texte d'indice sans titre est un niveau unique.",
           verify: "Vérification — un script shell exécuté dans le conteneur quand l'apprenant clique sur Vérifier. Le code de sortie 0 valide l'étape ; tout autre code le laisse dessus. Affichez ce que vous vérifiez : la sortie l'aide.",
-          background: "Arrière-plan — un script exécuté dans le conteneur quand l'apprenant arrive sur l'étape, en arrière-plan : démarrer un service, déposer un fichier, casser quelque chose exprès. Il est relancé si la machine de l'apprenant est reconstruite : voir Des scripts de préparation qui résistent à une reconstruction, plus bas.",
-          foreground: "Premier plan — des commandes tapées dans le shell de l'apprenant quand il arrive sur l'étape, comme s'il les avait tapées. Restez court : il les voit défiler.",
+          background: "Préparation — un script exécuté dans le conteneur quand l'apprenant arrive sur l'étape, en arrière-plan : démarrer un service, déposer un fichier, casser quelque chose exprès. Il est relancé si la machine de l'apprenant est reconstruite : voir Des scripts de préparation qui résistent à une reconstruction, plus bas.",
+          foreground: "Démonstration — des commandes tapées dans le shell de l'apprenant quand il arrive sur l'étape, comme s'il les avait tapées. Restez court : il les voit défiler.",
           flag: "Étapes Flag — cochez A un drapeau et donnez un Chemin du drapeau : quand l'apprenant arrive sur l'étape, un jeton FLAG unique à sa session est écrit dans ce fichier du conteneur, et l'étape est validée quand il le soumet. Le niveau du drapeau est un nombre libre conservé avec l'étape.",
           questions: "Questions — pour un quiz : ajoutez des questions, choisissez un type (choix multiple, réponses multiples, vrai/faux, texte libre), marquez les bonnes options, donnez éventuellement des points et une explication. Afficher le retour après envoi fait passer le quiz du mode examen (score seul) au mode apprentissage (réponses et explications affichées).",
           effects: "Effets — un effet d'intro dessiné dans le terminal quand l'apprenant arrive sur l'étape, et un effet de sortie une fois qu'il la valide, chacun avec un court texte. Purement visuel."
@@ -1383,8 +1383,8 @@ export const helpFr = {
         },
         chaining: {
           title: "Enchaîner les étapes et enregistrer",
-          description: "Les étapes se déroulent dans un seul sens, du nœud scénario à la dernière étape. Tracez un lien de la sortie d'une étape vers l'entrée de la suivante ; une étape ne peut mener qu'à une seule suivante et la chaîne ne peut pas boucler. Les étapes laissées sans lien sont ajoutées à la fin à l'enregistrement, avec un avertissement qui les nomme. Enregistrer écrit l'ordre ; Réinitialiser ne fait que réarranger le canevas.",
-          reorder: "Pour déplacer une étape, supprimez ses liens et tracez-en de nouveaux, ou déposez-la sur un lien : l'éditeur recâble la chaîne autour d'elle."
+          description: "Les étapes se jouent dans l'ordre de la liste. Glissez une étape ailleurs, ou utilisez les flèches qui apparaissent au survol (Alt+Haut et Alt+Bas au clavier) : le nouvel ordre est enregistré aussitôt. Les modifications d'une étape s'enregistrent avec son bouton Enregistrer ; la barre du haut signale ce qui n'est pas enregistré, et l'éditeur demande avant de quitter une étape modifiée.",
+          reorder: "Dupliquer et Supprimer sont dans le menu ⋯ de l'étape. Supprimer une étape referme le trou : les suivantes remontent."
         },
         preview: {
           title: "Le jouer comme apprenant",
