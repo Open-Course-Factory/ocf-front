@@ -26,6 +26,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
+import { useScenarioEditorAccess } from '../../composables/useScenarioEditorAccess'
 import { teacherService } from '../../services/domain/scenario'
 import { useScenariosStore } from '../../stores/scenarios'
 import BaseModal from '../Modals/BaseModal.vue'
@@ -43,12 +44,18 @@ interface OrgScenario {
   estimated_time_minutes?: number
   created_at?: string
   archived_at?: string | null
+  created_by_id?: string
 }
 
+// Only mounted for org teachers and up (OrganizationDetail), who all import and
+// export; archive and delete are narrower, per scenario.
 const props = defineProps<{
   organizationId: string
-  canManage: boolean
 }>()
+
+const { canRetireScenario } = useScenarioEditorAccess()
+const canRetire = (scenario: OrgScenario) =>
+  canRetireScenario({ created_by_id: scenario.created_by_id, organization_id: props.organizationId })
 
 const { isAdmin } = useAdminViewMode()
 
@@ -303,7 +310,7 @@ onMounted(() => {
   <div class="scenarios-tab">
     <div class="tab-header">
       <h3>{{ t('orgScenarios.title') }}</h3>
-      <div v-if="canManage" class="tab-header-actions">
+      <div class="tab-header-actions">
         <button @click="showUploadModal = true" class="btn btn-sm btn-primary">
           <i class="fas fa-file-import"></i>
           {{ t('orgScenarios.importKillercoda') }}
@@ -388,7 +395,7 @@ onMounted(() => {
             </span>
           </div>
         </div>
-        <div v-if="canManage" class="scenario-actions">
+        <div class="scenario-actions">
           <button
             @click="handleExportJSON(scenario)"
             class="btn btn-sm btn-outline"
@@ -406,7 +413,7 @@ onMounted(() => {
             {{ t('orgScenarios.exportKillercoda') }}
           </button>
           <button
-            v-if="!scenario.archived_at"
+            v-if="canRetire(scenario) && !scenario.archived_at"
             @click="handleArchive(scenario)"
             class="btn btn-sm btn-outline"
             :title="t('orgScenarios.archive')"
@@ -415,7 +422,7 @@ onMounted(() => {
             {{ t('orgScenarios.archive') }}
           </button>
           <button
-            v-else
+            v-else-if="canRetire(scenario)"
             @click="handleUnarchive(scenario)"
             class="btn btn-sm btn-outline"
             :title="t('orgScenarios.unarchive')"
@@ -424,6 +431,7 @@ onMounted(() => {
             {{ t('orgScenarios.unarchive') }}
           </button>
           <button
+            v-if="canRetire(scenario)"
             @click="handleDelete(scenario)"
             class="btn btn-sm btn-danger"
           >

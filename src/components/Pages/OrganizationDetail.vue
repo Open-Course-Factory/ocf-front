@@ -104,7 +104,7 @@
           >
             <i :class="tab.icon"></i>
             {{ t(tab.labelKey) }}
-            <AdminBadge v-if="tab.managerOnly && isAdminGranted" icon-only />
+            <AdminBadge v-if="(tab.managerOnly || tab.authorOnly) && isAdminGranted" icon-only />
           </button>
         </div>
 
@@ -134,11 +134,8 @@
           </div>
 
           <!-- Scenarios Tab -->
-          <div v-if="activeTab === 'scenarios' && canManage" class="tab-panel" v-bind="panelProps('scenarios')">
-            <OrganizationScenariosTab
-              :organization-id="organizationId"
-              :can-manage="canManage"
-            />
+          <div v-if="activeTab === 'scenarios' && canAuthorScenarios" class="tab-panel" v-bind="panelProps('scenarios')">
+            <OrganizationScenariosTab :organization-id="organizationId" />
           </div>
 
           <!-- Student Sessions Tab -->
@@ -199,6 +196,7 @@ import OrganizationStudentSessionsTab from '../Organizations/OrganizationStudent
 import AdminBadge from '../Common/AdminBadge.vue'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { usePermissionsStore } from '../../stores/permissions'
+import { useUserMembershipsStore } from '../../stores/userMemberships'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useTranslations } from '../../composables/useTranslations'
 import { useTabList } from '../../composables/useTabList'
@@ -208,6 +206,7 @@ const route = useRoute()
 const router = useRouter()
 const organizationsStore = useOrganizationsStore()
 const permissionsStore = usePermissionsStore()
+const membershipsStore = useUserMembershipsStore()
 const { isAdmin } = useAdminViewMode()
 
 const isInitialLoading = ref(true) // Initial page load
@@ -272,6 +271,9 @@ const { t } = useTranslations({
 
 const organizationId = computed(() => route.params.id as string)
 const canManage = computed(() => permissionsStore.canManageOrganization(organizationId.value))
+// Teachers author the org's scenarios without administering the org (ocf-core
+// opens scenario authoring at teacher).
+const canAuthorScenarios = computed(() => canManage.value || membershipsStore.canAuthorInOrg(organizationId.value))
 const isOwner = computed(() => permissionsStore.isOrganizationOwner(organizationId.value))
 const canDelete = computed(() => permissionsStore.canDeleteOrganization(organizationId.value))
 const isAdminGranted = computed(() => isAdmin.value && !isOwner.value)
@@ -283,21 +285,22 @@ const isAdminGranted = computed(() => isAdmin.value && !isOwner.value)
 // locks. False until the backend has answered: absent is not yes.
 const canRunClassroomsHere = ref(false)
 
-// The bar in DOM order. `managerOnly` both gates the tab and drives the admin
-// badge, so the two can never disagree about which tabs are privileged;
-// `needsClassrooms` gates on the verdict above the same way.
-const allTabs: { id: OrganizationTab; icon: string; labelKey: string; managerOnly: boolean; needsClassrooms?: boolean }[] = [
+// The bar in DOM order. `managerOnly` (and `authorOnly`, teacher up) both gates
+// the tab and drives the admin badge, so the two can never disagree about which
+// tabs are privileged; `needsClassrooms` gates on the verdict above the same way.
+const allTabs: { id: OrganizationTab; icon: string; labelKey: string; managerOnly: boolean; authorOnly?: boolean; needsClassrooms?: boolean }[] = [
   { id: 'overview', icon: 'fas fa-info-circle', labelKey: 'organizations.overview', managerOnly: false },
   { id: 'members', icon: 'fas fa-users', labelKey: 'organizations.members', managerOnly: false },
   { id: 'groups', icon: 'fas fa-layer-group', labelKey: 'organizations.groups', managerOnly: false, needsClassrooms: true },
-  { id: 'scenarios', icon: 'fas fa-flask', labelKey: 'organizations.scenarios', managerOnly: true },
+  { id: 'scenarios', icon: 'fas fa-flask', labelKey: 'organizations.scenarios', managerOnly: false, authorOnly: true },
   { id: 'student-sessions', icon: 'fas fa-desktop', labelKey: 'organizations.studentSessions', managerOnly: true },
   { id: 'subscription', icon: 'fas fa-credit-card', labelKey: 'organizations.subscription', managerOnly: false },
   { id: 'settings', icon: 'fas fa-cog', labelKey: 'organizations.settings', managerOnly: true }
 ]
 
 const visibleTabs = computed(() => allTabs.filter(tab =>
-  (!tab.managerOnly || canManage.value) && (!tab.needsClassrooms || canRunClassroomsHere.value)
+  (!tab.managerOnly || canManage.value) && (!tab.authorOnly || canAuthorScenarios.value) &&
+  (!tab.needsClassrooms || canRunClassroomsHere.value)
 ))
 
 // A URL may name a tab this user does not get (a bookmark, a link from a

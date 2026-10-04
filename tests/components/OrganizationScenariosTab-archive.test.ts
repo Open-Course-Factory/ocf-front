@@ -38,6 +38,15 @@ vi.mock('../../src/composables/useAdminViewMode', () => ({
   useAdminViewMode: () => ({ isAdmin: { value: false } })
 }))
 
+// The retire rule itself is pinned in useScenarioEditorAccess.test.ts; here it
+// only decides which scenarios the tab offers archive / delete on.
+const canRetireScenarioMock = vi.fn()
+vi.mock('../../src/composables/useScenarioEditorAccess', () => ({
+  useScenarioEditorAccess: () => ({
+    canRetireScenario: (...args: unknown[]) => canRetireScenarioMock(...args)
+  })
+}))
+
 import OrganizationScenariosTab from '../../src/components/Organizations/OrganizationScenariosTab.vue'
 
 const activeScenario = {
@@ -69,7 +78,7 @@ function createTestI18n() {
 
 async function mountTab(): Promise<VueWrapper> {
   const wrapper = mount(OrganizationScenariosTab, {
-    props: { organizationId: 'org-1', canManage: true },
+    props: { organizationId: 'org-1' },
     global: { plugins: [createTestI18n()] }
   })
   await flushPromises()
@@ -84,6 +93,7 @@ describe('OrganizationScenariosTab — archived scenarios', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     orgListScenariosMock.mockResolvedValue([activeScenario, archivedScenario])
+    canRetireScenarioMock.mockReturnValue(true)
   })
 
   it('hides archived scenarios until the toggle is ticked', async () => {
@@ -144,5 +154,39 @@ describe('OrganizationScenariosTab — archived scenarios', () => {
     await flushPromises()
 
     expect(unarchiveScenarioMock).toHaveBeenCalledWith('/scenarios', 'sc-archived')
+  })
+})
+
+describe('OrganizationScenariosTab — a teacher retires only their own scenarios', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    orgListScenariosMock.mockResolvedValue([
+      { ...activeScenario, created_by_id: 'teacher-1' },
+      { ...activeScenario, id: 'sc-colleague', title: 'Colleague Lab', created_by_id: 'colleague' }
+    ])
+    canRetireScenarioMock.mockImplementation((s: { created_by_id?: string }) => s.created_by_id === 'teacher-1')
+  })
+
+  const actionsOf = (wrapper: VueWrapper, title: string) =>
+    wrapper.findAll('.scenario-card').find(c => c.text().includes(title))!.find('.scenario-actions')
+
+  it('offers export on every scenario but archive and delete only on their own', async () => {
+    const wrapper = await mountTab()
+
+    const own = actionsOf(wrapper, 'Docker Basics')
+    expect(own.find('.fa-box-archive').exists()).toBe(true)
+    expect(own.find('.fa-trash').exists()).toBe(true)
+
+    const colleague = actionsOf(wrapper, 'Colleague Lab')
+    expect(colleague.find('.fa-file-download').exists(), 'export stays').toBe(true)
+    expect(colleague.find('.fa-box-archive').exists()).toBe(false)
+    expect(colleague.find('.fa-trash').exists()).toBe(false)
+
+    expect(canRetireScenarioMock).toHaveBeenCalledWith({ created_by_id: 'colleague', organization_id: 'org-1' })
+  })
+
+  it('keeps the import buttons for a teacher', async () => {
+    const wrapper = await mountTab()
+    expect(wrapper.find('.tab-header-actions .fa-file-import').exists()).toBe(true)
   })
 })

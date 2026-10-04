@@ -20,6 +20,7 @@ const canManageOrganization = vi.fn()
 const isOrganizationOwner = vi.fn()
 const canDeleteOrganization = vi.fn()
 const classroomVerdictFor = vi.fn()
+const canAuthorInOrg = vi.fn(() => false)
 
 vi.mock('../../src/stores/organizations', () => ({
   useOrganizationsStore: () => ({
@@ -35,6 +36,12 @@ vi.mock('../../src/stores/permissions', () => ({
     isOrganizationOwner: (id: string) => isOrganizationOwner(id),
     canDeleteOrganization: (id: string) => canDeleteOrganization(id),
     classroomVerdictFor: (id: string) => classroomVerdictFor(id)
+  })
+}))
+
+vi.mock('../../src/stores/userMemberships', () => ({
+  useUserMembershipsStore: () => ({
+    canAuthorInOrg: (id: string) => canAuthorInOrg(id)
   })
 }))
 
@@ -138,6 +145,7 @@ describe('OrganizationDetail tab bar — WAI-ARIA tabs pattern', () => {
     // A manager of a team organization whose plan grants classrooms: the
     // Groups tab is in the bar for these tests to traverse.
     classroomVerdictFor.mockResolvedValue(true)
+    canAuthorInOrg.mockReturnValue(false)
     vi.clearAllMocks()
     loadOrganization.mockResolvedValue(organizationPayload())
     canManageOrganization.mockReturnValue(true)
@@ -212,6 +220,18 @@ describe('OrganizationDetail tab bar — WAI-ARIA tabs pattern', () => {
     ;(all[all.length - 1].element as HTMLElement).focus()
     await all[all.length - 1].trigger('keydown', { key: 'ArrowRight' })
     expect(focusedKey(wrapper)).toBe('overview')
+  })
+
+  // A teacher authors the org's scenarios without administering the org.
+  it('gives an org teacher the Scenarios tab and no other manager-only tab', async () => {
+    canManageOrganization.mockReturnValue(false)
+    isOrganizationOwner.mockReturnValue(false)
+    canDeleteOrganization.mockReturnValue(false)
+    canAuthorInOrg.mockImplementation((id: string) => id === 'org-1')
+
+    wrapper = await mountOrganizationDetail()
+
+    expect(tabKeys(wrapper)).toEqual(['overview', 'members', 'groups', 'scenarios', 'subscription'])
   })
 })
 
