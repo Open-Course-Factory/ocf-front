@@ -200,7 +200,7 @@ import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 import { useScenarioCreateScopes } from '../../composables/useScenarioCreateScopes'
 import { useScenarioAiTranslations } from '../../composables/useScenarioAiTranslations'
 import { teacherService } from '../../services/domain/scenario'
-import { terminalService } from '../../services/domain/terminal/terminalService'
+import { useScenarioAiCatalog } from '../../composables/useScenarioAiCatalog'
 import { scenarioImportProblems } from '../../utils/scenarioImportProblems'
 import {
   SCENARIO_AI_STEP_TYPES,
@@ -209,8 +209,7 @@ import {
   buildFixPrompt,
   extractJsonObject,
   summarizeScenarioChanges,
-  type ScenarioAiBrief,
-  type ScenarioAiCatalog
+  type ScenarioAiBrief
 } from '../../utils/scenarioAiPrompt'
 
 const props = defineProps<{
@@ -229,6 +228,7 @@ useScenarioEditorI18n()
 const { t } = useScenarioAiTranslations()
 const { locale } = useI18n()
 const { parseScopeKey, pickDefaultScopeKey, scopeKeyForScenario, loadScopeSources } = useScenarioCreateScopes()
+const { loadCatalog } = useScenarioAiCatalog()
 
 const step = ref(1)
 const busy = ref(false)
@@ -242,7 +242,6 @@ const keepOriginalTitle = ref(true)
 const problems = ref<string[]>([])
 const errorMessage = ref('')
 const copied = ref<'' | 'prompt' | 'fix'>('')
-let catalog: Promise<ScenarioAiCatalog | null> | null = null
 
 const canWritePrompt = computed(() =>
   props.mode === 'create'
@@ -292,21 +291,6 @@ function reset() {
   problems.value = []
   errorMessage.value = ''
   copied.value = ''
-}
-
-// The catalog only makes the prompt more precise: without it the prompt says
-// to fall back to Debian and size S, so a failure is never the teacher's problem.
-function loadCatalog(): Promise<ScenarioAiCatalog | null> {
-  catalog ??= Promise.all([terminalService.getDistributions(), terminalService.getSizes()])
-    .then(([distributions, sizes]) => ({
-      distributions,
-      sizes: [...sizes].sort((a, b) => a.sort_order - b.sort_order)
-    }))
-    .catch(() => {
-      catalog = null
-      return null
-    })
-  return catalog
 }
 
 async function writePrompt() {

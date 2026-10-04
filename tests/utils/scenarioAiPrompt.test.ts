@@ -121,11 +121,25 @@ describe('buildCreatePrompt', () => {
   it('lists the platform\'s distributions and sizes when it has them', () => {
     const prompt = buildCreatePrompt(brief, {
       distributions: [{ name: 'debian-12', os_type: 'deb', supported_features: ['network', 'docker'] }],
-      sizes: [{ key: 'S', name: 'Small', memory: '1GB' }, { key: 'M', name: 'Medium', memory: '2GB' }]
+      sizes: [{ key: 'S', name: 'Small', memory: '1GB' }, { key: 'M', name: 'Medium', memory: '2GB' }],
+      features: [
+        { key: 'network', name: 'Network Access', description: 'Provides outbound internet access' },
+        { key: 'docker', name: 'Docker', min_size_key: 'M' },
+        { key: 'effects', name: 'Terminal Effects', always_available: true }
+      ]
     })
     expect(prompt).toContain('- "debian-12" (os_type "deb"; features: network, docker)')
     expect(prompt).toContain('- "M" Medium (2GB RAM)')
+    expect(prompt).toContain('- "network" Network Access — Provides outbound internet access')
+    expect(prompt).toContain('- "docker" Docker (minimum size "M")')
+    expect(prompt).toContain('- "effects" Terminal Effects (works on every distribution)')
     expect(prompt).not.toContain('list is not available')
+  })
+
+  it('falls back to the network feature alone when the feature list could not be read', () => {
+    const prompt = buildCreatePrompt(brief, { distributions: [{ name: 'debian-12' }], sizes: [{ key: 'S' }], features: [] })
+    expect(prompt).toContain('The feature list is not available: the only feature to rely on is "network".')
+    expect(prompt).not.toContain('The size list is not available')
   })
 
   it('falls back to Debian and size S when the catalog could not be read', () => {

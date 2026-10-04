@@ -28,10 +28,15 @@ export const SCENARIO_AI_STEP_TYPES: ScenarioAiStepType[] = ['terminal', 'flag',
 // side.
 export const BANNER_EFFECTS = ['decrypt', 'slide', 'unstable', 'fireworks', 'burn', 'rings', 'beams', 'matrix', 'rain'] as const
 
-/** What the platform can run, as GET /terminals/distributions and /terminals/sizes report it. */
+/**
+ * What the platform can run, as GET /terminals/distributions, /terminals/sizes
+ * and /terminals/catalog-features report it. An empty list means it could not
+ * be read, and the prompt falls back to safe defaults for that part.
+ */
 export interface ScenarioAiCatalog {
   distributions: Array<{ name: string; description?: string; os_type?: string; min_size_key?: string; supported_features?: string[] }>
   sizes: Array<{ key: string; name?: string; memory?: string; disk?: string }>
+  features?: Array<{ key: string; name?: string; description?: string; min_size_key?: string; always_available?: boolean }>
 }
 
 export interface ScenarioAiBrief {
@@ -217,6 +222,19 @@ function catalogSection(catalog?: ScenarioAiCatalog | null): string {
     }
   } else {
     lines.push('The size list is not available: use instance_type "S", or "M" for anything that runs Docker.')
+  }
+  if (catalog?.features?.length) {
+    lines.push('Features (use these exact keys in required_features and build_features; a feature with a minimum size needs instance_type at least that size, and a distribution offers only the features listed for it unless the feature works everywhere):')
+    for (const f of catalog.features) {
+      const extras = [
+        f.min_size_key && `minimum size "${f.min_size_key}"`,
+        f.always_available && 'works on every distribution'
+      ].filter(Boolean).join('; ')
+      const about = [f.name, f.description].filter(Boolean).join(' — ')
+      lines.push(`- "${f.key}"${about ? ` ${about}` : ''}${extras ? ` (${extras})` : ''}`)
+    }
+  } else {
+    lines.push('The feature list is not available: the only feature to rely on is "network".')
   }
   return lines.join('\n')
 }

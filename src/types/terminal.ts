@@ -69,6 +69,20 @@ export interface Distribution {
 }
 
 /**
+ * Feature catalog entry returned by GET /terminals/catalog-features (ocf-core
+ * dto.TTFeature, from tt-backend's feature table).
+ */
+export interface CatalogFeature {
+  key: string
+  name: string
+  description?: string
+  min_size_key?: string
+  default_enabled: boolean
+  always_available: boolean
+  sort_order: number
+}
+
+/**
  * Machine size catalog entry returned by GET /terminals/sizes
  */
 export interface Size {

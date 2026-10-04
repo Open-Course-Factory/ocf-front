@@ -11,6 +11,7 @@ import type {
   StartComposedSessionData,
   OrgTerminalUsage,
   Size,
+  CatalogFeature,
   MyTerminalUsageResponse,
   ExposedPort
 } from '../../../types/terminal'
@@ -86,6 +87,11 @@ export const terminalService = {
         })
     }
     return sizesCache
+  },
+
+  async getCatalogFeatures(): Promise<CatalogFeature[]> {
+    const response = await axios.get('/terminals/catalog-features')
+    return response.data || []
   },
 
   async getSessionOptions(distribution: string, backendId?: string, organizationId?: string): Promise<SessionOptionsResponse> {
