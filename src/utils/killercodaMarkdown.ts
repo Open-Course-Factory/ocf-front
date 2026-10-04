@@ -76,6 +76,15 @@ export function renderKillercodaMarkdown(markdown: string): string {
 }
 
 // Track blob URLs created by loadScenarioImages for cleanup
+/**
+ * A step's instructions as the learner's panel shows them: the panel prints the
+ * title itself, so a heading repeating it is dropped. The editor's preview uses
+ * this too, so what the author sees is what the learner gets.
+ */
+export function renderStepMarkdown(text: string, title?: string | null): string {
+  return text ? renderKillercodaMarkdown(stripRepeatedTitleHeading(text, title)) : ''
+}
+
 let activeBlobUrls: string[] = []
 
 /**

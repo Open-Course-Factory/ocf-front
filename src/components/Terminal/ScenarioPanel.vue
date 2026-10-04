@@ -1159,6 +1159,7 @@ defineExpose({
 </script>
 
 <style scoped src="./scenarioPanel.css"></style>
+<style scoped src="./scenarioMarkdown.css"></style>
 
 <!-- Shared scenario-panel styles (unscoped; every selector is prefixed with
      `.scenario-panel ` so it stays contained to the panel subtree). -->
