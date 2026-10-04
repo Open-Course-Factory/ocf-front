@@ -50,7 +50,9 @@ const QUIZ_STEP = 'Answer the question';
 const QUIZ_QUESTION = 'Which command lists files?';
 const RIGHT_ANSWER = 'ls';
 const WRONG_ANSWER = 'rm';
-const FROM_STEP_COPY = 'Nothing the learner would have typed is replayed.';
+// scenarioEditor.previewFromStepConfirmBody, EN and FR: the author's UI
+// language comes from their profile, not from the spec.
+const FROM_STEP_COPY = /Nothing the learner would have typed is replayed\.|Rien de ce que l'apprenant aurait tapé n'est rejoué\./;
 
 let author: ApiSession;
 let learner: ApiSession;
