@@ -189,9 +189,12 @@ export function expectedPreselectedSize(options: ApiSessionOptions): ApiSizeOpti
 }
 
 /**
- * Feature chips the composer renders. `persistence` and `network` are owned by
- * the launcher's dedicated toggles and are deliberately never shown as chips.
+ * Feature chips the composer renders — mirrors SessionComposer's
+ * HIDDEN_FEATURE_KEYS: `persistence` and `network` are owned by the launcher's
+ * dedicated toggles, and `effects` belongs to the scenario engine.
  */
 export function chipFeatures(options: ApiSessionOptions): ApiFeatureOption[] {
-  return options.allowed_features.filter((f) => f.key !== 'persistence' && f.key !== 'network');
+  return options.allowed_features.filter(
+    (f) => !['persistence', 'network', 'effects'].includes(f.key)
+  );
 }

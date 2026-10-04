@@ -30,7 +30,7 @@ test.describe('Help page translations on direct load', () => {
     expect(bodyText).not.toContain('help.terminals.gettingStarted.title');
 
     // Must show the French title (fr is the default locale per src/i18n.ts)
-    expect(bodyText).toContain('Premiers Pas avec les Terminaux');
+    expect(bodyText).toContain('Premiers pas avec les terminaux');
   });
 
   test('terminals/troubleshooting renders translated content, not raw keys', async ({ page }) => {
@@ -45,6 +45,6 @@ test.describe('Help page translations on direct load', () => {
     expect(bodyText).not.toContain('help.terminals.troubleshooting.title');
 
     // Must show the French title for this page
-    expect(bodyText).toContain('Dépannage Terminal');
+    expect(bodyText).toContain('Dépannage des terminaux');
   });
 });

@@ -155,12 +155,10 @@ test.describe('Session Composer — rendering', () => {
 // 2. Distribution selection
 // ---------------------------------------------------------------------------
 test.describe('Session Composer — distribution selection', () => {
-  test('clicking a distribution reveals its size pills, largest first', async ({ page }) => {
+  test('a selected distribution shows its size pills, largest first', async ({ page }) => {
     await login(page, TRAINER_EMAIL, TEST_PASSWORD);
     await gotoTerminalCreation(page);
     const orgId = await activeOrgId(page);
-
-    await expect(page.locator('.size-strip')).not.toBeVisible();
 
     const { options } = await selectDistribution(page, orgId);
 
@@ -321,11 +319,14 @@ test.describe('Session Composer — reset on distribution change', () => {
 // 6. Launch button state
 // ---------------------------------------------------------------------------
 test.describe('Session Composer — launch button', () => {
-  test('launch is disabled while no distribution is chosen', async ({ page }) => {
+  // The composer lands on a default distribution, so there is no "nothing
+  // chosen" state left to test the button against.
+  test('a distribution is preselected on arrival', async ({ page }) => {
     await login(page, TRAINER_EMAIL, TEST_PASSWORD);
     await gotoTerminalCreation(page);
 
-    await expect(page.locator('.launch-button')).toBeDisabled();
+    await expect(page.locator('.distribution-card.selected')).toHaveCount(1);
+    await expect(page.locator('.size-strip')).toBeVisible();
   });
 
   test('launch is enabled once a launchable size is selected', async ({ page }) => {
