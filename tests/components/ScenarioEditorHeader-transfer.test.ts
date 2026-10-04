@@ -27,8 +27,6 @@ function mountHeader(overrides: Record<string, unknown> = {}): VueWrapper {
       canEditScenario: true,
       canCopyToOrg: true,
       isAdmin: false,
-      nodeCount: 3,
-      edgeCount: 2,
       canPreview: true,
       isPreviewLoading: false,
       ...overrides,
@@ -78,7 +76,7 @@ describe('ScenarioEditorHeader — import and export', () => {
   it('no longer lists the export formats in the ⋯ menu', async () => {
     const wrapper = mountHeader()
     await wrapper.find('.dropdown-container .btn-icon').trigger('click')
-    const items = wrapper.findAll('.dropdown-item')
+    const items = wrapper.findAll('.ocf-header-menu-item')
     expect(items.length).toBeGreaterThan(0)
     expect(items.some(i => i.find('.fa-file-archive').exists() || i.find('.fa-file-code').exists())).toBe(false)
   })

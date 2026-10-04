@@ -54,15 +54,15 @@ import { useTranslations } from '../../composables/useTranslations'
 const { t } = useTranslations({
   en: {
     flowCanvas: {
-      ariaLabel: 'Scenario graph editor canvas',
-      insertOnEdge: 'Insert a step here',
+      ariaLabel: 'Course editor canvas',
+      insertOnEdge: 'Insert an element here',
       removeEdge: 'Remove this link'
     }
   },
   fr: {
     flowCanvas: {
-      ariaLabel: 'Canevas de l\'éditeur de scénario',
-      insertOnEdge: 'Insérer une étape ici',
+      ariaLabel: 'Canevas de l\'éditeur de cours',
+      insertOnEdge: 'Insérer un élément ici',
       removeEdge: 'Supprimer ce lien'
     }
   }
@@ -203,8 +203,8 @@ watch(() => props.nodes, (newNodes, oldNodes) => {
     return oldNode && oldNode.hidden !== node.hidden
   })
 
-  // After a save the parent rebuilds nodes via convertScenarioToNodes,
-  // so each node carries a fresh `data` object reference. Detect this
+  // After a save the parent rebuilds its nodes, so each node carries a
+  // fresh `data` object reference. Detect this
   // so node-level changes (e.g. quiz question count) propagate even
   // when the structural shape is identical.
   const dataChanged = newNodes.some((node) => {

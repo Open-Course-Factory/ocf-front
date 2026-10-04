@@ -1,20 +1,56 @@
 <template>
-  <BaseModal
-    :visible="visible"
-    :title="modalTitle"
-    size="large"
-    :is-loading="isSaving"
-    :error-message="errorMessage"
-    :close-on-overlay-click="false"
-    @close="emit('close')"
-  >
-    <div class="step-edit-form">
-      <!-- Step type indicator -->
-      <div class="step-type-indicator" :style="{ borderColor: stepTypeColor }">
-        <span class="step-type-icon">{{ stepTypeIcon }}</span>
-        <span class="step-type-label">{{ stepTypeLabel }}</span>
+  <section class="ocf-step-editor" data-testid="step-editor" :aria-label="t('stepEdit.editorLabel')">
+    <header class="ocf-step-header">
+      <span class="ocf-step-type-icon ocf-step-header-icon" :class="`is-${resolvedStepType}`" aria-hidden="true">
+        <i :class="TYPE_ICONS[resolvedStepType]"></i>
+      </span>
+      <input
+        id="step-title"
+        v-model="formData.title"
+        type="text"
+        class="ocf-step-title-input"
+        :aria-label="t('stepEdit.title')"
+        :placeholder="t('stepEdit.titlePlaceholder')"
+        :readonly="isTranslating"
+      />
+      <span class="ocf-step-type-chip">{{ stepTypeLabel }}</span>
+      <!-- Only a step the backend knows has an order to start from. -->
+      <button
+        v-if="canTestFromStep && !isNew && stepData?.id"
+        type="button"
+        class="ocf-btn-ghost"
+        data-testid="step-edit-test-from-step"
+        :disabled="stepIsDirty"
+        :title="stepIsDirty ? t('stepEdit.testFromStepSaveFirst') : undefined"
+        @click="emit('test-from-step', stepData.order)"
+      >
+        <i class="fas fa-play" aria-hidden="true"></i>
+        {{ t('stepEdit.testFromStep') }}
+      </button>
+      <div v-if="!isNew" ref="moreMenuRef" class="ocf-step-more">
+        <button
+          type="button"
+          class="ocf-btn-ghost"
+          data-testid="step-edit-more"
+          :aria-label="t('stepEdit.moreActions')"
+          :aria-expanded="showMoreMenu"
+          aria-haspopup="menu"
+          @click="showMoreMenu = !showMoreMenu"
+        >
+          <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
+        </button>
+        <div v-if="showMoreMenu" class="ocf-step-more-menu" role="menu">
+          <button type="button" role="menuitem" data-testid="step-edit-duplicate" @click="showMoreMenu = false; emit('duplicate')">
+            <i class="fas fa-copy" aria-hidden="true"></i> {{ t('stepEdit.duplicate') }}
+          </button>
+          <button type="button" role="menuitem" class="is-danger" data-testid="step-edit-delete" @click="showMoreMenu = false; emit('delete')">
+            <i class="fas fa-trash" aria-hidden="true"></i> {{ t('stepEdit.delete') }}
+          </button>
+        </div>
       </div>
+    </header>
 
+    <div class="step-edit-form">
       <!-- Which language this step is being edited in.
            The header has the same choice, but the two are far apart: setting a
            mode in one place and seeing it take effect in another is how the
@@ -77,59 +113,51 @@
             <p>{{ t('stepEdit.sharedBody') }}</p>
           </div>
         </div>
-        <!-- Content tab -->
+        <!-- Content tab: the source beside what the learner will read. -->
         <div
           v-if="activeTab === 'content'"
           id="panel-content"
-          class="tab-panel"
+          class="tab-panel ocf-content-panel"
           role="tabpanel"
           aria-labelledby="tab-content"
         >
-          <template v-if="isTranslating">
-            <TranslationPane
-              field-id="step-title-translation"
-              :label="t('stepEdit.title')"
-              :source="stepData?.title || ''"
-              v-model="translationData.title"
-              :source-locale-label="defaultLocaleLabel"
-              :target-locale-label="localeLabel"
-              :stale="stepState === 'stale'"
-            />
-            <TranslationPane
-              field-id="step-text-translation"
-              :label="t('stepEdit.textContent')"
-              :source="stepData?.text_content || ''"
-              v-model="translationData.text_content"
-              :source-locale-label="defaultLocaleLabel"
-              :target-locale-label="localeLabel"
-              multiline
-              :rows="10"
-            />
-          </template>
-
-          <template v-else>
-            <div class="form-group">
-              <label for="step-title">{{ t('stepEdit.title') }}</label>
-              <input
-                id="step-title"
-                v-model="formData.title"
-                type="text"
-                class="form-control"
-                :placeholder="t('stepEdit.titlePlaceholder')"
+          <div class="ocf-content-source">
+            <template v-if="isTranslating">
+              <TranslationPane
+                field-id="step-title-translation"
+                :label="t('stepEdit.title')"
+                :source="stepData?.title || ''"
+                v-model="translationData.title"
+                :source-locale-label="defaultLocaleLabel"
+                :target-locale-label="localeLabel"
+                :stale="stepState === 'stale'"
               />
-            </div>
-
-            <div class="form-group">
-              <label for="step-text-content">{{ t('stepEdit.textContent') }}</label>
+              <TranslationPane
+                field-id="step-text-translation"
+                :label="t('stepEdit.textContent')"
+                :source="stepData?.text_content || ''"
+                v-model="translationData.text_content"
+                :source-locale-label="defaultLocaleLabel"
+                :target-locale-label="localeLabel"
+                multiline
+                :rows="10"
+              />
+            </template>
+            <template v-else>
+              <label for="step-text-content" class="ocf-pane-label">{{ t('stepEdit.markdown') }}</label>
               <textarea
                 id="step-text-content"
                 v-model="formData.text_content"
-                class="form-control textarea-full"
-                rows="10"
+                class="form-control ocf-markdown-source"
                 :placeholder="t('stepEdit.textContentPlaceholder')"
               ></textarea>
-            </div>
-          </template>
+            </template>
+          </div>
+          <div class="ocf-content-preview" data-testid="step-preview">
+            <p class="ocf-pane-label"><i class="fas fa-eye" aria-hidden="true"></i> {{ t('stepEdit.learnerSees') }}</p>
+            <h3 class="ocf-preview-title">{{ previewTitle }}</h3>
+            <div class="markdown-content" v-html="previewHtml"></div>
+          </div>
         </div>
 
         <!-- Hints tab -->
@@ -613,32 +641,31 @@
       </div>
     </div>
 
-    <template #footer>
-      <!-- Only a step the backend knows has an order to start from. -->
+    <footer class="ocf-step-footer">
+      <p v-if="errorMessage" class="ocf-step-error" role="alert">
+        <i class="fas fa-exclamation-circle" aria-hidden="true"></i> {{ errorMessage }}
+      </p>
+      <span class="ocf-step-footer-spacer"></span>
       <button
-        v-if="canTestFromStep && !isNew && stepData?.entityId"
-        class="btn btn-outline-primary ocf-test-from-step"
-        data-testid="step-edit-test-from-step"
-        :disabled="stepIsDirty"
-        :title="stepIsDirty ? t('stepEdit.testFromStepSaveFirst') : undefined"
-        @click="emit('test-from-step', stepData.order)"
+        type="button"
+        class="btn btn-secondary"
+        data-testid="step-edit-revert"
+        :disabled="(!isNew && !isDirty) || isSaving"
+        @click="isNew ? emit('delete') : resetForm()"
       >
-        <i class="fas fa-play" aria-hidden="true"></i>
-        {{ t('stepEdit.testFromStep') }}
-      </button>
-      <button class="btn btn-secondary" @click="emit('close')">
-        {{ t('stepEdit.cancel') }}
+        {{ isNew ? t('stepEdit.discardDraft') : t('stepEdit.revert') }}
       </button>
       <button
+        type="button"
         class="btn btn-primary"
         data-testid="step-edit-save"
-        :disabled="!isTranslating && hasInvalidQuestion"
+        :disabled="isSaving || (!isNew && !isDirty) || (!isTranslating && hasInvalidQuestion)"
         @click="isTranslating ? handleSaveTranslation() : handleSave()"
       >
+        <i v-if="isSaving" class="fas fa-spinner fa-spin" aria-hidden="true"></i>
         {{ isTranslating ? t('stepEdit.saveTranslation') : t('stepEdit.save') }}
       </button>
-    </template>
-  </BaseModal>
+    </footer>
 
   <!-- Confirm dialog for destructive type change -->
   <BaseModal
@@ -668,32 +695,22 @@
   >
     <p>{{ t('stepEdit.confirmLocaleChangeBody') }}</p>
   </BaseModal>
+  </section>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import TabStrip from '../Common/TabStrip.vue'
 import TranslationPane from './TranslationPane.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { BANNER_EFFECTS } from '../../utils/scenarioAiPrompt'
-
-const STEP_TYPES = ['terminal', 'flag', 'info', 'quiz'] as const
-type StepType = typeof STEP_TYPES[number]
+import { renderStepMarkdown } from '../../utils/killercodaMarkdown'
+import { TYPE_ICONS, resolveStepType, type StepType } from '../../utils/scenarioOutline'
 
 const { t } = useTranslations({
   en: {
     stepEdit: {
-      editTitle: 'Edit Step',
-      createTitle: 'Create Step',
-      editTerminal: 'Edit Terminal Step',
-      editFlag: 'Edit Flag Step',
-      editInfo: 'Edit Info Step',
-      editQuiz: 'Edit Quiz Step',
-      createTerminal: 'Create Terminal Step',
-      createFlag: 'Create Flag Step',
-      createInfo: 'Create Info Step',
-      createQuiz: 'Create Quiz Step',
       title: 'Title',
       titlePlaceholder: 'Enter step title...',
       textContent: 'Text Content',
@@ -713,11 +730,11 @@ const { t } = useTranslations({
       flagLevel: 'Flag Level',
       save: 'Save',
       cancel: 'Cancel',
-      tabContent: 'Content',
+      tabContent: 'Instructions',
       tabHints: 'Hints',
-      tabVerify: 'Verify',
-      tabBackground: 'Background',
-      tabForeground: 'Foreground',
+      tabVerify: 'Verification',
+      tabBackground: 'Setup',
+      tabForeground: 'Demonstration',
       tabEffects: 'Effects',
       effectsTiming: 'Effects are drawn when the learner reaches the step: the intro on arrival, the outro once the step is validated. Editing a step during a running session changes nothing on screen — start a fresh run to see it.',
       introEffect: 'Intro effect',
@@ -742,6 +759,14 @@ const { t } = useTranslations({
       sharedTitle: 'Shared by every language',
       sharedBody: 'Scripts check the same thing in every language, because they name objects from the scenario\'s Vocabulary rather than rooms. Translate those names in the scenario\'s Vocabulary tab; the script itself is edited on the original.',
       tabsLabel: 'Step editor sections',
+      editorLabel: 'Step editor',
+      moreActions: 'More step actions',
+      duplicate: 'Duplicate',
+      delete: 'Delete',
+      markdown: 'Markdown',
+      learnerSees: 'What the learner sees',
+      revert: 'Undo changes',
+      discardDraft: 'Discard',
       // Step type labels
       typeTerminal: 'Terminal',
       typeFlag: 'Flag',
@@ -795,16 +820,6 @@ const { t } = useTranslations({
   },
   fr: {
     stepEdit: {
-      editTitle: 'Modifier l’étape',
-      createTitle: 'Créer une étape',
-      editTerminal: 'Modifier l’étape Terminal',
-      editFlag: 'Modifier l’étape Drapeau',
-      editInfo: 'Modifier l’étape Information',
-      editQuiz: 'Modifier l’étape Quiz',
-      createTerminal: 'Créer une étape Terminal',
-      createFlag: 'Créer une étape Drapeau',
-      createInfo: 'Créer une étape Information',
-      createQuiz: 'Créer une étape Quiz',
       title: 'Titre',
       titlePlaceholder: 'Saisir le titre de l’étape...',
       textContent: 'Contenu texte',
@@ -824,11 +839,11 @@ const { t } = useTranslations({
       flagLevel: 'Niveau du drapeau',
       save: 'Enregistrer',
       cancel: 'Annuler',
-      tabContent: 'Contenu',
+      tabContent: 'Consigne',
       tabHints: 'Indices',
       tabVerify: 'Vérification',
-      tabBackground: 'Arrière-plan',
-      tabForeground: 'Premier plan',
+      tabBackground: 'Préparation',
+      tabForeground: 'Démonstration',
       tabEffects: 'Effets',
       effectsTiming: "Les effets s'affichent au passage de l'apprenant : l'intro à l'arrivée sur l'étape, l'outro une fois l'étape validée. Modifier une étape pendant une session en cours ne change rien à l'écran — lancez une nouvelle partie pour le voir.",
       introEffect: "Effet d'intro",
@@ -853,6 +868,14 @@ const { t } = useTranslations({
       sharedTitle: 'Partagé par toutes les langues',
       sharedBody: "Les scripts vérifient la même chose dans toutes les langues, car ils nomment les objets depuis le Vocabulaire du scénario plutôt que des pièces. Traduisez ces noms dans l'onglet Vocabulaire ; le script lui-même se modifie sur l'original.",
       tabsLabel: 'Sections de l’éditeur d’étape',
+      editorLabel: 'Éditeur d’étape',
+      moreActions: 'Autres actions sur l’étape',
+      duplicate: 'Dupliquer',
+      delete: 'Supprimer',
+      markdown: 'Markdown',
+      learnerSees: 'Ce que voit l’apprenant',
+      revert: 'Annuler les modifications',
+      discardDraft: 'Abandonner',
       // Step type labels
       typeTerminal: 'Terminal',
       typeFlag: 'Drapeau',
@@ -907,7 +930,6 @@ const { t } = useTranslations({
 })
 
 interface Props {
-  visible: boolean
   stepData?: any
   isNew?: boolean
   isSaving?: boolean
@@ -929,8 +951,8 @@ interface Props {
   /** Offer to preview the scenario from this step (the editor launches it). */
   canTestFromStep?: boolean
   /**
-   * Whether this step comes first in the chain. The editor reads it from the
-   * canvas: `order` is missing on a new step and stale after a reorder.
+   * Whether this step comes first. The editor reads it from its list:
+   * `order` is missing on a new step.
    */
   isFirstStep?: boolean
 }
@@ -952,8 +974,10 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'close'): void
   (e: 'save', data: any): void
+  (e: 'update:dirty', dirty: boolean): void
+  (e: 'duplicate'): void
+  (e: 'delete'): void
   (e: 'save-translation', data: any): void
   (e: 'update:locale', locale: string): void
   (e: 'test-from-step', order: number): void
@@ -1043,31 +1067,7 @@ const isSharedTab = computed(
   () => ['verify', 'background', 'foreground', 'questions'].includes(activeTab.value)
 )
 
-const resolvedStepType = computed((): StepType => {
-  const st = props.stepData?.step_type || props.stepData?.entityType
-  if (st && STEP_TYPES.includes(st as StepType)) return st as StepType
-  return 'terminal'
-})
-
-const stepTypeIcon = computed(() => {
-  const icons: Record<StepType, string> = {
-    terminal: '\u{1F5A5}️',
-    flag: '\u{1F6A9}',
-    info: '\u{1F4D6}',
-    quiz: '\u{2753}'
-  }
-  return icons[resolvedStepType.value]
-})
-
-const stepTypeColor = computed(() => {
-  const colors: Record<StepType, string> = {
-    terminal: 'var(--scenario-node-terminal)',
-    flag: 'var(--scenario-node-flag)',
-    info: 'var(--scenario-node-info)',
-    quiz: 'var(--scenario-node-quiz)'
-  }
-  return colors[resolvedStepType.value]
-})
+const resolvedStepType = computed(() => resolveStepType(props.stepData))
 
 const stepTypeLabel = computed(() => {
   const labels: Record<StepType, string> = {
@@ -1101,25 +1101,6 @@ const visibleTabs = computed(() => {
   }
   const allowed = tabMap[resolvedStepType.value]
   return allTabs.value.filter(tab => allowed.includes(tab.key))
-})
-
-const modalTitle = computed(() => {
-  if (props.isNew) {
-    const createTitles: Record<StepType, string> = {
-      terminal: t('stepEdit.createTerminal'),
-      flag: t('stepEdit.createFlag'),
-      info: t('stepEdit.createInfo'),
-      quiz: t('stepEdit.createQuiz')
-    }
-    return createTitles[resolvedStepType.value]
-  }
-  const editTitles: Record<StepType, string> = {
-    terminal: t('stepEdit.editTerminal'),
-    flag: t('stepEdit.editFlag'),
-    info: t('stepEdit.editInfo'),
-    quiz: t('stepEdit.editQuiz')
-  }
-  return editTitles[resolvedStepType.value]
 })
 
 type StoredCorrectAnswer = number | number[] | string
@@ -1162,8 +1143,8 @@ const collapsedQuestions = ref(new Set<number>())
 const pendingTypeChange = ref<{ qIdx: number; from: QuestionType; to: QuestionType } | null>(null)
 
 // Native HTML5 drag-and-drop for question reordering. Same primitive as
-// the canvas library (no extra dependency). The `order` field is recomputed
-// from the array index by syncStepQuestions on save.
+// the step outline (no extra dependency). The `order` field is recomputed
+// from the array index by scenarioStepService.syncQuestions on save.
 const dragSourceIdx = ref<number | null>(null)
 const dragOverIdx = ref<number | null>(null)
 
@@ -1217,76 +1198,99 @@ const deserializeCorrectAnswer = (q: any): StoredCorrectAnswer => {
   return raw
 }
 
-// Reset form when step data changes or modal opens
-watch(() => [props.visible, props.stepData, props.translation, props.locale], () => {
-  if (props.visible) {
-    const existing = props.translation || {}
-    translationData.value = {
-      title: existing.title || '',
-      text_content: existing.text_content || '',
-      hint_content: existing.hint_content || '',
-      intro_text: existing.intro_text || '',
-      outro_text: existing.outro_text || ''
-    }
-    // Reset to first available tab
-    const firstTab = visibleTabs.value[0]
-    activeTab.value = firstTab?.key || 'content'
-
-    // Reset collapse state and pending type-change confirmation
-    collapsedQuestions.value = new Set<number>()
-    pendingTypeChange.value = null
-
-    if (props.stepData) {
-      formData.value = {
-        title: props.stepData.title || '',
-        // `??`, not `||`: scenario steps are 0-based, and `0 || 1` silently
-        // rewrites the first step's order to 1 on every edit — which lands two
-        // steps on the same order and leaves none on 0.
-        order: props.stepData.order ?? 0,
-        text_content: props.stepData.text_content || '',
-        hint_content: props.stepData.hint_content || '',
-        verify_script: props.stepData.verify_script || '',
-        background_script: props.stepData.background_script || '',
-        foreground_script: props.stepData.foreground_script || '',
-        flag_path: props.stepData.flag_path || '',
-        flag_level: props.stepData.flag_level || 0,
-        show_immediate_feedback: props.stepData.show_immediate_feedback ?? false,
-        intro_effect: props.stepData.intro_effect || '',
-        intro_text: props.stepData.intro_text || '',
-        outro_effect: props.stepData.outro_effect || '',
-        outro_text: props.stepData.outro_text || '',
-        questions: (props.stepData.questions || []).map((q: any) => ({
-          id: q.id,
-          question_text: q.question_text || '',
-          question_type: (q.question_type as QuestionType) || 'multiple_choice',
-          options: Array.isArray(q.options) ? [...q.options] : [],
-          correct_answer: deserializeCorrectAnswer(q),
-          explanation: q.explanation || '',
-          points: q.points || 1
-        }))
-      }
-    } else {
-      formData.value = {
-        title: '',
-        order: 0,
-        text_content: '',
-        hint_content: '',
-        verify_script: '',
-        background_script: '',
-        foreground_script: '',
-        flag_path: '',
-        flag_level: 0,
-        show_immediate_feedback: false,
-        intro_effect: '',
-        intro_text: '',
-        outro_effect: '',
-        outro_text: '',
-        questions: []
-      }
-    }
-    savedFormSnapshot.value = JSON.stringify(formData.value)
+/**
+ * Rebuilds the form from the step as saved — on opening another step, after a
+ * save hands back fresh data, and when the author reverts their edits.
+ */
+function resetForm() {
+  const existing = props.translation || {}
+  translationData.value = {
+    title: existing.title || '',
+    text_content: existing.text_content || '',
+    hint_content: existing.hint_content || '',
+    intro_text: existing.intro_text || '',
+    outro_text: existing.outro_text || ''
   }
-}, { immediate: true })
+  // Reset collapse state and pending type-change confirmation
+  collapsedQuestions.value = new Set<number>()
+  pendingTypeChange.value = null
+
+  if (props.stepData) {
+    formData.value = {
+      title: props.stepData.title || '',
+      // `??`, not `||`: scenario steps are 0-based, and `0 || 1` silently
+      // rewrites the first step's order to 1 on every edit — which lands two
+      // steps on the same order and leaves none on 0.
+      order: props.stepData.order ?? 0,
+      text_content: props.stepData.text_content || '',
+      hint_content: props.stepData.hint_content || '',
+      verify_script: props.stepData.verify_script || '',
+      background_script: props.stepData.background_script || '',
+      foreground_script: props.stepData.foreground_script || '',
+      flag_path: props.stepData.flag_path || '',
+      flag_level: props.stepData.flag_level || 0,
+      show_immediate_feedback: props.stepData.show_immediate_feedback ?? false,
+      intro_effect: props.stepData.intro_effect || '',
+      intro_text: props.stepData.intro_text || '',
+      outro_effect: props.stepData.outro_effect || '',
+      outro_text: props.stepData.outro_text || '',
+      questions: (props.stepData.questions || []).map((q: any) => ({
+        id: q.id,
+        question_text: q.question_text || '',
+        question_type: (q.question_type as QuestionType) || 'multiple_choice',
+        options: Array.isArray(q.options) ? [...q.options] : [],
+        correct_answer: deserializeCorrectAnswer(q),
+        explanation: q.explanation || '',
+        points: q.points || 1
+      }))
+    }
+  } else {
+    formData.value = {
+      title: '',
+      order: 0,
+      text_content: '',
+      hint_content: '',
+      verify_script: '',
+      background_script: '',
+      foreground_script: '',
+      flag_path: '',
+      flag_level: 0,
+      show_immediate_feedback: false,
+      intro_effect: '',
+      intro_text: '',
+      outro_effect: '',
+      outro_text: '',
+      questions: []
+    }
+  }
+  savedFormSnapshot.value = JSON.stringify(formData.value)
+}
+
+watch(() => [props.stepData, props.translation, props.locale], resetForm, { immediate: true })
+
+// Another step opens on its first tab; a save or a language switch on the same
+// step keeps the author where they were.
+watch(() => props.stepData?.key, () => { activeTab.value = 'content' })
+
+const isDirty = computed(() => stepIsDirty.value || translationIsDirty.value)
+watch(isDirty, dirty => emit('update:dirty', dirty), { immediate: true })
+
+// Rendered with the learner's own pipeline, from whichever language is edited.
+const previewTitle = computed(() => (isTranslating.value && translationData.value.title) || formData.value.title)
+const previewHtml = computed(() => renderStepMarkdown(
+  (isTranslating.value ? translationData.value.text_content : formData.value.text_content) || '',
+  previewTitle.value
+))
+
+const showMoreMenu = ref(false)
+const moreMenuRef = ref<HTMLElement | null>(null)
+
+function closeMoreMenuOutside(event: MouseEvent) {
+  if (moreMenuRef.value && !moreMenuRef.value.contains(event.target as Node)) showMoreMenu.value = false
+}
+
+onMounted(() => document.addEventListener('click', closeMoreMenuOutside))
+onBeforeUnmount(() => document.removeEventListener('click', closeMoreMenuOutside))
 
 // Quiz question helpers
 const addQuestion = () => {
@@ -1467,9 +1471,206 @@ const handleSaveTranslation = () => {
 </script>
 
 <style scoped>
-/* The footer is a right-aligned flex row: keep this action apart, on the left. */
-.ocf-test-from-step {
-  margin-right: auto;
+.ocf-step-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.ocf-step-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg) 0;
+}
+
+.ocf-step-header-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--border-radius-md);
+}
+
+
+.ocf-step-title-input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+.ocf-step-title-input:hover:not([readonly]),
+.ocf-step-title-input:focus {
+  border-color: var(--color-border);
+  background: var(--color-background);
+  outline: none;
+}
+
+.ocf-step-title-input:focus-visible {
+  border-color: var(--color-primary);
+}
+
+.ocf-step-type-chip {
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--border-radius-full);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.ocf-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-sm);
+  background: none;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ocf-btn-ghost:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.ocf-btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ocf-btn-ghost:focus-visible,
+.ocf-step-more-menu button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.ocf-step-more {
+  position: relative;
+}
+
+.ocf-step-more-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: var(--z-index-dropdown);
+  display: flex;
+  flex-direction: column;
+  min-width: 11rem;
+  padding: var(--spacing-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-dropdown);
+}
+
+.ocf-step-more-menu button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: none;
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ocf-step-more-menu button:hover {
+  background: var(--color-surface-hover);
+}
+
+.ocf-step-more-menu button.is-danger {
+  color: var(--color-danger);
+}
+
+.tab-panel.ocf-content-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+  min-height: 24rem;
+}
+
+.ocf-content-source {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+
+.ocf-pane-label {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-muted);
+}
+
+.form-control.ocf-markdown-source {
+  flex: 1;
+  width: 100%;
+  max-width: none;
+  min-height: 22rem;
+  resize: vertical;
+  font-family: var(--font-family-monospace);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.ocf-content-preview {
+  min-width: 0;
+  padding-left: var(--spacing-lg);
+  border-left: 1px solid var(--color-border-light);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-relaxed);
+}
+
+.ocf-preview-title {
+  margin: var(--spacing-sm) 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.ocf-step-footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-top: 1px solid var(--color-border-light);
+  background: var(--color-background);
+}
+
+.ocf-step-footer-spacer {
+  flex: 1;
+}
+
+.ocf-step-error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+}
+
+@media (max-width: 1100px) {
+  .tab-panel.ocf-content-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .ocf-content-preview {
+    padding-left: 0;
+    padding-top: var(--spacing-md);
+    border-left: none;
+    border-top: 1px solid var(--color-border-light);
+  }
 }
 
 .ocf-step-locale {
@@ -1556,31 +1757,17 @@ const handleSaveTranslation = () => {
 }
 
 .step-edit-form {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  padding: 0 var(--spacing-lg) var(--spacing-lg);
 }
 
-.step-type-indicator {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border-left: 3px solid;
-  background: var(--color-surface-variant);
-  border-radius: 0 4px 4px 0;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--color-text-primary);
-}
 
-.step-type-icon {
-  font-size: 1rem;
-}
 
-.step-type-label {
-  font-weight: 600;
-}
 
 /* Tab strip styles live in TabStrip.vue */
 
@@ -2292,3 +2479,4 @@ const handleSaveTranslation = () => {
   margin: 0;
 }
 </style>
+<style scoped src="../Terminal/scenarioMarkdown.css"></style>

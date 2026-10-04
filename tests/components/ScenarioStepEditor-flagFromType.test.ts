@@ -11,11 +11,11 @@ import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createTestI18n } from '../helpers/entityModalHelper'
 
-import ScenarioStepEditModal from '../../src/components/ScenarioEditor/ScenarioStepEditModal.vue'
+import ScenarioStepEditor from '../../src/components/ScenarioEditor/ScenarioStepEditor.vue'
 
 function mountModal(stepData: Record<string, unknown>) {
-  return mount(ScenarioStepEditModal, {
-    props: { visible: true, isNew: false, stepData },
+  return mount(ScenarioStepEditor, {
+    props: { isNew: false, stepData },
     global: {
       plugins: [createTestI18n()],
       stubs: { BaseModal: { template: '<div><slot /><slot name="footer" /></div>' } },
@@ -23,14 +23,16 @@ function mountModal(stepData: Record<string, unknown>) {
   })
 }
 
+// Save is offered once something changed, so the title is touched first.
 async function save(wrapper: ReturnType<typeof mountModal>): Promise<Record<string, any>> {
+  await wrapper.get('#step-title').setValue('Edited')
   await wrapper.get('[data-testid="step-edit-save"]').trigger('click')
   const saved = wrapper.emitted('save')
   expect(saved).toHaveLength(1)
   return saved![0][0] as Record<string, any>
 }
 
-describe('ScenarioStepEditModal — flags come from the step type', () => {
+describe('ScenarioStepEditor — flags come from the step type', () => {
   it('offers no flag fields on a terminal step', async () => {
     const wrapper = mountModal({ title: 'Install nginx', step_type: 'terminal' })
     await wrapper.vm.$nextTick()

@@ -1,5 +1,5 @@
 /**
- * "Test from this step" in ScenarioStepEditModal (#346).
+ * "Test from this step" in ScenarioStepEditor (#346).
  *
  * An author who is working on step 5 should not have to play steps 1 to 4 to
  * see it. The step modal offers to preview the scenario from this step: the
@@ -18,7 +18,7 @@ import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 
-import ScenarioStepEditModal from '../../src/components/ScenarioEditor/ScenarioStepEditModal.vue'
+import ScenarioStepEditor from '../../src/components/ScenarioEditor/ScenarioStepEditor.vue'
 
 const ACTION = '[data-testid="step-edit-test-from-step"]'
 
@@ -37,9 +37,9 @@ function mountModal(
   props: Record<string, unknown>,
   locale = 'en'
 ) {
-  return mount(ScenarioStepEditModal, {
+  return mount(ScenarioStepEditor, {
     props: {
-      visible: true,
+
       isNew: false,
       canTestFromStep: true,
       ...props,
@@ -52,13 +52,13 @@ function mountModal(
 }
 
 const savedStep = (order: number) => ({
-  entityId: `step-${order}`,
+  id: `step-${order}`,
   title: `Step ${order}`,
   order,
   stepType: 'terminal',
 })
 
-describe('ScenarioStepEditModal — test from this step', () => {
+describe('ScenarioStepEditor — test from this step', () => {
   it('offers the action on a saved step, in English', () => {
     const wrapper = mountModal({ stepData: savedStep(2) })
 

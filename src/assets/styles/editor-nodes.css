@@ -159,33 +159,24 @@
 }
 
 /* ========================================
-   SCENARIO NODE VARIANTS
+   SCENARIO STEP TYPE ICONS
+   The coloured square that marks a step's type wherever steps are listed
+   (editor outline, type picker, step header). Size is the caller's.
    ======================================== */
 
-.editor-node.node-scenario {
-  border-color: var(--scenario-node-scenario);
-  background: var(--scenario-node-scenario-bg);
+.ocf-step-type-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--border-radius-sm);
+  color: var(--color-white);
 }
 
-.editor-node.node-terminal {
-  border-color: var(--scenario-node-terminal);
-  background: var(--scenario-node-terminal-bg);
-}
-
-.editor-node.node-flag {
-  border-color: var(--scenario-node-flag);
-  background: var(--scenario-node-flag-bg);
-}
-
-.editor-node.node-info {
-  border-color: var(--scenario-node-info);
-  background: var(--scenario-node-info-bg);
-}
-
-.editor-node.node-quiz {
-  border-color: var(--scenario-node-quiz);
-  background: var(--scenario-node-quiz-bg);
-}
+.ocf-step-type-icon.is-terminal { background: var(--scenario-node-terminal); }
+.ocf-step-type-icon.is-flag { background: var(--scenario-node-flag); }
+.ocf-step-type-icon.is-info { background: var(--scenario-node-info); }
+.ocf-step-type-icon.is-quiz { background: var(--scenario-node-quiz); }
 
 /* ========================================
    NODE LIBRARY PANEL
@@ -288,32 +279,6 @@
 .node-library-preview.lib-page {
   border-color: var(--course-node-page);
   background: var(--course-node-page-bg);
-}
-
-/* Scenario library variants */
-.node-library-preview.lib-scenario {
-  border-color: var(--scenario-node-scenario);
-  background: var(--scenario-node-scenario-bg);
-}
-
-.node-library-preview.lib-terminal {
-  border-color: var(--scenario-node-terminal);
-  background: var(--scenario-node-terminal-bg);
-}
-
-.node-library-preview.lib-flag {
-  border-color: var(--scenario-node-flag);
-  background: var(--scenario-node-flag-bg);
-}
-
-.node-library-preview.lib-info {
-  border-color: var(--scenario-node-info);
-  background: var(--scenario-node-info-bg);
-}
-
-.node-library-preview.lib-quiz {
-  border-color: var(--scenario-node-quiz);
-  background: var(--scenario-node-quiz-bg);
 }
 
 .node-library-panel .library-footer {

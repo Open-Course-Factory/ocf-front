@@ -261,93 +261,18 @@
           </div>
         </div>
 
-        <!-- 3b. SCENARIO EDITOR NODES -->
+        <!-- 3b. SCENARIO STEP TYPES -->
         <div class="audit-section">
           <div class="section-title"><i class="fas fa-flask"></i> {{ t('designSystem.scenarioNodesTitle') }}</div>
           <div class="section-body">
             <div style="display:flex;gap:16px;">
-              <div style="flex:1;">
-                <div class="course-nodes-grid">
-                  <div class="editor-node node-scenario">
-                    <div class="node-head"><span class="icon"><i class="fas fa-flask"></i></span><span class="title">Linux Rogue-Lite</span></div>
-                    <div class="node-meta"><span class="meta-badge difficulty-advanced">Advanced</span><span class="meta-text">10 steps</span></div>
-                    <div class="node-actions-bar">
-                      <button class="action-btn"><i class="fas fa-edit"></i></button>
-                      <button class="action-btn delete"><i class="fas fa-trash"></i></button>
-                    </div>
-                  </div>
-                  <div class="editor-node node-terminal">
-                    <div class="node-head"><span class="icon"><i class="fas fa-terminal"></i></span><span class="title">Terminal</span></div>
-                    <div class="node-meta"><span class="meta-text">Step 1</span><span class="meta-indicator"><i class="fas fa-check-circle"></i></span></div>
-                    <div class="node-actions-bar">
-                      <button class="action-btn"><i class="fas fa-edit"></i></button>
-                      <button class="action-btn delete"><i class="fas fa-trash"></i></button>
-                    </div>
-                  </div>
-                  <div class="editor-node node-flag">
-                    <div class="node-head"><span class="icon"><i class="fas fa-flag"></i></span><span class="title">Flag</span></div>
-                    <div class="node-meta"><span class="meta-text">Step 2</span><span class="meta-indicator"><i class="fas fa-flag"></i> Lv.3</span></div>
-                    <div class="node-actions-bar">
-                      <button class="action-btn"><i class="fas fa-edit"></i></button>
-                      <button class="action-btn delete"><i class="fas fa-trash"></i></button>
-                    </div>
-                  </div>
-                  <div class="editor-node node-info">
-                    <div class="node-head"><span class="icon"><i class="fas fa-info-circle"></i></span><span class="title">Info</span></div>
-                    <div class="node-meta"><span class="meta-text">Step 3</span></div>
-                    <div class="node-actions-bar">
-                      <button class="action-btn"><i class="fas fa-edit"></i></button>
-                      <button class="action-btn delete"><i class="fas fa-trash"></i></button>
-                    </div>
-                  </div>
-                  <div class="editor-node node-quiz">
-                    <div class="node-head"><span class="icon"><i class="fas fa-question-circle"></i></span><span class="title">Quiz</span></div>
-                    <div class="node-meta"><span class="meta-text">Step 4</span><span class="meta-indicator">3 Q.</span></div>
-                    <div class="node-actions-bar">
-                      <button class="action-btn"><i class="fas fa-edit"></i></button>
-                      <button class="action-btn delete"><i class="fas fa-trash"></i></button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Scenario Node Library -->
-              <div style="width:140px;flex-shrink:0;">
-                <div class="node-library">
-                  <div class="node-library-header">{{ t('designSystem.scenarioNodeLibrary') }}</div>
-                  <div class="node-library-items">
-                    <div class="node-library-item">
-                      <div class="node-library-preview lib-scenario">
-                        <i class="fas fa-flask"></i><span class="lib-label">Scenario</span>
-                      </div>
-                    </div>
-                    <div class="node-library-item">
-                      <div class="node-library-preview lib-terminal">
-                        <i class="fas fa-terminal"></i><span class="lib-label">Terminal</span>
-                      </div>
-                    </div>
-                    <div class="node-library-item">
-                      <div class="node-library-preview lib-flag">
-                        <i class="fas fa-flag"></i><span class="lib-label">Flag</span>
-                      </div>
-                    </div>
-                    <div class="node-library-item">
-                      <div class="node-library-preview lib-info">
-                        <i class="fas fa-info-circle"></i><span class="lib-label">Info</span>
-                      </div>
-                    </div>
-                    <div class="node-library-item">
-                      <div class="node-library-preview lib-quiz">
-                        <i class="fas fa-question-circle"></i><span class="lib-label">Quiz</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <span v-for="type in ['terminal', 'flag', 'info', 'quiz']" :key="type" style="display:inline-flex;align-items:center;gap:8px;">
+                <span class="ocf-step-type-icon" :class="`is-${type}`" style="width:1.5rem;height:1.5rem;"><i class="fas fa-circle" style="font-size:0.5rem;"></i></span>
+                {{ type }}
+              </span>
             </div>
           </div>
         </div>
-
         <!-- 4. TERMINAL COMPONENTS -->
         <div class="audit-section">
           <div class="section-title"><i class="fas fa-terminal"></i> {{ t('designSystem.terminalTitle') }}</div>
@@ -426,8 +351,7 @@ const { t } = useTranslations({
       actionButtonHover: 'Action button hover',
       userSettingsTitle: '5. UserSettingsMenu Overlay',
       courseNodesTitle: '3. Course Editor Nodes + Node Library',
-      scenarioNodesTitle: '3b. Scenario Editor Nodes + Node Library',
-      scenarioNodeLibrary: 'Nodes',
+      scenarioNodesTitle: '3b. Scenario step types',
       courseTreePanel: 'Course Tree Panel',
       nodeLibrary: 'Node Library',
       terminalTitle: '4. Terminal Components',
@@ -461,8 +385,7 @@ const { t } = useTranslations({
       actionButtonHover: 'Survol bouton action',
       userSettingsTitle: '5. Menu Paramètres Utilisateur',
       courseNodesTitle: '3. Noeuds Éditeur de Cours + Bibliothèque',
-      scenarioNodesTitle: '3b. Noeuds Éditeur de Scénarios + Bibliothèque',
-      scenarioNodeLibrary: 'Noeuds',
+      scenarioNodesTitle: '3b. Types d’étape de scénario',
       courseTreePanel: 'Panneau arbre de cours',
       nodeLibrary: 'Bibliothèque de noeuds',
       terminalTitle: '4. Composants Terminal',

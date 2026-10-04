@@ -17,7 +17,7 @@ import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 
-import ScenarioStepEditModal from '../../src/components/ScenarioEditor/ScenarioStepEditModal.vue'
+import ScenarioStepEditor from '../../src/components/ScenarioEditor/ScenarioStepEditor.vue'
 
 function createTestI18n() {
   return createI18n({
@@ -31,9 +31,9 @@ function createTestI18n() {
 }
 
 function mountModal(stepData: Record<string, unknown> | null) {
-  return mount(ScenarioStepEditModal, {
+  return mount(ScenarioStepEditor, {
     props: {
-      visible: true,
+
       isNew: stepData === null,
       stepType: 'terminal',
       stepData,
@@ -50,7 +50,7 @@ function savedPayload(wrapper: ReturnType<typeof mountModal>): Record<string, an
   return (wrapper.vm as any).formData
 }
 
-describe('ScenarioStepEditModal — step 0 survives a round trip', () => {
+describe('ScenarioStepEditor — step 0 survives a round trip', () => {
   it('keeps order 0 instead of promoting it to 1', async () => {
     const wrapper = mountModal({ title: 'First step', order: 0 })
     await wrapper.vm.$nextTick()

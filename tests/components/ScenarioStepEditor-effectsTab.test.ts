@@ -1,5 +1,5 @@
 /**
- * Tests for the Effects tab in ScenarioStepEditModal (#44).
+ * Tests for the Effects tab in ScenarioStepEditor (#44).
  *
  * A step can declare an intro and an outro banner, drawn in the learner's
  * terminal by ocf-banner. Two things have to hold or the trainer silently
@@ -20,7 +20,7 @@ import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 
-import ScenarioStepEditModal from '../../src/components/ScenarioEditor/ScenarioStepEditModal.vue'
+import ScenarioStepEditor from '../../src/components/ScenarioEditor/ScenarioStepEditor.vue'
 
 // The names ocf-banner accepts in the container.
 const OCF_BANNER_EFFECTS = [
@@ -47,9 +47,9 @@ function createTestI18n() {
 }
 
 async function mountOnEffectsTab(stepData: Record<string, unknown> | null = null) {
-  const wrapper = mount(ScenarioStepEditModal, {
+  const wrapper = mount(ScenarioStepEditor, {
     props: {
-      visible: true,
+
       isNew: stepData === null,
       stepType: 'terminal',
       stepData,
@@ -73,7 +73,7 @@ async function mountOnEffectsTab(stepData: Record<string, unknown> | null = null
   return wrapper
 }
 
-describe('ScenarioStepEditModal — Effects tab', () => {
+describe('ScenarioStepEditor — Effects tab', () => {
   it('offers exactly the effects ocf-banner accepts, plus an explicit no-effect choice', async () => {
     const wrapper = await mountOnEffectsTab()
 

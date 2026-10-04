@@ -9,7 +9,7 @@
  * The parent owns the working `editingScenario` object — this component
  * mutates it in place via the v-model contract. The save flow remains in
  * the parent (it dispatches between platform / org / group create endpoints
- * and refreshes the canvas afterwards).
+ * and reloads the scenario afterwards).
  *
  * Extracted from ScenarioEditor.vue during the Wave 12 refactor — markup,
  * fields, tabs, and ARIA semantics are preserved verbatim.

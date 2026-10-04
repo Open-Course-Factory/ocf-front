@@ -37,3 +37,4 @@ export type {
   ScenarioTranslation,
   ScenarioTranslationFields
 } from './scenarioTranslationService'
+export { scenarioStepService } from './scenarioStepService'

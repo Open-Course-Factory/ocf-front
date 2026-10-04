@@ -25,7 +25,7 @@ import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 
-import ScenarioStepEditModal from '../../src/components/ScenarioEditor/ScenarioStepEditModal.vue'
+import ScenarioStepEditor from '../../src/components/ScenarioEditor/ScenarioStepEditor.vue'
 
 type Locale = 'en' | 'fr'
 
@@ -43,9 +43,9 @@ function createTestI18n(locale: Locale) {
 async function mountOnBackgroundTab(
   { locale = 'en', props = {} }: { locale?: Locale; props?: Record<string, unknown> } = {}
 ) {
-  const wrapper = mount(ScenarioStepEditModal, {
+  const wrapper = mount(ScenarioStepEditor, {
     props: {
-      visible: true,
+
       isNew: false,
       stepData: { title: 'A step', order: 0, step_type: 'terminal' },
       ...props,
@@ -72,7 +72,7 @@ function placeholderOf(wrapper: Awaited<ReturnType<typeof mountOnBackgroundTab>>
   return textarea.attributes('placeholder') ?? ''
 }
 
-describe('ScenarioStepEditModal — setup script guidance', () => {
+describe('ScenarioStepEditor — setup script guidance', () => {
   describe('explanation under the setup script field', () => {
     it('says, in English, that the script runs again when the machine is rebuilt', async () => {
       const wrapper = await mountOnBackgroundTab({ locale: 'en' })

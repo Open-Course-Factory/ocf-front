@@ -3,176 +3,149 @@
  * Open Course Factory - Front
  * Copyright (C) 2023-2026 Solution Libre
  *
- * Header bar of the Scenario Editor page. Shows the scenario picker, current
- * org/platform context, the read-only badge, and the action buttons
- * (import, export, copy, reset, save).
+ * One row above the scenario editor: which scenario, where it lives, whether it
+ * is ready to play, whether the open step is saved, and what can be done with
+ * it. Presentational: the page owns the state, this emits intents.
  *
- * The parent owns all state — the header is a pure presentational component
- * that emits intents. The selector uses v-model for two-way binding on the
- * selected id; everything else flows out via named emits.
- *
- * Extracted from ScenarioEditor.vue during the Wave 12 refactor — markup
- * preserved verbatim.
+ * Every indicator sits in a reserved slot, so nothing in the row moves when a
+ * status changes.
  */
 -->
 
 <template>
-  <div class="editor-header">
-    <!-- Left: title + selector -->
-    <div class="header-primary">
-      <span class="header-title">{{ t('scenarioEditor.title') }}</span>
+  <div class="ocf-editor-header">
+    <div class="ocf-header-primary">
+      <label class="ocf-visually-hidden" for="scenario-picker">{{ t('scenarioEditor.pickScenario') }}</label>
+      <span class="ocf-picker-icon" aria-hidden="true"><i class="fas fa-flask"></i></span>
       <select
-        :value="selectedScenarioId"
+        id="scenario-picker"
+        class="ocf-scenario-picker"
+        data-testid="scenario-picker"
+        :value="selectedScenarioId ?? ''"
         @change="onSelectChange"
-        class="scenario-select"
       >
-        <option :value="null">{{ t('scenarioEditor.selectScenario') }}</option>
-        <option
-          v-for="scenario in scenarios"
-          :key="scenario.id"
-          :value="scenario.id"
-        >
-          {{ scenario.name }} - {{ scenario.title }}
-        </option>
+        <option value="">{{ t('scenarioEditor.selectScenario') }}</option>
+        <optgroup v-for="group in scenarioGroups" :key="group.label" :label="group.label">
+          <option v-for="scenario in group.scenarios" :key="scenario.id" :value="scenario.id">
+            {{ scenario.title || scenario.name }}{{ scenario.archived_at ? ` (${t('scenarioEditor.archived')})` : '' }}
+          </option>
+        </optgroup>
       </select>
       <button
         v-if="canCreateScenario"
-        @click="emit('create-new')"
+        type="button"
         class="btn-icon btn-create"
+        data-testid="scenario-create-btn"
         :title="t('scenarioEditor.createNew')"
         :aria-label="t('scenarioEditor.createNew')"
+        @click="emit('create-new')"
       >
         <i class="fas fa-plus" aria-hidden="true"></i>
       </button>
+
+      <template v-if="currentScenario">
+        <span v-if="currentScenario.organization_id" class="ocf-header-chip">
+          <i class="fas fa-building" aria-hidden="true"></i> {{ scenarioOrgName || '—' }}
+        </span>
+        <span v-else class="ocf-header-chip">
+          <i class="fas fa-globe" aria-hidden="true"></i> {{ t('scenarioEditor.platform') }}
+          <AdminBadge v-if="isAdmin" icon-only />
+        </span>
+        <span v-if="healthAvailable" class="ocf-header-chip ocf-status-chip" :class="statusClass" data-testid="scenario-status">
+          <i :class="statusIcon" aria-hidden="true"></i> {{ statusLabel }}
+        </span>
+        <span v-if="currentScenario.archived_at" class="ocf-header-chip archived-badge">
+          <i class="fas fa-box-archive" aria-hidden="true"></i> {{ t('scenarioEditor.archived') }}
+        </span>
+        <span v-if="!canEditScenario" class="ocf-header-chip readonly-badge">
+          <i class="fas fa-lock" aria-hidden="true"></i> {{ t('scenarioEditor.readOnly') }}
+        </span>
+      </template>
     </div>
 
-    <!-- Center: context info -->
-    <div class="header-context" v-if="currentScenario">
-      <span class="org-tag" v-if="currentScenario.organization_id">
-        <i class="fas fa-building"></i> {{ scenarioOrgName || '—' }}
-      </span>
-      <span class="org-tag platform-tag" v-else>
-        <i class="fas fa-globe"></i> {{ t('scenarioEditor.platform') }}
-        <AdminBadge v-if="isAdmin" icon-only />
-      </span>
-      <span class="debug-info" v-if="nodeCount > 0">
-        {{ nodeCount }}n / {{ edgeCount }}e
+    <div class="ocf-header-actions">
+      <!-- Reserved: empty while there is no step to save, never collapsed. -->
+      <span class="ocf-save-state" :class="`is-${saveState || 'none'}`" data-testid="save-state" aria-live="polite">
+        <template v-if="saveState === 'saved'"><i class="fas fa-check" aria-hidden="true"></i> {{ t('scenarioEditor.saved') }}</template>
+        <template v-else-if="saveState === 'dirty'"><i class="fas fa-circle" aria-hidden="true"></i> {{ t('scenarioEditor.unsaved') }}</template>
+        <template v-else-if="saveState === 'saving'"><i class="fas fa-spinner fa-spin" aria-hidden="true"></i> {{ t('scenarioEditor.saving') }}</template>
       </span>
 
-      <!-- Which language is being edited. Only for a scenario that has more
-           than one: a single-language scenario has nothing to choose between,
-           and a select with one entry would suggest otherwise. -->
-      <label v-if="locales.length > 1" class="ocf-editing-locale">
-        <i class="fas fa-language" aria-hidden="true"></i>
-        <select
-          class="ocf-editing-locale-select"
-          data-testid="editor-locale-select"
-          :value="editingLocale || defaultLocale"
-          @change="emit('update:editingLocale', ($event.target as HTMLSelectElement).value)"
-        >
-          <option v-for="code in locales" :key="code" :value="code">
-            {{ languageName(code) }}{{ localeProgress(code) }}
-          </option>
-        </select>
-      </label>
-    </div>
-
-    <!-- Archived indicator: an archived scenario is still fully editable,
-         it is simply no longer offered, assignable or launchable. -->
-    <span v-if="currentScenario?.archived_at" class="archived-badge">
-      <i class="fas fa-box-archive"></i> {{ t('scenarioEditor.archived') }}
-    </span>
-
-    <!-- Read-only indicator -->
-    <span v-if="currentScenario && !canEditScenario" class="readonly-badge">
-      <i class="fas fa-lock"></i> {{ t('scenarioEditor.readOnly') }}
-    </span>
-
-    <!-- Right: actions -->
-    <div class="header-actions">
       <!-- Import / Export stay in place whatever is selected: Export is
            disabled with a reason rather than hidden, so the row never shifts.
-           The import control is the parent's (it needs the user's scopes). -->
+           The import and AI controls are the parent's (they need its scopes). -->
       <slot name="import" />
       <ScenarioExportMenu
         :disabled="!currentScenario || !canEditScenario"
         :disabled-reason="currentScenario ? t('scenarioEditor.exportNeedsManager') : t('scenarioEditor.exportNeedsScenario')"
         @export="format => format === 'json' ? emit('export-json') : emit('export-killercoda')"
       />
-      <span class="header-divider" aria-hidden="true"></span>
+      <slot name="ai" />
 
-      <!-- Secondary actions live behind a ⋯ overflow menu to keep the header
-           compact and to push Reset away from Save (less footgun-prone). -->
-      <template v-if="selectedScenarioId">
-        <!-- Nothing to offer a read-only viewer with no copy target. -->
-        <div v-if="canCopyToOrg || canEditScenario" class="dropdown-container" ref="actionsMenuRef">
-          <button
-            class="btn-icon"
-            @click.stop="showActionsMenu = !showActionsMenu"
-            :title="t('scenarioEditor.moreActions')"
-            :aria-label="t('scenarioEditor.moreActions')"
-            :aria-expanded="showActionsMenu"
-            aria-haspopup="true"
-          >
-            <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
-          </button>
-          <div v-if="showActionsMenu" class="dropdown-menu" @click.stop>
-            <button v-if="canCopyToOrg" class="dropdown-item" @click="emit('copy-to-org'); showActionsMenu = false">
-              <i class="fas fa-copy" aria-hidden="true"></i>
-              <span>{{ t('scenarioEditor.copyToOrg') }}</span>
-            </button>
-            <div v-if="canEditScenario && canCopyToOrg" class="dropdown-divider"></div>
-            <button
-              v-if="canEditScenario && !currentScenario?.archived_at"
-              class="dropdown-item"
-              @click="emit('archive'); showActionsMenu = false"
-            >
-              <i class="fas fa-box-archive" aria-hidden="true"></i>
-              <span>{{ t('scenarioEditor.archive') }}</span>
-            </button>
-            <button
-              v-if="canEditScenario && currentScenario?.archived_at"
-              class="dropdown-item"
-              @click="emit('unarchive'); showActionsMenu = false"
-            >
-              <i class="fas fa-rotate-left" aria-hidden="true"></i>
-              <span>{{ t('scenarioEditor.unarchive') }}</span>
-            </button>
-            <button v-if="canEditScenario" class="dropdown-item" @click="emit('reset'); showActionsMenu = false">
-              <i class="fas fa-undo" aria-hidden="true"></i>
-              <span>{{ t('scenarioEditor.reset') }}</span>
-            </button>
-          </div>
-        </div>
-        <!-- Preview stays visible in the primary row (not hidden in the overflow) -->
+      <div v-if="currentScenario && (canCopyToOrg || canEditScenario)" ref="actionsMenuRef" class="dropdown-container">
         <button
-          v-if="canPreview"
-          @click="emit('preview')"
+          type="button"
           class="btn-icon"
-          :title="t('scenarioEditor.playAsStudent')"
-          :aria-label="t('scenarioEditor.playAsStudent')"
-          :disabled="isPreviewLoading"
+          data-testid="scenario-more-actions"
+          :title="t('scenarioEditor.moreActions')"
+          :aria-label="t('scenarioEditor.moreActions')"
+          :aria-expanded="showActionsMenu"
+          aria-haspopup="true"
+          @click.stop="showActionsMenu = !showActionsMenu"
         >
-          <i :class="isPreviewLoading ? 'fas fa-spinner fa-spin' : 'fas fa-play'" aria-hidden="true"></i>
+          <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
         </button>
-        <span class="header-divider" aria-hidden="true"></span>
-      </template>
+        <div v-if="showActionsMenu" class="ocf-header-menu" @click.stop>
+          <button v-if="canCopyToOrg" class="ocf-header-menu-item" @click="emit('copy-to-org'); showActionsMenu = false">
+            <i class="fas fa-copy" aria-hidden="true"></i>
+            <span>{{ t('scenarioEditor.copyToOrg') }}</span>
+          </button>
+          <button
+            v-if="canEditScenario && !currentScenario.archived_at"
+            class="ocf-header-menu-item"
+            @click="emit('archive'); showActionsMenu = false"
+          >
+            <i class="fas fa-box-archive" aria-hidden="true"></i>
+            <span>{{ t('scenarioEditor.archive') }}</span>
+          </button>
+          <button
+            v-if="canEditScenario && currentScenario.archived_at"
+            class="ocf-header-menu-item"
+            @click="emit('unarchive'); showActionsMenu = false"
+          >
+            <i class="fas fa-rotate-left" aria-hidden="true"></i>
+            <span>{{ t('scenarioEditor.unarchive') }}</span>
+          </button>
+          <button
+            v-if="canEditScenario"
+            class="ocf-header-menu-item is-danger"
+            data-testid="scenario-delete"
+            @click="emit('delete'); showActionsMenu = false"
+          >
+            <i class="fas fa-trash" aria-hidden="true"></i>
+            <span>{{ t('scenarioEditor.deleteScenario') }}</span>
+          </button>
+        </div>
+      </div>
 
-      <!-- Primary actions -->
       <button
         v-if="canEditScenario"
-        @click="emit('save')"
-        class="btn-save"
-        :disabled="!selectedScenarioId && nodeCount === 0"
+        type="button"
+        class="ocf-btn-play"
+        data-testid="scenario-play-btn"
+        :disabled="!canPreview || isPreviewLoading"
+        :title="canPreview ? undefined : t('scenarioEditor.playNeedsSteps')"
+        @click="emit('preview')"
       >
-        <i class="fas fa-save" aria-hidden="true"></i> {{ t('scenarioEditor.save') }}
+        <i :class="isPreviewLoading ? 'fas fa-spinner fa-spin' : 'fas fa-play'" aria-hidden="true"></i>
+        {{ t('scenarioEditor.playAsStudent') }}
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import AdminBadge from '../Common/AdminBadge.vue'
 import ScenarioExportMenu from './ScenarioExportMenu.vue'
 import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
@@ -186,244 +159,195 @@ interface Props {
   canEditScenario: boolean
   canCopyToOrg: boolean
   isAdmin: boolean
-  nodeCount: number
-  edgeCount: number
   canPreview: boolean
   isPreviewLoading: boolean
-  /** Languages this scenario is offered in, the default first. */
-  locales?: string[]
-  defaultLocale?: string
-  /** The language being edited; equal to defaultLocale means authoring. */
-  editingLocale?: string
-  /** Coverage per locale, used to say how much is left rather than only which. */
-  coverage?: Array<{ locale: string; translated: number; total_steps: number; stale: number }>
+  healthAvailable?: boolean
+  blockingCount?: number
+  warningCount?: number
+  /** The open step's state; null when no step is open. */
+  saveState?: 'saved' | 'dirty' | 'saving' | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  locales: () => [],
-  defaultLocale: '',
-  editingLocale: '',
-  coverage: () => []
+  healthAvailable: false,
+  blockingCount: 0,
+  warningCount: 0,
+  saveState: null
 })
 
-/** A language's name in its own language, capitalised for use as a label. */
-function languageName(locale: string): string {
-  let name = locale
-  try {
-    name = new Intl.DisplayNames([locale], { type: 'language' }).of(locale) || locale
-  } catch {
-    return locale
-  }
-  return name.charAt(0).toLocaleUpperCase(locale) + name.slice(1)
-}
-
-/**
- * How far along a language is, as "12/36".
- *
- * Shown beside the name because "French" alone says nothing about whether
- * choosing it means writing three steps or thirty.
- */
-function localeProgress(locale: string): string {
-  const found = props.coverage.find(c => c.locale === locale)
-  if (!found || locale === props.defaultLocale) return ''
-  return ` (${found.translated - found.stale}/${found.total_steps})`
-}
-
 const emit = defineEmits<{
-  (e: 'update:selectedScenarioId', id: string | null): void
-  (e: 'update:editingLocale', locale: string): void
-  (e: 'select-change'): void
+  (e: 'select', id: string | null): void
   (e: 'create-new'): void
   (e: 'export-json'): void
   (e: 'export-killercoda'): void
   (e: 'copy-to-org'): void
   (e: 'archive'): void
   (e: 'unarchive'): void
+  (e: 'delete'): void
   (e: 'preview'): void
-  (e: 'reset'): void
-  (e: 'save'): void
 }>()
 
-// Header overflow menu (Copy / Archive / Reset)
+const { t } = useScenarioEditorI18n()
+
+// Scenarios the user may edit first, then the ones they can only read — the
+// platform's catalogue apart from anything else they happen to see.
+const scenarioGroups = computed(() => {
+  const groups = [
+    { label: t('scenarioEditor.myScenarios'), scenarios: props.scenarios.filter(s => s.can_manage) },
+    { label: t('scenarioEditor.platformScenarios'), scenarios: props.scenarios.filter(s => !s.can_manage && !s.organization_id) },
+    { label: t('scenarioEditor.otherScenarios'), scenarios: props.scenarios.filter(s => !s.can_manage && s.organization_id) }
+  ]
+  return groups.filter(group => group.scenarios.length)
+})
+
+const statusClass = computed(() => {
+  if (props.blockingCount) return 'is-blocking'
+  return props.warningCount ? 'is-warning' : 'is-ok'
+})
+
+const statusIcon = computed(() => ({
+  'is-blocking': 'fas fa-circle-xmark',
+  'is-warning': 'fas fa-triangle-exclamation',
+  'is-ok': 'fas fa-circle-check'
+})[statusClass.value])
+
+const statusLabel = computed(() => {
+  if (props.blockingCount) return t('scenarioEditor.blockingCount', { count: String(props.blockingCount) })
+  if (props.warningCount) return t('scenarioEditor.warningCount', { count: String(props.warningCount) })
+  return t('scenarioEditor.readyToPlay')
+})
+
+function onSelectChange(event: Event) {
+  const select = event.target as HTMLSelectElement
+  const value = select.value || null
+  // The page may refuse (unsaved edits): show the selection it keeps, not the click.
+  select.value = props.selectedScenarioId ?? ''
+  emit('select', value)
+}
+
 const showActionsMenu = ref(false)
 const actionsMenuRef = ref<HTMLElement | null>(null)
 
-// Click outside the actions menu container closes it. The trigger button uses
-// @click.stop, so this listener fires only for clicks outside the dropdown.
 const handleDocumentClick = (event: MouseEvent) => {
-  if (!showActionsMenu.value) return
-  const target = event.target as HTMLElement
-  if (actionsMenuRef.value && !actionsMenuRef.value.contains(target)) {
+  if (showActionsMenu.value && actionsMenuRef.value && !actionsMenuRef.value.contains(event.target as Node)) {
     showActionsMenu.value = false
   }
 }
 
-onMounted(() => {
-  document.addEventListener('click', handleDocumentClick)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleDocumentClick)
-})
-
-// Re-emit native <select> change as both v-model update + a select-change
-// hook so the parent can run side effects (load the scenario) after the
-// selected id has settled.
-function onSelectChange(e: Event) {
-  const target = e.target as HTMLSelectElement
-  const value = target.value === '' ? null : target.value
-  emit('update:selectedScenarioId', value as string | null)
-  emit('select-change')
-}
-
-// Registers the shared scenarioEditor.* namespace so the header is self-contained.
-const { t } = useScenarioEditorI18n()
+onMounted(() => document.addEventListener('click', handleDocumentClick))
+onUnmounted(() => document.removeEventListener('click', handleDocumentClick))
 </script>
 
 <style scoped>
-.ocf-editing-locale {
-  display: inline-flex;
+.ocf-editor-header {
+  display: flex;
   align-items: center;
-  gap: 0.4rem;
-  color: var(--color-text-secondary);
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border-light);
+  min-height: 3.5rem;
 }
 
-.ocf-editing-locale-select {
-  padding: 0.15rem 0.4rem;
+.ocf-header-primary,
+.ocf-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+/* On a narrow screen the chips go to a second line rather than under the actions. */
+.ocf-header-primary {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+}
+
+.ocf-header-actions {
+  flex-shrink: 0;
+}
+
+.ocf-picker-icon {
+  color: var(--color-success);
+}
+
+.ocf-scenario-picker {
+  min-width: 14rem;
+  max-width: 26rem;
+  padding: 0.4rem 0.6rem;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: var(--border-radius-md);
   background: var(--color-background);
   color: var(--color-text-primary);
-  font-size: 0.85rem;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  cursor: pointer;
 }
 
-.ocf-editing-locale-select:focus-visible {
+.ocf-scenario-picker:hover {
+  border-color: var(--color-primary);
+}
+
+.ocf-scenario-picker:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
 }
 
-.editor-header {
-  display: flex;
-  align-items: center;
-  padding: 0.5rem 0.75rem;
-  background: var(--color-bg-secondary);
-  border-bottom: 1px solid var(--color-border-light);
-  gap: 0.75rem;
-  min-height: 3rem;
-}
-
-.header-primary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 1;
-  min-width: 0;
-}
-
-.header-title {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  white-space: nowrap;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.scenario-select {
-  flex: 1;
-  max-width: 320px;
-  min-width: 180px;
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-background);
-  color: var(--color-text-primary);
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-
-.scenario-select:hover {
-  border-color: var(--color-primary);
-}
-
-.scenario-select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-light);
-}
-
-.header-context {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-
-.org-tag {
-  font-size: 0.7rem;
-  color: var(--color-text-secondary);
-  padding: 0.2rem 0.5rem;
-  background: var(--color-surface-variant);
-  border-radius: 3px;
-  display: flex;
+.ocf-header-chip {
+  display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  white-space: nowrap;
-}
-
-.debug-info {
-  font-size: 0.65rem;
-  color: var(--color-text-secondary);
-  opacity: 0.6;
-  white-space: nowrap;
-}
-
-.archived-badge {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--border-radius-full);
   background: var(--color-surface-variant);
-  border: 1px solid var(--color-border-medium);
-  padding: 0.2rem 0.5rem;
-  border-radius: 3px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
   white-space: nowrap;
-  flex-shrink: 0;
+}
+
+.ocf-status-chip.is-ok {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.ocf-status-chip.is-warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.ocf-status-chip.is-blocking {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-text);
 }
 
 .readonly-badge {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--color-warning-text);
   background: var(--color-warning-bg);
-  border: 1px solid var(--color-warning-border);
-  padding: 0.2rem 0.5rem;
-  border-radius: 3px;
-  white-space: nowrap;
-  flex-shrink: 0;
+  color: var(--color-warning-text);
 }
 
-.header-actions {
-  display: flex;
+/* Reserved width: the longest of the three states fits, so the buttons to
+   its right never move when it changes. */
+.ocf-save-state {
+  display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  flex-shrink: 0;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  min-width: 11rem;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
-.header-divider {
-  width: 1px;
-  height: 1.2rem;
-  background: var(--color-border);
-  margin: 0 0.25rem;
+.ocf-save-state.is-dirty {
+  color: var(--color-warning-text);
 }
 
-/* Icon buttons */
+.ocf-save-state.is-dirty i {
+  font-size: 0.5rem;
+}
+
 .btn-icon {
   display: flex;
   align-items: center;
@@ -431,12 +355,10 @@ const { t } = useScenarioEditorI18n()
   width: 2rem;
   height: 2rem;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--border-radius-sm);
   background: transparent;
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.15s;
 }
 
 .btn-icon:hover:not(:disabled) {
@@ -445,66 +367,57 @@ const { t } = useScenarioEditorI18n()
   border-color: var(--color-border);
 }
 
-.btn-icon:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
 .btn-icon.btn-create {
   color: var(--color-success);
 }
 
-.btn-icon.btn-create:hover {
-  background: rgba(40, 167, 69, 0.1);
-  border-color: var(--color-success);
-}
-
-/* Save button (primary, with label) */
-.btn-save {
-  display: flex;
+.ocf-btn-play {
+  display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.75rem;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--border-radius-md);
   background: var(--color-primary);
-  color: white;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
+  color: var(--color-white);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   white-space: nowrap;
+  cursor: pointer;
 }
 
-.btn-save:hover:not(:disabled) {
+.ocf-btn-play:hover:not(:disabled) {
   background: var(--color-primary-hover);
 }
 
-.btn-save:disabled {
+.ocf-btn-play:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Header overflow menu — reuses dropdown-* tokens from the TerminalMySessions.vue
-   pattern (no shared component yet; small enough to inline here) */
+.ocf-editor-header button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
 .dropdown-container {
   position: relative;
 }
 
-.dropdown-menu {
+.ocf-header-menu {
   position: absolute;
   top: calc(100% + 0.25rem);
   right: 0;
   min-width: 220px;
+  padding: 0.25rem 0;
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-light);
-  border-radius: var(--border-radius-md, 6px);
-  box-shadow: var(--shadow-lg, 0 4px 12px rgba(0, 0, 0, 0.15));
-  z-index: 100;
-  padding: 0.25rem 0;
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-index-dropdown);
 }
 
-.dropdown-item {
+.ocf-header-menu-item {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -514,34 +427,39 @@ const { t } = useScenarioEditorI18n()
   border: none;
   text-align: left;
   color: var(--color-text-primary);
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
 }
 
-.dropdown-item:hover:not(:disabled) {
+.ocf-header-menu-item.is-danger {
+  color: var(--color-danger);
+}
+
+.ocf-header-menu-item:hover {
   background: var(--color-bg-secondary);
   color: var(--color-primary);
 }
 
-.dropdown-item:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.dropdown-item i {
-  width: 1rem;
-  text-align: center;
-  opacity: 0.7;
-}
-
-.dropdown-item:hover:not(:disabled) i {
-  opacity: 1;
-}
-
-.dropdown-divider {
+.ocf-visually-hidden {
+  position: absolute;
+  width: 1px;
   height: 1px;
-  background: var(--color-border-light);
-  margin: 0.25rem 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Narrower still, the actions take a line of their own. */
+@media (max-width: 1100px) {
+  .ocf-editor-header {
+    flex-wrap: wrap;
+  }
+}
+
+/* Narrow screens: button labels give way to their icons. */
+@media (max-width: 1500px) {
+  .ocf-header-actions :deep(.ocf-btn-outline span) {
+    display: none;
+  }
 }
 </style>

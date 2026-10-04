@@ -1,134 +1,132 @@
 <template>
-  <div class="scenario-editor">
+  <div class="ocf-scenario-workbench">
     <ScenarioEditorHeader
-      v-model:selectedScenarioId="selectedScenarioId"
       :scenarios="allScenarios"
+      :selected-scenario-id="selectedScenarioId"
       :current-scenario="currentScenario"
-      :scenario-org-name="currentScenario ? getScenarioOrgName(currentScenario) : null"
+      :scenario-org-name="currentScenarioOrgName"
       :can-create-scenario="canCreateScenario"
       :can-edit-scenario="canEditScenario"
-      :can-copy-to-org="!!canCopyToOrg"
+      :can-copy-to-org="canCopyToOrg"
       :is-admin="isAdmin"
-      :node-count="nodes.length"
-      :edge-count="edges.length"
       :can-preview="canPreviewScenario"
       :is-preview-loading="isPreviewLoading"
-      :locales="scenarioLocales"
-      :default-locale="scenarioDefaultLocale"
-      :editing-locale="editingLocale"
-      :coverage="translationCoverage"
-      @update:editing-locale="editingLocale = $event"
-      @select-change="handleScenarioSelect"
+      :health-available="health.available.value"
+      :blocking-count="health.blockingCount.value"
+      :warning-count="health.warningCount.value"
+      :save-state="saveState"
+      @select="requestScenario"
       @create-new="handleCreateNew"
       @export-json="currentScenario && exportScenario(currentScenario, 'json')"
       @export-killercoda="currentScenario && exportScenario(currentScenario, 'killercoda')"
-      @copy-to-org="openCopyModal"
-      @archive="openArchiveModal"
+      @copy-to-org="showDuplicateModal = true"
+      @archive="showArchiveModal = true"
       @unarchive="handleUnarchive"
+      @delete="showDeleteScenarioModal = true"
       @preview="openPreviewConfirm()"
-      @reset="handleReset"
-      @save="handleSave"
     >
       <template #import>
-        <ScenarioImportButton @imported="handleImported" />
-        <ScenarioAiButtons
-          :scenario="currentScenario"
-          :can-manage="canEditScenario"
-          @imported="(scenario, mode) => handleImported(scenario, mode === 'improve' ? 'scenarioEditor.aiUpdateSuccess' : 'scenarioEditor.aiCreateSuccess')"
-        />
+        <ScenarioImportButton @imported="openImported" />
+      </template>
+      <template #ai>
+        <ScenarioAiButtons :scenario="currentScenario" :can-manage="canEditScenario" @imported="onAiImported" />
       </template>
     </ScenarioEditorHeader>
 
-    <div class="editor-container">
-      <!-- Left Panel: Node Library -->
-      <NodeLibraryPanel
-        class="panel library-panel"
-        :node-types="scenarioNodeTypeDefinitions"
-        :panel-title="t('scenarioEditor.nodeLibraryTitle')"
-        :help-text="t('scenarioEditor.nodeLibraryHelp')"
-        @node-drag-start="handleNodeDragStart"
-        @add-at-center="handleAddAtCenter"
-      />
-
-      <!-- Center Panel: Flow Canvas -->
-      <FlowCanvas
-        ref="flowCanvasRef"
-        class="panel canvas-panel"
-        :nodes="nodes"
-        :edges="edges"
-        :dragged-node-type="draggedNodeType"
-        :custom-node-types="customNodeTypes"
-        :empty-icon="'🧪'"
-        :empty-title="t('scenarioEditor.emptyTitle')"
-        :empty-description="t('scenarioEditor.emptyDescription')"
-        @nodes-change="handleNodesChange"
-        @edges-change="handleEdgesChange"
-        @update:nodes="nodes = $event"
-        @update:edges="edges = $event"
-        @node-click="handleNodeClick"
-        @pane-click="handlePaneClick"
-        @node-added="handleNodeAdded"
-        @node-edit="openEditModal"
-        @node-delete="openDeleteModal"
-        @toggle-expand="handleToggleExpand"
-        @select-tree="handleSelectTree"
-        @edge-connect="handleEdgeConnect"
-        @edge-insert="handleEdgeInsert"
-        @edge-insert-request="handleEdgeInsertRequest"
-      />
-
-      <!-- Inline picker for hover-+ click on edges -->
-      <InsertNodePicker
-        :visible="showInsertPicker"
-        :node-types="scenarioNodeTypeDefinitions"
-        :allowed-types="[...STEP_NODE_TYPES]"
-        :client-x="insertPickerClientX"
-        :client-y="insertPickerClientY"
-        :header-text="t('scenarioEditor.insertStep')"
-        :aria-label="t('scenarioEditor.insertStep')"
-        @select="handleInsertPickerSelect"
-        @close="closeInsertPicker"
-      />
-
-      <!-- Right Panel: Scenario Step List (foldable) -->
-      <div class="panel tree-panel" :class="{ collapsed: isRightPanelCollapsed }" :style="!isRightPanelCollapsed ? { width: treePanelWidth + 'px' } : {}">
-        <button
-          class="panel-collapse-toggle"
-          @click="toggleRightPanel"
-          :title="isRightPanelCollapsed ? t('scenarioEditor.panelTooltip') : t('scenarioEditor.collapsePanel')"
-          :aria-label="isRightPanelCollapsed ? t('scenarioEditor.expandPanel') : t('scenarioEditor.collapsePanel')"
-          :aria-expanded="!isRightPanelCollapsed"
-        >
-          <i :class="isRightPanelCollapsed ? 'fas fa-chevron-left' : 'fas fa-chevron-right'" aria-hidden="true"></i>
+    <!-- Nothing open: say what can be done, not that nothing is there. -->
+    <section v-if="!currentScenario" class="ocf-workbench-empty" data-testid="editor-empty-state">
+      <i class="fas fa-flask ocf-workbench-empty-icon" aria-hidden="true"></i>
+      <h2>{{ t('scenarioEditor.emptyTitle') }}</h2>
+      <p>{{ t('scenarioEditor.emptyDescription') }}</p>
+      <div class="ocf-workbench-empty-actions">
+        <button v-if="canCreateScenario" type="button" class="ocf-btn-primary" data-testid="empty-create-scenario" @click="handleCreateNew">
+          <i class="fas fa-plus" aria-hidden="true"></i> {{ t('scenarioEditor.createScenario') }}
         </button>
-        <template v-if="!isRightPanelCollapsed">
-          <div
-            class="resize-handle"
-            :class="{ resizing: isResizing }"
-            role="separator"
-            aria-orientation="vertical"
-            tabindex="0"
-            :aria-valuenow="treePanelWidth"
-            aria-valuemin="200"
-            aria-valuemax="600"
-            :aria-label="t('scenarioEditor.resizeHandleAriaLabel')"
-            @mousedown="startResize"
-            @keydown.left.prevent="resizeBy(-10)"
-            @keydown.right.prevent="resizeBy(10)"
-          ></div>
-          <ScenarioStepListPanel
-            :scenarios="allScenarios"
-            :translation-states="translationStates"
-          />
-        </template>
+        <ScenarioImportButton @imported="openImported" />
+        <ScenarioAiButtons :scenario="null" :can-manage="false" create-only @imported="onAiImported" />
       </div>
+    </section>
+
+    <div v-else class="ocf-workbench">
+      <ScenarioOutline
+        class="ocf-workbench-outline"
+        :scenario="currentScenario"
+        :steps="outline"
+        :selected-key="selectedKey"
+        :editable="canEditScenario"
+        :can-edit-settings="canEditScenario"
+        :translation-states="translationStates"
+        @select="requestStep"
+        @move="moveOutlineStep"
+        @insert="insertDraft"
+        @edit-settings="openScenarioSettings"
+      />
+
+      <main class="ocf-workbench-center">
+        <ScenarioStepEditor
+          v-if="editingStep"
+          :step-data="editingStep"
+          :is-new="!editingStep.id"
+          :is-first-step="selectedIndex === 0"
+          :is-saving="isSavingStep"
+          :error-message="stepSaveError"
+          :locale="editingLocale"
+          :default-locale="scenarioDefaultLocale"
+          :translation="editingStepTranslation"
+          :step-state="(editingStep.id && translationStates[editingStep.id]) || ''"
+          :locale-label="localeLabel(editingLocale)"
+          :default-locale-label="localeLabel(scenarioDefaultLocale)"
+          :locales="scenarioLocales"
+          :can-test-from-step="canPreviewScenario"
+          @update:dirty="stepDirty = $event"
+          @save="handleSaveStep"
+          @save-translation="handleSaveStepTranslation"
+          @update:locale="handleEditingLocaleChange"
+          @test-from-step="openPreviewConfirm"
+          @duplicate="duplicateSelectedStep"
+          @delete="requestDeleteStep"
+        />
+
+        <!-- Someone who may only read a scenario is not sent its steps. -->
+        <div v-else-if="!canEditScenario" class="ocf-workbench-placeholder" data-testid="readonly-state">
+          <i class="fas fa-lock" aria-hidden="true"></i>
+          <h2>{{ t('scenarioEditor.readOnlyTitle') }}</h2>
+          <p>{{ t('scenarioEditor.readOnlyBody') }}</p>
+          <button
+            v-if="canCopyToOrg"
+            type="button"
+            class="ocf-btn-primary"
+            data-testid="duplicate-into-org"
+            @click="showDuplicateModal = true"
+          >
+            <i class="fas fa-copy" aria-hidden="true"></i> {{ t('scenarioEditor.duplicateIntoMyOrg') }}
+          </button>
+          <p v-else class="ocf-workbench-hint">{{ t('scenarioEditor.duplicateNowhere') }}</p>
+        </div>
+
+        <div v-else-if="!outline.length" class="ocf-workbench-placeholder" data-testid="no-steps-state">
+          <i class="fas fa-list-ol" aria-hidden="true"></i>
+          <h2>{{ t('scenarioEditor.noStepsTitle') }}</h2>
+          <p>{{ t('scenarioEditor.noStepsBody') }}</p>
+        </div>
+      </main>
+
+      <ScenarioRail
+        class="ocf-workbench-rail"
+        :scenario="currentScenario"
+        :steps="outline"
+        :findings="health.findings.value"
+        :health-available="health.available.value"
+        :can-manage="canEditScenario"
+        :org-name="currentScenarioOrgName"
+        @edit-settings="openScenarioSettings"
+      />
     </div>
 
-    <!-- Edit Scenario Modal -->
     <ScenarioEditModal
       :visible="showScenarioEditModal"
       :editing-scenario="editingScenario"
-      :title="scenarioEditModalTitle"
+      :title="editingScenario?.isNew ? t('scenarioEditor.createScenario') : t('scenarioEditor.editScenario')"
       :is-saving="isSaving"
       :error-message="modalError"
       :org-scopes="orgScopes"
@@ -150,42 +148,52 @@
       @update:locale="handleScenarioEditingLocaleChange"
     />
 
-    <!-- Edit Step Modal -->
-    <ScenarioStepEditModal
-      :visible="showStepEditModal"
-      :step-data="editingStep"
-      :is-new="editingStepIsNew"
-      :is-first-step="editingStepIsFirst"
-      :is-saving="isSavingStep"
-      :error-message="stepSaveError"
-      :locale="editingLocale"
-      :default-locale="scenarioDefaultLocale"
-      :translation="editingStepTranslation"
-      :step-state="translationStates[editingStep?.entityId] || ''"
-      :locale-label="localeLabel(editingLocale)"
-      :default-locale-label="localeLabel(scenarioDefaultLocale)"
-      :locales="scenarioLocales"
-      :can-test-from-step="canPreviewScenario"
-      @close="closeStepEditModal"
-      @save="handleSaveStep"
-      @test-from-step="openPreviewConfirm"
-      @save-translation="handleSaveStepTranslation"
-      @update:locale="handleEditingLocaleChange"
+    <ScenarioDuplicateModal
+      :visible="showDuplicateModal"
+      :scenario="currentScenario"
+      @close="showDuplicateModal = false"
+      @duplicated="openDuplicate"
     />
 
-    <!-- Delete Confirmation Modal -->
     <BaseModal
-      :visible="showDeleteModal"
+      :visible="!!stepPendingDelete"
       :title="t('scenarioEditor.confirmDelete')"
       size="small"
       :show-default-footer="true"
       :confirm-text="t('scenarioEditor.delete')"
       :cancel-text="t('scenarioEditor.cancel')"
       confirm-icon="fas fa-trash"
-      @close="closeDeleteModal"
-      @confirm="confirmDelete"
+      @close="stepPendingDelete = null"
+      @confirm="confirmDeleteStep"
     >
-      <p>{{ t('scenarioEditor.deleteWarning', { type: deletingNode?.data?.entityType || 'item', name: deletingNode?.data?.label || '' }) }}</p>
+      <p>{{ t('scenarioEditor.deleteStepWarning', { name: stepPendingDelete?.title || '' }) }}</p>
+    </BaseModal>
+
+    <BaseModal
+      :visible="unsavedGuard.isAsking.value"
+      :title="t('scenarioEditor.unsavedTitle')"
+      size="small"
+      :show-default-footer="true"
+      :confirm-text="t('scenarioEditor.discardChanges')"
+      :cancel-text="t('scenarioEditor.keepEditing')"
+      @close="unsavedGuard.answer(false)"
+      @confirm="unsavedGuard.answer(true)"
+    >
+      <p>{{ t('scenarioEditor.unsavedBody') }}</p>
+    </BaseModal>
+
+    <BaseModal
+      :visible="showDeleteScenarioModal"
+      :title="t('scenarioEditor.confirmDelete')"
+      size="small"
+      :show-default-footer="true"
+      :confirm-text="t('scenarioEditor.delete')"
+      :cancel-text="t('scenarioEditor.cancel')"
+      confirm-icon="fas fa-trash"
+      @close="showDeleteScenarioModal = false"
+      @confirm="handleDeleteScenario"
+    >
+      <p>{{ t('scenarioEditor.deleteScenarioWarning', { name: currentScenario?.title || currentScenario?.name || '' }) }}</p>
     </BaseModal>
 
     <!-- Archive Confirmation Modal -->
@@ -218,38 +226,13 @@
     >
       <p>{{ previewFromStepOrder === null ? t('scenarioEditor.previewConfirmBody') : t('scenarioEditor.previewFromStepConfirmBody') }}</p>
     </BaseModal>
-
-    <!-- Copy to Org Modal -->
-    <BaseModal
-      :visible="showCopyModal"
-      :title="t('scenarioEditor.copyToOrg')"
-      size="small"
-      :show-default-footer="true"
-      :confirm-text="isCopying ? t('scenarioEditor.copying') : t('scenarioEditor.copyToOrg')"
-      :cancel-text="t('scenarioEditor.cancel')"
-      :is-loading="isCopying"
-      @close="closeCopyModal"
-      @confirm="handleCopyToOrg"
-    >
-      <div class="form-group">
-        <label for="copy-target">{{ t('scenarioEditor.selectTargetOrg') }}</label>
-        <select id="copy-target" v-model="copyTargetKey" class="form-control">
-          <option :value="null" disabled>{{ t('scenarioEditor.selectTargetOrg') }}</option>
-          <optgroup v-if="copyTargetOrgs.length" :label="t('scenarioEditor.scopeOrganizations')">
-            <option v-for="s in copyTargetOrgs" :key="`org:${s.id}`" :value="`org:${s.id}`">{{ s.name }}</option>
-          </optgroup>
-          <optgroup v-if="groupScopes.length" :label="t('scenarioEditor.scopeGroups')">
-            <option v-for="s in groupScopes" :key="`group:${s.id}`" :value="`group:${s.id}`">{{ s.name }}</option>
-          </optgroup>
-        </select>
-      </div>
-    </BaseModal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, markRaw, type Component } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import axios from 'axios'
 import { useScenariosStore } from '../../stores/scenarios'
 import { useScenarioStepsStore } from '../../stores/scenarioSteps'
 import { useOrganizationsStore } from '../../stores/organizations'
@@ -258,32 +241,31 @@ import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useScenarioCreateScopes } from '../../composables/useScenarioCreateScopes'
 import { useNotification } from '../../composables/useNotification'
 import { useScenarioExport } from '../../composables/useScenarioExport'
-import { useScenarioGraph, STEP_NODE_TYPES, isFirstStepNode } from '../../composables/useScenarioGraph'
-import { useResizablePanel } from '../../composables/useResizablePanel'
-import NodeLibraryPanel from '../GraphEditor/NodeLibraryPanel.vue'
-import type { NodeTypeDefinition } from '../GraphEditor/NodeLibraryPanel.vue'
-import FlowCanvas from '../GraphEditor/FlowCanvas.vue'
-import { receivedScriptFields, withoutUnseenScripts } from '../../utils/scenarioStepPayload'
+import { useScenarioHealth } from '../../composables/useScenarioHealth'
+import { useUnsavedChangesGuard } from '../../composables/useUnsavedChangesGuard'
+import { withoutUnseenScripts } from '../../utils/scenarioStepPayload'
 import { previewOptions, previewRefusalKey } from '../../utils/scenarioPreview'
-import InsertNodePicker from '../GraphEditor/InsertNodePicker.vue'
-import ScenarioStepListPanel from '../ScenarioEditor/ScenarioStepListPanel.vue'
-import ScenarioNode from '../ScenarioEditor/nodes/ScenarioNode.vue'
-import StepNode from '../ScenarioEditor/nodes/StepNode.vue'
-import TerminalStepNode from '../ScenarioEditor/nodes/TerminalStepNode.vue'
-import FlagStepNode from '../ScenarioEditor/nodes/FlagStepNode.vue'
-import InfoStepNode from '../ScenarioEditor/nodes/InfoStepNode.vue'
-import QuizStepNode from '../ScenarioEditor/nodes/QuizStepNode.vue'
-import ScenarioStepEditModal from '../ScenarioEditor/ScenarioStepEditModal.vue'
+import {
+  draftStep,
+  insertStep,
+  moveStep,
+  renumberSteps,
+  toOutlineSteps,
+  type OutlineStep,
+  type StepType
+} from '../../utils/scenarioOutline'
+import ScenarioOutline from '../ScenarioEditor/ScenarioOutline.vue'
+import ScenarioRail from '../ScenarioEditor/ScenarioRail.vue'
+import ScenarioStepEditor from '../ScenarioEditor/ScenarioStepEditor.vue'
 import ScenarioEditModal from '../ScenarioEditor/ScenarioEditModal.vue'
 import ScenarioEditorHeader from '../ScenarioEditor/ScenarioEditorHeader.vue'
 import ScenarioImportButton from '../ScenarioEditor/ScenarioImportButton.vue'
 import ScenarioAiButtons from '../ScenarioEditor/ScenarioAiButtons.vue'
-import { scenarioTranslationService } from '../../services/domain/scenario'
-import type { LocaleCoverage, StepTranslation, ScenarioTranslation } from '../../services/domain/scenario'
+import ScenarioDuplicateModal from '../ScenarioEditor/ScenarioDuplicateModal.vue'
 import BaseModal from '../Modals/BaseModal.vue'
-import axios from 'axios'
+import { scenarioTranslationService, scenarioSessionService, scenarioStepService } from '../../services/domain/scenario'
+import type { LocaleCoverage, StepTranslation, ScenarioTranslation } from '../../services/domain/scenario'
 import { terminalService } from '../../services/domain/terminal/terminalService'
-import { scenarioSessionService } from '../../services/domain/scenario'
 import type { Size } from '../../types/terminal'
 
 const route = useRoute()
@@ -310,104 +292,64 @@ const {
   loadScopeSources,
 } = useScenarioCreateScopes()
 
-// Custom node types for VueFlow
-const customNodeTypes: Record<string, Component> = {
-  scenario: markRaw(ScenarioNode),
-  step: markRaw(StepNode),
-  terminal: markRaw(TerminalStepNode),
-  flag: markRaw(FlagStepNode),
-  info: markRaw(InfoStepNode),
-  quiz: markRaw(QuizStepNode)
-}
-
-// Node type definitions for the library panel
-const scenarioNodeTypeDefinitions = computed((): NodeTypeDefinition[] => [
-  {
-    type: 'scenario',
-    icon: '\u{1F9EA}',
-    color: 'var(--scenario-node-scenario)',
-    bgColor: 'var(--scenario-node-scenario-bg)',
-    label: t('scenarioEditor.nodeTypes.scenario'),
-    description: t('scenarioEditor.nodeTypes.scenarioDescription')
-  },
-  {
-    type: 'terminal',
-    icon: '\u{1F5A5}\uFE0F',
-    color: 'var(--scenario-node-terminal)',
-    bgColor: 'var(--scenario-node-terminal-bg)',
-    label: t('scenarioEditor.nodeTypes.terminalStep'),
-    description: t('scenarioEditor.nodeTypes.terminalStepDescription')
-  },
-  {
-    type: 'flag',
-    icon: '\u{1F6A9}',
-    color: 'var(--scenario-node-flag)',
-    bgColor: 'var(--scenario-node-flag-bg)',
-    label: t('scenarioEditor.nodeTypes.flagStep'),
-    description: t('scenarioEditor.nodeTypes.flagStepDescription')
-  },
-  {
-    type: 'info',
-    icon: '\u{1F4D6}',
-    color: 'var(--scenario-node-info)',
-    bgColor: 'var(--scenario-node-info-bg)',
-    label: t('scenarioEditor.nodeTypes.infoStep'),
-    description: t('scenarioEditor.nodeTypes.infoStepDescription')
-  },
-  {
-    type: 'quiz',
-    icon: '\u{2753}',
-    color: 'var(--scenario-node-quiz)',
-    bgColor: 'var(--scenario-node-quiz-bg)',
-    label: t('scenarioEditor.nodeTypes.quizStep'),
-    description: t('scenarioEditor.nodeTypes.quizStepDescription')
-  }
-])
-
-// State
-const draggedNodeType = ref<string | null>(null)
+const allScenarios = computed(() => scenariosStore.entities)
 const selectedScenarioId = ref<string | null>(null)
 const currentScenario = ref<any>(null)
 
-// Graph state + pure helpers (composable owns nodes/edges and conversion logic)
-const {
-  nodes,
-  edges,
-  convertScenarioToNodes,
-  syncOrderFromEdges,
-  saveNodePositions,
-  loadNodePositions,
-  clearNodePositions,
-  handleEdgeConnect,
-  insertNodeOnEdge,
-  rewireEdgesAroundDeletedNode,
-  deserializeQuestion
-} = useScenarioGraph({
-  selectedScenarioId,
-  onInvalidConnection: (sourceType, targetType) => {
-    notification.showWarning(t('scenarioEditor.invalidConnection', { source: sourceType, target: targetType }))
-  },
-  onRejectedConnection: (reason) => {
-    notification.showWarning(
-      reason === 'branch'
-        ? t('scenarioEditor.connectionWouldBranch')
-        : t('scenarioEditor.connectionWouldLoop')
-    )
-  },
-  onMultiEdgeRewireBlocked: () => {
-    notification.showWarning(t('scenarioEditor.multiEdgeWarning'))
-  }
-})
-const allScenarios = computed(() => scenariosStore.entities)
-// Right step-list panel collapsed by default — discoverability comes from the
-// tooltip on the toggle. Last user choice persists in localStorage.
-const isRightPanelCollapsed = ref(true)
+const health = useScenarioHealth(computed(() => (currentScenario.value?.can_manage ? currentScenario.value.id : null)))
 
-// Modal state
-const showScenarioEditModal = ref(false)
+// `can_manage` is the backend's own CanManageScenario verdict (creator, org
+// manager, manager of an assigned class, admin). Guessing it here from
+// memberships disagreed with the hooks in both directions.
+const canEditScenario = computed(() => !!currentScenario.value?.can_manage)
+
+// A copy goes to an organization or class the user manages, other than the
+// scenario's own organization.
+const canCopyToOrg = computed(() =>
+  !!currentScenario.value &&
+  orgScopes.value.filter(o => o.id !== currentScenario.value?.organization_id).length + groupScopes.value.length > 0
+)
+
+const currentScenarioOrgName = computed<string | null>(() => {
+  const orgId = currentScenario.value?.organization_id
+  if (!orgId) return null
+  const org = organizationsStore.getOrganizationById(orgId)
+  return org?.display_name || org?.name || null
+})
+
+const currentScenarioOrgLabel = computed<string | null>(() => {
+  if (!currentScenario.value) return null
+  if (!currentScenario.value.organization_id) return isAdmin.value ? t('scenarioEditor.platformOnly') : null
+  return currentScenarioOrgName.value
+})
+
+// ---- Outline and the step being edited ----
+
+const outline = ref<OutlineStep[]>([])
+const selectedKey = ref<string | null>(null)
+const selectedIndex = computed(() => outline.value.findIndex(step => step.key === selectedKey.value))
+// The selected step with everything the form edits (scripts included).
+const editingStep = ref<Record<string, any> | null>(null)
+const stepDirty = ref(false)
+const isSavingStep = ref(false)
+const stepSaveError = ref('')
+
+const unsavedGuard = useUnsavedChangesGuard(stepDirty)
+
+const saveState = computed(() => {
+  if (!editingStep.value) return null
+  if (isSavingStep.value || pendingOrderWrites.value > 0) return 'saving'
+  return stepDirty.value || !editingStep.value.id ? 'dirty' : 'saved'
+})
+
+const canPreviewScenario = computed(() =>
+  canEditScenario.value && outline.value.some(step => step.id)
+)
+
+// ---- Languages ----
+
 // Which language the editor is working in. Equal to the scenario's default —
-// or empty — means authoring the original, which is the behaviour that existed
-// before translations and must stay untouched.
+// or empty — means authoring the original.
 const editingLocale = ref('')
 const translationCoverage = ref<LocaleCoverage[]>([])
 const editingStepTranslation = ref<StepTranslation | null>(null)
@@ -448,14 +390,12 @@ function localeLabel(locale: string): string {
 }
 
 /**
- * Refresh how much of each language is done.
- *
- * Re-read after every translation save, because saving is also what marks a
- * step caught up: the badge that said "behind" a moment ago has to stop saying
- * it without a page reload.
+ * Refresh how much of each language is done. Re-read after every translation
+ * save, because saving is also what marks a step caught up.
  */
 const loadTranslationCoverage = async () => {
-  if (!currentScenario.value?.id || scenarioLocales.value.length < 2) {
+  // Only a manager may read it, and only a scenario in two languages has any.
+  if (!canEditScenario.value || scenarioLocales.value.length < 2) {
     translationCoverage.value = []
     return
   }
@@ -467,193 +407,360 @@ const loadTranslationCoverage = async () => {
   }
 }
 
-const showStepEditModal = ref(false)
-const showDeleteModal = ref(false)
-const editingScenario = ref<any>({})
-const editingStep = ref<any>(null)
-const editingStepIsNew = ref(false)
-const editingStepNodeId = ref<string | null>(null)
-const editingStepIsFirst = computed(
-  () => isFirstStepNode(editingStepNodeId.value, nodes.value, edges.value)
-)
-const deletingNode = ref<any>(null)
-const isSaving = ref(false)
-const modalError = ref('')
-// Step modal save state — wired into ScenarioStepEditModal so save errors
-// surface inside the modal instead of only behind a toast.
-const isSavingStep = ref(false)
-const stepSaveError = ref('')
+// ---- Loading ----
 
-// Copy to org state
-const showCopyModal = ref(false)
-const showArchiveModal = ref(false)
-const copyTargetKey = ref<string | null>(null)
-const isCopying = ref(false)
-
-// Insert-on-edge picker state (hover-+ click → pick a step type → insert)
-const showInsertPicker = ref(false)
-const insertPickerClientX = ref(0)
-const insertPickerClientY = ref(0)
-const pendingInsertEdge = ref<{ edgeId: string; source: string; target: string; flowX: number; flowY: number } | null>(null)
-
-// "Play as learner" preview state
-const showPreviewConfirmModal = ref(false)
-const isPreviewLoading = ref(false)
-// The step a "Test from this step" preview starts at; null previews the whole scenario.
-const previewFromStepOrder = ref<number | null>(null)
-
-// Scenario must have at least one step node to be previewable
-const hasSteps = computed(() =>
-  nodes.value.some(n => STEP_NODE_TYPES.includes(n.type))
-)
-
-const canPreviewScenario = computed(() =>
-  !!selectedScenarioId.value && canEditScenario.value && hasSteps.value
-)
-
-// Org context helpers
-const getScenarioOrgName = (scenario: any): string | null => {
-  if (!scenario.organization_id) return null
-  const org = organizationsStore.getOrganizationById(scenario.organization_id)
-  return org?.display_name || org?.name || null
-}
-
-// Permission: can the current user edit the loaded scenario?
-// `can_manage` is the backend's own CanManageScenario verdict (creator, org
-// manager, manager of an assigned class, admin). Guessing it here from
-// memberships disagreed with the hooks in both directions: org members got
-// controls that 403, class managers were shown read-only on their own labs.
-const canEditScenario = computed(() => !!currentScenario.value?.can_manage)
-
-// Copy targets are the create scopes minus the scenario's own organisation:
-// an org manager copies into another org they manage, a teacher copies a
-// public catalogue scenario into their class (POST /groups/:id/scenarios/:id/duplicate).
-const copyTargetOrgs = computed(() =>
-  orgScopes.value.filter(o => o.id !== currentScenario.value?.organization_id)
-)
-
-const canCopyToOrg = computed(() =>
-  !!selectedScenarioId.value && !!currentScenario.value &&
-  copyTargetOrgs.value.length + groupScopes.value.length > 0
-)
-
-const scopeHint = computed(() => {
-  const scope = parseScopeKey(editingScenario.value?._scopeKey)
-  if (!scope) return ''
-  if (scope.kind === 'platform') return t('scenarioEditor.scopeHintPlatform')
-  if (scope.kind === 'org') {
-    return t('scenarioEditor.scopeHintOrg', { name: scope.name })
-  }
-  return t('scenarioEditor.scopeHintGroup', { name: scope.name })
-})
-
-const currentScenarioOrgLabel = computed<string | null>(() => {
-  if (!currentScenario.value) return null
-  if (!currentScenario.value.organization_id) {
-    return isAdmin.value ? t('scenarioEditor.platformOnly') : null
-  }
-  const org = organizationsStore.getOrganizationById(currentScenario.value.organization_id)
-  return org?.display_name || org?.name || null
-})
-
-// Machine size catalog (loaded on mount, passed to ScenarioEditModal for the
-// instance_type dropdown).
+// Machine size catalog, for ScenarioEditModal's instance_type dropdown.
 const sizes = ref<Size[]>([])
 
-// Resize state (composable owns mousemove/mouseup listeners)
-const { panelWidth: treePanelWidth, isResizing, startResize, resizeBy } = useResizablePanel({
-  storageKey: 'scenarioEditor_treePanelWidth'
-})
-
-const scenarioEditModalTitle = computed(() => {
-  return editingScenario.value?.isNew
-    ? t('scenarioEditor.createScenario')
-    : t('scenarioEditor.editScenario')
-})
-
-// Load all scenarios
 onMounted(async () => {
-  // Fire scenarios + scope-picker prerequisites in parallel.
-  // Memberships and groups are required to render the create-scope picker;
-  // organizations are required to resolve org names. All three are independent.
   await Promise.all([
     scenariosStore.loadEntitiesIncludingArchived(),
     loadScopeSources(),
-    // Best-effort: if the sizes endpoint isn't deployed yet (404/403), fall back to plain text input.
+    // Best-effort: without the sizes endpoint the modal falls back to a text input.
     terminalService.getSizes()
-      .then(list => {
-        sizes.value = [...list].sort((a, b) => a.sort_order - b.sort_order)
-      })
+      .then(list => { sizes.value = [...list].sort((a, b) => a.sort_order - b.sort_order) })
       .catch(err => {
         console.warn('[ScenarioEditor] failed to load sizes catalog, falling back to text input', err)
         sizes.value = []
       }),
   ])
 
-  // Restore right-panel collapsed/expanded user preference (defaults to collapsed)
-  const savedRightPanelCollapsed = localStorage.getItem('scenarioEditor_rightPanelCollapsed')
-  if (savedRightPanelCollapsed !== null) {
-    isRightPanelCollapsed.value = savedRightPanelCollapsed === 'true'
-  }
-
-  // Check if scenarioId is in URL query params
   const scenarioIdFromUrl = route.query.scenarioId as string | undefined
-  if (scenarioIdFromUrl) {
-    selectedScenarioId.value = scenarioIdFromUrl
-    await handleScenarioSelect()
-  }
+  if (scenarioIdFromUrl) await openScenario(scenarioIdFromUrl)
 })
 
-const toggleRightPanel = () => {
-  isRightPanelCollapsed.value = !isRightPanelCollapsed.value
-  localStorage.setItem('scenarioEditor_rightPanelCollapsed', String(isRightPanelCollapsed.value))
+/** Asks before leaving unsaved edits, then opens the scenario. */
+async function requestScenario(id: string | null) {
+  if (id === selectedScenarioId.value) return
+  if (!(await unsavedGuard.confirmDiscard())) return
+  await openScenario(id)
 }
 
-// Handle scenario selection
-const handleScenarioSelect = async () => {
-  if (!selectedScenarioId.value) {
-    nodes.value = []
-    edges.value = []
+/**
+ * Loads a scenario with its steps and opens `stepKey`, or its first step.
+ * Also how the editor refreshes after a write: the same step stays open.
+ */
+async function openScenario(id: string | null, stepKey?: string | null) {
+  selectedScenarioId.value = id
+  // The layout keys the page on the full URL: only a scenario change goes in
+  // it, and it reloads the page — the step open is page state, not URL.
+  if ((route.query.scenarioId || null) !== id) {
+    router.replace({ query: id ? { scenarioId: id } : {} })
+    return
+  }
+  if (!id) {
     currentScenario.value = null
-    router.replace({ query: {} })
+    outline.value = []
+    selectStepData(null)
     return
   }
 
-  router.replace({ query: { scenarioId: selectedScenarioId.value } })
-
   try {
-    // Load scenario with steps included
-    const response = await axios.get(`/scenarios/${selectedScenarioId.value}?include=steps`)
+    const response = await axios.get(`/scenarios/${id}?include=steps`)
     const scenario = response.data
-
-    if (!scenario) {
-      return
-    }
-
+    if (!scenario) return
+    const sameScenario = currentScenario.value?.id === scenario.id
     currentScenario.value = scenario
-    // A language chosen for one scenario means nothing for the next: reset to
-    // the new scenario's own default rather than carrying a locale across that
-    // the new one may not even offer.
-    editingLocale.value = scenario.default_locale || ''
+    if (!sameScenario) {
+      // A language chosen for one scenario means nothing for the next.
+      editingLocale.value = scenario.default_locale || ''
+    }
     await loadTranslationCoverage()
-    convertScenarioToNodes(scenario)
-
-    // Deferred a tick so the nodes are laid out before their saved y is applied.
-    setTimeout(loadNodePositions, 0)
+    outline.value = toOutlineSteps(scenario.steps || scenario.scenario_steps || [])
+    const keep = outline.value.find(step => step.key === stepKey) || outline.value[0] || null
+    await selectStepData(keep)
   } catch (err) {
     console.error('Error loading scenario:', err)
     notification.showError(t('scenarioEditor.loadError'))
   }
 }
 
-// (graph helpers — convertScenarioToNodes, deserializeQuestion — moved to useScenarioGraph)
+async function requestStep(key: string) {
+  if (key === selectedKey.value) return
+  if (!(await unsavedGuard.confirmDiscard())) return
+  dropUnsavedDraft()
+  await selectStepData(outline.value.find(step => step.key === key) || null)
+}
 
-// Create new scenario
-const handleCreateNew = () => {
-  selectedScenarioId.value = null
-  currentScenario.value = null
-  nodes.value = []
-  edges.value = []
+// A draft left unsaved goes when the author moves on — they were asked.
+function dropUnsavedDraft() {
+  outline.value = outline.value.filter(step => step.id)
+}
+
+/**
+ * Opens a step in the editor. A saved step is read in full first: the
+ * scenario's step list leaves out its scripts, and a form opened without them
+ * would blank them on the next save.
+ */
+async function selectStepData(step: OutlineStep | null) {
+  selectedKey.value = step?.key ?? null
+  stepSaveError.value = ''
+  editingStepTranslation.value = null
+  if (!step) {
+    editingStep.value = null
+    return
+  }
+  if (!step.id) {
+    editingStep.value = { ...step }
+    return
+  }
+  try {
+    const full = await scenarioStepService.loadStep(step.id)
+    if (selectedKey.value !== step.key) return
+    if (isTranslating.value) {
+      editingStepTranslation.value = await scenarioTranslationService
+        .getStepTranslation(step.id, editingLocale.value)
+        .catch(() => null)
+    }
+    editingStep.value = { ...full, key: step.key }
+  } catch (err) {
+    console.error('Failed to load step:', err)
+    editingStep.value = { ...step, _receivedFields: [] }
+  }
+}
+
+// ---- Outline edits: the list order is the step order ----
+
+// Order writes run one after another, each on the list as it is by then: two
+// quick moves renumbering at once would interleave their PATCHes on stale
+// orders and store neither.
+let orderWrites: Promise<void> = Promise.resolve()
+const pendingOrderWrites = ref(0)
+
+function persistOutlineOrder(): Promise<void> {
+  pendingOrderWrites.value++
+  orderWrites = orderWrites.catch(() => {}).then(async () => {
+    const { failedLabels } = await renumberSteps(outline.value)
+    if (failedLabels.length > 0) {
+      notification.showError(t('scenarioEditor.orderSyncFailed', { steps: failedLabels.join(', ') }))
+    }
+  }).finally(() => { pendingOrderWrites.value-- })
+  return orderWrites
+}
+
+async function moveOutlineStep(from: number, to: number) {
+  outline.value = moveStep(outline.value, from, to)
+  await persistOutlineOrder()
+  if (editingStep.value?.id) {
+    const moved = outline.value.find(step => step.key === editingStep.value?.key)
+    if (moved) editingStep.value.order = moved.order
+  }
+  health.refresh()
+}
+
+async function insertDraft(index: number, type: StepType) {
+  if (!(await unsavedGuard.confirmDiscard())) return
+  // Insert before the step that was at `index`, wherever dropping a draft moved it.
+  const before = outline.value[index]
+  dropUnsavedDraft()
+  const at = before?.id ? outline.value.indexOf(before) : outline.value.length
+  const draft = draftStep(type)
+  outline.value = insertStep(outline.value, draft, at)
+  await selectStepData(draft)
+}
+
+// ---- Step save, duplicate, delete ----
+
+const handleSaveStep = async (formData: any) => {
+  const step = editingStep.value
+  if (!step || !currentScenario.value) return
+  isSavingStep.value = true
+  stepSaveError.value = ''
+  try {
+    // /scenario-steps has no questions field: they go through their own endpoint.
+    const { questions: newQuestions, ...stepFields } = formData
+    const stepData: Record<string, any> = withoutUnseenScripts({ ...stepFields }, step._receivedFields ?? [])
+    stepData.step_type = step.step_type
+
+    let stepId = step.id as string | undefined
+    if (!stepId) {
+      stepData.scenario_id = currentScenario.value.id
+      // Provisionally last, so a failed renumber never leaves two steps on the
+      // same order; the renumber then moves it to where it was inserted.
+      stepData.order = Math.max(-1, ...outline.value.filter(s => s.id).map(s => s.order)) + 1
+      const created = await scenarioStepsStore.createEntity('/scenario-steps', stepData)
+      stepId = created?.id || created?.data?.id
+      const draft = outline.value.find(s => s.key === step.key)
+      if (draft && stepId) {
+        Object.assign(draft, { id: stepId, key: stepId, order: stepData.order, isNew: false })
+        selectedKey.value = stepId
+        await persistOutlineOrder()
+      }
+    } else {
+      await scenarioStepsStore.updateEntity('/scenario-steps', stepId, stepData)
+    }
+
+    if (stepId && (step.step_type === 'quiz' || (Array.isArray(newQuestions) && newQuestions.length > 0))) {
+      await scenarioStepService.syncQuestions(stepId, step.questions || [], newQuestions || [])
+    }
+
+    await refreshAfterWrite(stepId)
+  } catch (err: any) {
+    console.error('Save step failed:', err)
+    stepSaveError.value = err.response?.data?.error_message || err.response?.data?.message || err.message || t('scenarioEditor.saveError')
+  } finally {
+    isSavingStep.value = false
+  }
+}
+
+async function duplicateSelectedStep() {
+  const step = editingStep.value
+  if (!step?.id || !currentScenario.value) return
+  if (!(await unsavedGuard.confirmDiscard())) return
+  try {
+    const copyFields = withoutUnseenScripts({
+      scenario_id: currentScenario.value.id,
+      step_type: step.step_type,
+      title: t('scenarioEditor.copyOfStep', { title: step.title || '' }),
+      order: Math.max(-1, ...outline.value.filter(s => s.id).map(s => s.order)) + 1,
+      text_content: step.text_content,
+      hint_content: step.hint_content,
+      verify_script: step.verify_script,
+      background_script: step.background_script,
+      foreground_script: step.foreground_script,
+      flag_path: step.flag_path,
+      flag_level: step.flag_level,
+      show_immediate_feedback: step.show_immediate_feedback,
+      intro_effect: step.intro_effect,
+      intro_text: step.intro_text,
+      outro_effect: step.outro_effect,
+      outro_text: step.outro_text
+    }, step._receivedFields ?? [])
+    const created = await scenarioStepsStore.createEntity('/scenario-steps', copyFields)
+    const copyId = created?.id || created?.data?.id
+    if (!copyId) return
+    if (step.questions?.length) {
+      await scenarioStepService.syncQuestions(copyId, [], step.questions.map(({ id: _id, ...q }: any) => q))
+    }
+    const copy = { ...outline.value[selectedIndex.value], id: copyId, key: copyId, order: copyFields.order, title: copyFields.title }
+    outline.value = insertStep(outline.value, copy, selectedIndex.value + 1)
+    await persistOutlineOrder()
+    await refreshAfterWrite(copyId)
+  } catch (err: any) {
+    notification.showError(err.response?.data?.error_message || err.message || t('scenarioEditor.saveError'))
+  }
+}
+
+const stepPendingDelete = ref<OutlineStep | null>(null)
+
+function requestDeleteStep() {
+  const step = outline.value[selectedIndex.value]
+  if (!step) return
+  if (!step.id) {
+    // A draft was never written: discarding it needs no confirmation.
+    const index = selectedIndex.value
+    outline.value = outline.value.filter(s => s.key !== step.key)
+    stepDirty.value = false
+    selectStepData(outline.value[Math.max(0, index - 1)] || null)
+    return
+  }
+  stepPendingDelete.value = step
+}
+
+async function confirmDeleteStep() {
+  const step = stepPendingDelete.value
+  stepPendingDelete.value = null
+  if (!step?.id) return
+  try {
+    const index = outline.value.findIndex(s => s.key === step.key)
+    await scenarioStepsStore.deleteEntity('/scenario-steps', step.id)
+    outline.value = outline.value.filter(s => s.key !== step.key)
+    // Close the gap, so the orders stay 0..n-1.
+    await persistOutlineOrder()
+    stepDirty.value = false
+    const next = outline.value[Math.min(index, outline.value.length - 1)]
+    await refreshAfterWrite(next?.key ?? null)
+  } catch (err: any) {
+    notification.showError(err.response?.data?.error_message || t('scenarioEditor.deleteError'))
+  }
+}
+
+/** Re-reads the scenario after a write, keeping `stepKey` open. */
+async function refreshAfterWrite(stepKey: string | null | undefined) {
+  stepDirty.value = false
+  await Promise.all([
+    openScenario(selectedScenarioId.value, stepKey),
+    scenariosStore.loadEntitiesIncludingArchived()
+  ])
+  health.refresh()
+}
+
+// ---- Translations ----
+
+/**
+ * Switch the language being edited. The new language's text is fetched before
+ * either value changes, so the form never shows one language's content under
+ * another's label.
+ */
+const handleEditingLocaleChange = async (locale: string) => {
+  const stepId = editingStep.value?.id
+  let next: StepTranslation | null = null
+  if (stepId && locale && locale !== scenarioDefaultLocale.value) {
+    try {
+      next = await scenarioTranslationService.getStepTranslation(stepId, locale)
+    } catch (err) {
+      console.error('Failed to load step translation:', err)
+    }
+  }
+  editingStepTranslation.value = next
+  editingLocale.value = locale
+}
+
+/**
+ * Save a step's translation. Not routed through handleSaveStep: authoring and
+ * translating write to different places.
+ */
+const handleSaveStepTranslation = async (fields: Record<string, string>) => {
+  const stepId = editingStep.value?.id
+  if (!stepId || !editingLocale.value) return
+  isSavingStep.value = true
+  stepSaveError.value = ''
+  try {
+    editingStepTranslation.value = await scenarioTranslationService.saveStepTranslation(
+      stepId,
+      editingLocale.value,
+      fields,
+      editingStepTranslation.value?.id
+    )
+    // Saving is also what marks the step caught up with its source.
+    await loadTranslationCoverage()
+  } catch (err: any) {
+    stepSaveError.value =
+      err.response?.data?.error?.details?.original ||
+      err.response?.data?.error_message ||
+      err.response?.data?.message ||
+      t('scenarioEditor.saveError')
+  } finally {
+    isSavingStep.value = false
+  }
+}
+
+// ---- Scenario settings (create / edit modal) ----
+
+const showScenarioEditModal = ref(false)
+const editingScenario = ref<any>({})
+const isSaving = ref(false)
+const modalError = ref('')
+
+const scopeHint = computed(() => {
+  const scope = parseScopeKey(editingScenario.value?._scopeKey)
+  if (!scope) return ''
+  if (scope.kind === 'platform') return t('scenarioEditor.scopeHintPlatform')
+  if (scope.kind === 'org') return t('scenarioEditor.scopeHintOrg', { name: scope.name })
+  return t('scenarioEditor.scopeHintGroup', { name: scope.name })
+})
+
+// The fields the scenario modal edits. The save sends this explicit list rather
+// than the whole object, so a field added to the modal and not here is edited,
+// looks saved, and is silently dropped.
+const SCENARIO_FIELDS = [
+  'name', 'title', 'difficulty', 'estimated_time_minutes', 'description', 'intro_text', 'finish_text',
+  'objectives', 'prerequisites', 'setup_script', 'instance_type', 'hostname', 'os_type', 'source_type',
+  'flags_enabled', 'crash_traps', 'port_exposure_allowed', 'is_public', 'default_locale', 'locales'
+] as const
+
+const handleCreateNew = async () => {
+  if (!(await unsavedGuard.confirmDiscard())) return
   editingScenario.value = {
     name: '',
     title: '',
@@ -678,22 +785,219 @@ const handleCreateNew = () => {
     _scopeKey: pickDefaultScopeKey(),
     isNew: true
   }
+  modalError.value = ''
   showScenarioEditModal.value = true
+}
+
+async function openScenarioSettings() {
+  const scenario = currentScenario.value
+  if (!scenario || !canEditScenario.value) return
+  editingScenario.value = {
+    ...Object.fromEntries(SCENARIO_FIELDS.map(field => [field, scenario[field] ?? ''])),
+    difficulty: scenario.difficulty || 'beginner',
+    estimated_time_minutes: scenario.estimated_time_minutes || 0,
+    instance_type: scenario.instance_type || 'S',
+    flags_enabled: !!scenario.flags_enabled,
+    crash_traps: !!scenario.crash_traps,
+    port_exposure_allowed: !!scenario.port_exposure_allowed,
+    is_public: !!scenario.is_public,
+    entityId: scenario.id,
+    organization_id: scenario.organization_id || null,
+    isNew: false
+  }
+  editingScenarioTranslation.value = null
+  if (isTranslating.value) {
+    editingScenarioTranslation.value = await scenarioTranslationService
+      .getScenarioTranslation(scenario.id, editingLocale.value)
+      .catch(() => null)
+  }
+  modalError.value = ''
+  showScenarioEditModal.value = true
+}
+
+const closeScenarioEditModal = () => {
+  showScenarioEditModal.value = false
+  editingScenario.value = {}
   modalError.value = ''
 }
 
-// An imported scenario is opened straight away: the import was done to work on it.
-const handleImported = async (scenario: { id: string }, successKey = 'scenarioEditor.importSuccess') => {
+const handleSaveScenario = async () => {
+  isSaving.value = true
+  modalError.value = ''
+  try {
+    const entityData: Record<string, any> = Object.fromEntries(
+      SCENARIO_FIELDS.map(field => [field, editingScenario.value[field]])
+    )
+    entityData.default_locale = entityData.default_locale || ''
+    entityData.locales = entityData.locales || ''
+
+    if (editingScenario.value.isNew) {
+      // Dispatch on scope: platform / organization / group → distinct endpoints.
+      const scope = parseScopeKey(editingScenario.value._scopeKey)
+      if (!scope) {
+        modalError.value = t('scenarioEditor.saveError')
+        return
+      }
+      let result: any = null
+      if (scope.kind === 'platform') {
+        result = await scenariosStore.createEntity('/scenarios', entityData)
+      } else {
+        // Org or group scoped: the owner is in the URL path; a group also gets
+        // its assignment created.
+        const base = scope.kind === 'org' ? `/organizations/${scope.id}` : `/groups/${scope.id}`
+        const response = await axios.post(`${base}/scenarios`, entityData)
+        result = response.data?.data || response.data
+      }
+      const newId = result?.id || result?.data?.id
+      closeScenarioEditModal()
+      if (newId) {
+        await scenariosStore.loadEntitiesIncludingArchived()
+        await openScenario(newId)
+      }
+      return
+    }
+
+    const entityId = editingScenario.value.entityId
+    await scenariosStore.updateEntity('/scenarios', entityId, entityData)
+    closeScenarioEditModal()
+    if (currentScenario.value?.id === entityId) {
+      currentScenario.value = { ...currentScenario.value, ...entityData }
+      if (!editingLocale.value || !scenarioLocales.value.includes(editingLocale.value)) {
+        editingLocale.value = scenarioDefaultLocale.value
+      }
+      await loadTranslationCoverage()
+      health.refresh()
+    }
+  } catch (err: any) {
+    modalError.value = err.response?.data?.error_message ||
+                       err.response?.data?.message ||
+                       err.message ||
+                       t('scenarioEditor.saveError')
+  } finally {
+    isSaving.value = false
+  }
+}
+
+/** Switch language while the scenario modal is open, fetching before swapping. */
+const handleScenarioEditingLocaleChange = async (locale: string) => {
+  const scenarioId = editingScenario.value?.entityId
+  let next: ScenarioTranslation | null = null
+  if (scenarioId && locale && locale !== scenarioDefaultLocale.value) {
+    try {
+      next = await scenarioTranslationService.getScenarioTranslation(scenarioId, locale)
+    } catch (err) {
+      console.error('Failed to load scenario translation:', err)
+    }
+  }
+  editingScenarioTranslation.value = next
+  editingLocale.value = locale
+}
+
+/** Save the scenario's own text in one language — prose only, no configuration. */
+const handleSaveScenarioTranslation = async (fields: Record<string, string>) => {
+  const scenarioId = editingScenario.value?.entityId
+  if (!scenarioId || !editingLocale.value) return
+  isSaving.value = true
+  modalError.value = ''
+  try {
+    editingScenarioTranslation.value = await scenarioTranslationService.saveScenarioTranslation(
+      scenarioId,
+      editingLocale.value,
+      fields,
+      editingScenarioTranslation.value?.id
+    )
+    closeScenarioEditModal()
+  } catch (err: any) {
+    modalError.value =
+      err.response?.data?.error?.details?.original ||
+      err.response?.data?.error_message ||
+      err.response?.data?.message ||
+      t('scenarioEditor.saveError')
+  } finally {
+    isSaving.value = false
+  }
+}
+
+// ---- Import, AI, duplicate: each ends with the new scenario open ----
+
+async function openImported(scenario: { id: string }, successKey = 'scenarioEditor.importSuccess') {
+  if (!(await unsavedGuard.confirmDiscard())) return
   await scenariosStore.loadEntitiesIncludingArchived()
-  selectedScenarioId.value = scenario.id
-  await handleScenarioSelect()
+  await openScenario(scenario.id)
   notification.showSuccess(t(successKey))
 }
 
-// "Play as learner" — launch a trainer-side preview session in a new tab.
-// The backend POST /scenarios/:id/preview bypasses the assignment check and
-// provisions a real terminal, so the trainer experiences the scenario exactly
-// as a learner would.
+function onAiImported(scenario: { id: string }, mode: 'create' | 'improve') {
+  openImported(scenario, mode === 'improve' ? 'scenarioEditor.aiUpdateSuccess' : 'scenarioEditor.aiCreateSuccess')
+}
+
+const showDuplicateModal = ref(false)
+
+async function openDuplicate(copy: { id: string }) {
+  showDuplicateModal.value = false
+  await scenariosStore.loadEntitiesIncludingArchived()
+  if (copy?.id) await openScenario(copy.id)
+}
+
+// ---- Archive ----
+
+// Archiving is confirmed because it retires the scenario for every learner and
+// class at once; restoring is not, since it only puts it back.
+const showArchiveModal = ref(false)
+
+const reloadAfterArchiveChange = async () => {
+  await scenariosStore.loadEntitiesIncludingArchived()
+  const refreshed = scenariosStore.entities.find((s: any) => s.id === currentScenario.value?.id)
+  if (refreshed) currentScenario.value = { ...currentScenario.value, archived_at: refreshed.archived_at }
+}
+
+const handleArchive = async () => {
+  if (!currentScenario.value?.id) return
+  try {
+    await scenariosStore.archiveEntity('/scenarios', currentScenario.value.id)
+    notification.showSuccess(t('scenarioEditor.archiveSuccess'))
+    showArchiveModal.value = false
+    await reloadAfterArchiveChange()
+  } catch (err: any) {
+    notification.showError(err.response?.data?.error_message || t('scenarioEditor.archiveError'))
+  }
+}
+
+const handleUnarchive = async () => {
+  if (!currentScenario.value?.id) return
+  try {
+    await scenariosStore.unarchiveEntity('/scenarios', currentScenario.value.id)
+    notification.showSuccess(t('scenarioEditor.unarchiveSuccess'))
+    await reloadAfterArchiveChange()
+  } catch (err: any) {
+    notification.showError(err.response?.data?.error_message || t('scenarioEditor.unarchiveError'))
+  }
+}
+
+const showDeleteScenarioModal = ref(false)
+
+const handleDeleteScenario = async () => {
+  if (!currentScenario.value?.id) return
+  try {
+    await scenariosStore.deleteEntity('/scenarios', currentScenario.value.id)
+    showDeleteScenarioModal.value = false
+    stepDirty.value = false
+    await scenariosStore.loadEntitiesIncludingArchived()
+    await openScenario(null)
+  } catch (err: any) {
+    notification.showError(err.response?.data?.error_message || t('scenarioEditor.deleteScenarioError'))
+  }
+}
+
+// ---- "Play as learner" ----
+
+// POST /scenarios/:id/preview bypasses the assignment check and provisions a
+// real terminal, so the trainer plays the scenario exactly as a learner would.
+const showPreviewConfirmModal = ref(false)
+const isPreviewLoading = ref(false)
+// The step a "Test from this step" preview starts at; null previews the whole scenario.
+const previewFromStepOrder = ref<number | null>(null)
+
 const openPreviewConfirm = (fromStepOrder: number | null = null) => {
   if (!canPreviewScenario.value) return
   previewFromStepOrder.value = fromStepOrder
@@ -738,1125 +1042,134 @@ const handleConfirmPreview = async () => {
     isPreviewLoading.value = false
   }
 }
-
-// FlowCanvas ref (for keyboard alternative to drag-and-drop)
-const flowCanvasRef = ref<any>(null)
-
-// Drag handlers
-const handleNodeDragStart = (nodeType: string) => {
-  draggedNodeType.value = nodeType
-}
-
-// Keyboard alternative to drag-and-drop: NodeLibraryPanel emits `add-at-center`
-// when a library item receives Enter/Space. We forward to the FlowCanvas.
-const handleAddAtCenter = (nodeType: string) => {
-  if (!canEditScenario.value && currentScenario.value) {
-    notification.showWarning(t('scenarioEditor.readOnlyWarning'))
-    return
-  }
-  flowCanvasRef.value?.addNodeAtCenter(nodeType)
-}
-
-// Node added handler
-const handleNodeAdded = (node: any) => {
-  // A step needs a scenario to belong to, and a scenario node is only ever
-  // created through the create modal, which knows where it will live.
-  if (!currentScenario.value || node.type === 'scenario') {
-    nodes.value = nodes.value.filter(n => n.id !== node.id)
-    if (!canCreateScenario.value) {
-      notification.showWarning(t(node.type === 'scenario'
-        ? 'scenarioEditor.cannotCreateScenario'
-        : 'scenarioEditor.selectScenarioFirst'))
-      return
-    }
-    if (node.type !== 'scenario') notification.showInfo(t('scenarioEditor.createScenarioFirst'))
-    handleCreateNew()
-    return
-  }
-  if (!canEditScenario.value) {
-    // Remove the node that was just dropped — read-only mode
-    nodes.value = nodes.value.filter(n => n.id !== node.id)
-    notification.showWarning(t('scenarioEditor.readOnlyWarning'))
-    return
-  }
-  // Set step_type on new step-type nodes
-  if (node.data.isNew && STEP_NODE_TYPES.includes(node.type)) {
-    node.data.step_type = node.type
-    node.data.entityType = node.type
-  }
-  if (node.data.isNew) {
-    openEditModal(node)
-  }
-}
-
-// Node/Edge change handlers
-const handleNodesChange = (changes: any[]) => {
-  const hasPositionChanges = changes.some(change =>
-    change.type === 'position' && change.dragging === false
-  )
-
-  if (hasPositionChanges && selectedScenarioId.value) {
-    saveNodePositions()
-  }
-}
-
-// Vue Flow pushes the surviving edges up via update:edges; the change list
-// itself is only useful for telling a deletion from a drag, which the canvas
-// already does.
-const handleEdgesChange = (_changes: any[]) => {}
-
-const handleNodeClick = (_event: any) => {
-  // Node click handling
-}
-
-const handlePaneClick = () => {
-  nodes.value.forEach(node => {
-    node.selected = false
-  })
-  nodes.value = [...nodes.value]
-}
-
-// Toggle expand/collapse
-const handleToggleExpand = (nodeData: any) => {
-  const node = nodes.value.find(n => n.data.entityId === nodeData.entityId)
-  if (!node) return
-
-  node.data.isExpanded = !node.data.isExpanded
-
-  // Show/hide step nodes when scenario is collapsed/expanded
-  if (node.data.entityType === 'scenario') {
-    const stepNodes = nodes.value.filter(n => STEP_NODE_TYPES.includes(n.data.entityType))
-    stepNodes.forEach(stepNode => {
-      stepNode.hidden = !node.data.isExpanded
-    })
-
-    // Show/hide edges connected to steps
-    edges.value.forEach(edge => {
-      const targetNode = nodes.value.find(n => n.id === edge.target)
-      if (targetNode?.data?.entityType && STEP_NODE_TYPES.includes(targetNode.data.entityType)) {
-        edge.hidden = !node.data.isExpanded
-      }
-    })
-  }
-
-  nodes.value = [...nodes.value]
-  edges.value = [...edges.value]
-}
-
-// Select tree
-const handleSelectTree = (nodeData: any) => {
-  const parentNode = nodes.value.find(n => n.data.entityId === nodeData.entityId)
-  if (!parentNode) return
-
-  const nodeIdsToSelect: string[] = [parentNode.id]
-
-  if (parentNode.data.entityType === 'scenario') {
-    // Select all step nodes (any step type)
-    nodes.value
-      .filter(n => STEP_NODE_TYPES.includes(n.data.entityType))
-      .forEach(n => nodeIdsToSelect.push(n.id))
-  }
-
-  nodes.value.forEach(node => {
-    if (nodeIdsToSelect.includes(node.id)) {
-      node.selected = true
-    }
-  })
-
-  nodes.value = [...nodes.value]
-}
-
-// (VALID_CONNECTIONS + handleEdgeConnect — moved to useScenarioGraph)
-
-// Drop-on-edge: FlowCanvas already added the node; delegate the edge-swap to the
-// graph composable (guarded here for read-only scenarios).
-const handleEdgeInsert = (payload: { node: any; edgeId: string; source: string; target: string }) => {
-  if (!canEditScenario.value) return
-  insertNodeOnEdge(payload)
-}
-
-// Hover-+ click on an edge → open the picker at the click position.
-const handleEdgeInsertRequest = (payload: {
-  edgeId: string
-  source: string
-  target: string
-  flowX: number
-  flowY: number
-  clientX: number
-  clientY: number
-}) => {
-  if (!canEditScenario.value) {
-    notification.showWarning(t('scenarioEditor.readOnlyWarning'))
-    return
-  }
-  pendingInsertEdge.value = {
-    edgeId: payload.edgeId,
-    source: payload.source,
-    target: payload.target,
-    flowX: payload.flowX,
-    flowY: payload.flowY
-  }
-  insertPickerClientX.value = payload.clientX
-  insertPickerClientY.value = payload.clientY
-  showInsertPicker.value = true
-}
-
-const closeInsertPicker = () => {
-  showInsertPicker.value = false
-  pendingInsertEdge.value = null
-}
-
-const handleInsertPickerSelect = (nodeType: NodeTypeDefinition) => {
-  if (!pendingInsertEdge.value) {
-    closeInsertPicker()
-    return
-  }
-  const { edgeId, source, target, flowX, flowY } = pendingInsertEdge.value
-
-  // Build the new node mirroring what FlowCanvas does on drop
-  const newNode = {
-    id: `${nodeType.type}-new-${Date.now()}`,
-    type: nodeType.type,
-    position: { x: flowX - 100, y: flowY - 40 },
-    data: {
-      label: `New ${nodeType.type.charAt(0).toUpperCase()}${nodeType.type.slice(1)}`,
-      entityId: null,
-      entityType: nodeType.type,
-      step_type: nodeType.type,
-      isNew: true
-    }
-  }
-  nodes.value = [...nodes.value, newNode]
-
-  handleEdgeInsert({ node: newNode, edgeId, source, target })
-
-  closeInsertPicker()
-  // Open the edit modal for the new step (consistent with handleNodeAdded)
-  if ((STEP_NODE_TYPES as readonly string[]).includes(newNode.type)) {
-    openEditModal(newNode)
-  }
-}
-
-// Modal handlers - Scenario
-const openEditModal = async (node: any) => {
-  // Block editing for read-only scenarios (non-admin viewing platform/other-org scenarios)
-  if (!canEditScenario.value && !node.data.isNew) {
-    notification.showWarning(t('scenarioEditor.readOnlyWarning'))
-    return
-  }
-
-  if (node.data.entityType === 'scenario') {
-    editingScenario.value = {
-      nodeId: node.id,
-      entityId: node.data.entityId,
-      name: node.data.name || '',
-      title: node.data.label || node.data.title || '',
-      difficulty: node.data.difficulty || 'beginner',
-      estimated_time_minutes: node.data.estimated_time_minutes || 0,
-      description: node.data.description || '',
-      intro_text: node.data.intro_text || '',
-      finish_text: node.data.finish_text || '',
-      objectives: node.data.objectives || '',
-      prerequisites: node.data.prerequisites || '',
-      setup_script: node.data.setup_script || '',
-      instance_type: node.data.instance_type || 'S',
-      hostname: node.data.hostname || '',
-      os_type: node.data.os_type || '',
-      source_type: node.data.source_type || '',
-      flags_enabled: node.data.flags_enabled || false,
-      crash_traps: node.data.crash_traps || false,
-      port_exposure_allowed: node.data.port_exposure_allowed || false,
-      is_public: node.data.is_public || false,
-      default_locale: node.data.default_locale || '',
-      locales: node.data.locales || '',
-      organization_id: node.data.organization_id || null,
-      isNew: node.data.isNew || false
-    }
-    editingScenarioTranslation.value = null
-    if (isTranslating.value && node.data.entityId) {
-      try {
-        editingScenarioTranslation.value = await scenarioTranslationService.getScenarioTranslation(
-          node.data.entityId,
-          editingLocale.value
-        )
-      } catch (err) {
-        console.error('Failed to load scenario translation:', err)
-      }
-    }
-
-    showScenarioEditModal.value = true
-    modalError.value = ''
-  } else if (STEP_NODE_TYPES.includes(node.data.entityType)) {
-    editingStepNodeId.value = node.id
-    editingStepIsNew.value = node.data.isNew || false
-
-    // Lazy load full step data (scripts are hidden by json:"-" on the model,
-    // so the include=steps response doesn't contain them).
-    if (node.data.entityId && !node.data.isNew && !node.data._scriptsLoaded) {
-      try {
-        const response = await axios.get(`/scenario-steps/${node.data.entityId}`)
-        const fullStep = response.data
-        // Merge fetched script data into the node data
-        node.data.verify_script = fullStep.verify_script || ''
-        node.data.background_script = fullStep.background_script || ''
-        node.data.foreground_script = fullStep.foreground_script || ''
-        node.data.text_content = fullStep.text_content || node.data.text_content || ''
-        node.data.hint_content = fullStep.hint_content || node.data.hint_content || ''
-        node.data.show_immediate_feedback = fullStep.show_immediate_feedback ?? node.data.show_immediate_feedback ?? false
-        // Banner configuration. These are not part of the include=steps payload
-        // either, so without merging them here the Effects tab reopens empty on
-        // a step that has them saved — the value round-trips to the database and
-        // then appears lost.
-        node.data.intro_effect = fullStep.intro_effect || ''
-        node.data.intro_text = fullStep.intro_text || ''
-        node.data.outro_effect = fullStep.outro_effect || ''
-        node.data.outro_text = fullStep.outro_text || ''
-        // Remember which redactable fields the read actually delivered. The
-        // save path needs this to avoid sending "" for a field it never
-        // received — see REDACTABLE_STEP_FIELDS.
-        node.data._receivedFields = receivedScriptFields(fullStep)
-        node.data.questions = Array.isArray(fullStep.questions)
-          ? fullStep.questions.map(deserializeQuestion)
-          : (Array.isArray(node.data.questions) ? node.data.questions : [])
-        node.data._scriptsLoaded = true
-      } catch (err) {
-        console.error('Failed to load step scripts:', err)
-        // Open modal anyway with whatever data we have
-      }
-    }
-
-    editingStep.value = node.data
-
-    // In translation mode the modal shows the original beside the translation,
-    // so the translation has to be in hand before it opens — arriving late
-    // would blank a field the translator had already started typing into.
-    editingStepTranslation.value = null
-    if (isTranslating.value && node.data.entityId) {
-      try {
-        editingStepTranslation.value = await scenarioTranslationService.getStepTranslation(
-          node.data.entityId,
-          editingLocale.value
-        )
-      } catch (err) {
-        console.error('Failed to load step translation:', err)
-      }
-    }
-
-    showStepEditModal.value = true
-  }
-}
-
-const closeScenarioEditModal = () => {
-  showScenarioEditModal.value = false
-  editingScenario.value = {}
-  modalError.value = ''
-}
-
-const handleSaveScenario = async () => {
-  isSaving.value = true
-  modalError.value = ''
-
-  try {
-    const entityData: Record<string, any> = {
-      name: editingScenario.value.name,
-      title: editingScenario.value.title,
-      difficulty: editingScenario.value.difficulty,
-      estimated_time_minutes: editingScenario.value.estimated_time_minutes,
-      description: editingScenario.value.description,
-      intro_text: editingScenario.value.intro_text,
-      finish_text: editingScenario.value.finish_text,
-      objectives: editingScenario.value.objectives,
-      prerequisites: editingScenario.value.prerequisites,
-      setup_script: editingScenario.value.setup_script,
-      instance_type: editingScenario.value.instance_type,
-      hostname: editingScenario.value.hostname,
-      os_type: editingScenario.value.os_type,
-      source_type: editingScenario.value.source_type,
-      flags_enabled: editingScenario.value.flags_enabled,
-      crash_traps: editingScenario.value.crash_traps,
-      port_exposure_allowed: editingScenario.value.port_exposure_allowed,
-      is_public: editingScenario.value.is_public,
-      // The save sends an explicit field list rather than the whole object, so
-      // a field added to the modal and not added here is edited, looks saved,
-      // and is silently dropped.
-      default_locale: editingScenario.value.default_locale || '',
-      locales: editingScenario.value.locales || ''
-    }
-
-    if (editingScenario.value.isNew) {
-      // Dispatch on scope: platform / organization / group → distinct endpoints.
-      const scope = parseScopeKey(editingScenario.value._scopeKey)
-      let result: any = null
-
-      if (!scope) {
-        modalError.value = t('scenarioEditor.saveError')
-        isSaving.value = false
-        return
-      }
-
-      if (scope.kind === 'platform') {
-        // Admin-only platform scenario (no org)
-        result = await scenariosStore.createEntity('/scenarios', entityData)
-      } else if (scope.kind === 'org') {
-        // Org-scoped: org_id is in the URL path; strip from body
-        const body = { ...entityData }
-        delete body.organization_id
-        const response = await axios.post(`/organizations/${scope.id}/scenarios`, body)
-        result = response.data?.data || response.data
-      } else if (scope.kind === 'group') {
-        // Group-scoped: group_id is in the URL path; auto-creates assignment
-        const body = { ...entityData }
-        delete body.organization_id
-        const response = await axios.post(`/groups/${scope.id}/scenarios`, body)
-        result = response.data?.data || response.data
-      }
-
-      if (result) {
-        const newId = result.id || result.data?.id
-        if (newId) {
-          selectedScenarioId.value = newId
-          // Reload
-          await scenariosStore.loadEntitiesIncludingArchived()
-          await handleScenarioSelect()
-          router.replace({ query: { scenarioId: newId } })
-        }
-      }
-    } else {
-      const entityId = editingScenario.value.entityId
-      await scenariosStore.updateEntity('/scenarios', entityId, entityData)
-
-      // The canvas node and currentScenario are separate copies of the same
-      // scenario. Only the node was refreshed here, so anything reading
-      // currentScenario — the language selector, the coverage badges — kept
-      // showing the state from before the save until the scenario was
-      // reselected.
-      if (currentScenario.value?.id === entityId) {
-        currentScenario.value = { ...currentScenario.value, ...entityData }
-        if (!editingLocale.value || !scenarioLocales.value.includes(editingLocale.value)) {
-          editingLocale.value = scenarioDefaultLocale.value
-        }
-        await loadTranslationCoverage()
-      }
-
-      // Update node in canvas
-      const nodeIndex = nodes.value.findIndex(n => n.id === editingScenario.value.nodeId)
-      if (nodeIndex !== -1) {
-        nodes.value[nodeIndex].data = {
-          ...nodes.value[nodeIndex].data,
-          label: editingScenario.value.title,
-          name: editingScenario.value.name,
-          title: editingScenario.value.title,
-          difficulty: editingScenario.value.difficulty,
-          estimated_time_minutes: editingScenario.value.estimated_time_minutes,
-          description: editingScenario.value.description,
-          intro_text: editingScenario.value.intro_text,
-          finish_text: editingScenario.value.finish_text,
-          objectives: editingScenario.value.objectives,
-          prerequisites: editingScenario.value.prerequisites,
-          setup_script: editingScenario.value.setup_script,
-          instance_type: editingScenario.value.instance_type,
-          hostname: editingScenario.value.hostname,
-          os_type: editingScenario.value.os_type,
-          source_type: editingScenario.value.source_type,
-          flags_enabled: editingScenario.value.flags_enabled,
-          crash_traps: editingScenario.value.crash_traps,
-      port_exposure_allowed: editingScenario.value.port_exposure_allowed,
-          is_public: editingScenario.value.is_public,
-          default_locale: editingScenario.value.default_locale || '',
-          locales: editingScenario.value.locales || '',
-          isNew: false
-        }
-        nodes.value = [...nodes.value]
-      }
-    }
-
-    closeScenarioEditModal()
-  } catch (err: any) {
-    modalError.value = err.response?.data?.error_message ||
-                       err.response?.data?.message ||
-                       err.message ||
-                       t('scenarioEditor.saveError')
-  } finally {
-    isSaving.value = false
-  }
-}
-
-// Modal handlers - Step
-const closeStepEditModal = () => {
-  showStepEditModal.value = false
-  editingStep.value = null
-  editingStepIsNew.value = false
-  editingStepNodeId.value = null
-  isSavingStep.value = false
-  stepSaveError.value = ''
-}
-
-// Sync the quiz questions of a step against the dedicated
-// /scenario-step-questions endpoint. Diff strategy: match by `id`.
-//   - new (no id)             → POST
-//   - existing, kept          → PATCH (always; cheap, avoids deep diff)
-//   - existing, removed       → DELETE
-// Independent calls run in parallel via Promise.all. Failures bubble up.
-const syncStepQuestions = async (
-  stepId: string,
-  oldQuestions: any[],
-  newQuestions: any[]
-): Promise<void> => {
-  const oldList = Array.isArray(oldQuestions) ? oldQuestions : []
-  const newList = Array.isArray(newQuestions) ? newQuestions : []
-  const newIds = new Set(newList.map(q => q?.id).filter(Boolean))
-
-  const ops: { kind: 'delete' | 'patch' | 'post'; label: string; promise: Promise<any> }[] = []
-
-  // DELETE: questions that had an id but are no longer present
-  oldList.forEach(oldQ => {
-    if (oldQ?.id && !newIds.has(oldQ.id)) {
-      ops.push({
-        kind: 'delete',
-        label: `delete ${oldQ.id}`,
-        promise: axios.delete(`/scenario-step-questions/${oldQ.id}`)
-      })
-    }
-  })
-
-  // CREATE / UPDATE
-  newList.forEach((q, idx) => {
-    const order = idx + 1 // 1-based, matches backend convention
-    const optionsJson = JSON.stringify(Array.isArray(q.options) ? q.options : [])
-    const body = {
-      order,
-      question_text: q.question_text || '',
-      question_type: q.question_type || 'multiple_choice',
-      options: optionsJson,
-      correct_answer: q.correct_answer ?? '',
-      explanation: q.explanation || '',
-      points: q.points || 1
-    }
-    const label = `Q${order} "${(q.question_text || '').slice(0, 30)}"`
-    if (q?.id) {
-      ops.push({ kind: 'patch', label, promise: axios.patch(`/scenario-step-questions/${q.id}`, body) })
-    } else {
-      ops.push({ kind: 'post', label, promise: axios.post('/scenario-step-questions', { step_id: stepId, ...body }) })
-    }
-  })
-
-  if (ops.length === 0) return
-
-  const results = await Promise.allSettled(ops.map(o => o.promise))
-  const failures: string[] = []
-  results.forEach((r, i) => {
-    if (r.status === 'rejected') {
-      const op = ops[i]
-      const reason = r.reason?.response?.data?.error_message
-        || r.reason?.response?.data?.message
-        || r.reason?.message
-        || 'unknown error'
-      console.error(`[syncStepQuestions] ${op.kind} ${op.label} failed:`, reason, r.reason?.response?.data)
-      failures.push(`${op.label}: ${reason}`)
-    }
-  })
-  if (failures.length > 0) {
-    throw new Error(failures.join(' • '))
-  }
-}
-
-/** Switch language while the scenario modal is open, fetching before swapping. */
-const handleScenarioEditingLocaleChange = async (locale: string) => {
-  const scenarioId = editingScenario.value?.entityId
-  let next: ScenarioTranslation | null = null
-
-  if (scenarioId && locale && locale !== scenarioDefaultLocale.value) {
-    try {
-      next = await scenarioTranslationService.getScenarioTranslation(scenarioId, locale)
-    } catch (err) {
-      console.error('Failed to load scenario translation:', err)
-    }
-  }
-
-  editingScenarioTranslation.value = next
-  editingLocale.value = locale
-}
-
-/**
- * Save the scenario's own text in one language.
- *
- * Separate from handleSaveScenario for the same reason the step path is: that
- * one sends an explicit list of configuration fields, and a translation has
- * nothing to say about any of them.
- */
-const handleSaveScenarioTranslation = async (fields: Record<string, string>) => {
-  const scenarioId = editingScenario.value?.entityId
-  if (!scenarioId || !editingLocale.value) return
-
-  isSaving.value = true
-  modalError.value = ''
-  try {
-    editingScenarioTranslation.value = await scenarioTranslationService.saveScenarioTranslation(
-      scenarioId,
-      editingLocale.value,
-      fields,
-      editingScenarioTranslation.value?.id
-    )
-    closeScenarioEditModal()
-  } catch (err: any) {
-    modalError.value =
-      err.response?.data?.error?.details?.original ||
-      err.response?.data?.error_message ||
-      err.response?.data?.message ||
-      t('scenarioEditor.saveError')
-  } finally {
-    isSaving.value = false
-  }
-}
-
-/**
- * Switch the language being edited while a step modal is open.
- *
- * The new language's text is fetched before either value changes, so the modal
- * never shows the previous language's content under the new language's label —
- * a flicker that reads as "my translation went into the wrong language".
- */
-const handleEditingLocaleChange = async (locale: string) => {
-  const stepId = editingStep.value?.entityId
-  let next: StepTranslation | null = null
-
-  if (stepId && locale && locale !== scenarioDefaultLocale.value) {
-    try {
-      next = await scenarioTranslationService.getStepTranslation(stepId, locale)
-    } catch (err) {
-      console.error('Failed to load step translation:', err)
-    }
-  }
-
-  editingStepTranslation.value = next
-  editingLocale.value = locale
-}
-
-/**
- * Save a step's translation.
- *
- * Deliberately not routed through handleSaveStep: authoring and translating
- * write to different places, and threading a mode through the step save path —
- * which already juggles scripts, questions and never-seen fields — would put
- * the risk of blanking real content next to a feature that only adds text.
- */
-const handleSaveStepTranslation = async (fields: Record<string, string>) => {
-  const stepId = editingStep.value?.entityId
-  if (!stepId || !editingLocale.value) return
-
-  isSavingStep.value = true
-  stepSaveError.value = ''
-  try {
-    editingStepTranslation.value = await scenarioTranslationService.saveStepTranslation(
-      stepId,
-      editingLocale.value,
-      fields,
-      editingStepTranslation.value?.id
-    )
-    // Saving is also what marks the step caught up with its source, so the
-    // badges have to be re-read rather than assumed.
-    await loadTranslationCoverage()
-    closeStepEditModal()
-  } catch (err: any) {
-    stepSaveError.value =
-      err.response?.data?.error?.details?.original ||
-      err.response?.data?.error_message ||
-      err.response?.data?.message ||
-      t('scenarioEditor.saveError')
-  } finally {
-    isSavingStep.value = false
-  }
-}
-
-const handleSaveStep = async (formData: any) => {
-  isSavingStep.value = true
-  stepSaveError.value = ''
-  try {
-    // The /scenario-steps endpoint has no Questions field — extract them
-    // and persist via the dedicated /scenario-step-questions endpoint instead.
-    const { questions: newQuestions, ...stepFields } = formData
-    const stepData: Record<string, any> = withoutUnseenScripts(
-      { ...stepFields },
-      editingStep.value?._receivedFields ?? []
-    )
-
-    // Include step_type from the editing step's data
-    if (editingStep.value?.step_type) {
-      stepData.step_type = editingStep.value.step_type
-    }
-
-    // Capture pre-save questions for the diff (existing IDs come from the server)
-    const oldQuestions: any[] = Array.isArray(editingStep.value?.questions)
-      ? editingStep.value.questions
-      : []
-
-    let stepId: string | undefined
-
-    if (editingStepIsNew.value) {
-      // New step: find parent scenario from edges
-      if (editingStepNodeId.value) {
-        const incomingEdge = edges.value.find(e => e.target === editingStepNodeId.value)
-        if (incomingEdge) {
-          const sourceNode = nodes.value.find(n => n.id === incomingEdge.source)
-          if (sourceNode?.data?.entityId) {
-            if (sourceNode.data.entityType === 'scenario') {
-              stepData.scenario_id = sourceNode.data.entityId
-            }
-          }
-        }
-        // Fallback: use current scenario
-        if (!stepData.scenario_id && currentScenario.value?.id) {
-          stepData.scenario_id = currentScenario.value.id
-        }
-      }
-
-      // Provisionally last, so a failed renumber below never leaves two steps
-      // on the same order. The renumber then moves it to where it was placed.
-      const savedSteps = nodes.value.filter(n => STEP_NODE_TYPES.includes(n.data.entityType) && n.data.entityId && !n.data.isNew)
-      stepData.order = Math.max(-1, ...savedSteps.map(n => n.data.order ?? 0)) + 1
-
-      const created = await scenarioStepsStore.createEntity('/scenario-steps', stepData)
-      stepId = created?.id || created?.data?.id
-
-      // The reload below rebuilds the chain from the stored orders, so the
-      // chain drawn on the canvas — with the new step where it was dropped —
-      // has to be written first, by the same renumber the header Save runs.
-      const newNode = nodes.value.find(n => n.id === editingStepNodeId.value)
-      if (newNode && stepId) {
-        Object.assign(newNode.data, { entityId: stepId, isNew: false, order: stepData.order })
-        const { failed, failedLabels } = await syncOrderFromEdges()
-        if (failed > 0) {
-          notification.showError(t('scenarioEditor.orderSyncFailed', { steps: failedLabels.join(', ') }))
-        }
-      }
-    } else {
-      stepId = editingStep.value?.entityId || editingStep.value?.id
-      if (stepId) {
-        await scenarioStepsStore.updateEntity('/scenario-steps', stepId, stepData)
-      }
-    }
-
-    // Sync quiz questions only when this is a quiz step and we resolved the step id
-    const isQuizStep = (editingStep.value?.step_type === 'quiz') ||
-      (Array.isArray(newQuestions) && newQuestions.length > 0)
-    if (stepId && isQuizStep) {
-      await syncStepQuestions(stepId, oldQuestions, newQuestions || [])
-    }
-
-    // Reload scenario to get fresh data — both for the canvas
-    // (handleScenarioSelect rebuilds nodes from a single-scenario fetch)
-    // and for the right-side step list panel (which reads from the
-    // scenarios store, not from currentScenario).
-    if (selectedScenarioId.value) {
-      await Promise.all([
-        handleScenarioSelect(),
-        scenariosStore.loadEntitiesIncludingArchived()
-      ])
-    }
-
-    closeStepEditModal()
-  } catch (err: any) {
-    console.error('Save step failed:', err)
-    const detail = err.response?.data?.error_message ||
-                   err.response?.data?.message ||
-                   err.message ||
-                   t('scenarioEditor.saveError')
-    // Surface the error inside the modal so the user keeps context (mirrors
-    // the scenario-edit modal pattern). The notification is a secondary signal.
-    stepSaveError.value = detail
-    notification.showError(detail)
-  } finally {
-    isSavingStep.value = false
-  }
-}
-
-// Copy to org handlers
-const openCopyModal = () => {
-  copyTargetKey.value = null
-  showCopyModal.value = true
-}
-
-const closeCopyModal = () => {
-  showCopyModal.value = false
-  copyTargetKey.value = null
-}
-
-const handleCopyToOrg = async () => {
-  const target = parseScopeKey(copyTargetKey.value)
-  if (!target || target.kind === 'platform' || !currentScenario.value?.id) return
-
-  isCopying.value = true
-  try {
-    const base = target.kind === 'org' ? `/organizations/${target.id}` : `/groups/${target.id}`
-    await axios.post(`${base}/scenarios/${currentScenario.value.id}/duplicate`)
-    notification.showSuccess(t('scenarioEditor.copySuccess'))
-    // Reload scenarios to show the new duplicate
-    await scenariosStore.loadEntitiesIncludingArchived()
-    closeCopyModal()
-  } catch (err: any) {
-    console.error('Copy to org failed:', err)
-    notification.showError(
-      err.response?.data?.error_message ||
-      err.response?.data?.message ||
-      t('scenarioEditor.copyError')
-    )
-  } finally {
-    isCopying.value = false
-  }
-}
-
-// Archive handlers. Archiving is confirmed because it retires the scenario for
-// every learner and class at once; restoring is not, since it only puts it back.
-const openArchiveModal = () => {
-  showArchiveModal.value = true
-}
-
-const reloadAfterArchiveChange = async () => {
-  await scenariosStore.loadEntitiesIncludingArchived()
-  if (currentScenario.value?.id) {
-    const refreshed = scenariosStore.entities.find((s: any) => s.id === currentScenario.value.id)
-    if (refreshed) currentScenario.value = refreshed
-  }
-}
-
-const handleArchive = async () => {
-  if (!currentScenario.value?.id) return
-  try {
-    await scenariosStore.archiveEntity('/scenarios', currentScenario.value.id)
-    notification.showSuccess(t('scenarioEditor.archiveSuccess'))
-    showArchiveModal.value = false
-    await reloadAfterArchiveChange()
-  } catch (err: any) {
-    notification.showError(
-      err.response?.data?.error_message || t('scenarioEditor.archiveError')
-    )
-  }
-}
-
-const handleUnarchive = async () => {
-  if (!currentScenario.value?.id) return
-  try {
-    await scenariosStore.unarchiveEntity('/scenarios', currentScenario.value.id)
-    notification.showSuccess(t('scenarioEditor.unarchiveSuccess'))
-    await reloadAfterArchiveChange()
-  } catch (err: any) {
-    notification.showError(
-      err.response?.data?.error_message || t('scenarioEditor.unarchiveError')
-    )
-  }
-}
-
-// Delete modal
-const openDeleteModal = (node: any) => {
-  if (!canEditScenario.value) {
-    notification.showWarning(t('scenarioEditor.readOnlyWarning'))
-    return
-  }
-  deletingNode.value = node
-  showDeleteModal.value = true
-}
-
-const closeDeleteModal = () => {
-  showDeleteModal.value = false
-  deletingNode.value = null
-}
-
-const confirmDelete = async () => {
-  if (!deletingNode.value) return
-
-  const node = deletingNode.value
-  const entityId = node.data.entityId
-  const entityType = node.data.entityType
-
-  try {
-    if (entityId && !node.data.isNew) {
-      if (entityType === 'scenario') {
-        await scenariosStore.deleteEntity('/scenarios', entityId)
-      } else if (STEP_NODE_TYPES.includes(entityType)) {
-        await scenarioStepsStore.deleteEntity('/scenario-steps', entityId)
-      }
-    }
-
-    // Auto-rewire the linear chain so deleting a middle node bridges its
-    // upstream and downstream neighbours (chain order is re-synced on save).
-    rewireEdgesAroundDeletedNode(node)
-
-    // Remove from canvas (any remaining edges touching the node — usually none
-    // after rewire, but defensive in case there are duplicates)
-    nodes.value = nodes.value.filter(n => n.id !== node.id)
-    edges.value = edges.value.filter(e => e.source !== node.id && e.target !== node.id)
-
-    closeDeleteModal()
-  } catch (err) {
-    console.error('Delete failed:', err)
-  }
-}
-
-// (syncOrderFromEdges + saveNodePositions/loadNodePositions — moved to useScenarioGraph)
-
-// Save/Reset handlers
-const handleSave = async () => {
-  saveNodePositions()
-
-  const { patched, failed, failedLabels, appendedOffChainLabels } = await syncOrderFromEdges()
-
-  // Steps left unconnected are folded onto the end of the sequence rather than
-  // keeping an order the connected ones now use. Say so: from the canvas it
-  // looks like nothing happened to them.
-  if (appendedOffChainLabels.length > 0) {
-    notification.showWarning(
-      t('scenarioEditor.offChainStepsAppended', { steps: appendedOffChainLabels.join(', ') })
-    )
-  }
-
-  // A half-applied renumber leaves duplicate or missing step orders, so it
-  // must never be reported as a success — the trainer has to know the
-  // sequence is inconsistent while they can still fix it.
-  if (failed > 0) {
-    notification.showError(
-      t('scenarioEditor.orderSyncFailed', { steps: failedLabels.join(', ') })
-    )
-  } else if (patched > 0) {
-    notification.showSuccess(t('scenarioEditor.orderSynced', { count: String(patched) }))
-  } else {
-    notification.showSuccess(t('scenarioEditor.saveSuccess'))
-  }
-}
-
-const handleReset = () => {
-  if (currentScenario.value) {
-    if (selectedScenarioId.value) {
-      clearNodePositions(selectedScenarioId.value)
-    }
-    convertScenarioToNodes(currentScenario.value)
-  }
-}
-
-// (panel resize — moved to useResizablePanel)
 </script>
 
 <style scoped>
-.scenario-editor {
+.ocf-scenario-workbench {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 60px);
   background: var(--color-background);
 }
 
-/* Header styles live in ScenarioEditorHeader.vue */
-
-.editor-container {
-  display: flex;
+.ocf-workbench {
   flex: 1;
-  overflow: hidden;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) auto;
 }
 
-.panel {
+.ocf-workbench-outline {
+  overflow-y: auto;
+  border-right: 1px solid var(--color-border-light);
+  background: var(--color-bg-secondary);
+}
+
+.ocf-workbench-center {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  position: relative;
 }
 
-.library-panel {
-  width: 140px;
-  min-width: 120px;
-  max-width: 200px;
-  flex-shrink: 0;
-  background: var(--color-bg-tertiary);
-  border-right: 1px solid var(--color-border-light);
+.ocf-workbench-rail {
+  width: 360px;
 }
 
-.canvas-panel {
+.ocf-workbench-rail.is-collapsed {
+  width: 3rem;
+}
+
+.ocf-workbench-empty,
+.ocf-workbench-placeholder {
   flex: 1;
-  background: var(--color-background);
-  border-right: 1px solid var(--color-border-light);
-  min-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-2xl);
+  text-align: center;
+  color: var(--color-text-secondary);
 }
 
-.tree-panel {
-  min-width: 200px;
-  max-width: 600px;
-  border-right: none;
-  flex-shrink: 0;
-  position: relative;
-  transition: width 0.2s, min-width 0.2s;
-  background: var(--color-bg-secondary);
-  border-left: 1px solid var(--color-border-light);
-}
-
-.tree-panel.collapsed {
-  min-width: 2rem;
-  max-width: 2rem;
-  width: 2rem !important;
-  overflow: hidden;
-}
-
-.panel-collapse-toggle {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 20;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-light);
-  border-left: none;
-  border-radius: 0 4px 4px 0;
-  padding: 0.5rem 0.25rem;
-  cursor: pointer;
-  color: var(--color-text-muted);
-  transition: all 0.15s;
-}
-
-.panel-collapse-toggle:hover {
-  background: var(--color-bg-tertiary);
+.ocf-workbench-empty h2,
+.ocf-workbench-placeholder h2 {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
 }
 
-.tree-panel.collapsed .panel-collapse-toggle {
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  width: 1.5rem;
+.ocf-workbench-empty p,
+.ocf-workbench-placeholder p {
+  max-width: 34rem;
+  margin: 0;
 }
 
-/* Resize handle for tree panel */
-.resize-handle {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  cursor: ew-resize;
-  background: transparent;
-  transition: background 0.2s;
-  z-index: 10;
+.ocf-workbench-empty-icon,
+.ocf-workbench-placeholder > i {
+  font-size: 2rem;
+  color: var(--color-text-muted);
 }
 
-.resize-handle:hover,
-.resize-handle.resizing {
-  background: var(--color-primary);
+.ocf-workbench-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
 }
 
-.btn-primary,
-.btn-secondary {
+.ocf-workbench-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.ocf-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   padding: 0.5rem 1rem;
   border: none;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
+  border-radius: var(--border-radius-md);
   background: var(--color-primary);
-  color: white;
+  color: var(--color-white);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
 }
 
-.btn-primary:hover:not(:disabled) {
+.ocf-btn-primary:hover {
   background: var(--color-primary-hover);
 }
 
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.ocf-btn-primary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
-.btn-secondary {
-  background: var(--color-surface-variant);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border);
-}
-
-.btn-secondary:hover {
-  background: var(--color-surface-hover);
-}
-
-/* Modal form styles — only what's needed for the Copy-to-org modal.
-   Scenario edit modal styles live in ScenarioEditModal.vue */
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-group label {
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: var(--color-text-primary);
-}
-
-.form-control {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-background);
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-  font-family: inherit;
-  transition: border-color 0.2s;
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
-}
-
-.form-control::placeholder {
-  color: var(--color-text-secondary);
-  opacity: 0.6;
-}
-
-textarea.form-control {
-  resize: vertical;
-  min-height: 80px;
-  font-family: inherit;
-}
-
-/* Responsive: at narrow widths the library panel becomes a left-edge drawer
-   so the canvas keeps usable width. Toggle is the panel header itself. */
+/* Below a laptop width the outline sits above the editor. */
 @media (max-width: 1024px) {
-  .library-panel {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    z-index: 30;
-    width: 140px;
-    transform: translateX(-100%);
-    transition: transform 0.2s ease;
-    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.08);
+  .ocf-scenario-workbench {
+    height: auto;
+    min-height: calc(100vh - 60px);
   }
-  .library-panel:hover,
-  .library-panel:focus-within {
-    transform: translateX(0);
+
+  .ocf-workbench {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .library-panel::after {
-    content: '\f0c9'; /* fa-bars */
-    font-family: 'Font Awesome 6 Free', 'Font Awesome 5 Free', FontAwesome;
-    font-weight: 900;
-    position: absolute;
-    right: -1.75rem;
-    top: 0.5rem;
-    width: 1.5rem;
-    height: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-bg-secondary);
-    border: 1px solid var(--color-border-light);
-    border-left: none;
-    border-radius: 0 4px 4px 0;
-    color: var(--color-text-secondary);
-    pointer-events: none;
+
+  .ocf-workbench-outline {
+    max-height: 40vh;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border-light);
   }
-  .canvas-panel {
-    min-width: 0;
+
+  .ocf-workbench-rail,
+  .ocf-workbench-rail.is-collapsed {
+    width: auto;
   }
 }
-
 </style>

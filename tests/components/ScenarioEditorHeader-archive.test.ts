@@ -3,7 +3,7 @@
  *
  * The editor is where a scenario with no organization is managed, and it was
  * the one place still offering Delete without the non-destructive alternative.
- * The action sits in the overflow menu beside Reset, mirrors the library's
+ * The action sits in the overflow menu, mirrors the library's
  * wording, and swaps to Restore once the scenario carries archived_at.
  *
  * Archiving retires the scenario for every learner and class at once, so the
@@ -41,8 +41,6 @@ function mountHeader(overrides: Record<string, unknown> = {}): VueWrapper {
       canEditScenario: true,
       canCopyToOrg: false,
       isAdmin: false,
-      nodeCount: 3,
-      edgeCount: 2,
       canPreview: true,
       isPreviewLoading: false,
       ...overrides,
@@ -56,7 +54,7 @@ async function openOverflowMenu(wrapper: VueWrapper) {
 }
 
 function menuItem(wrapper: VueWrapper, iconClass: string) {
-  return wrapper.findAll('.dropdown-item').find(b => b.find(iconClass).exists())
+  return wrapper.findAll('.ocf-header-menu-item').find(b => b.find(iconClass).exists())
 }
 
 describe('ScenarioEditorHeader — archive action', () => {

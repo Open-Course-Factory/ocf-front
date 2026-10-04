@@ -22,6 +22,7 @@
     <span>{{ t('scenarioAi.create') }}</span>
   </button>
   <button
+    v-if="!createOnly"
     type="button"
     class="ocf-btn-outline"
     data-testid="scenario-ai-improve-btn"
@@ -52,6 +53,8 @@ const props = defineProps<{
   scenario: { id: string; title: string; organization_id?: string | null } | null
   /** The scenario's `can_manage` verdict, as the editor computes it. */
   canManage: boolean
+  // The editor's empty state offers creating only: there is nothing to improve.
+  createOnly?: boolean
 }>()
 
 const emit = defineEmits<{

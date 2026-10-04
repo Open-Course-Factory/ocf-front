@@ -32,7 +32,7 @@ import { previewOptions, previewRefusalKey } from '../../src/utils/scenarioPrevi
 const source = readFileSync(resolve(__dirname, '../../src/components/Pages/ScenarioEditor.vue'), 'utf-8')
 const template = source.slice(0, source.indexOf('<script'))
 const previewHandler = source.match(/const handleConfirmPreview[\s\S]*?\n}\n/)?.[0] ?? ''
-const stepModalTag = template.match(/<ScenarioStepEditModal[\s\S]*?\/>/)?.[0] ?? ''
+const stepModalTag = template.match(/<ScenarioStepEditor\b[\s\S]*?\/>/)?.[0] ?? ''
 const previewConfirmModal =
   template.match(/<BaseModal(?:(?!<\/BaseModal>)[\s\S])*?@confirm="handleConfirmPreview"[\s\S]*?<\/BaseModal>/)?.[0] ?? ''
 
@@ -57,8 +57,8 @@ function editorMessages(): { en: Record<string, string>; fr: Record<string, stri
   return { en, fr }
 }
 
-describe('ScenarioEditor.vue — the step modal can start a preview from its step', () => {
-  it('listens for the step modal asking to test from a step', () => {
+describe('ScenarioEditor.vue — the step editor can start a preview from its step', () => {
+  it('listens for the step editor asking to test from a step', () => {
     expect(stepModalTag).toMatch(/@test-from-step="/)
   })
 

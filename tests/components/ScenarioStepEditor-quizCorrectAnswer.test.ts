@@ -12,7 +12,7 @@ import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 
-import ScenarioStepEditModal from '../../src/components/ScenarioEditor/ScenarioStepEditModal.vue'
+import ScenarioStepEditor from '../../src/components/ScenarioEditor/ScenarioStepEditor.vue'
 
 function createTestI18n() {
   return createI18n({
@@ -26,9 +26,9 @@ function createTestI18n() {
 }
 
 async function mountQuizWith(correct_answer: string) {
-  const wrapper = mount(ScenarioStepEditModal, {
+  const wrapper = mount(ScenarioStepEditor, {
     props: {
-      visible: true,
+
       isNew: false,
       stepType: 'quiz',
       stepData: {
@@ -54,7 +54,7 @@ async function mountQuizWith(correct_answer: string) {
 const radios = (wrapper: any) => wrapper.findAll('.option-row input[type="radio"]')
 const saveButton = (wrapper: any) => wrapper.find('[data-testid="step-edit-save"]')
 
-describe('ScenarioStepEditModal — multiple-choice correct answer', () => {
+describe('ScenarioStepEditor — multiple-choice correct answer', () => {
   it('renders no option as correct while the author has not chosen one', async () => {
     const wrapper = await mountQuizWith('')
     expect(radios(wrapper)).toHaveLength(2)
