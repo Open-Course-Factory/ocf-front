@@ -3,7 +3,8 @@
  * Open Course Factory - Front
  * Copyright (C) 2023-2026 Solution Libre
  *
- * Copies a scenario into an organization or a class the user manages:
+ * Copies a scenario into an organization or a class the user authors in
+ * (see copyScopesFor for which):
  *   - org   → POST /organizations/:id/scenarios/:scenarioId/duplicate
  *   - class → POST /groups/:id/scenarios/:scenarioId/duplicate
  * Both answer with the copy, which the editor opens: a scenario someone may
@@ -29,8 +30,7 @@
       v-model="targetKey"
       :label="t('scenarioEditor.selectTargetOrg')"
       :empty-hint="t('scenarioEditor.duplicateNowhere')"
-      :allow-platform="false"
-      :exclude-org-id="scenario?.organization_id || null"
+      :copy-of="scenario"
     />
   </BaseModal>
 </template>

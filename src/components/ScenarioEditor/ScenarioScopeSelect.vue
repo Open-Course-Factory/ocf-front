@@ -18,15 +18,15 @@
       class="form-control"
       :disabled="targetCount === 0"
     >
-      <option v-if="!allowPlatform" value="" disabled>{{ label }}</option>
-      <optgroup v-if="allowPlatform && platformScopeAvailable" :label="t('scenarioEditor.scopePlatform')">
+      <option v-if="copyOf" value="" disabled>{{ label }}</option>
+      <optgroup v-if="!copyOf && platformScopeAvailable" :label="t('scenarioEditor.scopePlatform')">
         <option value="platform:*">🛡️ {{ t('scenarioEditor.platformOnly') }}</option>
       </optgroup>
       <optgroup v-if="targetOrgs.length" :label="t('scenarioEditor.scopeOrganizations')">
         <option v-for="s in targetOrgs" :key="`org:${s.id}`" :value="`org:${s.id}`">{{ s.name }}</option>
       </optgroup>
-      <optgroup v-if="groupScopes.length" :label="t('scenarioEditor.scopeGroups')">
-        <option v-for="s in groupScopes" :key="`group:${s.id}`" :value="`group:${s.id}`">{{ s.name }}</option>
+      <optgroup v-if="targetGroups.length" :label="t('scenarioEditor.scopeGroups')">
+        <option v-for="s in targetGroups" :key="`group:${s.id}`" :value="`group:${s.id}`">{{ s.name }}</option>
       </optgroup>
     </select>
     <p class="form-hint">{{ hint }}</p>
@@ -43,24 +43,23 @@ const props = withDefaults(defineProps<{
   label: string
   /** Shown when the user has nowhere to put a scenario. */
   emptyHint: string
-  /** A copy goes into an organization or a class, never onto the platform. */
-  allowPlatform?: boolean
-  /** The organization a copied scenario already lives in. */
-  excludeOrgId?: string | null
+  /** Pick where a copy of this scenario may go (see copyScopesFor) rather than a create scope. */
+  copyOf?: { organization_id?: string | null } | null
 }>(), {
-  allowPlatform: true,
-  excludeOrgId: null
+  copyOf: null
 })
 
 const scopeKey = defineModel<string>({ required: true })
 
 const { t } = useScenarioEditorI18n()
-const { orgScopes, groupScopes, platformScopeAvailable, parseScopeKey } = useScenarioCreateScopes()
+const { orgScopes, groupScopes, platformScopeAvailable, parseScopeKey, copyScopesFor } = useScenarioCreateScopes()
 
-const targetOrgs = computed(() => orgScopes.value.filter(o => o.id !== props.excludeOrgId))
+const copyTargets = computed(() => (props.copyOf ? copyScopesFor(props.copyOf) : null))
+const targetOrgs = computed(() => copyTargets.value?.orgs ?? orgScopes.value)
+const targetGroups = computed(() => copyTargets.value?.groups ?? groupScopes.value)
 
 const targetCount = computed(() =>
-  targetOrgs.value.length + groupScopes.value.length + (props.allowPlatform && platformScopeAvailable.value ? 1 : 0)
+  targetOrgs.value.length + targetGroups.value.length + (!props.copyOf && platformScopeAvailable.value ? 1 : 0)
 )
 
 const hint = computed(() => {

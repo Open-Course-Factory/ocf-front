@@ -126,6 +126,21 @@ export function useScenarioCreateScopes() {
     return group ? `group:${group.id}` : ''
   }
 
+  // Where a copy of `scenario` may go (POST …/scenarios/:id/duplicate). A
+  // platform scenario goes into any organization or class the user authors in;
+  // an organization's scenario never leaves it, so only that organization and
+  // the user's classes in it — which is how a teacher copies a colleague's lab.
+  const copyScopesFor = (scenario: { organization_id?: string | null } | null) => {
+    if (!scenario) return { orgs: [], groups: [] }
+    const orgId = scenario.organization_id
+    if (!orgId) return { orgs: orgScopes.value, groups: groupScopes.value }
+    const groupIds = new Set(allGroups.value.filter((g: any) => g.organization_id === orgId).map((g: any) => g.id))
+    return {
+      orgs: orgScopes.value.filter(o => o.id === orgId),
+      groups: groupScopes.value.filter(g => groupIds.has(g.id)),
+    }
+  }
+
   // The lists the scopes are read from. Failures leave a list empty rather
   // than failing the caller: a missing scope only narrows the picker.
   const loadScopeSources = () => Promise.all([
@@ -144,6 +159,7 @@ export function useScenarioCreateScopes() {
     parseScopeKey,
     pickDefaultScopeKey,
     scopeKeyForScenario,
+    copyScopesFor,
     loadScopeSources,
   }
 }

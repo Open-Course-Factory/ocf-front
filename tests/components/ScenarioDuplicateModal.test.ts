@@ -2,8 +2,9 @@
  * A scenario someone may only read — a platform scenario, say — is copied into
  * an organization or class they manage, and the editor opens the copy.
  *
- * Each destination has its own endpoint; the copy never goes onto the
- * platform, nor back into the organization the scenario already lives in.
+ * Each destination has its own endpoint, and the copy never goes onto the
+ * platform. Which organizations and classes qualify is copyScopesFor's rule
+ * (useScenarioCreateScopes-copy.test.ts); here it is stubbed.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -26,7 +27,8 @@ vi.mock('../../src/composables/useScenarioCreateScopes', () => ({
     orgScopes: computed(() => [ORG, OWN_ORG].map(o => ({ id: o.id, name: o.name }))),
     groupScopes: computed(() => [{ id: GROUP.id, name: GROUP.name }]),
     platformScopeAvailable: computed(() => true),
-    parseScopeKey: (key: string) => SCOPES[key] ?? null
+    parseScopeKey: (key: string) => SCOPES[key] ?? null,
+    copyScopesFor: () => ({ orgs: [ORG], groups: [{ id: GROUP.id, name: GROUP.name }] })
   })
 }))
 
@@ -46,7 +48,7 @@ const confirm = (wrapper: ReturnType<typeof mountModal>) =>
 beforeEach(() => postMock.mockReset().mockResolvedValue({ data: { id: 'sc-copy', title: 'Copy' } }))
 
 describe('ScenarioDuplicateModal', () => {
-  it('offers the organizations and classes the user manages, not the platform nor the scenario\'s own org', () => {
+  it('offers the copy destinations, never the platform', () => {
     const wrapper = mountModal()
     const values = wrapper.findAll('#duplicate-target option').map(o => o.attributes('value')).filter(Boolean)
     expect(values).toEqual([`org:${ORG.id}`, `group:${GROUP.id}`])

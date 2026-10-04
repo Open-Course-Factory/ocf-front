@@ -357,3 +357,34 @@ describe('useScenarioEditorAccess.canRetireScenario (archive, restore, delete)',
     expect(canRetireScenario({ organization_id: null })).toBe(true)
   })
 })
+
+// ocf-core lets an org's teachers export a colleague's lab of that org; a
+// platform scenario or another org's stays with its managers.
+describe('useScenarioEditorAccess.canExportScenario', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    useAdminViewMode().resetViewMode()
+    localStorage.clear()
+  })
+
+  it('lets a teacher export any lab of their organization, and only of it', () => {
+    const user = useCurrentUserStore()
+    user.userId = 'user-1'
+    user.userRoles = []
+    useUserMembershipsStore().orgMemberships = [{ organization_id: 'org-1', role: 'teacher' }]
+    const { canExportScenario } = useScenarioEditorAccess()
+
+    expect(canExportScenario({ can_manage: false, organization_id: 'org-1' })).toBe(true)
+    expect(canExportScenario({ can_manage: false, organization_id: 'org-2' })).toBe(false)
+    expect(canExportScenario({ can_manage: false, organization_id: null })).toBe(false)
+    expect(canExportScenario({ can_manage: true, organization_id: null })).toBe(true)
+  })
+
+  it('refuses a plain member of the organization', () => {
+    const user = useCurrentUserStore()
+    user.userId = 'user-1'
+    user.userRoles = []
+    useUserMembershipsStore().orgMemberships = [{ organization_id: 'org-1', role: 'member' }]
+    expect(useScenarioEditorAccess().canExportScenario({ organization_id: 'org-1' })).toBe(false)
+  })
+})
