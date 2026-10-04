@@ -461,5 +461,10 @@ onUnmounted(() => document.removeEventListener('click', handleDocumentClick))
   .ocf-header-actions :deep(.ocf-btn-outline span) {
     display: none;
   }
+
+  .ocf-scenario-picker {
+    min-width: 10rem;
+    max-width: 18rem;
+  }
 }
 </style>

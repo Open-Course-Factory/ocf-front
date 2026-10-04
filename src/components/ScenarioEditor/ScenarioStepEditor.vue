@@ -641,20 +641,8 @@
       </div>
     </div>
 
+    <!-- Left-aligned: the app's floating feedback button owns the bottom-right corner. -->
     <footer class="ocf-step-footer">
-      <p v-if="errorMessage" class="ocf-step-error" role="alert">
-        <i class="fas fa-exclamation-circle" aria-hidden="true"></i> {{ errorMessage }}
-      </p>
-      <span class="ocf-step-footer-spacer"></span>
-      <button
-        type="button"
-        class="btn btn-secondary"
-        data-testid="step-edit-revert"
-        :disabled="(!isNew && !isDirty) || isSaving"
-        @click="isNew ? emit('delete') : resetForm()"
-      >
-        {{ isNew ? t('stepEdit.discardDraft') : t('stepEdit.revert') }}
-      </button>
       <button
         type="button"
         class="btn btn-primary"
@@ -665,6 +653,18 @@
         <i v-if="isSaving" class="fas fa-spinner fa-spin" aria-hidden="true"></i>
         {{ isTranslating ? t('stepEdit.saveTranslation') : t('stepEdit.save') }}
       </button>
+      <button
+        type="button"
+        class="btn btn-secondary"
+        data-testid="step-edit-revert"
+        :disabled="(!isNew && !isDirty) || isSaving"
+        @click="isNew ? emit('delete') : resetForm()"
+      >
+        {{ isNew ? t('stepEdit.discardDraft') : t('stepEdit.revert') }}
+      </button>
+      <p v-if="errorMessage" class="ocf-step-error" role="alert">
+        <i class="fas fa-exclamation-circle" aria-hidden="true"></i> {{ errorMessage }}
+      </p>
     </footer>
 
   <!-- Confirm dialog for destructive type change -->
@@ -1648,10 +1648,6 @@ const handleSaveTranslation = () => {
   padding: var(--spacing-sm) var(--spacing-lg);
   border-top: 1px solid var(--color-border-light);
   background: var(--color-background);
-}
-
-.ocf-step-footer-spacer {
-  flex: 1;
 }
 
 .ocf-step-error {
