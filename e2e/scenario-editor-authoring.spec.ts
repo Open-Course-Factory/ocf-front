@@ -1,16 +1,17 @@
 import { test, expect, type Page } from '@playwright/test';
 import { loginFresh } from './helpers/auth';
 import { dismissVerificationBanner, navigateViaMenuCategory } from './helpers/ui';
-import { dropStepNode, fillStepModalAndSave } from './helpers/scenarioEditor';
+import { addStep, fillStepAndSave, openStep, outlineTitles } from './helpers/scenarioEditor';
 import { apiLogin, deleteScenarioById, findTeacherGroup, type ApiSession } from './helpers/scenarioApi';
 
 // ---------------------------------------------------------------------------
 // Authoring details the smoke spec walks past:
 //  - an empty editor leads to creating a scenario, instead of calling a
 //    scenario that does not exist "read-only";
-//  - a step added in the middle of the chain is saved there, instead of
-//    jumping to the front when the canvas reloads from the stored order;
-//  - a stray click beside an editor modal does not throw the form away.
+//  - a step inserted in the middle of the list is saved there, and a step
+//    moved in the list keeps its new place after a reload;
+//  - a stray click beside the scenario modal does not throw the form away,
+//    and switching step with unsaved edits asks first.
 // No container is provisioned.
 // ---------------------------------------------------------------------------
 
@@ -38,75 +39,81 @@ async function openEditor(page: Page): Promise<void> {
   await loginFresh(page, AUTHOR_EMAIL, PASSWORD);
   await dismissVerificationBanner(page);
   await navigateViaMenuCategory(page, 'scenarios', '/scenario-editor');
-  await page.waitForSelector('.flow-canvas', { timeout: 20_000 });
+  await page.waitForSelector('[data-testid="scenario-picker"]', { timeout: 20_000 });
 }
 
-/** The "Step N" caption the canvas shows under an info step's title. */
-function stepCaption(page: Page, title: string) {
-  return page.locator('.info-step-node').filter({ hasText: title }).locator('.node-subtitle');
-}
-
-test('dropping a step on an empty editor leads to creating a scenario', async ({ page }) => {
+test('an empty editor invites creating a scenario', async ({ page }) => {
   await openEditor(page);
 
-  await expect(page.getByText(/create one, then drag steps|créez-en un, puis glissez-y/i)).toBeVisible();
-
-  await dropStepNode(page, 'info', 300, 250);
-
-  await expect(page.locator('#scenario-name')).toBeVisible();
-  await expect(page.getByText(/create the scenario first|créez d’abord le scénario/i)).toBeVisible();
+  const empty = page.getByTestId('editor-empty-state');
+  await expect(empty).toBeVisible();
+  await expect(empty.getByTestId('scenario-import-btn')).toBeVisible();
+  await expect(empty.getByTestId('scenario-ai-create-btn')).toBeVisible();
   await expect(page.getByText(/read-only|lecture seule/i)).toHaveCount(0);
-  await expect(page.locator('.info-step-node')).toHaveCount(0);
 
-  // A click beside the modal keeps what was typed.
+  await empty.getByTestId('empty-create-scenario').click();
+  await expect(page.locator('#scenario-name')).toBeVisible();
+
   await page.locator('#scenario-name').fill(`e2e-authoring-${STAMP}`);
   await page.locator('.base-modal-overlay').click({ position: { x: 5, y: 5 } });
   await expect(page.locator('#scenario-name')).toHaveValue(`e2e-authoring-${STAMP}`);
 });
 
-test('a step inserted between two others is saved in that place', async ({ page }) => {
+test('a step inserted between two others is saved in that place, and a moved step stays moved', async ({ page }) => {
   test.skip(!groupId, `${AUTHOR_EMAIL} teaches no class — seed the dev personas first`);
   test.setTimeout(120_000);
   await openEditor(page);
 
-  await page.locator('.btn-icon.btn-create').click();
+  await page.getByTestId('scenario-create-btn').click();
   await page.locator('#scenario-name').fill(`e2e-authoring-${STAMP}`);
   await page.locator('#scenario-title').fill(`E2E authoring ${STAMP}`);
-  // Her class, as the roundtrip spec does: a scope she certainly manages.
   await page.locator('#create-scope').selectOption(`group:${groupId}`);
   await page.locator('.base-modal-footer .btn.btn-primary').first().click();
-  await page.waitForSelector('.scenario-node', { state: 'attached', timeout: 20_000 });
+  await expect(page.getByTestId('no-steps-state')).toBeVisible({ timeout: 20_000 });
   scenarioId = new URL(page.url()).searchParams.get('scenarioId');
   expect(scenarioId).not.toBeNull();
 
-  // Appending, starting from an empty scenario.
-  await dropStepNode(page, 'info', 300, 250);
-  await fillStepModalAndSave(page, 'Alpha');
-  await expect(stepCaption(page, 'Alpha')).toHaveText(/\b1$/);
+  await addStep(page, 'info');
+  await fillStepAndSave(page, 'Alpha');
+  await addStep(page, 'info');
+  await fillStepAndSave(page, 'Charlie');
 
-  await dropStepNode(page, 'info', 550, 250);
-  await fillStepModalAndSave(page, 'Charlie');
-  await expect(stepCaption(page, 'Charlie')).toHaveText(/\b2$/);
+  // Insert before the second step.
+  await addStep(page, 'info', 1);
+  await fillStepAndSave(page, 'Bravo');
+  await expect(outlineTitles(page)).toHaveText(['Alpha', 'Bravo', 'Charlie']);
 
-  // "+" on the Alpha → Charlie link. A DOM click: VueFlow's pan handler
-  // swallows a pointer click before the badge sees it.
-  await page.evaluate(() => {
-    const badge = document.querySelector(
-      '.insertable-edge-badge-wrapper[data-edge-id^="edge-step-"] .insertable-edge-badge:not(.insertable-edge-badge--remove)'
-    ) as HTMLButtonElement | null;
-    if (!badge) throw new Error('insert badge on the step link not found');
-    badge.click();
-  });
-  await page.locator('.insert-node-picker .picker-item').filter({ hasText: 'Info' }).click();
+  // Move Alpha to the end with the keyboard.
+  await page.getByTestId('outline-step-0').locator('.ocf-outline-row').focus();
+  await page.keyboard.press('Alt+ArrowDown');
+  await expect(outlineTitles(page)).toHaveText(['Bravo', 'Alpha', 'Charlie']);
+  await page.getByTestId('outline-move-down-1').click({ force: true });
+  await expect(outlineTitles(page)).toHaveText(['Bravo', 'Charlie', 'Alpha']);
 
-  // A click beside the step editor keeps it open.
-  await page.locator('#step-title').fill('Bravo');
-  await page.locator('.base-modal-overlay').click({ position: { x: 5, y: 5 } });
+  // The order is the stored one, not only the one on screen.
+  await expect(page.getByTestId('save-state')).toHaveText(/^\s*(saved|enregistré)\s*$/i);
+  await page.reload();
+  await expect(outlineTitles(page)).toHaveText(['Bravo', 'Charlie', 'Alpha'], { timeout: 20_000 });
+});
+
+test('switching step with unsaved edits asks first', async ({ page }) => {
+  test.skip(!scenarioId, 'needs the scenario the previous test created');
+  await openEditor(page);
+  await page.getByTestId('scenario-picker').selectOption(scenarioId!);
+  await openStep(page, 'Bravo');
+
+  await page.locator('#step-text-content').fill('Edited, not saved');
+  await expect(page.getByTestId('save-state')).toHaveText(/unsaved|non enregistrées/i);
+  // The preview follows the draft as it is typed.
+  await expect(page.getByTestId('step-preview')).toContainText('Edited, not saved');
+
+  await page.getByTestId('outline-list').locator('.ocf-outline-row').filter({ hasText: 'Alpha' }).click();
+  await expect(page.getByText(/discard your changes|abandonner vos modifications/i)).toBeVisible();
+  await page.getByRole('button', { name: /keep editing|continuer l'édition/i }).click();
   await expect(page.locator('#step-title')).toHaveValue('Bravo');
-  await fillStepModalAndSave(page, 'Bravo');
+  await expect(page.locator('#step-text-content')).toHaveValue('Edited, not saved');
 
-  // The canvas has just been rebuilt from the stored order.
-  await expect(stepCaption(page, 'Alpha')).toHaveText(/\b1$/);
-  await expect(stepCaption(page, 'Bravo')).toHaveText(/\b2$/);
-  await expect(stepCaption(page, 'Charlie')).toHaveText(/\b3$/);
+  await page.getByTestId('outline-list').locator('.ocf-outline-row').filter({ hasText: 'Alpha' }).click();
+  await page.getByRole('button', { name: /discard changes|abandonner les modifications/i }).click();
+  await expect(page.locator('#step-title')).toHaveValue('Alpha');
 });

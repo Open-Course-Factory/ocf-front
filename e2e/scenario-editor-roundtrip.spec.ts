@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { login, loginFresh, switchToOrg } from './helpers/auth';
 import { dismissVerificationBanner, navigateViaMenuCategory } from './helpers/ui';
-import { dropStepNode, fillStepModalAndSave, saveStepModal } from './helpers/scenarioEditor';
+import { addStep, fillStepAndSave, openStep, outlineTitles, saveStep } from './helpers/scenarioEditor';
 import {
   apiLogin,
   findTeacherGroup,
@@ -15,10 +15,10 @@ import {
 
 // ---------------------------------------------------------------------------
 // Tier B — everything a scenario goes through between being drawn and being
-// played: nadia authors one on the canvas, karim runs it to the end, in the
+// played: nadia authors one in the editor, a learner runs it to the end, in the
 // real UI on both sides and with a real container in between.
 //
-// How the scenario reaches karim, since the editor has no "assign" button:
+// How the scenario reaches the learner without the rail's "Assign to a class":
 // the create-scope picker offers GROUPS as well as orgs, and a group-scoped
 // creation posts to /groups/:groupId/scenarios, which creates the group's
 // ScenarioAssignment for you. Authoring it into the class karim is in is
@@ -61,7 +61,7 @@ let scenarioId: string | null = null;
 
 test.describe.configure({ mode: 'serial' });
 
-/** Add one multiple-choice question to the quiz step modal, then save it. */
+/** Add one multiple-choice question to the open quiz step, then save it. */
 async function addQuizQuestion(page: Page): Promise<void> {
   await page.locator('#tab-questions').click();
   await page.locator('.add-question-btn').click();
@@ -80,7 +80,7 @@ async function addQuizQuestion(page: Page): Promise<void> {
   await rightAnswerRow.locator('input[type="radio"]').click();
   await expect(rightAnswerRow.locator('input[type="radio"]')).toBeChecked();
 
-  await saveStepModal(page);
+  await saveStep(page);
 }
 
 test.beforeAll(async () => {
@@ -102,16 +102,16 @@ test.afterAll(async () => {
   await learner?.api.dispose();
 });
 
-test('an author draws a scenario onto the canvas and hands it to their class', async ({ page }) => {
+test('an author writes a scenario in the editor and hands it to their class', async ({ page }) => {
   test.skip(!groupId, `${AUTHOR_EMAIL} teaches no populated class — seed the dev personas first`);
   test.setTimeout(180_000);
 
   await loginFresh(page, AUTHOR_EMAIL, PASSWORD);
   await dismissVerificationBanner(page);
   await navigateViaMenuCategory(page, 'scenarios', '/scenario-editor');
-  await page.waitForSelector('.flow-canvas', { timeout: 20_000 });
+  await page.waitForSelector('[data-testid="scenario-picker"]', { timeout: 20_000 });
 
-  await page.locator('.btn-icon.btn-create').click();
+  await page.getByTestId('scenario-create-btn').click();
   await page.locator('#scenario-name').fill(SCENARIO_NAME);
   await page.locator('#scenario-title').fill(SCENARIO_TITLE);
   await page.locator('#scenario-description').fill('Authored by scenario-editor-roundtrip.spec.ts.');
@@ -120,35 +120,25 @@ test('an author draws a scenario onto the canvas and hands it to their class', a
   await page.locator('#create-scope').selectOption(`group:${groupId}`);
 
   await page.locator('.base-modal-footer .btn.btn-primary').first().click();
-  await page.waitForSelector('.scenario-node', { state: 'attached', timeout: 20_000 });
+  await expect(page.getByTestId('no-steps-state')).toBeVisible({ timeout: 20_000 });
 
   // The image the learner will get is chosen on a second pass: the create modal
   // deliberately shows only General + Content, and the Setup / Options tabs
-  // appear once the scenario exists. A direct DOM click because VueFlow's pan
-  // handler swallows the event before the button sees it.
-  await page.evaluate(() => {
-    const button = document.querySelector(
-      '.scenario-node .action-btn:not(.select-tree-btn):not(.delete-btn)'
-    ) as HTMLButtonElement | null;
-    if (!button) throw new Error('scenario edit button not found');
-    button.click();
-  });
+  // appear once the scenario exists — from the outline's scenario card.
+  await page.getByTestId('outline-scenario-card').click();
   await page.locator('#tab-options').click();
   await page.locator('#scenario-instance-type').selectOption('xs');
   await page.locator('#scenario-os-type').selectOption('apk');
   await page.locator('.base-modal-footer .btn.btn-primary').first().click();
   await expect(page.locator('#scenario-instance-type')).toBeHidden({ timeout: 15_000 });
 
-  await dropStepNode(page, 'info', 250, 250);
-  await fillStepModalAndSave(page, INFO_STEP);
-  await page.waitForSelector('.info-step-node', { state: 'attached', timeout: 10_000 });
+  await addStep(page, 'info');
+  await fillStepAndSave(page, INFO_STEP);
 
-  await dropStepNode(page, 'quiz', 450, 250);
+  await addStep(page, 'quiz');
   await page.locator('#step-title').fill(QUIZ_STEP);
   await addQuizQuestion(page);
-  await page.waitForSelector('.quiz-step-node', { state: 'attached', timeout: 10_000 });
-
-  await page.locator('.btn-save').click({ force: true });
+  await expect(outlineTitles(page)).toHaveText([INFO_STEP, QUIZ_STEP]);
 
   // Authoring it into the class IS the handover: the learner is now offered it.
   await expect
@@ -214,23 +204,10 @@ test('the author tests the scenario from its second step and lands on it', async
   await login(page, AUTHOR_EMAIL, PASSWORD);
   await dismissVerificationBanner(page);
   await navigateViaMenuCategory(page, 'scenarios', '/scenario-editor');
-  await page.waitForSelector('.flow-canvas', { timeout: 20_000 });
-
-  const select = page.locator('.scenario-select');
+  const select = page.getByTestId('scenario-picker');
   await expect(select.locator(`option[value="${scenarioId}"]`)).toBeAttached({ timeout: 20_000 });
   await select.selectOption(scenarioId!);
-  await page.waitForSelector('.quiz-step-node', { state: 'attached', timeout: 20_000 });
-
-  // A direct DOM click: VueFlow's pan handler swallows a pointer click on the
-  // node's buttons before they see it.
-  await page.evaluate(() => {
-    const button = document.querySelector(
-      '.quiz-step-node .action-btn:not(.select-tree-btn):not(.delete-btn)'
-    ) as HTMLButtonElement | null;
-    if (!button) throw new Error('quiz step edit button not found');
-    button.click();
-  });
-  await expect(page.locator('#step-title')).toHaveValue(QUIZ_STEP, { timeout: 10_000 });
+  await openStep(page, QUIZ_STEP);
 
   await page.getByTestId('step-edit-test-from-step').click();
 

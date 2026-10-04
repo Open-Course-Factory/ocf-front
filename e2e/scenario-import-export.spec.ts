@@ -61,12 +61,12 @@ test('a teacher imports a KillerCoda archive into her class and exports it back'
   await loginFresh(page, TEACHER_EMAIL, PASSWORD);
   await dismissVerificationBanner(page);
   await navigateViaMenuCategory(page, 'scenarios', '/scenario-editor');
-  await page.waitForSelector('.flow-canvas', { timeout: 20_000 });
+  await page.waitForSelector('[data-testid="scenario-picker"]', { timeout: 20_000 });
 
   // Nothing selected yet: Export is there, but says there is nothing to export.
   await expect(page.getByTestId('scenario-export-btn')).toBeDisabled();
 
-  await page.getByTestId('scenario-import-btn').click();
+  await page.getByTestId('editor-empty-state').getByTestId('scenario-import-btn').click();
   await expect(page.getByTestId('scenario-import-format-killercoda')).toBeChecked();
   await page.locator('#import-destination').selectOption(`group:${groupId}`);
   await page.locator('.base-modal-footer .btn-primary').click();
@@ -81,8 +81,8 @@ test('a teacher imports a KillerCoda archive into her class and exports it back'
   await page.locator('.upload-success .btn-primary').click();
 
   // The editor opens what was just imported.
-  await expect(page.locator('.scenario-select option:checked')).toContainText(TITLE, { timeout: 15_000 });
-  await expect(page.locator('.scenario-node')).toBeAttached({ timeout: 15_000 });
+  await expect(page.locator('[data-testid="scenario-picker"] option:checked')).toContainText(TITLE, { timeout: 15_000 });
+  await expect(page.getByTestId('outline-scenario-card')).toBeVisible({ timeout: 15_000 });
   importedId = new URL(page.url()).searchParams.get('scenarioId');
   expect(importedId).not.toBeNull();
 

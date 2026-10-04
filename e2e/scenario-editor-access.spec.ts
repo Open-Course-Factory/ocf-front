@@ -43,7 +43,7 @@ test.describe('Scenario editor access', () => {
     await dismissVerificationBanner(page);
 
     await expect(page).toHaveURL(/\/terminal-sessions\?error=insufficient_permissions/, { timeout: 20_000 });
-    await expect(page.locator('.node-library-panel')).toHaveCount(0);
+    await expect(page.getByTestId('scenario-picker')).toHaveCount(0);
 
     await expect(await editorMenuLinks(page)).toHaveCount(0);
   });
@@ -53,8 +53,8 @@ test.describe('Scenario editor access', () => {
     await dismissVerificationBanner(page);
 
     await expect(page).toHaveURL(/\/scenario-editor$/, { timeout: 20_000 });
-    await expect(page.locator('.node-library-panel')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.flow-canvas')).toBeVisible();
+    await expect(page.getByTestId('scenario-picker')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('editor-empty-state')).toBeVisible();
 
     await expect(await editorMenuLinks(page)).toHaveCount(1);
   });

@@ -58,7 +58,7 @@ async function openEditor(page: Page) {
   await loginFresh(page, TEACHER_EMAIL, PASSWORD);
   await dismissVerificationBanner(page);
   await navigateViaMenuCategory(page, 'scenarios', '/scenario-editor');
-  await page.waitForSelector('.flow-canvas', { timeout: 20_000 });
+  await page.waitForSelector('[data-testid="scenario-picker"]', { timeout: 20_000 });
 }
 
 test('a teacher creates a scenario from her AI\'s answer, after one refused answer', async ({ page, context }) => {
@@ -69,7 +69,7 @@ test('a teacher creates a scenario from her AI\'s answer, after one refused answ
   await openEditor(page);
   await expect(page.getByTestId('scenario-ai-improve-btn')).toBeDisabled();
 
-  await page.getByTestId('scenario-ai-create-btn').click();
+  await page.getByTestId('editor-empty-state').getByTestId('scenario-ai-create-btn').click();
   await page.locator('#ai-description').fill('Practise file permissions with chmod and a hidden flag.');
   await page.locator('#ai-destination').selectOption(`org:${orgId}`);
   await page.getByTestId('scenario-ai-next').click();
@@ -105,8 +105,8 @@ test('a teacher creates a scenario from her AI\'s answer, after one refused answ
   await page.getByTestId('scenario-ai-import').click();
 
   await expect(page.getByTestId('scenario-ai-step-answer')).toHaveCount(0);
-  await expect(page.locator('.scenario-select option:checked')).toContainText(TITLE, { timeout: 15_000 });
-  await expect(page.locator('.scenario-node')).toBeAttached({ timeout: 15_000 });
+  await expect(page.locator('[data-testid="scenario-picker"] option:checked')).toContainText(TITLE, { timeout: 15_000 });
+  await expect(page.getByTestId('outline-scenario-card')).toBeVisible({ timeout: 15_000 });
   createdId = new URL(page.url()).searchParams.get('scenarioId');
   expect(createdId).not.toBeNull();
   expect(await exportedSteps(createdId!)).toHaveLength(3);
@@ -116,8 +116,8 @@ test('a teacher improves the scenario with her AI and it is updated in place', a
   test.skip(!createdId, 'the create test did not produce a scenario');
 
   await openEditor(page);
-  await page.locator('.scenario-select').selectOption(createdId!);
-  await expect(page.locator('.scenario-node')).toBeAttached({ timeout: 15_000 });
+  await page.getByTestId('scenario-picker').selectOption(createdId!);
+  await expect(page.getByTestId('outline-scenario-card')).toBeVisible({ timeout: 15_000 });
 
   await page.getByTestId('scenario-ai-improve-btn').click();
   await page.locator('#ai-instruction').fill('Add a step about umask.');
@@ -147,8 +147,8 @@ test('a teacher improves the scenario with her AI and it is updated in place', a
   await page.getByTestId('scenario-ai-import').click();
 
   await expect(page.getByTestId('scenario-ai-step-answer')).toHaveCount(0);
-  await expect(page.locator('.scenario-select option:checked')).toContainText(TITLE, { timeout: 15_000 });
+  await expect(page.locator('[data-testid="scenario-picker"] option:checked')).toContainText(TITLE, { timeout: 15_000 });
   expect(new URL(page.url()).searchParams.get('scenarioId')).toBe(createdId);
   expect(await exportedSteps(createdId!)).toEqual([...VALID.steps.map(s => s.title), 'Set a umask']);
-  await expect(page.locator('.scenario-select option', { hasText: `${TITLE} (improved)` })).toHaveCount(0);
+  await expect(page.locator('[data-testid="scenario-picker"] option', { hasText: `${TITLE} (improved)` })).toHaveCount(0);
 });

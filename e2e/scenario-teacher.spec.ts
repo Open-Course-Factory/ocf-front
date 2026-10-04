@@ -151,14 +151,14 @@ test('the trainer rehearsal opens a session the class results do not count', asy
   await dismissVerificationBanner(page);
   await navigateViaMenuCategory(page, 'scenarios', '/scenario-editor');
 
-  const selector = page.locator('.scenario-select');
+  const selector = page.getByTestId('scenario-picker');
   await expect(selector).toBeVisible({ timeout: 20_000 });
   await expect
     .poll(async () => selector.locator(`option[value="${scenarioId}"]`).count(), { timeout: 20_000 })
     .toBe(1);
   await selector.selectOption(scenarioId!);
 
-  const previewBtn = page.locator('.editor-header button.btn-icon:has(i.fa-play)');
+  const previewBtn = page.getByTestId('scenario-play-btn');
   await expect(previewBtn).toBeVisible({ timeout: 20_000 });
   await previewBtn.click();
   await page.locator('.base-modal-footer .btn.btn-primary').first().click();

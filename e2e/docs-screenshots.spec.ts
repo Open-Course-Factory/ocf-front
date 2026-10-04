@@ -135,7 +135,7 @@ const SCREENS: Screen[] = [
     path: '/scenario-editor',
     as: 'trainer',
     prepare: async (page) => {
-      const select = page.locator('.scenario-select');
+      const select = page.getByTestId('scenario-picker');
       await select.waitFor({ state: 'visible', timeout: 10_000 });
       // The fixture's GameShell — the class assignment is what lets her manage it.
       const value = await select.locator('option', { hasText: /gameshell/i }).first().getAttribute('value');
