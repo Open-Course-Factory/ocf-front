@@ -6,21 +6,10 @@
 
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { createI18n } from 'vue-i18n'
+import { createTestI18n } from '../helpers/entityModalHelper'
 
 import ScenarioEditModal from '../../src/components/ScenarioEditor/ScenarioEditModal.vue'
 import ScenarioStepEditModal from '../../src/components/ScenarioEditor/ScenarioStepEditModal.vue'
-
-function createTestI18n() {
-  return createI18n({
-    legacy: false,
-    locale: 'en',
-    fallbackLocale: 'en',
-    messages: { en: {}, fr: {} },
-    missingWarn: false,
-    fallbackWarn: false,
-  })
-}
 
 const global = { plugins: [createTestI18n()] }
 
