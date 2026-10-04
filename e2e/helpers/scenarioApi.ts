@@ -38,10 +38,6 @@ export async function findOwnedTeamOrg(
   return owned ? { id: owned.id, displayName: owned.display_name || owned.name } : null;
 }
 
-export async function findOwnedTeamOrgId(session: ApiSession): Promise<string | null> {
-  return (await findOwnedTeamOrg(session))?.id ?? null;
-}
-
 export interface SeedQuestion {
   order: number;
   question_text: string;
