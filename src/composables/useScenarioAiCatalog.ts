@@ -15,10 +15,10 @@ import type { ScenarioAiCatalog } from '../utils/scenarioAiPrompt'
 
 const orEmpty = <T>(list: Promise<T[]>) => list.catch(() => [] as T[])
 
-// GET /terminals/catalog-features carries each feature's minimum size but is
-// admin-only. Anyone who may launch a session reads the same features, without
-// the minimum size, from the session options of any distribution: those list
-// the whole feature catalogue, each marked allowed or not for that pick.
+// GET /terminals/catalog-features is admin-only. Anyone who may launch a
+// session reads the same features from the session options of any
+// distribution: those list the whole feature catalogue, each marked allowed or
+// not for that pick, with its minimum size when the backend sends one.
 async function loadFeatures(distributions: Distribution[]): Promise<NonNullable<ScenarioAiCatalog['features']>> {
   try {
     const features = await terminalService.getCatalogFeatures()

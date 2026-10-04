@@ -154,6 +154,9 @@ export interface SessionOptionFeature {
   key: string
   name: string
   description?: string
+  // Smallest size the feature runs on. Sent by ocf-core from !568 on; absent
+  // from older backends, which then simply do not say.
+  min_size_key?: string
   allowed: boolean
   reason?: string
 }
