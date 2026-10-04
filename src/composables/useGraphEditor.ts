@@ -2,26 +2,20 @@
  * Open Course Factory - Front
  * Copyright (C) 2023-2026 Solution Libre
  *
- * Shared graph-editor logic for the node/edge canvas used by both the scenario
- * editor and the course editor. Owns the nodes/edges refs and the topology
- * operations that are identical across editors — edge-insert (drop-on-edge),
+ * Graph-editor logic for the course editor's node/edge canvas. Owns the
+ * nodes/edges refs and the topology operations — edge-insert (drop-on-edge),
  * delete-node auto-repair, edge-connect validation + FK sync, order-from-chain
- * synchronization, and per-entity node-position persistence.
+ * synchronization, and per-entity node-position persistence. Domain rules
+ * (valid connections, FK sync, order levels, storage prefix) are injected via
+ * config.
  *
- * The two editors differ only in a handful of domain rules, injected via config:
- *   - which parent → child connections are valid (linear step chain vs the
- *     course → chapter → section → page hierarchy)
- *   - the foreign-key PATCH performed when a valid edge is (re)connected
- *   - the source handle used for the downstream half of an inserted node
- *   - the parent → child levels walked when renumbering order
- *   - the localStorage prefix for saved positions
- *
- * `useScenarioGraph` is a thin preset over this; CourseEditor consumes it
- * directly. Extracted during the FRONT-2 de-duplication (#280).
+ * It also served the scenario editor until that became an ordered list; the
+ * renumber both still share lives in utils/renumberSequence. Extracted during
+ * the FRONT-2 de-duplication (#280).
  */
 
 import { ref, type Ref } from 'vue'
-import axios from 'axios'
+import { renumberSequence, type SequenceItem } from '../utils/renumberSequence'
 
 export interface GraphOrderLevel {
   // Node entityType whose children are renumbered along their edge chain.
@@ -295,24 +289,17 @@ export function useGraphEditor(config: UseGraphEditorConfig) {
       }
 
       for (const orderedChildren of chains) {
-        for (let i = 0; i < orderedChildren.length; i++) {
-          const child = orderedChildren[i]
-          const newOrder = i + (orderBase ?? 1)
-          const currentOrder = child.data.order ?? child.data.number ?? 0
-
-          if (child.data.entityId && !child.data.isNew && currentOrder !== newOrder) {
-            try {
-              await axios.patch(`${endpoint}/${child.data.entityId}`, {
-                [orderField]: newOrder
-              })
-              child.data.order = newOrder
-              patched++
-            } catch (err) {
-              console.error(`Failed to update order for ${endpoint} ${child.data.entityId}:`, err)
-              failedLabels.push(child.data.label || child.data.title || String(child.data.entityId))
-            }
-          }
-        }
+        const items: SequenceItem[] = orderedChildren.map(child => ({
+          id: child.data.entityId && !child.data.isNew ? child.data.entityId : null,
+          order: child.data.order ?? child.data.number ?? 0,
+          label: child.data.label || child.data.title || String(child.data.entityId)
+        }))
+        const result = await renumberSequence(items, { endpoint, orderField, orderBase: orderBase ?? 1 })
+        orderedChildren.forEach((child, i) => {
+          if (items[i].order !== (child.data.order ?? child.data.number ?? 0)) child.data.order = items[i].order
+        })
+        patched += result.patched
+        failedLabels.push(...result.failedLabels)
       }
     }
 
