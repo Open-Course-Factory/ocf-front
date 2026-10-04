@@ -9,7 +9,15 @@
     @confirm="onConfirm"
     @close="$emit('close')"
   >
-    <div class="form-group">
+    <!-- Opened from a scenario rather than a class: the class is what is chosen. -->
+    <div v-if="groups" class="form-group">
+      <label for="assign-class">{{ t('groupScenarios.selectClass') }}</label>
+      <select id="assign-class" v-model="selectedGroupId" class="form-control" data-testid="assign-class-select">
+        <option value="" disabled>{{ t('groupScenarios.selectClass') }}</option>
+        <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+      </select>
+    </div>
+    <div v-else class="form-group">
       <label>{{ t('groupScenarios.selectScenario') }}</label>
       <input
         v-model="search"
@@ -64,11 +72,14 @@ import type { Scenario } from '../../../types/groupScenarios'
 const props = defineProps<{
   visible: boolean
   scenarios: Scenario[]
+  // When set, the scenario is already chosen (the first of `scenarios`) and
+  // the modal asks for one of these classes instead.
+  groups?: Array<{ id: string; name: string }>
 }>()
 
 const emit = defineEmits<{
   close: []
-  assign: [payload: { scenarioId: string; startDate: string; deadline: string }]
+  assign: [payload: { scenarioId: string; startDate: string; deadline: string; groupId?: string }]
 }>()
 
 const { t } = useTranslations({
@@ -76,6 +87,7 @@ const { t } = useTranslations({
     groupScenarios: {
       assignScenario: 'Assign Scenario',
       selectScenario: 'Select a Scenario',
+      selectClass: 'Select a class',
       searchScenarios: 'Search scenarios...',
       orgLibrary: 'Organization Library',
       groupScenarios: 'Group Scenarios',
@@ -93,6 +105,7 @@ const { t } = useTranslations({
     groupScenarios: {
       assignScenario: 'Assigner un scénario',
       selectScenario: 'Sélectionner un scénario',
+      selectClass: 'Sélectionner une classe',
       searchScenarios: 'Rechercher des scénarios...',
       orgLibrary: 'Bibliothèque de l\'organisation',
       groupScenarios: 'Scénarios du groupe',
@@ -109,6 +122,7 @@ const { t } = useTranslations({
 })
 
 const selectedScenarioId = ref('')
+const selectedGroupId = ref('')
 const startDate = ref('')
 const deadline = ref('')
 const search = ref('')
@@ -140,14 +154,16 @@ function onConfirm() {
   emit('assign', {
     scenarioId: selectedScenarioId.value,
     startDate: startDate.value,
-    deadline: deadline.value
+    deadline: deadline.value,
+    groupId: props.groups ? selectedGroupId.value : undefined
   })
 }
 
 // Reset the form each time the modal opens.
 watch(() => props.visible, (visible) => {
   if (visible) {
-    selectedScenarioId.value = ''
+    selectedScenarioId.value = props.groups ? props.scenarios[0]?.id || '' : ''
+    selectedGroupId.value = ''
     startDate.value = ''
     deadline.value = ''
     search.value = ''
