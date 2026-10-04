@@ -115,13 +115,13 @@ export function useScenarioCreateScopes() {
   // The scope whose import updates `scenario` in place, or '' when the user
   // has none. Every import route upserts by title within the destination's
   // organization (ScenarioSeedService.SeedScenario), so it has to be the
-  // scenario's own: its organization when the user manages it, else one of
+  // scenario's own: its organization when the user may author in it, else one of
   // the user's classes in that organization (which also assigns the scenario
   // to that class), else the platform for a platform scenario.
   const scopeKeyForScenario = (scenario: { organization_id?: string | null }): string => {
     const orgId = scenario.organization_id
     if (!orgId) return platformScopeAvailable.value ? 'platform:*' : ''
-    if (membershipsStore.canManageOrg(orgId)) return `org:${orgId}`
+    if (orgScopes.value.some(o => o.id === orgId)) return `org:${orgId}`
     const group = allGroups.value.find((g: any) => g.organization_id === orgId)
     return group ? `group:${group.id}` : ''
   }

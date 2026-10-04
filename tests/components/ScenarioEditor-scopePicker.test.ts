@@ -150,4 +150,12 @@ describe('useScenarioCreateScopes — scope picker trusts backend filter (#216)'
     expect(picker).toMatch(/orgScopes\.value\.some\(o => o\.id === currentOrgId\)/)
     expect(picker).not.toMatch(/canManageOrg/)
   })
+
+  // A teacher re-imports a lab of their organisation into that organisation,
+  // not into one of their classes.
+  it('updates a scenario in place in its organisation when the user may author there', () => {
+    const body = fileContent.match(/const scopeKeyForScenario = [\s\S]*?\n  \}/)?.[0] ?? ''
+    expect(body).toMatch(/orgScopes\.value\.some\(o => o\.id === orgId\)/)
+    expect(body).not.toMatch(/canManageOrg/)
+  })
 })
