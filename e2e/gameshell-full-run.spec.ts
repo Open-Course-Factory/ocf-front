@@ -252,7 +252,13 @@ async function expectOnlyDecoysNamed(page: Page, stone: string): Promise<void> {
   trail(`  searching by name finds only copies of ${stone}`);
 }
 
-test.use({ video: 'on' });
+// The helpers read the terminal's visible rows only. At the default 720px the
+// expanded briefing leaves the console about seven rows, and a command printing
+// more than that (`pstree -p $$`) scrolls its own answer out of reach. The
+// rows are not swapped for xterm's scrollback: the poll loops below compare
+// before/after and search for the latest output, and a whole-history read
+// would let an old line satisfy them.
+test.use({ video: 'on', viewport: { width: 1280, height: 1440 } });
 
 // How often the polls below look again. Every wait in this file is "until a
 // condition holds, capped", never "sleep this long and hope" — the caps are
