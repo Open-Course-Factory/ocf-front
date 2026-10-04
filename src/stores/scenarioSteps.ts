@@ -133,7 +133,7 @@ export const useScenarioStepsStore = defineStore('scenario-steps', () => {
         field('verify_script', t('scenarioSteps.verifyScript')).textarea().hidden(),
         field('background_script', t('scenarioSteps.backgroundScript')).textarea().hidden(),
         field('foreground_script', t('scenarioSteps.foregroundScript')).textarea().hidden(),
-        field('has_flag', t('scenarioSteps.hasFlag')).checkbox().visible().creatable().updatable(),
+        field('has_flag', t('scenarioSteps.hasFlag')).checkbox().visible().readonly(),
         field('flag_path', t('scenarioSteps.flagPath')).input().visible().creatable().updatable(),
         field('flag_level', t('scenarioSteps.flagLevel')).input().visible().creatable().updatable()
     ]))
