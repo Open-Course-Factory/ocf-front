@@ -26,6 +26,7 @@ import { featureFlagService } from '../services/features';
 import { useSettingsNavigation } from '../composables/useSettingsNavigation';
 import { getCurrentActorRoles } from '../composables/useFeatureFlags';
 import { useScenarioEditorAccess } from '../composables/useScenarioEditorAccess';
+import { useUserMembershipsStore } from '../stores/userMemberships';
 import Layout from '../components/Layout.vue';
 import Courses from '../components/Pages/Courses.vue';
 import Chapters from '../components/Pages/Chapters.vue';
@@ -615,8 +616,13 @@ router.beforeEach(async (to, from, next) => {
   // the `requiredPermissions` branch above so the `TerminalSessions` toast
   // handler picks up `error=insufficient_permissions`.
   if (to.meta.requiresScenarioManager) {
+    // Decide on the server's answer, not on a page still loading. A request
+    // that failed is no answer either: let the page through rather than lock a
+    // teacher out — ocf-core refuses whatever the user may not do.
+    const memberships = useUserMembershipsStore()
+    await memberships.ensureLoaded()
     const { canAccessScenarioEditor } = useScenarioEditorAccess()
-    if (!canAccessScenarioEditor.value) {
+    if (memberships.isLoaded && !canAccessScenarioEditor.value) {
       console.warn(`❌ Access denied to ${to.path}: not a scenario manager`);
       next({
         name: 'TerminalSessions',

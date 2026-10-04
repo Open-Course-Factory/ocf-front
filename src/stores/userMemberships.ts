@@ -50,6 +50,10 @@ export interface GroupMembership {
  * is now enforced server-side — the store no longer needs Promise.allSettled.
  */
 export const useUserMembershipsStore = defineStore('userMemberships', () => {
+  // Browsers that ran the persisting version still hold its copy; it is never
+  // read again, so drop it.
+  try { localStorage.removeItem('pinia_state_userMemberships') } catch { /* storage unavailable */ }
+
   const orgMemberships = ref<OrgMembership[]>([])
   const groupMemberships = ref<GroupMembership[]>([])
   const isLoaded = ref(false)
@@ -93,16 +97,20 @@ export const useUserMembershipsStore = defineStore('userMemberships', () => {
                     'Failed to load memberships'
       orgMemberships.value = []
       groupMemberships.value = []
-      isLoaded.value = true
+      // Not loaded: the next caller retries instead of deciding on nothing.
     } finally {
       isLoading.value = false
     }
   }
 
+  // A caller arriving while a load is in flight waits for it: returning at once
+  // let the editor's route guard read empty memberships on a cold page load and
+  // send a teacher away from their own editor.
+  let inFlight: Promise<void> | null = null
   const ensureLoaded = async () => {
-    if (!isLoaded.value && !isLoading.value) {
-      await loadMemberships()
-    }
+    if (isLoaded.value) return
+    if (!inFlight) inFlight = loadMemberships().finally(() => { inFlight = null })
+    await inFlight
   }
 
   const getOrgRole = (orgId: string): MembershipRole | null => {
@@ -148,4 +156,9 @@ export const useUserMembershipsStore = defineStore('userMemberships', () => {
     canAuthorInOrg,
     canManageGroup,
   }
+}, {
+  // Memberships are the server's answer for this session, not something to
+  // restore: a saved copy outlives role changes, and one failed load saved as
+  // "loaded, no memberships" locked the editor on every refresh.
+  persist: false,
 })

@@ -44,6 +44,7 @@ vi.mock('../../src/services/demo', () => ({
 
 import axios from 'axios'
 import { useUserMembershipsStore } from '../../src/stores/userMemberships'
+import { piniaPluginPersist } from '../../src/piniaPluginPersist'
 
 const mockedAxios = axios as unknown as { get: ReturnType<typeof vi.fn> }
 
@@ -191,9 +192,10 @@ describe('useUserMembershipsStore.loadMemberships', () => {
 
   /**
    * BEHAVIOR PROTECTED: When the top-level /users/me call itself fails (e.g.
-   * 500, network error, auth lapse), both arrays are cleared, an error is
-   * surfaced, and `isLoaded` still becomes true so consumers don't poll
-   * forever.
+   * 500, network error, auth lapse), both arrays are cleared and an error is
+   * surfaced, but the store does NOT count as loaded: a failure marked
+   * "loaded, no memberships" used to be final, so the scenario editor's guard
+   * turned a teacher away on every later refresh.
    */
   it('clears both arrays and surfaces an error when /users/me fails', async () => {
     mockedAxios.get.mockRejectedValueOnce({
@@ -207,8 +209,50 @@ describe('useUserMembershipsStore.loadMemberships', () => {
     expectUsersMeIncludesCall()
     expect(store.orgMemberships).toEqual([])
     expect(store.groupMemberships).toEqual([])
-    expect(store.isLoaded).toBe(true)
+    expect(store.isLoaded).toBe(false)
     expect(store.error).not.toBe('')
+  })
+
+  it('retries on the next ensureLoaded after a failed load', async () => {
+    mockedAxios.get
+      .mockRejectedValueOnce({ message: 'Network Error' })
+      .mockResolvedValueOnce({ data: { organization_memberships: [{ organization_id: 'org-1', role: 'teacher' }], group_memberships: [] } })
+
+    const store = useUserMembershipsStore()
+    await store.ensureLoaded()
+    expect(store.isLoaded).toBe(false)
+
+    await store.ensureLoaded()
+    expect(mockedAxios.get).toHaveBeenCalledTimes(2)
+    expect(store.isLoaded).toBe(true)
+    expect(store.canAuthorInOrg('org-1')).toBe(true)
+  })
+
+  it('makes concurrent callers share the load in flight', async () => {
+    let resolve!: (v: unknown) => void
+    mockedAxios.get.mockReturnValueOnce(new Promise(r => { resolve = r }))
+
+    const store = useUserMembershipsStore()
+    const first = store.ensureLoaded()
+    const second = store.ensureLoaded()
+    resolve({ data: { organization_memberships: [{ organization_id: 'org-1', role: 'manager' }], group_memberships: [] } })
+    await Promise.all([first, second])
+
+    expect(mockedAxios.get).toHaveBeenCalledTimes(1)
+    expect(store.canManageOrg('org-1')).toBe(true)
+  })
+
+  it('is never written to localStorage, and drops a copy saved by older versions', async () => {
+    localStorage.setItem('pinia_state_userMemberships', JSON.stringify({ isLoaded: true, orgMemberships: [] }))
+    const pinia = createPinia()
+    pinia.use(piniaPluginPersist)
+    setActivePinia(pinia)
+    mockedAxios.get.mockResolvedValueOnce({ data: { organization_memberships: [{ organization_id: 'org-1', role: 'owner' }], group_memberships: [] } })
+    const store = useUserMembershipsStore()
+    expect(store.isLoaded).toBe(false)
+    await store.ensureLoaded()
+    expect(store.canManageOrg('org-1')).toBe(true)
+    expect(localStorage.getItem('pinia_state_userMemberships')).toBeNull()
   })
 })
 

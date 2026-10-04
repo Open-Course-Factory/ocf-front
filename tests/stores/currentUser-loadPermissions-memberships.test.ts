@@ -81,7 +81,9 @@ describe('currentUser.loadPermissions — memberships ride along', () => {
 
     await expect(useCurrentUserStore().loadPermissions()).resolves.toEqual(expect.any(Array))
     await flushPromises()
-    expect(useUserMembershipsStore().isLoaded).toBe(true)
+    // A failed load is not a final answer: it stays unloaded so the next
+    // caller (the editor's route guard) asks again instead of locking out.
+    expect(useUserMembershipsStore().isLoaded).toBe(false)
     expect(useUserMembershipsStore().getOrgRole('org-1')).toBeNull()
   })
 })
