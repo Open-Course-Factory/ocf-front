@@ -7,7 +7,6 @@
       :scenario-org-name="currentScenario ? getScenarioOrgName(currentScenario) : null"
       :can-create-scenario="canCreateScenario"
       :can-edit-scenario="canEditScenario"
-      :can-retire-scenario="canRetireCurrentScenario"
       :can-copy-to-org="!!canCopyToOrg"
       :is-importing="isImporting"
       :is-admin="isAdmin"
@@ -290,7 +289,7 @@ const organizationsStore = useOrganizationsStore()
 const classGroupsStore = useClassGroupsStore()
 const membershipsStore = useUserMembershipsStore()
 const { isAdmin } = useAdminViewMode()
-const { canAccessScenarioEditor, canRetireScenario } = useScenarioEditorAccess()
+const { canAccessScenarioEditor } = useScenarioEditorAccess()
 const notification = useNotification()
 
 // Custom node types for VueFlow
@@ -508,9 +507,6 @@ const getScenarioOrgName = (scenario: any): string | null => {
 // memberships disagreed with the hooks in both directions: org members got
 // controls that 403, class managers were shown read-only on their own labs.
 const canEditScenario = computed(() => !!currentScenario.value?.can_manage)
-const canRetireCurrentScenario = computed(() =>
-  !!currentScenario.value && canRetireScenario(currentScenario.value)
-)
 
 // Copy targets are the create scopes minus the scenario's own organisation:
 // an org manager copies into another org they manage, a teacher copies a

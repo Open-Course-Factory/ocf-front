@@ -128,7 +128,7 @@
             </button>
             <div v-if="canEditScenario" class="dropdown-divider"></div>
             <button
-              v-if="canRetireScenario && !currentScenario?.archived_at"
+              v-if="canEditScenario && !currentScenario?.archived_at"
               class="dropdown-item"
               @click="emit('archive'); showActionsMenu = false"
             >
@@ -136,7 +136,7 @@
               <span>{{ t('scenarioEditor.archive') }}</span>
             </button>
             <button
-              v-if="canRetireScenario && currentScenario?.archived_at"
+              v-if="canEditScenario && currentScenario?.archived_at"
               class="dropdown-item"
               @click="emit('unarchive'); showActionsMenu = false"
             >
@@ -188,8 +188,6 @@ interface Props {
   scenarioOrgName: string | null
   canCreateScenario: boolean
   canEditScenario: boolean
-  /** Archive / restore: narrower than editing (a teacher retires only their own). */
-  canRetireScenario: boolean
   canCopyToOrg: boolean
   isImporting: boolean
   isAdmin: boolean

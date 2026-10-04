@@ -161,10 +161,10 @@ describe('OrganizationScenariosTab — a teacher retires only their own scenario
   beforeEach(() => {
     vi.clearAllMocks()
     orgListScenariosMock.mockResolvedValue([
-      { ...activeScenario, created_by_id: 'teacher-1' },
-      { ...activeScenario, id: 'sc-colleague', title: 'Colleague Lab', created_by_id: 'colleague' }
+      { ...activeScenario, can_manage: true },
+      { ...activeScenario, id: 'sc-colleague', title: 'Colleague Lab', can_manage: false }
     ])
-    canRetireScenarioMock.mockImplementation((s: { created_by_id?: string }) => s.created_by_id === 'teacher-1')
+    canRetireScenarioMock.mockImplementation((s: { can_manage?: boolean }) => !!s.can_manage)
   })
 
   const actionsOf = (wrapper: VueWrapper, title: string) =>
@@ -182,7 +182,7 @@ describe('OrganizationScenariosTab — a teacher retires only their own scenario
     expect(colleague.find('.fa-box-archive').exists()).toBe(false)
     expect(colleague.find('.fa-trash').exists()).toBe(false)
 
-    expect(canRetireScenarioMock).toHaveBeenCalledWith({ created_by_id: 'colleague', organization_id: 'org-1' })
+    expect(canRetireScenarioMock).toHaveBeenCalledWith({ can_manage: false, organization_id: 'org-1' })
   })
 
   it('keeps the import buttons for a teacher', async () => {

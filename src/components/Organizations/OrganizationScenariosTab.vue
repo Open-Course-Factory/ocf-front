@@ -44,18 +44,18 @@ interface OrgScenario {
   estimated_time_minutes?: number
   created_at?: string
   archived_at?: string | null
-  created_by_id?: string
+  can_manage?: boolean
 }
 
 // Only mounted for org teachers and up (OrganizationDetail), who all import and
-// export; archive and delete are narrower, per scenario.
+// export; archive and delete stay with the author and org managers, per scenario.
 const props = defineProps<{
   organizationId: string
 }>()
 
 const { canRetireScenario } = useScenarioEditorAccess()
 const canRetire = (scenario: OrgScenario) =>
-  canRetireScenario({ created_by_id: scenario.created_by_id, organization_id: props.organizationId })
+  canRetireScenario({ can_manage: scenario.can_manage, organization_id: props.organizationId })
 
 const { isAdmin } = useAdminViewMode()
 

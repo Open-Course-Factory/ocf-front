@@ -53,7 +53,7 @@ import { useAdminViewMode } from './useAdminViewMode'
 
 export interface ScenarioEditorAccess {
   canAccessScenarioEditor: ComputedRef<boolean>
-  canRetireScenario: (scenario: { created_by_id?: string, organization_id?: string | null }) => boolean
+  canRetireScenario: (scenario: { can_manage?: boolean, organization_id?: string | null }) => boolean
 }
 
 export function useScenarioEditorAccess(): ScenarioEditorAccess {
@@ -86,12 +86,11 @@ export function useScenarioEditorAccess(): ScenarioEditorAccess {
     return false
   })
 
-  // Archive, restore and delete: a teacher edits any scenario of their org but
-  // retires only their own; org managers retire any. Mirrors ocf-core's
-  // archive/delete hooks — change both together.
+  // Archive, restore and delete follow ocf-core's CanManageScenario (the author
+  // or an org manager), whose verdict is `can_manage`. Admins and org managers
+  // are let through without it, for list endpoints that leave it unset.
   const canRetireScenario: ScenarioEditorAccess['canRetireScenario'] = scenario => {
-    if (shouldShowAllData.value) return true
-    if (currentUser.userId && scenario.created_by_id === currentUser.userId) return true
+    if (shouldShowAllData.value || scenario.can_manage) return true
     return !!scenario.organization_id && membershipsStore.canManageOrg(scenario.organization_id)
   }
 

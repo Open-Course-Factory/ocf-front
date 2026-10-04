@@ -319,36 +319,33 @@ describe('useScenarioEditorAccess.canRetireScenario (archive, restore, delete)',
     localStorage.clear()
   })
 
-  const teacherIn = (orgId: string) => {
+  const signIn = (role: 'teacher' | 'manager') => {
     const user = useCurrentUserStore()
-    user.userId = 'teacher-1'
+    user.userId = 'user-1'
     user.userRoles = []
-    useUserMembershipsStore().orgMemberships = [{ organization_id: orgId, role: 'teacher' }]
+    useUserMembershipsStore().orgMemberships = [{ organization_id: 'org-1', role }]
   }
 
   /**
-   * BEHAVIOR PROTECTED: a teacher edits any scenario of their org but
-   * retires only their own — ocf-core refuses the rest, so the UI must not
-   * offer it.
+   * BEHAVIOR PROTECTED: a teacher retires what ocf-core says they manage
+   * (their own labs) and nothing else of their org — the API refuses the rest.
    */
-  it('lets a teacher retire their own scenario but not a colleague\'s', () => {
-    teacherIn('org-1')
+  it('follows the backend verdict for a teacher', () => {
+    signIn('teacher')
     const { canRetireScenario } = useScenarioEditorAccess()
 
-    expect(canRetireScenario({ created_by_id: 'teacher-1', organization_id: 'org-1' })).toBe(true)
-    expect(canRetireScenario({ created_by_id: 'someone-else', organization_id: 'org-1' })).toBe(false)
+    expect(canRetireScenario({ can_manage: true, organization_id: 'org-1' })).toBe(true)
+    expect(canRetireScenario({ can_manage: false, organization_id: 'org-1' })).toBe(false)
+    expect(canRetireScenario({ organization_id: 'org-1' })).toBe(false)
   })
 
   it('lets an org manager retire any scenario of their org, and only of it', () => {
-    const user = useCurrentUserStore()
-    user.userId = 'manager-1'
-    user.userRoles = []
-    useUserMembershipsStore().orgMemberships = [{ organization_id: 'org-1', role: 'manager' }]
+    signIn('manager')
     const { canRetireScenario } = useScenarioEditorAccess()
 
-    expect(canRetireScenario({ created_by_id: 'someone-else', organization_id: 'org-1' })).toBe(true)
-    expect(canRetireScenario({ created_by_id: 'someone-else', organization_id: 'org-2' })).toBe(false)
-    expect(canRetireScenario({ created_by_id: 'someone-else', organization_id: null })).toBe(false)
+    expect(canRetireScenario({ organization_id: 'org-1' })).toBe(true)
+    expect(canRetireScenario({ organization_id: 'org-2' })).toBe(false)
+    expect(canRetireScenario({ organization_id: null })).toBe(false)
   })
 
   it('lets a platform administrator retire anything', () => {
@@ -357,11 +354,6 @@ describe('useScenarioEditorAccess.canRetireScenario (archive, restore, delete)',
     user.userRoles = ['administrator']
     const { canRetireScenario } = useScenarioEditorAccess()
 
-    expect(canRetireScenario({ created_by_id: 'someone-else', organization_id: null })).toBe(true)
-  })
-
-  it('never matches a missing creator to a signed-out user', () => {
-    const { canRetireScenario } = useScenarioEditorAccess()
-    expect(canRetireScenario({ organization_id: 'org-1' })).toBe(false)
+    expect(canRetireScenario({ organization_id: null })).toBe(true)
   })
 })
