@@ -3,8 +3,8 @@ import { readFileSync } from 'fs'
 import { resolve } from 'path'
 
 /*
- * Source-inspection tests for the scope picker in ScenarioEditor.vue
- * (issue #216).
+ * Source-inspection tests for the scope picker shared by the editor's create
+ * flow and the scenario import (useScenarioCreateScopes.ts, issue #216).
  *
  * Background:
  * The "Where to create" modal lets a manager pick an org or group scope
@@ -25,17 +25,17 @@ import { resolve } from 'path'
  * re-filtering is needed.
  *
  * Strategy mirrors `MainNavMenu-scenarioEditor.test.ts`: source-inspect
- * the SFC. Mounting the full ScenarioEditor in a unit test would require
+ * the composable. Mounting the full ScenarioEditor in a unit test would require
  * stubbing 20+ stores (VueFlow, scenarios, classGroups, organizations,
  * memberships, currentUser, etc.). A Playwright spec is the right
  * place to validate the rendered picker end-to-end; these tests just
  * pin the source-level fix.
  */
 
-const filePath = resolve(__dirname, '../../src/components/Pages/ScenarioEditor.vue')
+const filePath = resolve(__dirname, '../../src/composables/useScenarioCreateScopes.ts')
 const fileContent = readFileSync(filePath, 'utf-8')
 
-// Slice the source so we look at the scope-picker block, not the whole 2000-line file.
+// Slice the source so we look at the scope lists only.
 // `orgScopes` and `groupScopes` are defined sequentially; we capture from
 // the first appearance of `const orgScopes` to the next `const platformScopeAvailable`.
 const scopeBlockMatch = fileContent.match(
@@ -43,14 +43,14 @@ const scopeBlockMatch = fileContent.match(
 )
 const scopeBlock = scopeBlockMatch?.[0] ?? ''
 
-describe('ScenarioEditor.vue — scope picker trusts backend filter (#216)', () => {
+describe('useScenarioCreateScopes — scope picker trusts backend filter (#216)', () => {
   /**
    * BEHAVIOR PROTECTED: The scope-picker source MUST exist. Sanity-check
    * that the regex sliced the right region — if a future refactor renames
    * the computed, this fails loudly so the rest of the assertions don't
    * silently no-op against an empty string.
    */
-  it('locates the orgScopes / groupScopes block in the SFC', () => {
+  it('locates the orgScopes / groupScopes block in the composable', () => {
     expect(scopeBlock.length, 'expected orgScopes...platformScopeAvailable region to exist').toBeGreaterThan(0)
     expect(scopeBlock).toMatch(/const\s+groupScopes\s*=/)
   })

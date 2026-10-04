@@ -244,11 +244,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { useScenariosStore } from '../../stores/scenarios'
 import { useScenarioStepsStore } from '../../stores/scenarioSteps'
 import { useOrganizationsStore } from '../../stores/organizations'
-import { useClassGroupsStore } from '../../stores/classGroups'
-import { useUserMembershipsStore } from '../../stores/userMemberships'
 import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
-import { useScenarioEditorAccess } from '../../composables/useScenarioEditorAccess'
+import { useScenarioCreateScopes } from '../../composables/useScenarioCreateScopes'
 import { useNotification } from '../../composables/useNotification'
 import { useScenarioGraph, STEP_NODE_TYPES, isFirstStepNode } from '../../composables/useScenarioGraph'
 import { useResizablePanel } from '../../composables/useResizablePanel'
@@ -284,11 +282,20 @@ const { t } = useScenarioEditorI18n()
 const scenariosStore = useScenariosStore()
 const scenarioStepsStore = useScenarioStepsStore()
 const organizationsStore = useOrganizationsStore()
-const classGroupsStore = useClassGroupsStore()
-const membershipsStore = useUserMembershipsStore()
 const { isAdmin } = useAdminViewMode()
-const { canAccessScenarioEditor } = useScenarioEditorAccess()
 const notification = useNotification()
+
+// Where a new or imported scenario may go — see useScenarioCreateScopes.
+const {
+  orgScopes,
+  groupScopes,
+  platformScopeAvailable,
+  availableCreateScopes,
+  canCreateScenario,
+  parseScopeKey,
+  pickDefaultScopeKey,
+  loadScopeSources,
+} = useScenarioCreateScopes()
 
 // Custom node types for VueFlow
 const customNodeTypes: Record<string, Component> = {
@@ -517,100 +524,6 @@ const canCopyToOrg = computed(() =>
   copyTargetOrgs.value.length + groupScopes.value.length > 0
 )
 
-// Scope picker for creating new scenarios.
-// A scope describes where the new scenario lives. Endpoints are selected accordingly:
-//   - platform → POST /scenarios            (admin only)
-//   - org      → POST /organizations/:id/scenarios  (org teacher+)
-//   - group    → POST /groups/:id/scenarios         (group manager+, auto-assigns)
-type CreateScope =
-  | { kind: 'platform' }
-  | { kind: 'org', id: string, name: string }
-  | { kind: 'group', id: string, name: string }
-
-const allGroups = computed<any[]>(() => {
-  // classGroupsStore.entities (from useBaseStore) holds the loaded list
-  const anyStore = classGroupsStore as any
-  return (anyStore.entities || []) as any[]
-})
-
-// Both `orgScopes` and `groupScopes` trust the backend's `user_member_id`
-// filter applied by GET /organizations and GET /api/v1/class-groups (#216 —
-// filtering by `owner_user_id === userId` was creator-match, not
-// membership-match, and hid groups the user was added to but didn't create).
-// Organisations are narrowed by role on top: membership alone is any role, and
-// ocf-core authors scenarios in an org from teacher up (admins: any org).
-const orgScopes = computed<Array<{ id: string; name: string }>>(() =>
-  organizationsStore.userOrganizations
-    .filter((o: any) => isAdmin.value || membershipsStore.canAuthorInOrg(o.id))
-    .map((o: any) => ({
-      id: o.id,
-      name: o.display_name || o.name || `Organization ${String(o.id).slice(0, 8)}`,
-    })),
-)
-
-const groupScopes = computed<Array<{ id: string; name: string }>>(() =>
-  allGroups.value.map((g: any) => ({
-    id: g.id,
-    name: g.display_name || g.name || `Group ${String(g.id).slice(0, 8)}`,
-  })),
-)
-
-const platformScopeAvailable = computed(() => isAdmin.value)
-
-const availableCreateScopes = computed<CreateScope[]>(() => {
-  const scopes: CreateScope[] = []
-  if (platformScopeAvailable.value) scopes.push({ kind: 'platform' })
-  for (const s of orgScopes.value) scopes.push({ kind: 'org', id: s.id, name: s.name })
-  for (const s of groupScopes.value) scopes.push({ kind: 'group', id: s.id, name: s.name })
-  return scopes
-})
-
-// `canCreateScenario` mirrors `canAccessScenarioEditor` (both reflect the
-// "is this user a manager / owner / admin somewhere?" predicate). The actual
-// list of scopes is still computed below for the create-scope picker — we
-// just gate the boolean check on the composable so the logic stays DRY with
-// the menu and router-guard surfaces (#213).
-const canCreateScenario = computed(() =>
-  canAccessScenarioEditor.value && availableCreateScopes.value.length > 0
-)
-
-const parseScopeKey = (key: string | undefined | null): CreateScope | null => {
-  if (!key) return null
-  const idx = key.indexOf(':')
-  if (idx === -1) return null
-  const kind = key.slice(0, idx)
-  const id = key.slice(idx + 1)
-  if (kind === 'platform') return { kind: 'platform' }
-  if (kind === 'org') {
-    const org = organizationsStore.userOrganizations.find(o => o.id === id)
-    return { kind: 'org', id, name: org?.display_name || org?.name || id }
-  }
-  if (kind === 'group') {
-    const group = allGroups.value.find((g: any) => g.id === id)
-    return { kind: 'group', id, name: group?.display_name || group?.name || id }
-  }
-  return null
-}
-
-const pickDefaultScopeKey = (): string => {
-  // 1. currentOrganization if the user may author in it
-  const currentOrgId = organizationsStore.currentOrganization?.id
-  if (currentOrgId && orgScopes.value.some(o => o.id === currentOrgId)) {
-    return `org:${currentOrgId}`
-  }
-  // 2. first available org scope
-  if (orgScopes.value.length > 0) {
-    return `org:${orgScopes.value[0].id}`
-  }
-  // 3. first available group scope
-  if (groupScopes.value.length > 0) {
-    return `group:${groupScopes.value[0].id}`
-  }
-  // 4. platform if admin
-  if (platformScopeAvailable.value) return 'platform:*'
-  return ''
-}
-
 const scopeHint = computed(() => {
   const scope = parseScopeKey(editingScenario.value?._scopeKey)
   if (!scope) return ''
@@ -652,9 +565,7 @@ onMounted(async () => {
   // organizations are required to resolve org names. All three are independent.
   await Promise.all([
     scenariosStore.loadEntitiesIncludingArchived('/scenarios?include=steps'),
-    organizationsStore.loadOrganizations().catch(() => null),
-    classGroupsStore.loadEntities().catch(() => null),
-    membershipsStore.ensureLoaded().catch(() => null),
+    loadScopeSources(),
     // Best-effort: if the sizes endpoint isn't deployed yet (404/403), fall back to plain text input.
     terminalService.getSizes()
       .then(list => {
