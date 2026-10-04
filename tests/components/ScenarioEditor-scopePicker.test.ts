@@ -100,20 +100,23 @@ describe('useScenarioCreateScopes — scope picker trusts backend filter (#216)'
 
   /**
    * BEHAVIOR PROTECTED: `groupScopes` MUST source from `allGroups` (which
-   * wraps `classGroupsStore.entities` — the backend-filtered list). Any
-   * other source means the picker is re-applying the broken creator-match
-   * logic somewhere else.
+   * wraps `classGroupsStore.entities` — the backend-filtered list), narrowed
+   * to the classes the user manages by their membership role, never by
+   * creator-match. The role rule itself is pinned, with real stores, in
+   * tests/composables/useScenarioCreateScopes-copy.test.ts.
    *
    * GUT-CHECK: If `groupScopes` were rewritten to filter by Casbin roles
-   * or user-id only, `allGroups` wouldn't appear in its body — fails.
+   * or user-id only, `allGroups` and `canManageGroup` wouldn't appear — fails.
    */
-  it('groupScopes sources from allGroups (the backend-filtered list)', () => {
+  it('groupScopes sources from allGroups (the backend-filtered list), managed classes only', () => {
     const groupScopesMatch = scopeBlock.match(
-      /const\s+groupScopes\s*=\s*computed[\s\S]*?(?=const\s+platformScopeAvailable)/,
+      /const\s+managedGroups\s*=\s*computed[\s\S]*?(?=const\s+platformScopeAvailable)/,
     )
     expect(groupScopesMatch).not.toBeNull()
     const body = groupScopesMatch![0]
     expect(body).toMatch(/allGroups\.value/)
+    expect(body).toMatch(/membershipsStore\.canManageGroup\(g\.id\)/)
+    expect(body).not.toMatch(/owner_user_id/)
   })
 
   /**

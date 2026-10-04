@@ -8,12 +8,13 @@
  *   - org      → POST /organizations/:id/scenarios[/upload|/import-json] (org teacher+)
  *   - group    → POST /groups/:id/scenarios[/upload|/import-json]        (group manager+, auto-assigns)
  *
- * Both scope lists trust the backend's `user_member_id` filter applied by
+ * Both scope lists start from the backend's `user_member_id` filter applied by
  * GET /organizations and GET /class-groups (#216 — filtering by
  * `owner_user_id === userId` was creator-match, not membership-match, and hid
- * groups the user was added to but didn't create). Organisations are narrowed
- * by role on top: membership alone is any role, and ocf-core authors scenarios
- * in an org from teacher up (admins: any org).
+ * groups the user was added to but didn't create). Membership alone is any
+ * role, so both are narrowed by role on top: ocf-core authors scenarios in an
+ * org from teacher up, and in a class from manager up — a class the user
+ * attends as a student is no destination (admins: any org or class).
  *
  * Scope keys (`org:<id>`, `group:<id>`, `platform:*`) are what the pickers bind.
  */
@@ -51,8 +52,13 @@ export function useScenarioCreateScopes() {
       })),
   )
 
+  // The classes the user manages: the only ones a scenario may be put in.
+  const managedGroups = computed<any[]>(() =>
+    allGroups.value.filter((g: any) => isAdmin.value || membershipsStore.canManageGroup(g.id)),
+  )
+
   const groupScopes = computed<Array<{ id: string; name: string }>>(() =>
-    allGroups.value.map((g: any) => ({
+    managedGroups.value.map((g: any) => ({
       id: g.id,
       name: g.display_name || g.name || `Group ${String(g.id).slice(0, 8)}`,
     })),
@@ -122,7 +128,7 @@ export function useScenarioCreateScopes() {
     const orgId = scenario.organization_id
     if (!orgId) return platformScopeAvailable.value ? 'platform:*' : ''
     if (orgScopes.value.some(o => o.id === orgId)) return `org:${orgId}`
-    const group = allGroups.value.find((g: any) => g.organization_id === orgId)
+    const group = managedGroups.value.find((g: any) => g.organization_id === orgId)
     return group ? `group:${group.id}` : ''
   }
 
@@ -134,7 +140,7 @@ export function useScenarioCreateScopes() {
     if (!scenario) return { orgs: [], groups: [] }
     const orgId = scenario.organization_id
     if (!orgId) return { orgs: orgScopes.value, groups: groupScopes.value }
-    const groupIds = new Set(allGroups.value.filter((g: any) => g.organization_id === orgId).map((g: any) => g.id))
+    const groupIds = new Set(managedGroups.value.filter((g: any) => g.organization_id === orgId).map((g: any) => g.id))
     return {
       orgs: orgScopes.value.filter(o => o.id === orgId),
       groups: groupScopes.value.filter(g => groupIds.has(g.id)),

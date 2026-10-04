@@ -28,7 +28,14 @@ beforeEach(() => {
   ;(useClassGroupsStore() as any).entities.splice(0, Infinity,
     { id: 'class-a', name: 'Class of A', organization_id: 'org-a' },
     { id: 'class-b', name: 'Class of B', organization_id: 'org-b' },
+    // A class the user attends as a student: listed by GET /class-groups.
+    { id: 'class-learner', name: 'Class I attend', organization_id: 'org-c' },
   )
+  useUserMembershipsStore().groupMemberships = [
+    { group_id: 'class-a', role: 'manager' },
+    { group_id: 'class-b', role: 'owner' },
+    { group_id: 'class-learner', role: 'member' },
+  ]
   useUserMembershipsStore().orgMemberships = [
     { organization_id: 'org-a', role: 'teacher' },
     { organization_id: 'org-b', role: 'manager' },
@@ -57,3 +64,18 @@ describe('useScenarioCreateScopes.copyScopesFor', () => {
     expect(groups).toEqual([])
   })
 })
+
+// A class the user attends as a student is listed by GET /class-groups, but
+// ocf-core puts a scenario in a class only for its managers.
+describe('useScenarioCreateScopes.groupScopes', () => {
+  it('offers only the classes the user manages', () => {
+    expect(ids(useScenarioCreateScopes().groupScopes.value)).toEqual(['class-a', 'class-b'])
+  })
+
+  it('does not import into, nor copy into, a class the user only attends', () => {
+    const scopes = useScenarioCreateScopes()
+    expect(ids(scopes.copyScopesFor({ organization_id: 'org-c' }).groups)).toEqual([])
+    expect(scopes.scopeKeyForScenario({ organization_id: 'org-c' })).toBe('')
+  })
+})
+
