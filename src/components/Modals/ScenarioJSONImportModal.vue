@@ -264,16 +264,10 @@ async function handleImport() {
   errorMessage.value = null
 
   try {
-    let response
-    if (props.groupId) {
-      response = await teacherService.groupImportScenarioJSON(props.groupId, parsedData.value)
-    } else if (props.organizationId) {
-      response = await teacherService.orgImportScenarioJSON(props.organizationId, parsedData.value)
-    } else {
-      response = await teacherService.importScenarioJSON(parsedData.value)
-    }
-
-    importedScenario.value = response
+    importedScenario.value = await teacherService.importScenarioJSONInto(
+      { groupId: props.groupId, organizationId: props.organizationId },
+      parsedData.value
+    )
     importSuccess.value = true
   } catch (err: any) {
     // A 413 may come from a proxy in front of ocf-core, with no JSON body.

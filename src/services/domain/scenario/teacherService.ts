@@ -478,6 +478,17 @@ export const teacherService = {
     return response.data
   },
 
+  /**
+   * Imports scenario JSON into a class, an organization or — with neither —
+   * the platform. The three routes upsert by title within the destination's
+   * organization, so importing into a scenario's own organization updates it.
+   */
+  async importScenarioJSONInto(destination: { groupId?: string; organizationId?: string }, data: any): Promise<any> {
+    if (destination.groupId) return teacherService.groupImportScenarioJSON(destination.groupId, data)
+    if (destination.organizationId) return teacherService.orgImportScenarioJSON(destination.organizationId, data)
+    return teacherService.importScenarioJSON(data)
+  },
+
   // --- Group-level import/export ---
 
   async groupExportScenarioJSON(groupId: string, scenarioId: string): Promise<any> {
