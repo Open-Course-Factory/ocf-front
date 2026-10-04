@@ -74,7 +74,8 @@ describe('useScenarioAiCatalog', () => {
     const catalog = await useScenarioAiCatalog().loadCatalog()
     const prompt = buildCreatePrompt(
       { description: 'Docker lab', language: 'en', level: 'beginner', stepCount: 3, stepTypes: ['terminal'] },
-      catalog
+      catalog,
+      'en'
     )
     expect(prompt).toContain('- "docker" Docker (minimum size "M")')
     expect(prompt).toMatch(/- "network" Network\n/)

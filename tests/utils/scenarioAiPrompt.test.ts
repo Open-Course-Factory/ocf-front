@@ -9,7 +9,8 @@
  */
 import { describe, it, expect } from 'vitest'
 import {
-  EXAMPLE_SCENARIO,
+  BANNER_EFFECTS,
+  EXAMPLE_SCENARIOS,
   buildCreatePrompt,
   buildImprovePrompt,
   buildFixPrompt,
@@ -58,10 +59,19 @@ const brief: ScenarioAiBrief = {
   stepTypes: ['terminal', 'quiz']
 }
 
-describe('EXAMPLE_SCENARIO', () => {
+/** Every key at every depth, with arrays reduced to their items' keys: the shape a file has. */
+function shape(value: any): unknown {
+  if (Array.isArray(value)) return value.map(shape)
+  if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().map(k => [k, shape(value[k])]))
+  return typeof value
+}
+
+describe.each(['en', 'fr'] as const)('EXAMPLE_SCENARIOS.%s', language => {
+  const example = EXAMPLE_SCENARIOS[language]
+
   it('uses only fields the importer knows, at every level', () => {
-    expect(Object.keys(EXAMPLE_SCENARIO).filter(k => !SCENARIO_KEYS.includes(k))).toEqual([])
-    for (const step of EXAMPLE_SCENARIO.steps as any[]) {
+    expect(Object.keys(example).filter(k => !SCENARIO_KEYS.includes(k))).toEqual([])
+    for (const step of example.steps as any[]) {
       expect(Object.keys(step).filter(k => !STEP_KEYS.includes(k))).toEqual([])
       for (const q of step.questions || []) {
         expect(Object.keys(q).filter(k => !QUESTION_KEYS.includes(k))).toEqual([])
@@ -70,9 +80,9 @@ describe('EXAMPLE_SCENARIO', () => {
   })
 
   it('is a scenario the importer accepts: titled steps of known types, no dead-end quiz, well-encoded answers', () => {
-    expect(EXAMPLE_SCENARIO.title.trim()).not.toBe('')
-    expect(EXAMPLE_SCENARIO.hostname).toMatch(/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/)
-    for (const step of EXAMPLE_SCENARIO.steps as any[]) {
+    expect(example.title.trim()).not.toBe('')
+    expect(example.hostname).toMatch(/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/)
+    for (const step of example.steps as any[]) {
       expect(step.title.trim()).not.toBe('')
       expect(['terminal', 'flag', 'quiz', 'info']).toContain(step.step_type)
       if (step.step_type === 'quiz') expect(step.questions.length).toBeGreaterThan(0)
@@ -81,24 +91,99 @@ describe('EXAMPLE_SCENARIO', () => {
   })
 
   it('shows both choice encodings and a flag placed from OCF_FLAG_CURRENT', () => {
-    const questions = (EXAMPLE_SCENARIO.steps as any[]).flatMap(s => s.questions || [])
+    const questions = (example.steps as any[]).flatMap(s => s.questions || [])
     expect(questions.map(q => q.question_type)).toEqual(expect.arrayContaining(['multiple_choice', 'multi_answer']))
-    const flagStep = (EXAMPLE_SCENARIO.steps as any[]).find(s => s.step_type === 'flag')
+    const flagStep = (example.steps as any[]).find(s => s.step_type === 'flag')
     expect(flagStep.background_script).toContain('unset OCF_FLAG_CURRENT')
     expect(flagStep.verify_script).toBeUndefined()
   })
 
-  it('survives the round trip through the prompt: the fenced example parses back to itself', () => {
-    const prompt = buildCreatePrompt(brief)
-    const exampleBlock = prompt.slice(prompt.indexOf('## A complete example'))
-    const extracted = extractJsonObject(exampleBlock)
-    expect(extracted).toEqual({ ok: true, value: EXAMPLE_SCENARIO })
+  it('is written in its own language and splits its hints the way the importer does', () => {
+    expect(example.default_locale).toBe(language)
+    expect(example.locales).toEqual([language])
+    const heading = language === 'fr' ? '### Indice 1' : '### Hint 1'
+    for (const step of example.steps as any[]) if (step.hint_content) expect(step.hint_content).toContain(heading)
+  })
+
+  it('has exactly the English example\'s shape and encodings: only the learner-facing text differs', () => {
+    expect(shape(example)).toEqual(shape(EXAMPLE_SCENARIOS.en))
+    const encodings = (s: any) => s.steps.flatMap((st: any) => (st.questions || []).map((q: any) => [q.question_type, q.correct_answer]))
+    expect(encodings(example)).toEqual(encodings(EXAMPLE_SCENARIOS.en))
+  })
+
+  it('survives the round trip through the prompt, whatever language the instructions are in', () => {
+    for (const promptLanguage of ['en', 'fr'] as const) {
+      const prompt = buildCreatePrompt({ ...brief, language }, null, promptLanguage)
+      const exampleBlock = prompt.slice(prompt.indexOf('```json'))
+      expect(extractJsonObject(exampleBlock)).toEqual({ ok: true, value: example })
+    }
+  })
+})
+
+/**
+ * The tokens the importer reads, as a prompt mentions them: quoted field
+ * names and enum values, snake_case names, OCF_ variables, flag paths and the
+ * answer encodings. Both languages must name exactly the same ones.
+ */
+function contractTokens(text: string): string[] {
+  const tokens = [
+    ...[...text.matchAll(/"([A-Za-z_][A-Za-z0-9_]*)"/g)].map(m => `"${m[1]}"`),
+    ...(text.match(/\b[a-z0-9]+(?:_[a-z0-9]+)+\b/g) || []),
+    ...(text.match(/\bOCF_[A-Z_]+\b/g) || []),
+    ...(text.match(/\/(?:tmp|home|var|opt)\//g) || []),
+    ...(text.match(/"\[0,2\]"|```\{\{(?:exec|copy)\}\}|exit 0|set -u|#!\/bin\/bash|10/g) || []),
+  ]
+  return [...new Set(tokens)].sort()
+}
+
+describe('the prompt in French and in English', () => {
+  const catalog = {
+    distributions: [{ name: 'debian-12', os_type: 'deb', min_size_key: 'S', supported_features: ['network'] }],
+    sizes: [{ key: 'S', name: 'Small', memory: '1GB', disk: '10GB' }],
+    features: [{ key: 'docker', name: 'Docker', min_size_key: 'M', always_available: true }]
+  }
+
+  it('states every contract rule in both languages: the same field names, enum values and encodings', () => {
+    const create = (l: 'en' | 'fr') => buildCreatePrompt({ ...brief, language: 'en' }, catalog, l)
+    expect(contractTokens(create('fr'))).toEqual(contractTokens(create('en')))
+    const improve = (l: 'en' | 'fr') => buildImprovePrompt('x', { title: 'T', steps: [] }, catalog, l)
+    expect(contractTokens(improve('fr'))).toEqual(contractTokens(improve('en')))
+    for (const effect of BANNER_EFFECTS) expect(create('fr')).toContain(effect)
+  })
+
+  it('names enough of the contract for the comparison to mean something', () => {
+    const tokens = contractTokens(buildCreatePrompt(brief, catalog, 'en'))
+    for (const token of ['"title"', '"step_type"', '"multi_answer"', '"true_false"', 'verify_script', 'flag_path', 'OCF_FLAG_CURRENT', 'OCF_ANSWER', '/opt/', '"[0,2]"', '"network"'])
+      expect(tokens).toContain(token)
+  })
+
+  it('writes the instructions in French with vouvoiement, and the content language separately', () => {
+    const prompt = buildCreatePrompt({ ...brief, language: 'en' }, null, 'fr')
+    expect(prompt).toContain('Vous êtes un formateur Linux expert')
+    expect(prompt).toContain('Langue du contenu : anglais')
+    expect(prompt).toContain('"default_locale": "en"')
+    expect(prompt).toContain('Répondez uniquement avec l\'objet JSON')
+    expect(prompt).not.toContain('You are an expert')
+    expect(extractJsonObject(prompt.slice(prompt.indexOf('```json')))).toEqual({ ok: true, value: EXAMPLE_SCENARIOS.en })
+  })
+
+  it('translates the catalogue section and its fallbacks', () => {
+    expect(buildCreatePrompt(brief, catalog, 'fr')).toContain('- "docker" Docker (taille minimale "M"; fonctionne sur toutes les distributions)')
+    expect(buildCreatePrompt(brief, null, 'fr')).toContain('la seule sur laquelle compter est "network"')
+  })
+
+  it('writes the fix-up prompt in either language, the server\'s problems unchanged', () => {
+    const problems = ['step 2 (Quiz), question 1: correct_answer "4" is not an option index']
+    const fr = buildFixPrompt(problems, 'fr')
+    expect(fr).toContain('La plateforme a refusé votre JSON')
+    expect(fr).toContain(`- ${problems[0]}`)
+    expect(buildFixPrompt(problems, 'en')).toContain('The platform refused your JSON')
   })
 })
 
 describe('buildCreatePrompt', () => {
   it('carries the teacher\'s description, the content language and the brief', () => {
-    const prompt = buildCreatePrompt(brief)
+    const prompt = buildCreatePrompt(brief, null, 'en')
     expect(prompt).toContain(brief.description)
     expect(prompt).toContain('Content language: French')
     expect(prompt).toContain('"default_locale": "fr"')
@@ -107,7 +192,7 @@ describe('buildCreatePrompt', () => {
   })
 
   it('states the encodings the importer refuses most often', () => {
-    const prompt = buildCreatePrompt(brief)
+    const prompt = buildCreatePrompt(brief, null, 'en')
     expect(prompt).toContain('ENCODED AS A STRING')
     expect(prompt).toContain('0-based index as a string')
     expect(prompt).toContain('"[0,2]"')
@@ -127,7 +212,7 @@ describe('buildCreatePrompt', () => {
         { key: 'docker', name: 'Docker', min_size_key: 'M' },
         { key: 'effects', name: 'Terminal Effects', always_available: true }
       ]
-    })
+    }, 'en')
     expect(prompt).toContain('- "debian-12" (os_type "deb"; features: network, docker)')
     expect(prompt).toContain('- "M" Medium (2GB RAM)')
     expect(prompt).toContain('- "network" Network Access — Provides outbound internet access')
@@ -137,26 +222,26 @@ describe('buildCreatePrompt', () => {
   })
 
   it('falls back to the network feature alone when the feature list could not be read', () => {
-    const prompt = buildCreatePrompt(brief, { distributions: [{ name: 'debian-12' }], sizes: [{ key: 'S' }], features: [] })
+    const prompt = buildCreatePrompt(brief, { distributions: [{ name: 'debian-12' }], sizes: [{ key: 'S' }], features: [] }, 'en')
     expect(prompt).toContain('The feature list is not available: the only feature to rely on is "network".')
     expect(prompt).not.toContain('The size list is not available')
   })
 
   it('falls back to Debian and size S when the catalog could not be read', () => {
-    const prompt = buildCreatePrompt(brief, null)
+    const prompt = buildCreatePrompt(brief, null, 'en')
     expect(prompt).toContain('use os_type "deb"')
     expect(prompt).toContain('use instance_type "S"')
   })
 
   it('asks for every step type when the teacher ticked none', () => {
-    expect(buildCreatePrompt({ ...brief, stepTypes: [] })).toContain('step types: terminal, flag, quiz, info.')
+    expect(buildCreatePrompt({ ...brief, stepTypes: [] }, null, 'en')).toContain('step types: terminal, flag, quiz, info.')
   })
 })
 
 describe('buildImprovePrompt', () => {
   it('sends the current scenario, the instruction, and asks for the full JSON with the title kept', () => {
     const current = { title: 'Mon TP', steps: [{ title: 'Étape 1', step_type: 'info' }] }
-    const prompt = buildImprovePrompt('Traduis-le en anglais', current)
+    const prompt = buildImprovePrompt('Traduis-le en anglais', current, null, 'en')
     expect(prompt).toContain('Traduis-le en anglais')
     expect(prompt).toContain(JSON.stringify(current, null, 2))
     expect(prompt).toContain('Return the FULL updated scenario')
@@ -166,7 +251,7 @@ describe('buildImprovePrompt', () => {
 
 describe('buildFixPrompt', () => {
   it('hands every problem back, one per line, and asks for the full corrected JSON', () => {
-    const prompt = buildFixPrompt(['step 2 (Quiz), question 1: correct_answer "4" is not an option index', 'title is empty'])
+    const prompt = buildFixPrompt(['step 2 (Quiz), question 1: correct_answer "4" is not an option index', 'title is empty'], 'en')
     expect(prompt).toContain('- step 2 (Quiz), question 1: correct_answer "4" is not an option index\n- title is empty')
     expect(prompt).toContain('full corrected JSON')
   })

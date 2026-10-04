@@ -76,10 +76,11 @@ test('a teacher creates a scenario from her AI\'s answer, after one refused answ
 
   const prompt = page.getByTestId('scenario-ai-prompt');
   await expect(prompt).toHaveValue(/Practise file permissions with chmod and a hidden flag\./);
-  await expect(prompt).toHaveValue(/## The JSON format/);
+  // The instructions follow the UI language; the contract tokens are the same in both.
+  await expect(prompt).toHaveValue(/"flag_path"/);
   await page.getByTestId('scenario-ai-copy-prompt').click();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
-  expect(copied).toContain('ENCODED AS A STRING');
+  expect(copied).toContain('OCF_FLAG_CURRENT');
   expect(copied).toContain('Practise file permissions with chmod and a hidden flag.');
 
   await page.getByTestId('scenario-ai-next').click();
@@ -97,7 +98,7 @@ test('a teacher creates a scenario from her AI\'s answer, after one refused answ
   await expect(problems).toContainText('correct_answer "4" is not an option index');
   await expect(problems).toContainText('step_type "lab" is not one of');
   await page.getByTestId('scenario-ai-copy-fix').click();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('Fix every one of them');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('correct_answer "4" is not an option index');
 
   // The corrected answer imports and opens in the editor.
   await page.locator('#ai-answer').fill(assistantAnswer(VALID));

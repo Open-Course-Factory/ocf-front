@@ -44,12 +44,12 @@ import { buildFixPrompt } from '../../src/utils/scenarioAiPrompt'
 
 const CURRENT = { title: 'Réseau de base', steps: [{ title: 'Pinguer', step_type: 'terminal' }] }
 
-function mountModal(props: Record<string, unknown>): VueWrapper {
+function mountModal(props: Record<string, unknown>, uiLocale: 'en' | 'fr' = 'en'): VueWrapper {
   return mount(ScenarioAiModal, {
     props: { visible: false, ...props },
     global: {
       plugins: [createI18n({
-        legacy: false, locale: 'en', fallbackLocale: 'en',
+        legacy: false, locale: uiLocale, fallbackLocale: 'en',
         messages: { en: {}, fr: {} }, missingWarn: false, fallbackWarn: false,
       })],
     },
@@ -103,7 +103,7 @@ describe('ScenarioAiModal — create', () => {
 
     await wrapper.find('[data-testid="scenario-ai-copy-fix"]').trigger('click')
     await flushPromises()
-    expect(clipboard.writeText).toHaveBeenCalledWith(buildFixPrompt(problems))
+    expect(clipboard.writeText).toHaveBeenCalledWith(buildFixPrompt(problems, 'en'))
   })
 
   it('keeps Import disabled and says why while the answer holds no JSON', async () => {
@@ -162,5 +162,58 @@ describe('ScenarioAiModal — improve', () => {
     await flushPromises()
     expect(postMock).toHaveBeenCalledWith('/organizations/org-1/scenarios/import-json', { ...answer, title: CURRENT.title })
     expect(wrapper.emitted('imported')?.[0]).toEqual([{ id: 'sc-1' }])
+  })
+})
+
+describe('ScenarioAiModal — prompt language', () => {
+  const promptText = (wrapper: VueWrapper) =>
+    (wrapper.find('[data-testid="scenario-ai-prompt"]').element as HTMLTextAreaElement).value
+  const selected = (wrapper: VueWrapper, selector: string) => (wrapper.find(selector).element as HTMLSelectElement).value
+
+  it('defaults the prompt and the content to the UI language, and rewrites the prompt when switched', async () => {
+    const wrapper = mountModal({ mode: 'create' }, 'fr')
+    await wrapper.setProps({ visible: true })
+    await flushPromises()
+    expect(selected(wrapper, '[data-testid="scenario-ai-prompt-language"]')).toBe('fr')
+    expect(selected(wrapper, '#ai-language')).toBe('fr')
+
+    await wrapper.find('#ai-description').setValue('Les tâches cron')
+    await wrapper.find('[data-testid="scenario-ai-next"]').trigger('click')
+    await flushPromises()
+    expect(promptText(wrapper)).toContain('Vous êtes un formateur Linux expert')
+    expect(promptText(wrapper)).toContain('Langue du contenu : français')
+
+    await wrapper.find('[data-testid="scenario-ai-prompt-language"]').setValue('en')
+    expect(promptText(wrapper)).toContain('You are an expert Linux trainer')
+    expect(promptText(wrapper)).toContain('Content language: English')
+    expect(promptText(wrapper)).toContain('Les tâches cron')
+  })
+
+  it('keeps a content language the teacher chose when the prompt language changes', async () => {
+    const wrapper = mountModal({ mode: 'create' }, 'en')
+    await wrapper.setProps({ visible: true })
+    await flushPromises()
+    expect(selected(wrapper, '[data-testid="scenario-ai-prompt-language"]')).toBe('en')
+
+    await wrapper.find('#ai-language').setValue('fr')
+    await wrapper.find('[data-testid="scenario-ai-prompt-language"]').setValue('fr')
+    await wrapper.find('[data-testid="scenario-ai-prompt-language"]').setValue('en')
+    expect(selected(wrapper, '#ai-language')).toBe('fr')
+  })
+
+  it('writes the improve prompt and the fix-up prompt in the chosen language', async () => {
+    postMock.mockRejectedValue({ response: { status: 400, data: { details: ['title is empty'] } } })
+    const wrapper = mountModal({ mode: 'improve', scenario: { id: 'sc-1', title: CURRENT.title, organization_id: ORG.id } }, 'fr')
+    await openAndWritePrompt(wrapper, '#ai-instruction', 'Ajoute une étape')
+    await wrapper.find('[data-testid="scenario-ai-prompt-language"]').setValue('fr')
+    await wrapper.find('#ai-answer').setValue('{"title": "", "steps": []}')
+    await wrapper.find('[data-testid="scenario-ai-import"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-testid="scenario-ai-copy-fix"]').trigger('click')
+    await flushPromises()
+    expect(clipboard.writeText).toHaveBeenCalledWith(buildFixPrompt(['title is empty'], 'fr'))
+
+    await wrapper.findAll('.base-modal-footer .btn-secondary')[0].trigger('click')
+    expect(promptText(wrapper)).toContain('Vous êtes un formateur Linux expert et vous améliorez')
   })
 })

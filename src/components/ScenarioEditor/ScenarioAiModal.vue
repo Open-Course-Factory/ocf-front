@@ -31,6 +31,16 @@
       </li>
     </ol>
 
+    <!-- The language the assistant is instructed in, for every prompt of this
+         window including the fix-up one. The content language is separate. -->
+    <div class="ocf-ai-prompt-language">
+      <label for="ai-prompt-language">{{ t('scenarioAi.promptLanguage') }}</label>
+      <select id="ai-prompt-language" v-model="promptLanguage" class="form-control" data-testid="scenario-ai-prompt-language">
+        <option value="fr">Français</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+
     <!-- 1. Describe -->
     <div v-if="step === 1" class="ocf-ai-body" data-testid="scenario-ai-step-describe">
       <template v-if="mode === 'create'">
@@ -47,7 +57,7 @@
         <div class="ocf-ai-row">
           <div class="form-group">
             <label for="ai-language">{{ t('scenarioAi.language') }}</label>
-            <select id="ai-language" v-model="brief.language" class="form-control">
+            <select id="ai-language" v-model="brief.language" class="form-control" @change="contentLanguageChosen = true">
               <option value="fr">Français</option>
               <option value="en">English</option>
             </select>
@@ -148,7 +158,7 @@
       </div>
 
       <ScenarioImportProblems v-if="problems.length" :title="errorMessage" :problems="problems">
-        <button type="button" class="ocf-btn-outline ocf-ai-fix-btn" data-testid="scenario-ai-copy-fix" @click="copy(buildFixPrompt(problems), 'fix')">
+        <button type="button" class="ocf-btn-outline ocf-ai-fix-btn" data-testid="scenario-ai-copy-fix" @click="copy(buildFixPrompt(problems, promptLanguage), 'fix')">
           <i :class="copied === 'fix' ? 'fas fa-check' : 'fas fa-copy'" aria-hidden="true"></i>
           {{ copied === 'fix' ? t('scenarioAi.copied') : t('scenarioAi.copyFix') }}
         </button>
@@ -192,11 +202,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import BaseModal from '../Modals/BaseModal.vue'
 import ScenarioScopeSelect from './ScenarioScopeSelect.vue'
 import ScenarioImportProblems from './ScenarioImportProblems.vue'
 import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
+import { useLocale } from '../../composables/useLocale'
 import { useScenarioCreateScopes } from '../../composables/useScenarioCreateScopes'
 import { useScenarioAiTranslations } from '../../composables/useScenarioAiTranslations'
 import { teacherService } from '../../services/domain/scenario'
@@ -209,7 +219,9 @@ import {
   buildFixPrompt,
   extractJsonObject,
   summarizeScenarioChanges,
-  type ScenarioAiBrief
+  type ScenarioAiBrief,
+  type ScenarioAiCatalog,
+  type ScenarioAiLanguage
 } from '../../utils/scenarioAiPrompt'
 
 const props = defineProps<{
@@ -226,7 +238,8 @@ const emit = defineEmits<{
 
 useScenarioEditorI18n()
 const { t } = useScenarioAiTranslations()
-const { locale } = useI18n()
+// The user's chosen UI language, as the language selector and preferences set it.
+const { currentLocale } = useLocale()
 const { parseScopeKey, pickDefaultScopeKey, scopeKeyForScenario, loadScopeSources } = useScenarioCreateScopes()
 const { loadCatalog } = useScenarioAiCatalog()
 
@@ -235,7 +248,10 @@ const busy = ref(false)
 const brief = reactive<ScenarioAiBrief>({ description: '', language: 'fr', level: 'beginner', stepCount: 4, stepTypes: ['terminal', 'quiz'] })
 const destinationKey = ref('')
 const instruction = ref('')
-const prompt = ref('')
+const promptLanguage = ref<ScenarioAiLanguage>('fr')
+// The content language follows the prompt language until the teacher picks one.
+const contentLanguageChosen = ref(false)
+const catalog = ref<ScenarioAiCatalog | null>(null)
 const original = ref<Record<string, any> | null>(null)
 const answer = ref('')
 const keepOriginalTitle = ref(true)
@@ -248,6 +264,17 @@ const canWritePrompt = computed(() =>
     ? brief.description.trim() !== '' && !!parseScopeKey(destinationKey.value)
     : instruction.value.trim() !== '' && !!props.scenario
 )
+
+// Computed rather than written once, so that switching the prompt language —
+// or going back to change the brief — rewrites the prompt in place.
+const prompt = computed(() => {
+  if (props.mode === 'create') return catalog.value ? buildCreatePrompt(brief, catalog.value, promptLanguage.value) : ''
+  return original.value ? buildImprovePrompt(instruction.value, original.value, catalog.value, promptLanguage.value) : ''
+})
+
+watch(promptLanguage, language => {
+  if (!contentLanguageChosen.value) brief.language = language
+})
 
 const parsed = computed(() => (answer.value.trim() ? extractJsonObject(answer.value) : null))
 
@@ -272,8 +299,9 @@ const changes = computed(() =>
 watch(() => props.visible, async (open) => {
   if (!open) return
   reset()
+  promptLanguage.value = currentLocale.value.startsWith('en') ? 'en' : 'fr'
+  brief.language = promptLanguage.value
   if (props.mode === 'create') {
-    brief.language = locale.value.startsWith('en') ? 'en' : 'fr'
     await loadScopeSources()
     destinationKey.value = pickDefaultScopeKey()
   }
@@ -284,7 +312,8 @@ function reset() {
   busy.value = false
   brief.description = ''
   instruction.value = ''
-  prompt.value = ''
+  contentLanguageChosen.value = false
+  catalog.value = null
   original.value = null
   answer.value = ''
   keepOriginalTitle.value = true
@@ -298,14 +327,14 @@ async function writePrompt() {
   errorMessage.value = ''
   try {
     if (props.mode === 'create') {
-      prompt.value = buildCreatePrompt(brief, await loadCatalog())
+      catalog.value = await loadCatalog()
     } else {
       const [exported, platform] = await Promise.all([
         teacherService.exportScenarioJSON(props.scenario!.id),
         loadCatalog()
       ])
       original.value = exported
-      prompt.value = buildImprovePrompt(instruction.value, exported, platform)
+      catalog.value = platform
     }
     step.value = 2
   } catch (err: any) {
@@ -392,6 +421,19 @@ function close() {
 
 .ocf-ai-steps li.is-done {
   border-color: var(--color-success);
+}
+
+.ocf-ai-prompt-language {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.ocf-ai-prompt-language select {
+  width: auto;
 }
 
 .ocf-ai-body {
