@@ -27,8 +27,6 @@
       type="button"
       class="ocf-rail-btn"
       data-testid="rail-assign"
-      :disabled="!!scenario.archived_at"
-      :title="scenario.archived_at ? t('scenarioEditor.archivedCannotAssign') : undefined"
       @click="showAssign = true"
     >
       <i class="fas fa-user-plus" aria-hidden="true"></i> {{ t('scenarioEditor.assignToClass') }}

@@ -30,7 +30,6 @@ const scenarios = [
   ] },
   // What the list sends for a scenario the user does not manage: no steps.
   { id: 'public', title: 'Public lab', can_manage: false, organization_id: null, steps: [] },
-  { id: 'old', title: 'Archived', can_manage: true, archived_at: '2026-01-01', steps: [{ id: 'o1', order: 0, title: 'Gone' }] },
   { id: 'current', title: 'Being edited', can_manage: true, steps: [{ id: 'x1', order: 0, title: 'Own step' }] }
 ]
 
@@ -44,10 +43,10 @@ function mountLibrary(props: Record<string, unknown> = {}) {
 }
 
 describe('StepLibrary', () => {
-  it('groups the scenarios, leaving out archived ones and the one being edited', () => {
+  // Archived scenarios never reach the library: the editor loads its list without them.
+  it('groups the scenarios, leaving out the one being edited', () => {
     const wrapper = mountLibrary()
     expect(wrapper.findAll('.ocf-library-group-title').map(h => h.text())).toEqual(['My scenarios', 'Organization', 'Platform scenarios'])
-    expect(wrapper.text()).not.toContain('Archived')
     expect(wrapper.text()).not.toContain('Being edited')
   })
 

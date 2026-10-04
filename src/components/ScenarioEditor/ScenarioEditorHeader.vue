@@ -27,7 +27,7 @@
         <option value="">{{ t('scenarioEditor.selectScenario') }}</option>
         <optgroup v-for="group in scenarioGroups" :key="group.label" :label="group.label">
           <option v-for="scenario in group.scenarios" :key="scenario.id" :value="scenario.id">
-            {{ scenario.title || scenario.name }}{{ scenario.archived_at ? ` (${t('scenarioEditor.archived')})` : '' }}
+            {{ scenario.title || scenario.name }}
           </option>
         </optgroup>
       </select>
@@ -53,9 +53,6 @@
         </span>
         <span v-if="healthAvailable" class="ocf-header-chip ocf-status-chip" :class="statusClass" data-testid="scenario-status">
           <i :class="statusIcon" aria-hidden="true"></i> {{ statusLabel }}
-        </span>
-        <span v-if="currentScenario.archived_at" class="ocf-header-chip archived-badge">
-          <i class="fas fa-box-archive" aria-hidden="true"></i> {{ t('scenarioEditor.archived') }}
         </span>
         <span v-if="!canEditScenario" class="ocf-header-chip readonly-badge">
           <i class="fas fa-lock" aria-hidden="true"></i> {{ t('scenarioEditor.readOnly') }}
@@ -101,20 +98,12 @@
             <span>{{ t('scenarioEditor.copyToOrg') }}</span>
           </button>
           <button
-            v-if="canRetire && !currentScenario.archived_at"
+            v-if="canRetire"
             class="ocf-header-menu-item"
             @click="emit('archive'); showActionsMenu = false"
           >
             <i class="fas fa-box-archive" aria-hidden="true"></i>
             <span>{{ t('scenarioEditor.archive') }}</span>
-          </button>
-          <button
-            v-if="canRetire && currentScenario.archived_at"
-            class="ocf-header-menu-item"
-            @click="emit('unarchive'); showActionsMenu = false"
-          >
-            <i class="fas fa-rotate-left" aria-hidden="true"></i>
-            <span>{{ t('scenarioEditor.unarchive') }}</span>
           </button>
           <button
             v-if="canRetire"
@@ -190,7 +179,6 @@ const emit = defineEmits<{
   (e: 'export-killercoda'): void
   (e: 'copy-to-org'): void
   (e: 'archive'): void
-  (e: 'unarchive'): void
   (e: 'delete'): void
   (e: 'preview'): void
 }>()

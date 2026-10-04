@@ -1,10 +1,11 @@
 /**
- * Archive / restore in the scenario editor header.
+ * Archive in the scenario editor header.
  *
  * The editor is where a scenario with no organization is managed, and it was
  * the one place still offering Delete without the non-destructive alternative.
- * The action sits in the overflow menu, mirrors the library's
- * wording, and swaps to Restore once the scenario carries archived_at.
+ * The action sits in the overflow menu and mirrors the library's wording.
+ * Restore is not here: the editor never shows an archived scenario — that is
+ * the org Scenarios tab's and the admin list's job.
  *
  * Archiving retires the scenario for every learner and class at once, so the
  * header only asks — the parent owns the confirmation and the service call.
@@ -28,7 +29,6 @@ function createTestI18n() {
 }
 
 const activeScenario = { id: 'sc-1', name: 'old-lab', title: 'Old Lab', archived_at: null }
-const archivedScenario = { ...activeScenario, archived_at: '2026-01-15T10:00:00Z' }
 
 function mountHeader(overrides: Record<string, unknown> = {}): VueWrapper {
   return mount(ScenarioEditorHeader, {
@@ -65,37 +65,17 @@ describe('ScenarioEditorHeader — archive action', () => {
 
     const archive = menuItem(wrapper, '.fa-box-archive')
     expect(archive, 'the overflow menu offers Archive').toBeTruthy()
-    expect(menuItem(wrapper, '.fa-rotate-left'), 'and not Restore').toBeFalsy()
+    expect(menuItem(wrapper, '.fa-rotate-left'), 'and never Restore').toBeFalsy()
 
     await archive!.trigger('click')
     expect(wrapper.emitted('archive')).toHaveLength(1)
-    expect(wrapper.emitted('unarchive')).toBeUndefined()
   })
 
-  it('offers Restore instead once the scenario is archived', async () => {
-    const wrapper = mountHeader({ currentScenario: archivedScenario })
-    await openOverflowMenu(wrapper)
-
-    const restore = menuItem(wrapper, '.fa-rotate-left')
-    expect(restore, 'the overflow menu offers Restore').toBeTruthy()
-    expect(menuItem(wrapper, '.fa-box-archive'), 'and not Archive').toBeFalsy()
-
-    await restore!.trigger('click')
-    expect(wrapper.emitted('unarchive')).toHaveLength(1)
-    expect(wrapper.emitted('archive')).toBeUndefined()
-  })
-
-  it('badges an archived scenario in the header', () => {
-    expect(mountHeader().find('.archived-badge').exists()).toBe(false)
-    expect(mountHeader({ currentScenario: archivedScenario }).find('.archived-badge').exists()).toBe(true)
-  })
-
-  it('hides both actions from someone who may not retire the scenario', async () => {
+  it('hides Archive from someone who may not retire the scenario', async () => {
     const wrapper = mountHeader({ canEditScenario: false, canRetire: false, canCopyToOrg: true })
     await openOverflowMenu(wrapper)
 
     expect(menuItem(wrapper, '.fa-box-archive')).toBeFalsy()
-    expect(menuItem(wrapper, '.fa-rotate-left')).toBeFalsy()
   })
 
   it('offers no overflow menu at all when it would be empty', () => {

@@ -24,7 +24,6 @@
       @export-killercoda="currentScenario && exportScenario(currentScenario, 'killercoda')"
       @copy-to-org="showDuplicateModal = true"
       @archive="showArchiveModal = true"
-      @unarchive="handleUnarchive"
       @delete="showDeleteScenarioModal = true"
       @preview="play"
     >
@@ -39,6 +38,9 @@
     <!-- Nothing open: say what can be done, not that nothing is there. -->
     <section v-if="!currentScenario" class="ocf-workbench-empty" data-testid="editor-empty-state">
       <i class="fas fa-flask ocf-workbench-empty-icon" aria-hidden="true"></i>
+      <p v-if="archivedScenarioRequested" class="ocf-workbench-archived-notice" role="status" data-testid="editor-archived-notice">
+        <i class="fas fa-box-archive" aria-hidden="true"></i> {{ t('scenarioEditor.archivedNotice') }}
+      </p>
       <h2>{{ t('scenarioEditor.emptyTitle') }}</h2>
       <p>{{ t('scenarioEditor.emptyDescription') }}</p>
       <div class="ocf-workbench-empty-actions">
@@ -331,6 +333,7 @@ const {
 const allScenarios = computed(() => scenariosStore.entities)
 const selectedScenarioId = ref<string | null>(null)
 const currentScenario = ref<any>(null)
+const archivedScenarioRequested = ref(false)
 
 const health = useScenarioHealth(computed(() => (currentScenario.value?.can_manage ? currentScenario.value.id : null)))
 
@@ -473,7 +476,7 @@ const sizes = ref<Size[]>([])
 
 onMounted(async () => {
   await Promise.all([
-    scenariosStore.loadEntitiesIncludingArchived(),
+    scenariosStore.loadActiveEntities(),
     loadScopeSources(),
     // Best-effort: without the sizes endpoint the modal falls back to a text input.
     terminalService.getSizes()
@@ -518,6 +521,13 @@ async function openScenario(id: string | null, stepKey?: string | null) {
     const response = await axios.get(`/scenarios/${id}?include=steps`)
     const scenario = response.data
     if (!scenario) return
+    // A link to an archived scenario says so rather than open what the picker
+    // no longer lists.
+    if (scenario.archived_at) {
+      selectedScenarioId.value = null
+      archivedScenarioRequested.value = true
+      return
+    }
     const sameScenario = currentScenario.value?.id === scenario.id
     currentScenario.value = scenario
     if (!sameScenario) {
@@ -757,7 +767,7 @@ async function refreshAfterWrite(stepKey: string | null | undefined) {
   stepDirty.value = false
   await Promise.all([
     openScenario(selectedScenarioId.value, stepKey),
-    scenariosStore.loadEntitiesIncludingArchived()
+    scenariosStore.loadActiveEntities()
   ])
   health.refresh()
 }
@@ -929,7 +939,7 @@ const handleSaveScenario = async () => {
       const newId = result?.id || result?.data?.id
       closeScenarioEditModal()
       if (newId) {
-        await scenariosStore.loadEntitiesIncludingArchived()
+        await scenariosStore.loadActiveEntities()
         await openScenario(newId)
       }
       return
@@ -1000,7 +1010,7 @@ const handleSaveScenarioTranslation = async (fields: Record<string, string>) => 
 
 async function openImported(scenario: { id: string }, successKey = 'scenarioEditor.importSuccess') {
   if (!(await unsavedGuard.confirmDiscard())) return
-  await scenariosStore.loadEntitiesIncludingArchived()
+  await scenariosStore.loadActiveEntities()
   await openScenario(scenario.id)
   notification.showSuccess(t(successKey))
 }
@@ -1013,21 +1023,16 @@ const showDuplicateModal = ref(false)
 
 async function openDuplicate(copy: { id: string }) {
   showDuplicateModal.value = false
-  await scenariosStore.loadEntitiesIncludingArchived()
+  await scenariosStore.loadActiveEntities()
   if (copy?.id) await openScenario(copy.id)
 }
 
 // ---- Archive ----
 
 // Archiving is confirmed because it retires the scenario for every learner and
-// class at once; restoring is not, since it only puts it back.
+// class at once. The editor lists no archived scenario, so the archived one
+// closes; restoring it is the org Scenarios tab's and the admin list's job.
 const showArchiveModal = ref(false)
-
-const reloadAfterArchiveChange = async () => {
-  await scenariosStore.loadEntitiesIncludingArchived()
-  const refreshed = scenariosStore.entities.find((s: any) => s.id === currentScenario.value?.id)
-  if (refreshed) currentScenario.value = { ...currentScenario.value, archived_at: refreshed.archived_at }
-}
 
 const handleArchive = async () => {
   if (!currentScenario.value?.id) return
@@ -1035,20 +1040,10 @@ const handleArchive = async () => {
     await scenariosStore.archiveEntity('/scenarios', currentScenario.value.id)
     notification.showSuccess(t('scenarioEditor.archiveSuccess'))
     showArchiveModal.value = false
-    await reloadAfterArchiveChange()
+    stepDirty.value = false
+    await openScenario(null)
   } catch (err: any) {
     notification.showError(err.response?.data?.error_message || t('scenarioEditor.archiveError'))
-  }
-}
-
-const handleUnarchive = async () => {
-  if (!currentScenario.value?.id) return
-  try {
-    await scenariosStore.unarchiveEntity('/scenarios', currentScenario.value.id)
-    notification.showSuccess(t('scenarioEditor.unarchiveSuccess'))
-    await reloadAfterArchiveChange()
-  } catch (err: any) {
-    notification.showError(err.response?.data?.error_message || t('scenarioEditor.unarchiveError'))
   }
 }
 
@@ -1060,7 +1055,7 @@ const handleDeleteScenario = async () => {
     await scenariosStore.deleteEntity('/scenarios', currentScenario.value.id)
     showDeleteScenarioModal.value = false
     stepDirty.value = false
-    await scenariosStore.loadEntitiesIncludingArchived()
+    await scenariosStore.loadActiveEntities()
     await openScenario(null)
   } catch (err: any) {
     notification.showError(err.response?.data?.error_message || t('scenarioEditor.deleteScenarioError'))
@@ -1184,6 +1179,15 @@ const handleConfirmPreview = async () => {
 .ocf-workbench-placeholder p {
   max-width: 34rem;
   margin: 0;
+}
+
+.ocf-workbench-empty .ocf-workbench-archived-notice {
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--border-radius-md);
+  background: var(--color-warning-bg);
+  color: var(--color-text-primary);
 }
 
 .ocf-workbench-empty-icon,

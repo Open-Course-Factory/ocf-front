@@ -254,14 +254,14 @@ export const useScenariosStore = defineStore('scenarios', () => {
      * the backend's default page size of 20, and the picker silently lost the
      * rest.
      *
-     * The picker must keep offering archived scenarios — that is where
-     * Restore lives — while the admin list decides for itself through its own
-     * toggle. The flag is scoped to this one load so the list's toggle state
-     * is left exactly as it was.
+     * Archived scenarios are left out — restoring one is the org Scenarios
+     * tab's and the admin list's job — whatever the admin list's toggle,
+     * which lives on this same store, says. The flag is scoped to this one
+     * load so the toggle is left exactly as it was.
      */
-    const loadEntitiesIncludingArchived = async () => {
+    const loadActiveEntities = async () => {
         const previous = base.includeArchived.value
-        base.includeArchived.value = true
+        base.includeArchived.value = false
         try {
             const all = await base.fetchAllEntities('/scenarios', { include: 'steps' })
             base.entities.splice(0, base.entities.length, ...all)
@@ -271,5 +271,5 @@ export const useScenariosStore = defineStore('scenarios', () => {
         }
     }
 
-    return { ...base, fieldList, loadEntitiesIncludingArchived }
+    return { ...base, fieldList, loadActiveEntities }
 })

@@ -210,24 +210,23 @@ describe('scenarios store', () => {
     })
   })
 
-  describe('loadEntitiesIncludingArchived', () => {
+  describe('loadActiveEntities', () => {
     const page = (ids: string[], totalPages: number) =>
       ({ data: { data: ids.map(id => ({ id })), totalPages } })
 
-    // The editor's picker is where Restore lives, so archived scenarios must
-    // keep appearing there once the backend hides them by default
-    // (ocf-core#489) — without pre-ticking the admin list's own toggle.
-    it('asks for archived rows with their steps and leaves the toggle as it was', async () => {
+    // The editor lists only scenarios still in use — even when the admin
+    // list's toggle, which lives on this same store, is showing archived ones.
+    it('leaves archived rows out with their steps and restores the toggle', async () => {
       const store = useScenariosStore()
       ;(axios.get as any).mockResolvedValue(page([], 1))
-      expect(store.includeArchived).toBe(false)
+      store.includeArchived = true
 
-      await store.loadEntitiesIncludingArchived()
+      await store.loadActiveEntities()
 
       const params = new URL((axios.get as any).mock.calls[0][0], 'http://x').searchParams
-      expect(params.get('include_archived')).toBe('true')
+      expect(params.has('include_archived')).toBe(false)
       expect(params.get('include')).toBe('steps')
-      expect(store.includeArchived).toBe(false)
+      expect(store.includeArchived).toBe(true)
     })
 
     // A single GET stops at the backend's default page of 20: an author with
@@ -238,7 +237,7 @@ describe('scenarios store', () => {
         .mockResolvedValueOnce(page(['a', 'b'], 2))
         .mockResolvedValueOnce(page(['c'], 2))
 
-      await store.loadEntitiesIncludingArchived()
+      await store.loadActiveEntities()
 
       expect(store.entities.map((s: any) => s.id)).toEqual(['a', 'b', 'c'])
       const pages = (axios.get as any).mock.calls.map(([url]: [string]) =>
@@ -249,9 +248,9 @@ describe('scenarios store', () => {
     it('replaces the previous list rather than appending to it', async () => {
       const store = useScenariosStore()
       ;(axios.get as any).mockResolvedValue(page(['a'], 1))
-      await store.loadEntitiesIncludingArchived()
+      await store.loadActiveEntities()
       ;(axios.get as any).mockResolvedValue(page(['b'], 1))
-      await store.loadEntitiesIncludingArchived()
+      await store.loadActiveEntities()
 
       expect(store.entities.map((s: any) => s.id)).toEqual(['b'])
     })

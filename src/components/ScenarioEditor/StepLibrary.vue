@@ -141,7 +141,7 @@ const groups = computed(() => {
   const q = query.value.trim().toLowerCase()
   const matches = (text?: string) => !!text && text.toLowerCase().includes(q)
   const usable = props.scenarios
-    .filter(s => !s.archived_at && s.id !== props.currentScenarioId)
+    .filter(s => s.id !== props.currentScenarioId)
     .map(s => {
       const steps = knownSteps(s)
       if (!q || matches(s.title) || matches(s.name)) return { ...s, steps }
