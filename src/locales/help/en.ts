@@ -1330,7 +1330,7 @@ export const helpEn = {
           title: "The editor at a glance",
           description: "The page has three columns. Left, the outline: a card summing up the scenario (click it to open its settings), then the steps as a numbered list. Centre, the step you selected, edited in place: its title, its tabs, and beside the Markdown, what the learner will read. Right, the checks, the scenario's settings in plain words, and the classes it is assigned to; on a narrow screen this column folds into icons.",
           header: "The top bar holds the scenario selector (your scenarios first, then the platform's), Create a scenario, the organisation, whether the scenario is ready to play, whether the open step is saved, Import (a KillerCoda archive, a JSON file, or Create with AI), Export, Improve with AI, a ⋯ menu with copy, archive and delete, and Play as learner.",
-          readOnly: "A scenario you may not edit (a platform scenario, or one from another organisation) opens read-only: a colleague's lab shows its steps as the learner reads them; a platform scenario shows its card and settings only. Duplicate into my organization makes an editable copy in an organisation or class of yours, and opens it."
+          readOnly: "A scenario you may not edit (a platform scenario, or one from another organisation) opens read-only: its steps show as the learner reads them, without their scripts or answers. Duplicate into my organization makes an editable copy in an organisation or class of yours, and opens it."
         },
         scenario: {
           title: "Create a scenario",
@@ -1344,7 +1344,7 @@ export const helpEn = {
         },
         steps: {
           title: "Add steps",
-          description: "Click Add a step under the list and pick a type, or hover between two steps and click the + to insert one there. The new step opens in the centre; it is written when you save it. Four types exist; the type decides which tabs the step shows.",
+          description: "Click Add a step under the list and pick a type, or hover between two steps and click the + to insert one there. The new step opens in the centre; it is written when you save it. To reuse steps from another scenario — yours, your organisation's or the platform's — open the Step library tab on the right: preview a step, tick one or several, and insert them after the selected step or drag them into the list; the copy keeps their scripts. Four types exist; the type decides which tabs the step shows.",
           terminal: "Terminal — the learner works in the machine and clicks Verify. Tabs: Instructions, Hints, Verification, Setup, Demonstration, Effects.",
           info: "Info — text to read, nothing to do. Tabs: Instructions, Effects.",
           flag: "Flag — the learner submits an answer. Tabs: Instructions, Hints, Setup, Effects, plus the flag path and level.",

@@ -1330,7 +1330,7 @@ export const helpFr = {
           title: "L'éditeur en un coup d'œil",
           description: "La page a trois colonnes. À gauche, le plan : une carte qui résume le scénario (cliquez-la pour ouvrir ses réglages), puis les étapes en liste numérotée. Au centre, l'étape choisie, modifiée sur place : son titre, ses onglets, et à côté du Markdown, ce que lira l'apprenant. À droite, les contrôles, les réglages du scénario en clair et les classes auxquelles il est assigné ; sur un écran étroit, cette colonne se replie en icônes.",
           header: "La barre du haut contient le sélecteur de scénario (vos scénarios d'abord, puis ceux de la plateforme), Créer un scénario, l'organisation, si le scénario est prêt à jouer, si l'étape ouverte est enregistrée, Importer (une archive KillerCoda, un fichier JSON, ou Créer avec l'IA), Exporter, Améliorer avec l'IA, un menu ⋯ avec copie, archivage et suppression, et Jouer comme apprenant.",
-          readOnly: "Un scénario que vous ne pouvez pas modifier (un scénario de la plateforme, ou celui d'une autre organisation) s'ouvre en lecture seule : le lab d'un collègue montre ses étapes telles que l'apprenant les lit ; un scénario de la plateforme ne montre que sa carte et ses réglages. Dupliquer dans mon organisation en crée une copie modifiable dans une de vos organisations ou classes, et l'ouvre."
+          readOnly: "Un scénario que vous ne pouvez pas modifier (un scénario de la plateforme, ou celui d'une autre organisation) s'ouvre en lecture seule : ses étapes s'affichent telles que l'apprenant les lit, sans leurs scripts ni leurs réponses. Dupliquer dans mon organisation en crée une copie modifiable dans une de vos organisations ou classes, et l'ouvre."
         },
         scenario: {
           title: "Créer un scénario",
@@ -1344,7 +1344,7 @@ export const helpFr = {
         },
         steps: {
           title: "Ajouter des étapes",
-          description: "Cliquez sur Ajouter une étape sous la liste et choisissez un type, ou survolez l'espace entre deux étapes et cliquez sur le + pour en insérer une. La nouvelle étape s'ouvre au centre ; elle est écrite quand vous l'enregistrez. Il existe quatre types ; le type décide des onglets que l'étape affiche.",
+          description: "Cliquez sur Ajouter une étape sous la liste et choisissez un type, ou survolez l'espace entre deux étapes et cliquez sur le + pour en insérer une. La nouvelle étape s'ouvre au centre ; elle est écrite quand vous l'enregistrez. Pour reprendre des étapes d'un autre scénario — le vôtre, celui de votre organisation ou de la plateforme —, ouvrez l'onglet Bibliothèque d'étapes à droite : prévisualisez une étape, cochez-en une ou plusieurs, puis insérez-les après l'étape sélectionnée ou glissez-les dans la liste ; la copie garde leurs scripts. Il existe quatre types ; le type décide des onglets que l'étape affiche.",
           terminal: "Terminal — l'apprenant travaille dans la machine et clique sur Vérifier. Onglets : Consigne, Indices, Vérification, Préparation, Démonstration, Effets.",
           info: "Info — du texte à lire, rien à faire. Onglets : Consigne, Effets.",
           flag: "Flag — l'apprenant soumet une réponse. Onglets : Consigne, Indices, Préparation, Effets, plus le chemin et le niveau du flag.",
