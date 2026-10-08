@@ -18,16 +18,6 @@ export const countRoles = (members: ReadonlyArray<{ role: string }> = []): RoleC
   return counts
 }
 
-export const sumRoleCounts = (all: ReadonlyArray<RoleCounts>): RoleCounts => {
-  const sum: RoleCounts = {}
-  for (const counts of all) {
-    for (const [role, n] of Object.entries(counts) as [MemberRole, number][]) {
-      sum[role] = (sum[role] ?? 0) + n
-    }
-  }
-  return sum
-}
-
 /** The roles present in counts, highest rank first. */
 export const rolesByRank = (counts: RoleCounts): MemberRole[] =>
   (Object.keys(counts) as MemberRole[])

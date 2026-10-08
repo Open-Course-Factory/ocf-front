@@ -163,7 +163,7 @@
                 {{ getTotalMemberCount(entity as OrganizationGroup) }}
               </span>
 
-              <RoleCountChips :counts="getSubtreeRoleCounts(entity as OrganizationGroup)" />
+              <RoleCountChips :counts="countRoles(subtreeMembers(entity))" />
             </template>
 
             <!-- For Organizations: Show group count -->
@@ -171,7 +171,7 @@
               <i class="fas fa-layer-group"></i>
               {{ (entity as Organization).group_count }}
             </span>
-            <RoleCountChips v-if="isOrganization(entity)" :counts="getOrganizationRoleCounts(entity)" />
+            <RoleCountChips v-if="isOrganization(entity)" :counts="countRoles(subtreeMembers(entity))" />
           </template>
 
           <!-- Badge Slot: reserved width so toggling archived rows shifts nothing -->
@@ -213,7 +213,7 @@ import { useTreeExpand } from '../../composables/useTreeExpand'
 import { useToast } from '../../composables/useToast'
 import TreeNode from '../Common/TreeNode.vue'
 import RoleCountChips from '../Groups/RoleCountChips.vue'
-import { countRoles, sumRoleCounts, type RoleCounts } from '../../utils/roles'
+import { countRoles } from '../../utils/roles'
 import type { Organization, OrganizationGroup } from '../../types'
 
 const router = useRouter()
@@ -420,18 +420,14 @@ const getTotalMemberCount = (group: OrganizationGroup): number => {
   return total
 }
 
-// Members by role in a group and its visible subgroups: the same scope as
+// A group's members and its visible subgroups': the same scope as
 // getTotalMemberCount. Someone in two groups counts in both, as there.
-const getSubtreeRoleCounts = (group: OrganizationGroup): RoleCounts =>
-  sumRoleCounts([
-    countRoles(group.members),
-    ...(getChildren(group) as OrganizationGroup[]).map(getSubtreeRoleCounts)
-  ])
+const subtreeMembers = (node: TreeNode): { role: string }[] => [
+  ...(isOrganization(node) ? [] : node.members ?? []),
+  ...getChildren(node).flatMap(subtreeMembers)
+]
 
-const getOrganizationRoleCounts = (org: Organization): RoleCounts =>
-  sumRoleCounts((getChildren(org) as OrganizationGroup[]).map(getSubtreeRoleCounts))
-
-const globalRoleCounts = computed(() => sumRoleCounts(organizations.value.map(getOrganizationRoleCounts)))
+const globalRoleCounts = computed(() => countRoles(organizations.value.flatMap(subtreeMembers)))
 
 const loadOrganizationGroups = async (organizationId: string) => {
   try {
