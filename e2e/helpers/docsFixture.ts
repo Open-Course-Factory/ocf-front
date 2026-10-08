@@ -2,6 +2,7 @@ import { apiLogin, getCatalogPlans, type ApiSession } from './paymentApi';
 import { getOrganizations, type ApiOrganization } from './platformApi';
 import { createGroupAssignment, findTeacherGroup, getMyScenarioSessions, getUserId, launchScenarioSession } from './scenarioApi';
 import { verifyEmailViaToken } from './freshUsers';
+import { EXAMPLE_SCENARIOS } from '../../src/utils/scenarioAiPrompt';
 
 /**
  * The "Université Labinux" fixture behind the documentation screenshots.
@@ -170,6 +171,19 @@ async function ensureAssignments(trainer: ApiSession, groupId: string): Promise<
 }
 
 /**
+ * A scenario the trainer's organization owns, one per locale, so the editor is
+ * photographed editable rather than as a read-only platform scenario. The
+ * content is the example the AI prompt ships: what a teacher's assistant writes.
+ */
+async function ensureOwnScenarios(trainer: ApiSession, orgId: string): Promise<void> {
+  const owned = rows(await getJson(trainer, `/organizations/${orgId}/scenarios`));
+  for (const scenario of Object.values(EXAMPLE_SCENARIOS)) {
+    if (owned.some((s) => s.title === scenario.title)) continue;
+    await postJson(trainer, `/organizations/${orgId}/scenarios/import-json`, scenario);
+  }
+}
+
+/**
  * Ten learners in the middle of the GameShell scenario, so the class page has
  * something live to show and the player screenshot is a real container, not an
  * empty frame. Sessions are reused while open and relaunched once they expire.
@@ -242,7 +256,8 @@ export interface DocsFixture {
   trainerTerminalId?: string;
 }
 
-export async function ensureDocsFixture(): Promise<DocsFixture> {
+/** `withSessions` false: no terminal is launched, for runs that photograph nothing live. */
+export async function ensureDocsFixture(withSessions = true): Promise<DocsFixture> {
   const admin = await apiLogin(ADMIN_EMAIL, ADMIN_PASSWORD);
   const plans = await getCatalogPlans(admin);
   const planId = (name: string) => {
@@ -256,7 +271,8 @@ export async function ensureDocsFixture(): Promise<DocsFixture> {
   const orgId = await ensureOrg(admin, trainer, planId(ORG_PLAN));
   const classId = await ensureClass(trainer, orgId);
   await ensureAssignments(trainer, classId);
-  const learnerTerminalIds = await ensureLearnerSessions(orgId);
-  const trainerTerminalId = await ensureTrainerTerminal(trainer, orgId);
+  await ensureOwnScenarios(trainer, orgId);
+  const learnerTerminalIds = withSessions ? await ensureLearnerSessions(orgId) : [];
+  const trainerTerminalId = withSessions ? await ensureTrainerTerminal(trainer, orgId) : undefined;
   return { orgId, classId, learnerTerminalId: learnerTerminalIds[0], learnerTerminalIds, trainerTerminalId };
 }

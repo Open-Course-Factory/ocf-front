@@ -4,6 +4,7 @@ import { login } from './helpers/auth';
 import { waitForLiveTerminal, typeInTerminal } from './helpers/xterm';
 import { apiLogin } from './helpers/paymentApi';
 import { DOCS_PASSWORD, LEARNERS, TRAINER, ensureDocsFixture, type DocsFixture } from './helpers/docsFixture';
+import { EXAMPLE_SCENARIOS } from '../src/utils/scenarioAiPrompt';
 
 /**
  * Documentation screenshots.
@@ -37,6 +38,8 @@ interface Screen {
   fullPage?: boolean;
   /** Anything to do on the page before the shot (open a modal, pick a tab…). */
   prepare?: (page: Page) => Promise<void>;
+  /** Needs running terminals: without one selected, a `SHOT=` run launches none. */
+  live?: true;
 }
 
 const API_BASE = process.env.OCF_API_URL || 'http://localhost:8080/api/v1';
@@ -59,8 +62,8 @@ const SCREENS: Screen[] = [
   // Trainer — day-to-day
   // The class first: its terminals go quiet a couple of minutes after the warm-up.
   { name: 'my-classes', path: '/my-classes', as: 'trainer' },
-  { name: 'class-live', path: (f) => `/classes/${f.classId}/live`, as: 'trainer', fullPage: true },
-  { name: 'class-wall', path: (f) => `/classes/${f.classId}/live?view=wall`, as: 'trainer', settle: 4_000, fullPage: true },
+  { name: 'class-live', path: (f) => `/classes/${f.classId}/live`, as: 'trainer', fullPage: true, live: true },
+  { name: 'class-wall', path: (f) => `/classes/${f.classId}/live?view=wall`, as: 'trainer', settle: 4_000, fullPage: true, live: true },
   { name: 'class-members', path: (f) => `/classes/${f.classId}/members`, as: 'trainer' },
   { name: 'class-scenarios', path: (f) => `/classes/${f.classId}/scenarios`, as: 'trainer' },
   {
@@ -94,6 +97,7 @@ const SCREENS: Screen[] = [
     // The session was started with the network feature, so the chip is unlocked;
     // exposing a port here is exactly what a learner does to show a web app.
     name: 'terminal-exposed-port',
+    live: true,
     path: (f) => f.trainerTerminalId && `/terminal-session/${f.trainerTerminalId}`,
     as: 'trainer',
     prepare: async (page) => {
@@ -120,6 +124,7 @@ const SCREENS: Screen[] = [
   },
   {
     name: 'terminal-session',
+    live: true,
     path: (f) => f.trainerTerminalId && `/terminal-session/${f.trainerTerminalId}`,
     as: 'trainer',
     prepare: async (page) => {
@@ -130,17 +135,43 @@ const SCREENS: Screen[] = [
       await page.waitForTimeout(800);
     },
   },
+  { name: 'scenario-editor', path: '/scenario-editor', as: 'trainer', prepare: openOwnScenario },
   {
-    name: 'scenario-editor',
+    name: 'scenario-verify-checks',
     path: '/scenario-editor',
     as: 'trainer',
     prepare: async (page) => {
-      const select = page.getByTestId('scenario-picker');
-      await select.waitFor({ state: 'visible', timeout: 10_000 });
-      // The fixture's GameShell — the class assignment is what lets her manage it.
-      const value = await select.locator('option', { hasText: /gameshell/i }).first().getAttribute('value');
-      if (value) await select.selectOption(value);
-      await page.waitForTimeout(2_500);
+      await openOwnScenario(page);
+      await page.locator('#tab-verify').click();
+      await page.getByTestId('verify-template-menu').click();
+      await page.waitForTimeout(500);
+    },
+  },
+  {
+    name: 'scenario-step-library',
+    path: '/scenario-editor',
+    as: 'trainer',
+    prepare: async (page) => {
+      await openOwnScenario(page);
+      await page.getByTestId('rail-strip-library').click();
+      await page.locator('[data-testid^="step-library-scenario-"]', { hasText: /gameshell/i }).first().click();
+      const picks = page.locator('[data-testid^="step-library-pick-"]');
+      await picks.nth(1).waitFor({ state: 'visible', timeout: 10_000 });
+      await picks.nth(1).check();
+      await picks.nth(2).check();
+      await page.locator('[data-testid^="step-library-preview-"]').nth(2).click();
+      await page.waitForTimeout(800);
+    },
+  },
+  { name: 'scenario-ai-create', path: '/scenario-editor', as: 'trainer', prepare: (page) => openAiCreate(page) },
+  {
+    name: 'scenario-ai-prompt',
+    path: '/scenario-editor',
+    as: 'trainer',
+    prepare: async (page) => {
+      await openAiCreate(page);
+      await page.getByTestId('scenario-ai-next').click();
+      await page.getByTestId('scenario-ai-step-prompt').waitFor({ timeout: 10_000 });
     },
   },
   { name: 'scenarios-catalogue', path: '/scenarios', as: 'trainer', fullPage: true },
@@ -184,6 +215,7 @@ const SCREENS: Screen[] = [
   { name: 'learner-terminal-creation', path: '/terminal-creation', as: 'learner', fullPage: true },
   {
     name: 'learner-scenario-player',
+    live: true,
     path: (f) => f.learnerTerminalId && `/terminal-session/${f.learnerTerminalId}`,
     as: 'learner',
     // GameShell opens on a briefing step, so the terminal may not be live yet:
@@ -247,6 +279,40 @@ function clearStaleShells(terminalId: string): void {
   } catch {
     /* no incus here, or the container is gone — the warm-up will say so on its own */
   }
+}
+
+async function pageLocale(page: Page): Promise<Locale> {
+  return ((await page.evaluate(() => localStorage.getItem('ocf-user-locale'))) as Locale) || 'fr';
+}
+
+/** The editor on the organization's own scenario, in the locale being photographed: editable, not a read-only platform one. */
+async function openOwnScenario(page: Page): Promise<void> {
+  const select = page.getByTestId('scenario-picker');
+  await select.waitFor({ state: 'visible', timeout: 10_000 });
+  const title = EXAMPLE_SCENARIOS[await pageLocale(page)].title;
+  const value = await select.locator('option', { hasText: title }).first().getAttribute('value');
+  if (value) await select.selectOption(value);
+  await page.getByTestId('outline-scenario-card').waitFor({ state: 'visible', timeout: 15_000 });
+  await page.waitForTimeout(1_500);
+}
+
+const AI_BRIEF: Record<Locale, string> = {
+  fr: "Mettre en ligne un site statique avec nginx : installer le paquet, déposer la page d'accueil, vérifier que le port 80 répond. Un drapeau caché dans les journaux pour finir.",
+  en: 'Serve a static site with nginx: install the package, drop the home page, check that port 80 answers. A flag hidden in the logs to finish.',
+};
+
+/** "Create with AI", step 1 filled the way a teacher would: what to write, for whom, where. */
+async function openAiCreate(page: Page): Promise<void> {
+  await page.getByTestId('scenario-picker').waitFor({ state: 'visible', timeout: 10_000 });
+  await page.getByTestId('scenario-import-menu').click();
+  await page.getByTestId('scenario-import-menu-ai').click();
+  await page.locator('#ai-description').fill(AI_BRIEF[await pageLocale(page)]);
+  await page.locator('#ai-step-count').fill('4');
+  await page.locator('.ocf-ai-types input[value="flag"]').check();
+  const destination = page.locator('#ai-destination');
+  const school = await destination.locator('option', { hasText: 'Labinux' }).first().getAttribute('value');
+  if (school) await destination.selectOption(school);
+  await page.waitForTimeout(500);
 }
 
 /** "My usage" is collapsed on some pages and open on others; end up open either way. */
@@ -316,7 +382,7 @@ test.describe.configure({ mode: 'serial' });
 let fixture: DocsFixture;
 
 test.beforeAll(async () => {
-  fixture = await ensureDocsFixture();
+  fixture = await ensureDocsFixture(selected.some((s) => s.live));
 });
 
 /**
