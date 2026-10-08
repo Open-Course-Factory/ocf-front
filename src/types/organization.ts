@@ -79,6 +79,8 @@ export interface OrganizationGroup extends BaseEntity {
   parent_group?: OrganizationGroup
   max_members?: number
   member_count: number
+  /** Active members, present when loaded with ?includes=Members. */
+  members?: { user_id: string; role: string }[]
   expires_at?: string
   external_id?: string
   /** Set when archived — the one flag to read; is_active is derived from it. */

@@ -88,6 +88,14 @@
       </div>
     </div>
 
+    <!-- Always rendered, so the tree does not move when the counts arrive -->
+    <div class="ocf-hierarchy-totals" data-test="hierarchy-role-totals">
+      <template v-if="Object.keys(globalRoleCounts).length">
+        {{ t('hierarchyEditor.totalByRole') }}
+        <RoleCountChips :counts="globalRoleCounts" />
+      </template>
+    </div>
+
     <!-- Tree Container -->
     <div class="tree-container">
       <!-- Loading State -->
@@ -154,6 +162,8 @@
                 <i class="fas fa-users"></i>
                 {{ getTotalMemberCount(entity as OrganizationGroup) }}
               </span>
+
+              <RoleCountChips :counts="getSubtreeRoleCounts(entity as OrganizationGroup)" />
             </template>
 
             <!-- For Organizations: Show group count -->
@@ -161,6 +171,7 @@
               <i class="fas fa-layer-group"></i>
               {{ (entity as Organization).group_count }}
             </span>
+            <RoleCountChips v-if="isOrganization(entity)" :counts="getOrganizationRoleCounts(entity)" />
           </template>
 
           <!-- Badge Slot: reserved width so toggling archived rows shifts nothing -->
@@ -201,6 +212,8 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useTreeExpand } from '../../composables/useTreeExpand'
 import { useToast } from '../../composables/useToast'
 import TreeNode from '../Common/TreeNode.vue'
+import RoleCountChips from '../Groups/RoleCountChips.vue'
+import { countRoles, sumRoleCounts, type RoleCounts } from '../../utils/roles'
 import type { Organization, OrganizationGroup } from '../../types'
 
 const router = useRouter()
@@ -232,7 +245,8 @@ const { t } = useTranslations({
       cannotMoveOrg: 'Organizations cannot be moved',
       errorLoadGroups: 'Failed to load groups',
       directMembersTooltip: 'Direct members of this group',
-      totalMembersTooltip: 'Total members including all subgroups'
+      totalMembersTooltip: 'Total members including all subgroups',
+      totalByRole: 'Total by role:'
     }
   },
   fr: {
@@ -257,7 +271,8 @@ const { t } = useTranslations({
       cannotMoveOrg: 'Les organisations ne peuvent pas être déplacées',
       errorLoadGroups: 'Échec du chargement des groupes',
       directMembersTooltip: 'Membres directs de ce groupe',
-      totalMembersTooltip: 'Total des membres incluant tous les sous-groupes'
+      totalMembersTooltip: 'Total des membres incluant tous les sous-groupes',
+      totalByRole: 'Total par rôle :'
     }
   }
 })
@@ -405,10 +420,24 @@ const getTotalMemberCount = (group: OrganizationGroup): number => {
   return total
 }
 
+// Members by role in a group and its visible subgroups: the same scope as
+// getTotalMemberCount. Someone in two groups counts in both, as there.
+const getSubtreeRoleCounts = (group: OrganizationGroup): RoleCounts =>
+  sumRoleCounts([
+    countRoles(group.members),
+    ...(getChildren(group) as OrganizationGroup[]).map(getSubtreeRoleCounts)
+  ])
+
+const getOrganizationRoleCounts = (org: Organization): RoleCounts =>
+  sumRoleCounts((getChildren(org) as OrganizationGroup[]).map(getSubtreeRoleCounts))
+
+const globalRoleCounts = computed(() => sumRoleCounts(organizations.value.map(getOrganizationRoleCounts)))
+
 const loadOrganizationGroups = async (organizationId: string) => {
   try {
     const response = await axios.get(`/organizations/${organizationId}/groups`, {
-      params: { include: 'parent_group' }
+      // Members carry each one's role, for the counts by role.
+      params: { includes: 'Members' }
     })
     organizationGroups.value.set(organizationId, response.data)
   } catch (err) {
@@ -793,6 +822,15 @@ watch(shouldFilterAsStandardUser, () => {
 .member-count.total:hover {
   background: var(--color-success);
   color: var(--color-surface);
+}
+
+.ocf-hierarchy-totals {
+  display: flex;
+  align-items: center;
+  min-height: 2rem;
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 
 /* Empty States */

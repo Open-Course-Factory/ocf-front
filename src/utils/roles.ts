@@ -6,3 +6,30 @@ const ROLE_PRIORITY: Record<MemberRole, number> = { member: 10, teacher: 30, man
 
 export const isRoleAtLeast = (role: string | null | undefined, min: MemberRole): boolean =>
   !!role && (ROLE_PRIORITY[role as MemberRole] ?? 0) >= ROLE_PRIORITY[min]
+
+export type RoleCounts = Partial<Record<MemberRole, number>>
+
+/** How many members hold each role. */
+export const countRoles = (members: ReadonlyArray<{ role: string }> = []): RoleCounts => {
+  const counts: RoleCounts = {}
+  for (const { role } of members) {
+    counts[role as MemberRole] = (counts[role as MemberRole] ?? 0) + 1
+  }
+  return counts
+}
+
+export const sumRoleCounts = (all: ReadonlyArray<RoleCounts>): RoleCounts => {
+  const sum: RoleCounts = {}
+  for (const counts of all) {
+    for (const [role, n] of Object.entries(counts) as [MemberRole, number][]) {
+      sum[role] = (sum[role] ?? 0) + n
+    }
+  }
+  return sum
+}
+
+/** The roles present in counts, highest rank first. */
+export const rolesByRank = (counts: RoleCounts): MemberRole[] =>
+  (Object.keys(counts) as MemberRole[])
+    .filter(role => counts[role])
+    .sort((a, b) => (ROLE_PRIORITY[b] ?? 0) - (ROLE_PRIORITY[a] ?? 0))
