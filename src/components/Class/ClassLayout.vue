@@ -28,6 +28,8 @@ import axios from 'axios'
 import { useClassGroupsStore } from '../../stores/classGroups'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTeacherGroupsStore } from '../../stores/teacherGroups'
+import { useUserMembershipsStore } from '../../stores/userMemberships'
+import { isRoleAtLeast } from '../../utils/roles'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
@@ -123,29 +125,39 @@ const subgroups = computed<ClassGroup[]>(() => group.value?.subGroups || group.v
 
 const isOwner = computed(() => !!group.value && group.value.owner_user_id === currentUser.userId)
 
+// An organization's managers manage every class of it without a seat on the
+// roster, like ocf-core's CanUserManageGroup and its GroupRole gate.
+const membershipsStore = useUserMembershipsStore()
+const isOrgManager = computed(() =>
+  !!group.value?.organization_id && membershipsStore.canManageOrg(group.value.organization_id)
+)
+
 const groupMembers = useGroupMembers({
   groupId,
   currentUserId: computed(() => currentUser.userId),
-  isOwner: computed(() => isPlatformAdmin.value || isOwner.value)
+  isOwner: computed(() => isPlatformAdmin.value || isOwner.value || isOrgManager.value)
 })
 
 const isManager = computed(() => {
   const membership = groupMembers.members.value.find(member => member.user_id === currentUser.userId)
-  return membership?.role === 'manager' || membership?.role === 'owner'
+  return isRoleAtLeast(membership?.role, 'manager')
 })
 
-const canManageClass = computed(() => isPlatformAdmin.value || isOwner.value || isManager.value)
-const canDeleteClass = computed(() => isPlatformAdmin.value || isOwner.value)
+const canManageClass = computed(() => isPlatformAdmin.value || isOwner.value || isOrgManager.value || isManager.value)
+// Deleting is the creator's and the organization managers' call; a co-trainer
+// may archive the class but not delete it (decided 2026-10-08).
+const canDeleteClass = computed(() => isPlatformAdmin.value || isOwner.value || isOrgManager.value)
 
 /**
  * Whether the caller's rights are settled.
  *
- * A platform admin and the class owner are proven by the class payload itself;
+ * A platform admin, the class owner and the organization's managers are proven
+ * by the class payload itself;
  * a manager can only be recognised by finding themselves in the roster, which
  * arrives later. Waiting for the roster in the first two cases would reserve an
  * owner's own pages for a round trip they do not need.
  */
-const isRoleResolved = computed(() => isPlatformAdmin.value || isOwner.value || membersLoaded.value)
+const isRoleResolved = computed(() => isPlatformAdmin.value || isOwner.value || isOrgManager.value || membersLoaded.value)
 
 /**
  * The banner as the caller sees it. While the role is unsettled every link is

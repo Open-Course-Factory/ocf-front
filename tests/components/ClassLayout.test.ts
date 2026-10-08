@@ -56,6 +56,13 @@ vi.mock('../../src/stores/teacherGroups', () => ({
   })
 }))
 
+// Organizations the caller manages (manager or owner there).
+const managedOrgs = new Set<string>()
+
+vi.mock('../../src/stores/userMemberships', () => ({
+  useUserMembershipsStore: () => ({ canManageOrg: (orgId: string) => managedOrgs.has(orgId) })
+}))
+
 vi.mock('../../src/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({ isEnabled: () => true })
 }))
@@ -442,6 +449,22 @@ describe('the class banner — a page the caller may not open', () => {
     await mountAt(router, '/classes/g-1/live')
 
     expect(router.currentRoute.value.path).toBe('/classes/g-1/members')
+  })
+
+  // An organization's managers manage every class of it without a seat on the
+  // roster (ocf-core CanUserManageGroup): the empty roster must not bounce them.
+  it('leaves a manager of the class’s organization on a manager page, off the roster', async () => {
+    managedOrgs.add('org-1')
+    getOne.mockResolvedValue(classPayload({ organization_id: 'org-1' }))
+    axiosGet.mockResolvedValue({ data: [] })
+
+    const router = createTestRouter()
+    const wrapper = await mountAt(router, '/classes/g-1/analytics')
+    managedOrgs.clear()
+
+    expect(router.currentRoute.value.path).toBe('/classes/g-1/analytics')
+    expect(pageLinkLabels(wrapper)).toEqual(ALL_PAGES)
+    expect(reservedLinkLabels(wrapper)).toEqual([])
   })
 
   it('leaves a manager where they asked to be', async () => {
