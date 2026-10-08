@@ -97,17 +97,38 @@
         <h2><i class="fas fa-chalkboard-teacher"></i> {{ t('help.account.rolesAndPermissions.groupRolesTitle') }}</h2>
         <p>{{ t('help.account.rolesAndPermissions.groupRolesDescription') }}</p>
 
-        <div class="ocf-role-cards">
-          <div v-for="role in groupRoles" :key="role.key" class="ocf-role-card">
-            <div class="ocf-role-card-header" :class="role.key">
-              <i :class="role.icon"></i>
-              <h3>{{ t(`help.account.rolesAndPermissions.group${role.label}`) }}</h3>
-            </div>
-            <p>{{ t(`help.account.rolesAndPermissions.group${role.label}Desc`) }}</p>
-            <ul>
-              <li v-for="n in 3" :key="n">{{ t(`help.account.rolesAndPermissions.group${role.label}Perm${n}`) }}</li>
-            </ul>
-          </div>
+        <div class="ocf-permission-matrix">
+          <table>
+            <thead>
+              <tr>
+                <th>{{ t('help.account.rolesAndPermissions.permission') }}</th>
+                <th v-for="role in groupRoles" :key="role.key" class="ocf-role-col">
+                  <i :class="role.icon"></i>
+                  {{ t(`help.account.rolesAndPermissions.group${role.label}`) }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in groupMatrix" :key="row.key">
+                <td class="ocf-permission-name">{{ t(`help.account.rolesAndPermissions.${row.key}`) }}</td>
+                <td
+                  v-for="(mark, index) in row.marks"
+                  :key="index"
+                  :class="`ocf-permission-${mark}`"
+                  :title="mark === 'partial' ? t('help.account.rolesAndPermissions.groupCannotPromoteToOwner') : undefined"
+                >
+                  <i :class="markIcons[mark]"></i>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>{{ t('help.account.rolesAndPermissions.groupCannotPromoteToOwner') }}</p>
+
+        <div class="ocf-callout">
+          <h3><i class="fas fa-info-circle"></i> {{ t('help.account.rolesAndPermissions.noTeacherInClassTitle') }}</h3>
+          <p>{{ t('help.account.rolesAndPermissions.noTeacherInClassDesc') }}</p>
+          <p>{{ t('help.account.rolesAndPermissions.orgManagersManageAllClasses') }}</p>
         </div>
       </section>
 
@@ -178,6 +199,8 @@ const orgMatrix: { key: string; marks: Mark[] }[] = [
   { key: 'viewOrganization', marks: [y, y, y, y] },
   { key: 'useOrgPlan', marks: [y, y, y, y] },
   { key: 'createClasses', marks: [y, y, y, n] },
+  { key: 'authorScenarios', marks: [y, y, y, n] },
+  { key: 'manageAllClasses', marks: [y, y, n, n] },
   { key: 'inviteMembers', marks: [y, y, n, n] },
   { key: 'removeMembers', marks: [y, y, n, n] },
   { key: 'changeRoles', marks: [y, p, n, n] },
@@ -201,14 +224,26 @@ const groupRoles = [
   { key: 'member', label: 'Member', icon: 'fas fa-user' }
 ]
 
+// Column order follows groupRoles: owner, manager, member. Owner and manager
+// share one authority in ocf-core (GroupService.CanUserManageGroup); only the
+// role cap separates them.
+const groupMatrix: { key: string; marks: Mark[] }[] = [
+  { key: 'groupViewClass', marks: [y, y, y] },
+  { key: 'groupLaunchScenarios', marks: [y, y, y] },
+  { key: 'groupAssignScenarios', marks: [y, y, n] },
+  { key: 'groupFollowLearners', marks: [y, y, n] },
+  { key: 'groupManageMembers', marks: [y, y, n] },
+  { key: 'groupChangeRoles', marks: [y, p, n] },
+  { key: 'groupEditClass', marks: [y, y, n] }
+]
+
 onMounted(async () => {
   await loadHelpTranslations()
 })
 </script>
 
 <style scoped>
-.ocf-role-levels,
-.ocf-role-cards {
+.ocf-role-levels {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1.5rem;
@@ -328,50 +363,22 @@ onMounted(async () => {
   gap: 0.5rem;
 }
 
-.ocf-role-card {
-  background: var(--color-bg-primary);
-  border: 2px solid var(--color-border);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.ocf-role-card-header {
+.ocf-callout {
+  margin-top: 1.5rem;
   padding: 1rem 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  color: var(--color-white);
-  background: var(--color-secondary);
+  background: var(--color-bg-secondary);
+  border-left: 4px solid var(--color-primary);
+  border-radius: 8px;
 }
 
-.ocf-role-card-header.owner {
-  background: var(--color-warning);
+.ocf-callout h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
 }
 
-.ocf-role-card-header.manager {
-  background: var(--color-primary);
-}
-
-.ocf-role-card-header h3 {
-  margin: 0;
-  font-size: 1.125rem;
-}
-
-.ocf-role-card p {
-  padding: 1rem 1.5rem 0;
-  margin: 0;
+.ocf-callout p {
+  margin: 0.5rem 0 0;
   color: var(--color-text-secondary);
-}
-
-.ocf-role-card ul {
-  padding: 0.5rem 1.5rem 1.5rem 3rem;
-  margin: 0;
-  color: var(--color-text-secondary);
-}
-
-.ocf-role-card li {
-  font-size: 0.9rem;
-  margin-bottom: 0.4rem;
 }
 
 @media (max-width: 768px) {
