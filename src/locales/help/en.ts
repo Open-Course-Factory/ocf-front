@@ -1330,7 +1330,8 @@ export const helpEn = {
           title: "The editor at a glance",
           description: "The page has three columns. Left, the outline: a card summing up the scenario (click it to open its settings), then the steps as a numbered list. Centre, the step you selected, edited in place: its title, its tabs, and beside the Markdown, what the learner will read. Right, the checks, the scenario's settings in plain words, and the classes it is assigned to; on a narrow screen this column folds into icons.",
           header: "The top bar holds the scenario selector (your scenarios first, then the platform's), Create a scenario, the organisation, whether the scenario is ready to play, whether the open step is saved, Import (a KillerCoda archive, a JSON file, or Create with AI), Export, Improve with AI, a ⋯ menu with copy, archive and delete, and Play as learner.",
-          readOnly: "A scenario you may not edit (a platform scenario, or one from another organisation) opens read-only: its steps show as the learner reads them, without their scripts or answers. Duplicate into my organization makes an editable copy in an organisation or class of yours, and opens it."
+          readOnly: "A scenario you may not edit (a platform scenario, or one from another organisation) opens read-only: its steps show as the learner reads them, without their scripts or answers. Duplicate into my organization makes an editable copy in an organisation or class of yours, and opens it.",
+          shot: "The editor on one of the organisation's scenarios: the outline on the left, the open step in the centre with its Markdown and what the learner reads, the controls folded on the right."
         },
         scenario: {
           title: "Create a scenario",
@@ -1342,19 +1343,31 @@ export const helpEn = {
           languages: "Languages — the language the scenario is written in, and the other languages you offer it in. Ticking a second language turns on the translation editor: a language selector appears in the top bar and in each dialog, with a coverage indicator, and you translate titles and texts language by language. Scripts are shared by all languages.",
           vocabulary: "Vocabulary — available once the scenario is saved. It names the objects a script refers to (a file, a directory, a service) so that one script works in every language: translate the names here, not the scripts."
         },
+        ai: {
+          title: "Write a scenario with your AI",
+          description: "OCF calls no AI itself: you work with the assistant of your choice (ChatGPT, Claude, Le Chat…), by copy and paste. Import › Create with AI opens a window in three steps:",
+          describe: "Describe — what the learner should practise, the content language, the level, a rough number of steps, the step types you want and where to create the scenario. The language of the instructions given to your AI is chosen separately.",
+          prompt: "Copy the prompt — OCF writes a complete prompt: your request, the expected JSON format, the rules for scripts, and the distributions, sizes and features actually available on the platform. Copy it into your assistant.",
+          answer: "Paste the answer — paste it as is, even wrapped in prose. OCF counts the steps it recognises, then imports the scenario the same way as a JSON file. If the import is refused, every problem is listed, with a ready-made fix-up prompt to copy back to your assistant.",
+          improve: "Improve with AI, in the top bar, does the same on the open scenario: describe the change you want, the prompt carries the scenario's JSON export, and the answer updates it in place, after showing you the steps added and removed.",
+          shotDescribe: "Create with AI, step 1: the request, the language, the level, the step types and the organisation to create the scenario in.",
+          shotPrompt: "Step 2: the prompt OCF writes, to copy into the assistant of your choice."
+        },
         steps: {
           title: "Add steps",
           description: "Click Add a step under the list and pick a type, or hover between two steps and click the + to insert one there. The new step opens in the centre; it is written when you save it. To reuse steps from another scenario — yours, your organisation's or the platform's — open the Step library tab on the right: preview a step, tick one or several, and insert them after the selected step or drag them into the list; the copy keeps their scripts. Four types exist; the type decides which tabs the step shows.",
           terminal: "Terminal — the learner works in the machine and clicks Verify. Tabs: Instructions, Hints, Verification, Setup, Demonstration, Effects.",
           info: "Info — text to read, nothing to do. Tabs: Instructions, Effects.",
           flag: "Flag — the learner submits an answer. Tabs: Instructions, Hints, Setup, Effects, plus the flag path and level.",
-          quiz: "Quiz — questions. Tabs: Instructions, Hints, Questions, Effects."
+          quiz: "Quiz — questions. Tabs: Instructions, Hints, Questions, Effects.",
+          libraryShot: "The step library: two GameShell steps ticked, ready to insert after step 1, and the preview of one of them."
         },
         stepDialog: {
           title: "Fill in a step",
           content: "Instructions — the instructions, in Markdown, with what the learner will see rendered beside them; the title is edited at the top of the step. A command tagged with the KillerCoda exec marker — the command in backticks, immediately followed by the word exec in double braces — becomes click-to-paste in the player.",
           hints: "Hints — the progressive hints, revealed level by level. Separate levels with ### Hint 1, ### Hint 2 headings (or ### Indice 1 in French); a hint text with no heading is a single level.",
-          verify: "Verify — a shell script run in the container when the learner clicks Verify. Exit code 0 validates the step; anything else keeps the learner on it. Print what you check: the output helps them.",
+          verify: "Verify — a shell script run in the container when the learner clicks Verify. Exit code 0 validates the step; anything else keeps the learner on it. Print what you check: the output helps them. Insert a template adds a ready-made check (file present, package installed, service running, port listening…) to adapt. Test this check runs the script on your preview of the scenario, without leaving the editor or moving the preview forward.",
+          verifyShot: "The Verification tab of a terminal step, with the Insert a template menu open.",
           background: "Setup — a script run in the container when the learner reaches the step, in the background: start a service, plant a file, break something on purpose. It runs again if the learner's machine is rebuilt: see Setup scripts that survive a rebuild, below.",
           foreground: "Demonstration — commands typed into the learner's live shell when they reach the step, as if they had typed them. Keep it short; they see it happen.",
           flag: "Flag steps — tick Has flag and give a Flag path: when the learner reaches the step, a FLAG token unique to their session, is written to that file in the container, and the step is validated when they submit it. Flag level is a free number kept with the step.",
@@ -1392,7 +1405,7 @@ export const helpEn = {
         },
         importExport: {
           title: "Import and export",
-          description: "Importing happens from the Scenarios tab of an organisation or of a class, not from the editor. Two formats:",
+          description: "The editor's Import menu, like the Scenarios tab of an organisation or a class, accepts two formats:",
           killercoda: "Import KillerCoda — a .zip or .tar.gz archive (10 MB max) laid out like a KillerCoda scenario: an index.json, one directory per step with its text and scripts, assets. Hints written with ### Hint n headings become hint levels; an optional extensions.json per step declares the step type and quiz questions.",
           json: "Import JSON — a .json file (5 MB max) exported from OCF with Export JSON. It must contain a title and steps. Importing a scenario that already exists in the organisation updates it.",
           export: "Export as JSON and Export as KillerCoda archive, in the editor's ⋮ menu and on the organisation's Scenarios tab, download the scenario in either format: to back it up, move it to another organisation, or edit it in a text editor."

@@ -51,6 +51,7 @@
         <p>{{ t('help.scenarios.creation.layout.description') }}</p>
         <p>{{ t('help.scenarios.creation.layout.header') }}</p>
         <p>{{ t('help.scenarios.creation.layout.readOnly') }}</p>
+        <HelpScreenshot name="scenario-editor" :caption="t('help.scenarios.creation.layout.shot')" />
       </section>
 
       <section class="help-section">
@@ -64,12 +65,24 @@
       </section>
 
       <section class="help-section">
+        <h2><i class="fas fa-wand-magic-sparkles"></i> {{ t('help.scenarios.creation.ai.title') }}</h2>
+        <p>{{ t('help.scenarios.creation.ai.description') }}</p>
+        <ol>
+          <li v-for="key in ['describe', 'prompt', 'answer']" :key="key">{{ t(`help.scenarios.creation.ai.${key}`) }}</li>
+        </ol>
+        <p>{{ t('help.scenarios.creation.ai.improve') }}</p>
+        <HelpScreenshot name="scenario-ai-create" :caption="t('help.scenarios.creation.ai.shotDescribe')" />
+        <HelpScreenshot name="scenario-ai-prompt" :caption="t('help.scenarios.creation.ai.shotPrompt')" />
+      </section>
+
+      <section class="help-section">
         <h2><i class="fas fa-shoe-prints"></i> {{ t('help.scenarios.creation.steps.title') }}</h2>
         <p>{{ t('help.scenarios.creation.steps.description') }}</p>
         <div v-for="(icon, key) in stepTypeIcons" :key="key" class="step-card">
           <div class="step-number"><i :class="icon"></i></div>
           <div class="step-content"><p>{{ t(`help.scenarios.creation.steps.${key}`) }}</p></div>
         </div>
+        <HelpScreenshot name="scenario-step-library" :caption="t('help.scenarios.creation.steps.libraryShot')" />
       </section>
 
       <section class="help-section">
@@ -79,6 +92,7 @@
             {{ t(`help.scenarios.creation.stepDialog.${key}`) }}
           </li>
         </ul>
+        <HelpScreenshot name="scenario-verify-checks" :caption="t('help.scenarios.creation.stepDialog.verifyShot')" />
       </section>
 
       <section class="help-section">

@@ -1330,7 +1330,8 @@ export const helpFr = {
           title: "L'éditeur en un coup d'œil",
           description: "La page a trois colonnes. À gauche, le plan : une carte qui résume le scénario (cliquez-la pour ouvrir ses réglages), puis les étapes en liste numérotée. Au centre, l'étape choisie, modifiée sur place : son titre, ses onglets, et à côté du Markdown, ce que lira l'apprenant. À droite, les contrôles, les réglages du scénario en clair et les classes auxquelles il est assigné ; sur un écran étroit, cette colonne se replie en icônes.",
           header: "La barre du haut contient le sélecteur de scénario (vos scénarios d'abord, puis ceux de la plateforme), Créer un scénario, l'organisation, si le scénario est prêt à jouer, si l'étape ouverte est enregistrée, Importer (une archive KillerCoda, un fichier JSON, ou Créer avec l'IA), Exporter, Améliorer avec l'IA, un menu ⋯ avec copie, archivage et suppression, et Jouer comme apprenant.",
-          readOnly: "Un scénario que vous ne pouvez pas modifier (un scénario de la plateforme, ou celui d'une autre organisation) s'ouvre en lecture seule : ses étapes s'affichent telles que l'apprenant les lit, sans leurs scripts ni leurs réponses. Dupliquer dans mon organisation en crée une copie modifiable dans une de vos organisations ou classes, et l'ouvre."
+          readOnly: "Un scénario que vous ne pouvez pas modifier (un scénario de la plateforme, ou celui d'une autre organisation) s'ouvre en lecture seule : ses étapes s'affichent telles que l'apprenant les lit, sans leurs scripts ni leurs réponses. Dupliquer dans mon organisation en crée une copie modifiable dans une de vos organisations ou classes, et l'ouvre.",
+          shot: "L'éditeur sur un scénario de l'organisation : le plan à gauche, l'étape ouverte au centre avec son Markdown et ce que lit l'apprenant, les contrôles repliés à droite."
         },
         scenario: {
           title: "Créer un scénario",
@@ -1342,19 +1343,31 @@ export const helpFr = {
           languages: "Langues — la langue dans laquelle le scénario est écrit, et les autres langues dans lesquelles vous le proposez. Cocher une seconde langue active l'éditeur de traduction : un sélecteur de langue apparaît dans la barre du haut et dans chaque fenêtre, avec un indicateur de couverture, et vous traduisez titres et textes langue par langue. Les scripts sont communs à toutes les langues.",
           vocabulary: "Vocabulaire — disponible une fois le scénario enregistré. Il nomme les objets auxquels un script fait référence (un fichier, un répertoire, un service) pour qu'un seul script fonctionne dans toutes les langues : traduisez les noms ici, pas les scripts."
         },
+        ai: {
+          title: "Écrire un scénario avec votre IA",
+          description: "OCF n'appelle aucune IA : vous travaillez avec l'assistant de votre choix (ChatGPT, Claude, Le Chat…), par copier-coller. Importer › Créer avec l'IA ouvre une fenêtre en trois temps :",
+          describe: "Décrire — ce que l'apprenant doit pratiquer, la langue du contenu, le niveau, un nombre d'étapes approximatif, les types d'étapes voulus et l'endroit où créer le scénario. La langue des instructions données à votre IA se choisit à part.",
+          prompt: "Copier le prompt — OCF écrit un prompt complet : votre demande, le format JSON attendu, les règles des scripts, et les distributions, tailles et fonctionnalités réellement disponibles sur la plateforme. Copiez-le dans votre assistant.",
+          answer: "Coller la réponse — collez-la telle quelle, même entourée de texte. OCF compte les étapes reconnues, puis importe le scénario par la même voie qu'un fichier JSON. Si l'import est refusé, chaque problème est listé, avec un prompt de correction prêt à copier pour votre assistant.",
+          improve: "Améliorer avec l'IA, dans la barre du haut, fait de même sur le scénario ouvert : décrivez le changement voulu, le prompt emporte l'export JSON du scénario, et la réponse le met à jour sur place, après vous avoir montré les étapes ajoutées et retirées.",
+          shotDescribe: "Créer avec l'IA, étape 1 : la demande, la langue, le niveau, les types d'étapes et l'organisation où créer le scénario.",
+          shotPrompt: "Étape 2 : le prompt écrit par OCF, à copier dans l'assistant de votre choix."
+        },
         steps: {
           title: "Ajouter des étapes",
           description: "Cliquez sur Ajouter une étape sous la liste et choisissez un type, ou survolez l'espace entre deux étapes et cliquez sur le + pour en insérer une. La nouvelle étape s'ouvre au centre ; elle est écrite quand vous l'enregistrez. Pour reprendre des étapes d'un autre scénario — le vôtre, celui de votre organisation ou de la plateforme —, ouvrez l'onglet Bibliothèque d'étapes à droite : prévisualisez une étape, cochez-en une ou plusieurs, puis insérez-les après l'étape sélectionnée ou glissez-les dans la liste ; la copie garde leurs scripts. Il existe quatre types ; le type décide des onglets que l'étape affiche.",
           terminal: "Terminal — l'apprenant travaille dans la machine et clique sur Vérifier. Onglets : Consigne, Indices, Vérification, Préparation, Démonstration, Effets.",
           info: "Info — du texte à lire, rien à faire. Onglets : Consigne, Effets.",
           flag: "Flag — l'apprenant soumet une réponse. Onglets : Consigne, Indices, Préparation, Effets, plus le chemin et le niveau du flag.",
-          quiz: "Quiz — des questions. Onglets : Consigne, Indices, Questions, Effets."
+          quiz: "Quiz — des questions. Onglets : Consigne, Indices, Questions, Effets.",
+          libraryShot: "La bibliothèque d'étapes : deux étapes de GameShell cochées, prêtes à être insérées après l'étape 1, et l'aperçu de l'une d'elles."
         },
         stepDialog: {
           title: "Remplir une étape",
           content: "Consigne — les consignes, en Markdown, avec à côté leur rendu tel que l'apprenant le verra ; le titre se modifie en haut de l'étape. Une commande marquée avec le marqueur exec de KillerCoda — la commande entre accents graves, immédiatement suivie du mot exec entre doubles accolades — devient cliquable dans le lecteur.",
           hints: "Indices — les indices progressifs, révélés niveau par niveau. Séparez les niveaux par des titres ### Indice 1, ### Indice 2 (ou ### Hint 1 en anglais) ; un texte d'indice sans titre est un niveau unique.",
-          verify: "Vérification — un script shell exécuté dans le conteneur quand l'apprenant clique sur Vérifier. Le code de sortie 0 valide l'étape ; tout autre code le laisse dessus. Affichez ce que vous vérifiez : la sortie l'aide.",
+          verify: "Vérification — un script shell exécuté dans le conteneur quand l'apprenant clique sur Vérifier. Le code de sortie 0 valide l'étape ; tout autre code le laisse dessus. Affichez ce que vous vérifiez : la sortie l'aide. Insérer un modèle ajoute une vérification toute faite (fichier présent, paquet installé, service démarré, port en écoute…), à adapter. Tester cette vérification exécute le script sur votre aperçu du scénario, sans quitter l'éditeur ni faire avancer l'aperçu.",
+          verifyShot: "L'onglet Vérification d'une étape terminal, avec le menu Insérer un modèle ouvert.",
           background: "Préparation — un script exécuté dans le conteneur quand l'apprenant arrive sur l'étape, en arrière-plan : démarrer un service, déposer un fichier, casser quelque chose exprès. Il est relancé si la machine de l'apprenant est reconstruite : voir Des scripts de préparation qui résistent à une reconstruction, plus bas.",
           foreground: "Démonstration — des commandes tapées dans le shell de l'apprenant quand il arrive sur l'étape, comme s'il les avait tapées. Restez court : il les voit défiler.",
           flag: "Étapes Flag — cochez A un drapeau et donnez un Chemin du drapeau : quand l'apprenant arrive sur l'étape, un jeton FLAG unique à sa session est écrit dans ce fichier du conteneur, et l'étape est validée quand il le soumet. Le niveau du drapeau est un nombre libre conservé avec l'étape.",
@@ -1392,7 +1405,7 @@ export const helpFr = {
         },
         importExport: {
           title: "Importer et exporter",
-          description: "L'import se fait depuis l'onglet Scénarios d'une organisation ou d'une classe, pas depuis l'éditeur. Deux formats :",
+          description: "Le menu Importer de l'éditeur, comme l'onglet Scénarios d'une organisation ou d'une classe, accepte deux formats :",
           killercoda: "Importer KillerCoda — une archive .zip ou .tar.gz (10 Mo max) organisée comme un scénario KillerCoda : un index.json, un répertoire par étape avec son texte et ses scripts, des ressources. Les indices écrits avec des titres ### Indice n deviennent des niveaux d'indice ; un extensions.json facultatif par étape déclare le type d'étape et les questions de quiz.",
           json: "Importer JSON — un fichier .json (5 Mo max) exporté d'OCF avec Exporter en JSON. Il doit contenir un titre et des étapes. Importer un scénario qui existe déjà dans l'organisation le met à jour.",
           export: "Exporter en JSON et Exporter Archive KillerCoda, dans le menu ⋮ de l'éditeur et sur l'onglet Scénarios de l'organisation, téléchargent le scénario dans l'un ou l'autre format : pour le sauvegarder, le déplacer vers une autre organisation, ou le modifier dans un éditeur de texte."
