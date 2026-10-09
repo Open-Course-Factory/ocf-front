@@ -304,15 +304,6 @@ export const usePermissionsStore = defineStore('permissions', () => {
     return membership?.role === 'owner'
   }
 
-  const isOrganizationManager = (organizationId: string): boolean => {
-    if (isSystemAdmin.value) return true
-    if (!currentUser.value) return false
-    const membership = currentUser.value.organization_memberships?.find(
-      m => m.organization_id === organizationId
-    )
-    return membership?.role === 'manager'
-  }
-
   const canManageOrganization = (organizationId: string): boolean => {
     if (isSystemAdmin.value) return true
     if (!currentUser.value) return false
@@ -332,33 +323,6 @@ export const usePermissionsStore = defineStore('permissions', () => {
   // ==========================================
   // GROUP ROLE CHECKS
   // ==========================================
-
-  const isGroupOwner = (groupId: string): boolean => {
-    if (isSystemAdmin.value) return true
-    if (!currentUser.value) return false
-    const membership = currentUser.value.group_memberships?.find(
-      m => m.group_id === groupId
-    )
-    return membership?.role === 'owner'
-  }
-
-  const isGroupManager = (groupId: string): boolean => {
-    if (isSystemAdmin.value) return true
-    if (!currentUser.value) return false
-    const membership = currentUser.value.group_memberships?.find(
-      m => m.group_id === groupId
-    )
-    return membership?.role === 'manager'
-  }
-
-  const canManageGroup = (groupId: string): boolean => {
-    if (isSystemAdmin.value) return true
-    if (!currentUser.value) return false
-    const membership = currentUser.value.group_memberships?.find(
-      m => m.group_id === groupId
-    )
-    return isRoleAtLeast(membership?.role, 'manager')
-  }
 
   const isGroupMember = (groupId: string): boolean => {
     if (!currentUser.value) return false
@@ -448,14 +412,10 @@ export const usePermissionsStore = defineStore('permissions', () => {
 
     // Organization role checks
     isOrganizationOwner,
-    isOrganizationManager,
     canManageOrganization,
     isOrganizationMember,
 
     // Group role checks
-    isGroupOwner,
-    isGroupManager,
-    canManageGroup,
     isGroupMember,
 
     // Feature checks
