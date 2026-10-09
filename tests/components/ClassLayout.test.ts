@@ -140,7 +140,7 @@ function createTestI18n() {
   })
 }
 
-function createTestRouter() {
+function createTestRouter(settingsPage = pageStub('settings')) {
   return createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -154,7 +154,7 @@ function createTestRouter() {
           { path: 'members', name: 'ClassMembers', component: pageStub('members') },
           { path: 'scenarios', name: 'ClassScenarios', component: pageStub('scenarios') },
           { path: 'analytics', name: 'ClassAnalytics', component: pageStub('analytics') },
-          { path: 'settings', name: 'ClassSettings', component: pageStub('settings') }
+          { path: 'settings', name: 'ClassSettings', component: settingsPage }
         ]
       }
     ]
@@ -572,5 +572,46 @@ describe('the class banner — moving to another class', () => {
 
     expect(pageLinkLabels(wrapper)).toEqual(['Learners'])
     expect(router.currentRoute.value.path).toBe('/classes/g-2/members')
+  })
+})
+
+// Decided 2026-10-08: the class creator and the organization's managers may
+// delete a class; a co-trainer may rename and archive it, not delete it.
+describe('the class banner — who may delete the class', () => {
+  const rightsStub = defineComponent({
+    setup() {
+      const { canManageClass, canDeleteClass } = useClassContext()
+      return { canManageClass, canDeleteClass }
+    },
+    template: '<div class="rights-stub">{{ canManageClass }}/{{ canDeleteClass }}</div>'
+  })
+
+  async function rightsOf(payload: Record<string, unknown>, roster: unknown[] = []) {
+    getOne.mockResolvedValue(classPayload(payload))
+    axiosGet.mockResolvedValue({ data: roster })
+    const wrapper = await mountAt(createTestRouter(rightsStub), '/classes/g-1/settings')
+    return wrapper.find('.rights-stub').text()
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    liveSessionCountOf.mockReturnValue(undefined)
+    learnerCountOf.mockReturnValue(undefined)
+  })
+
+  it('lets the class creator delete it', async () => {
+    expect(await rightsOf({ owner_user_id: 'u-caller' })).toBe('true/true')
+  })
+
+  it('lets a manager of the class’s organization delete it', async () => {
+    managedOrgs.add('org-1')
+    const rights = await rightsOf({ organization_id: 'org-1' })
+    managedOrgs.clear()
+
+    expect(rights).toBe('true/true')
+  })
+
+  it('lets a co-trainer manage the class but not delete it', async () => {
+    expect(await rightsOf({}, [{ id: 'm-1', user_id: 'u-caller', role: 'manager' }])).toBe('true/false')
   })
 })
