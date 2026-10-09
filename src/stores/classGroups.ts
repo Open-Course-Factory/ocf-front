@@ -26,6 +26,7 @@ import { useBaseStore } from "./baseStore"
 import { useOrganizationsStore, isPersonalOrganizationRecord } from "./organizations"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
+import { isRoleAtLeast } from '../utils/roles'
 import { CLASS_PAGE_NAMES } from '../router/classPages'
 import { useTeacherGroupsStore } from './teacherGroups'
 import { usePermissionsStore } from './permissions'
@@ -67,7 +68,7 @@ export async function loadOrganizationsThatCanHoldClasses(): Promise<any[]> {
             const role = org.current_user_role ?? org.user_role ?? org.role
             if (!role) return true
 
-            return role === 'owner' || role === 'manager' || role === 'teacher'
+            return isRoleAtLeast(role, 'teacher')
         })
     } catch (error) {
         console.error('Failed to load organizations:', error)
