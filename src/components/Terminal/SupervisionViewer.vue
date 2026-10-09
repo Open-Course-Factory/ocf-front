@@ -219,7 +219,7 @@ async function initTerminal() {
   terminal = new Terminal({
     cursorBlink: false,
     fontFamily: '"Cascadia Code", "Fira Code", "SF Mono", Monaco, "Roboto Mono", monospace',
-    fontSize: props.compact ? 11 : 14,
+    fontSize: baseFontSize(),
     rows: props.compact ? 12 : 24,
     cols: 80,
     theme: getTerminalTheme(),
@@ -247,13 +247,50 @@ async function initTerminal() {
 function setupResizeObserver() {
   if (terminalRef.value && window.ResizeObserver) {
     resizeObserver = new ResizeObserver(() => {
-      if (fitAddon && terminal) {
-        try { fitAddon.fit() } catch { /* container not measured yet */ }
+      if (!fitAddon || !terminal) return
+      if (controlState.value.cols) {
+        scaleToTile()
+        return
       }
+      try { fitAddon.fit() } catch { /* container not measured yet */ }
     })
     resizeObserver.observe(terminalRef.value)
   }
 }
+
+// The learner's PTY output only renders correctly on the learner's own grid:
+// vim, top and friends address the cursor by absolute row/column. So once
+// tt-backend reports the PTY size, the grid follows it and the font shrinks until
+// the grid fits the tile, instead of the grid being fitted to the tile. An older
+// tt-backend reports no size; the grid then keeps fitting the tile.
+function applyLearnerSize() {
+  const { cols, rows } = controlState.value
+  if (!terminal || !cols || !rows) return
+  if (terminal.cols !== cols || terminal.rows !== rows) terminal.resize(cols, rows)
+  scaleToTile()
+}
+
+// Font size, not a CSS transform: xterm then measures its own cells, so the
+// scroll area and mouse mapping stay right. Never grows past the base size.
+const MIN_FONT_SIZE = 4
+
+function scaleToTile() {
+  const el = terminal?.element as HTMLElement | undefined
+  const screen = el?.querySelector('.xterm-screen') as HTMLElement | null
+  if (!el || !screen || !screen.offsetWidth || !screen.offsetHeight) return
+  const style = getComputedStyle(el)
+  const width = el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+  const height = el.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
+  const ratio = Math.min(width / screen.offsetWidth, height / screen.offsetHeight)
+  const size = Math.max(MIN_FONT_SIZE, Math.min(baseFontSize(), Math.floor(terminal.options.fontSize * ratio * 2) / 2))
+  if (size !== terminal.options.fontSize) terminal.options.fontSize = size
+}
+
+function baseFontSize() {
+  return props.compact ? 11 : 14
+}
+
+watch(() => [controlState.value.cols, controlState.value.rows], applyLearnerSize)
 
 function connect() {
   const token = userStore.secretToken

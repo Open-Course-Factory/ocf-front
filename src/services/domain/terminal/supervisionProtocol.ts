@@ -38,6 +38,10 @@ export interface SupervisionState {
   controlled: boolean
   observers: number
   ended: boolean
+  // The learner PTY's size, once tt-backend has reported it. A watcher must draw
+  // on exactly this grid, or full-screen programs (vim, top) garble.
+  cols?: number
+  rows?: number
 }
 
 export function initialSupervisionState(): SupervisionState {
@@ -80,8 +84,16 @@ export function routeSupervisionFrame(
   }
 
   const state: SupervisionState = { ...current }
+  if (parsed.cols > 0 && parsed.rows > 0) {
+    state.cols = parsed.cols
+    state.rows = parsed.rows
+  }
 
   switch (parsed.event) {
+    case 'self':
+    case 'resize':
+      // Size only: the self frame must never count the watcher among the observers.
+      break
     case 'joined':
       state.watched = true
       state.observers = typeof parsed.observers === 'number'

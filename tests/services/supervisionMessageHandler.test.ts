@@ -172,6 +172,46 @@ describe('createSupervisionMessageHandler — BINARY control frames drive the in
   })
 })
 
+// The watcher must draw the learner's PTY on a grid of the same size, or vim/top
+// land absolute cursor moves on the wrong rows and garble the wall tile.
+describe('createSupervisionMessageHandler — the learner PTY size', () => {
+  it('takes the size from the self frame without touching the indicator', () => {
+    const { getState, setState } = stateHarness()
+    const onObserversChange = vi.fn()
+    const handle = createSupervisionMessageHandler({
+      getState, setState, onTerminal: vi.fn(), onObserversChange,
+    })
+
+    handle(binaryEvent({ event: 'self', observers: 1, cols: 132, rows: 40 }) as unknown as MessageEvent)
+
+    expect(setState).toHaveBeenCalledWith({ ...initialSupervisionState(), cols: 132, rows: 40 })
+    expect(onObserversChange).not.toHaveBeenCalled()
+  })
+
+  it('follows a resize frame', () => {
+    const { getState, setState, current } = stateHarness(
+      { watched: true, controlled: false, observers: 1, ended: false, cols: 80, rows: 24 },
+    )
+    const handle = createSupervisionMessageHandler({ getState, setState, onTerminal: vi.fn() })
+
+    handle(binaryEvent({ event: 'resize', observers: 1, cols: 120, rows: 30 }) as unknown as MessageEvent)
+
+    expect(current()).toEqual({ watched: true, controlled: false, observers: 1, ended: false, cols: 120, rows: 30 })
+  })
+
+  it('keeps the known size when a frame carries none (older tt-backend)', () => {
+    const { getState, setState, current } = stateHarness(
+      { ...initialSupervisionState(), cols: 100, rows: 25 },
+    )
+    const handle = createSupervisionMessageHandler({ getState, setState, onTerminal: vi.fn() })
+
+    handle(binaryEvent({ event: 'joined', observers: 2 }) as unknown as MessageEvent)
+
+    expect(current().cols).toBe(100)
+    expect(current().rows).toBe(25)
+  })
+})
+
 describe('createSupervisionMessageHandler — malformed binary frames are dropped', () => {
   it('calls nothing when the binary frame is not valid JSON', () => {
     const { getState, setState } = stateHarness()
