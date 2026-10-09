@@ -185,13 +185,17 @@ const basicRoutes = [
       // A class is five pages sharing one banner, not one page with eight tabs.
       // `navParent` keeps the sidebar's "Mes classes" entry lit on all of them:
       // they are pages OF the console, not siblings of it.
+      // No classroom entitlement here, like my-classes: that asks whether the
+      // caller may CREATE classes in the ACTIVE organization, which turned away
+      // a co-trainer who is a plain org member and anyone whose active org is
+      // not the class's. ocf-core decides per class, and ClassLayout sends a
+      // 403 or 404 back to /my-classes.
       {
         path: 'classes/:id',
         component: () => import('../components/Class/ClassLayout.vue'),
         meta: {
           requiresAuth: true,
           requiredPermissions: ['view_groups'],
-          requiresClassroomEntitlement: true,
           navParent: 'my-classes'
         },
         children: [

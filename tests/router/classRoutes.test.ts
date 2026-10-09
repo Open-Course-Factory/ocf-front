@@ -53,11 +53,24 @@ describe('the five class pages', () => {
     expect(new Set(layouts).size).toBe(1)
   })
 
-  it('gates them on the same permission and entitlement as the other class pages', () => {
+  it('gates them on the same permission as the other class pages', () => {
     const { meta } = router.resolve('/classes/g-1/settings')
     expect(meta.requiresAuth).toBe(true)
     expect(meta.requiredPermissions).toEqual(['view_groups'])
-    expect(meta.requiresClassroomEntitlement).toBe(true)
+  })
+
+  // The entitlement asks whether the caller may create classes in the active
+  // organization: a co-trainer who is a plain org member, or anyone in another
+  // org context, would be turned away from a class they do teach.
+  it.each(['/my-classes', '/classes/g-1/live', '/classes/g-1/settings'])(
+    'does not ask %s for the classroom entitlement of the active organization',
+    path => {
+      expect(router.resolve(path).meta.requiresClassroomEntitlement).toBeUndefined()
+    }
+  )
+
+  it('keeps the entitlement on the group CRUD pages, which create classes', () => {
+    expect(router.resolve('/class-groups').meta.requiresClassroomEntitlement).toBe(true)
   })
 })
 
