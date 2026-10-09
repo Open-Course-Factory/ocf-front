@@ -208,8 +208,8 @@
                   </td>
                   <td class="col-crud">
                     <span class="access-tag" :class="getAccessClass(entity.create)">
-                      <i :class="getAccessIcon(entity.create)"></i>
-                      {{ formatAccessRule(entity.create) }}
+                      <i :class="getEntityWriteIcon(entity.create)"></i>
+                      {{ formatEntityWrite(entity.create) }}
                     </span>
                   </td>
                   <td class="col-crud">
@@ -220,14 +220,14 @@
                   </td>
                   <td class="col-crud">
                     <span class="access-tag" :class="getAccessClass(entity.update)">
-                      <i :class="getAccessIcon(entity.update)"></i>
-                      {{ formatAccessRule(entity.update) }}
+                      <i :class="getEntityWriteIcon(entity.update)"></i>
+                      {{ formatEntityWrite(entity.update) }}
                     </span>
                   </td>
                   <td class="col-crud">
                     <span class="access-tag" :class="getAccessClass(entity.delete)">
-                      <i :class="getAccessIcon(entity.delete)"></i>
-                      {{ formatAccessRule(entity.delete) }}
+                      <i :class="getEntityWriteIcon(entity.delete)"></i>
+                      {{ formatEntityWrite(entity.delete) }}
                     </span>
                   </td>
                 </tr>
@@ -290,7 +290,8 @@ const { t } = useTranslations({
           colRole: 'Role',
           colAccessRule: 'Access Rule',
           entityCrudTitle: 'Entity CRUD Permissions',
-          entityCrudDescription: 'Access rules for standard Create, Read, Update, Delete operations on each entity. These are enforced by the entity management framework.',
+          entityCrudDescription: 'Who may call the standard Create, Read, Update, Delete routes of each entity. This table documents the rules; it does not enforce them. These routes are guarded by the platform role, then by each entity\'s hooks (ownership, membership, role caps), and a startup check verifies that every write a member can call has a hook.',
+          accessMemberHooks: 'Member, checked by the entity\'s hooks',
           entityColumn: 'Entity',
           colCreate: 'Create',
           colRead: 'Read',
@@ -337,7 +338,8 @@ const { t } = useTranslations({
           colRole: 'Rôle',
           colAccessRule: 'Règle d\'accès',
           entityCrudTitle: 'Permissions CRUD des entités',
-          entityCrudDescription: 'Règles d\'accès pour les opérations standard Créer, Lire, Modifier, Supprimer sur chaque entité. Appliquées par le framework de gestion d\'entités.',
+          entityCrudDescription: 'Qui peut appeler les routes standard Créer, Lire, Modifier, Supprimer de chaque entité. Ce tableau documente les règles, il ne les applique pas. Ces routes sont protégées par le rôle de plateforme, puis par les hooks de chaque entité (propriété, appartenance, plafond de rôle), et une vérification au démarrage s\'assure que chaque écriture accessible à un membre a un hook.',
+          accessMemberHooks: 'Membre, contrôlé par les hooks de l\'entité',
           entityColumn: 'Entité',
           colCreate: 'Créer',
           colRead: 'Lire',
@@ -491,6 +493,21 @@ function formatAccessRule(access: AccessRule): string {
     default:
       return access.type
   }
+}
+
+// ocf-core labels an entity write `public` whenever the member role has the
+// method and no OwnershipConfig covers it (deriveAccessRule). Such a write is
+// still guarded by the entity's Before hooks, which ocf-core checks exist at
+// startup (MemberWritesWithoutBeforeHook, ocf-core#544) — so it is not open to
+// any member.
+function formatEntityWrite(access: AccessRule): string {
+  return access?.type === 'public'
+    ? t('help.account.permissionsReference.accessMemberHooks')
+    : formatAccessRule(access)
+}
+
+function getEntityWriteIcon(access: AccessRule): string {
+  return access?.type === 'public' ? 'fas fa-user-check' : getAccessIcon(access)
 }
 
 onMounted(async () => {
