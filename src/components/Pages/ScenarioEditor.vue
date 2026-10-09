@@ -342,7 +342,7 @@ const archivedScenarioRequested = ref(false)
 const health = useScenarioHealth(computed(() => (currentScenario.value?.can_manage ? currentScenario.value.id : null)))
 
 // `can_manage` is the backend's own CanManageScenario verdict (creator, org
-// manager, manager of an assigned class, admin). Guessing it here from
+// manager or owner, admin). Guessing it here from
 // memberships disagreed with the hooks in both directions.
 const canEditScenario = computed(() => !!currentScenario.value?.can_manage)
 
