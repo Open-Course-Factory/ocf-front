@@ -332,7 +332,7 @@ import { useCurrentUserStore } from '../../stores/currentUser'
 import { usePermissionsStore } from '../../stores/permissions'
 import { userService, type User } from '../../services/domain/user'
 import { organizationService } from '../../services/domain/organization'
-import type { OrganizationMember } from '../../types'
+import type { MemberRole, OrganizationMember } from '../../types'
 
 interface Props {
   organizationId: string
@@ -477,7 +477,7 @@ const {
   pageSize: 10
 })
 const showAddMemberModal = ref(false)
-const addMemberRole = ref<'member' | 'manager' | 'owner'>('member')
+const addMemberRole = ref<MemberRole>('member')
 const isAddingMember = ref(false)
 const addMemberError = ref('')
 const selectedUserId = ref('')

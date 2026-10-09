@@ -9,7 +9,8 @@ import type {
   OrganizationMember,
   CreateOrganizationRequest,
   UpdateOrganizationRequest,
-  IncludeParams
+  IncludeParams,
+  MemberRole
 } from '../../../types'
 
 const BASE_URL = '/organizations'
@@ -79,7 +80,7 @@ export const organizationService = {
   /**
    * Add member to organization
    */
-  async addMember(organizationId: string, userId: string, role: 'owner' | 'manager' | 'member' = 'member'): Promise<OrganizationMember> {
+  async addMember(organizationId: string, userId: string, role: MemberRole = 'member'): Promise<OrganizationMember> {
     const response = await axios.post(`${BASE_URL}/${organizationId}/members`, {
       user_id: userId,
       role
@@ -90,7 +91,7 @@ export const organizationService = {
   /**
    * Update member role
    */
-  async updateMemberRole(organizationId: string, userId: string, role: 'owner' | 'manager' | 'member'): Promise<OrganizationMember> {
+  async updateMemberRole(organizationId: string, userId: string, role: MemberRole): Promise<OrganizationMember> {
     const response = await axios.patch(`${BASE_URL}/${organizationId}/members/${userId}`, {
       role
     })
