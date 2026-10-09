@@ -52,7 +52,8 @@ export interface NewMemberData {
 export interface UseGroupMembersOptions {
   groupId: Ref<string | null>
   currentUserId: Ref<string>
-  isOwner: Ref<boolean>
+  /** May the caller manage the class: ocf-core's CanUserManageGroup, as ClassLayout's canManageClass. */
+  canManageMembers: Ref<boolean>
 }
 
 /**
@@ -67,7 +68,7 @@ export async function fetchGroupMembers(groupId: string): Promise<GroupMember[]>
   return response.data?.data || response.data || []
 }
 
-export function useGroupMembers({ groupId, currentUserId, isOwner }: UseGroupMembersOptions) {
+export function useGroupMembers({ groupId, currentUserId, canManageMembers }: UseGroupMembersOptions) {
   const { t } = useTranslations({
     en: {
       groupMembers: {
@@ -281,21 +282,15 @@ export function useGroupMembers({ groupId, currentUserId, isOwner }: UseGroupMem
     )
   }
 
-  const canManageMembers = computed(() => {
-    return isOwner.value // Only owners can manage members
-  })
-
+  // An owner's role is never offered for change: that keeps the class creator's
+  // role fixed and a co-trainer from touching anyone above their own rank.
   const canEditMember = (member: GroupMember) => {
-    // Only owner can edit members
-    // Owner role cannot be changed
-    return isOwner.value && member.role !== 'owner'
+    return canManageMembers.value && member.role !== 'owner'
   }
 
+  // Cannot remove an owner, nor yourself
   const canRemoveMember = (member: GroupMember) => {
-    // Only owner can remove members
-    // Cannot remove owner
-    // Cannot remove self
-    return isOwner.value && member.role !== 'owner' && member.user_id !== currentUserId.value
+    return canManageMembers.value && member.role !== 'owner' && member.user_id !== currentUserId.value
   }
 
   return {

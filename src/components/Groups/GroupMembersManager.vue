@@ -38,8 +38,12 @@ const props = defineProps<{
   groupId: string
   group: ClassGroup
   canEditGroup: boolean
+  /**
+   * Ranks as a class owner: the creator, the organization's managers, a platform
+   * admin. Only they may name an owner — nobody grants above their own rank.
+   */
+  canNameOwner: boolean
   isOwner: boolean
-  isManager: boolean
   isPlatformAdmin: boolean
   subgroups: ClassGroup[]
 }>()
@@ -154,12 +158,10 @@ const { t } = useTranslations({
 // Group Members composable
 const groupIdRef = computed(() => props.groupId)
 const currentUserIdRef = computed(() => currentUser.userId)
-const isOwnerRef = computed(() => props.isOwner)
-
 const groupMembersComposable = useGroupMembers({
   groupId: groupIdRef,
   currentUserId: currentUserIdRef,
-  isOwner: isOwnerRef
+  canManageMembers: computed(() => props.canEditGroup)
 })
 
 // Load members on mount
@@ -458,7 +460,7 @@ async function handleRemoveMember(member: GroupMember) {
             class="role-select"
           >
             <option v-if="isPlatformAdmin && !isOwner" value="owner">🛡️ {{ t('groupMembers.roleOwner') }}</option>
-            <option v-else-if="isOwner" value="owner">{{ t('groupMembers.roleOwner') }}</option>
+            <option v-else-if="canNameOwner" value="owner">{{ t('groupMembers.roleOwner') }}</option>
             <option value="manager">{{ t('groupMembers.roleManager') }}</option>
             <option value="member">{{ t('groupMembers.roleMember') }}</option>
           </select>
@@ -530,7 +532,7 @@ async function handleRemoveMember(member: GroupMember) {
             <option value="member">{{ t('groupMembers.roleMember') }}</option>
             <option value="manager">{{ t('groupMembers.roleManager') }}</option>
             <option v-if="isPlatformAdmin && !isOwner" value="owner">🛡️ {{ t('groupMembers.roleOwner') }}</option>
-            <option v-else-if="isOwner" value="owner">{{ t('groupMembers.roleOwner') }}</option>
+            <option v-else-if="canNameOwner" value="owner">{{ t('groupMembers.roleOwner') }}</option>
           </select>
         </div>
         <div v-if="groupMembersComposable.error.value" class="alert alert-danger">

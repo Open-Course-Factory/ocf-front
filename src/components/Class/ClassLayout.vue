@@ -135,7 +135,7 @@ const isOrgManager = computed(() =>
 const groupMembers = useGroupMembers({
   groupId,
   currentUserId: computed(() => currentUser.userId),
-  isOwner: computed(() => isPlatformAdmin.value || isOwner.value || isOrgManager.value)
+  canManageMembers: computed(() => isPlatformAdmin.value || isOwner.value || isOrgManager.value)
 })
 
 const isManager = computed(() => {
@@ -145,7 +145,8 @@ const isManager = computed(() => {
 
 const canManageClass = computed(() => isPlatformAdmin.value || isOwner.value || isOrgManager.value || isManager.value)
 // Deleting is the creator's and the organization managers' call; a co-trainer
-// may archive the class but not delete it (decided 2026-10-08).
+// may archive the class but not delete it (decided 2026-10-08). The same people
+// rank as a class owner, so they alone may name one (ClassMembersPage).
 const canDeleteClass = computed(() => isPlatformAdmin.value || isOwner.value || isOrgManager.value)
 
 /**

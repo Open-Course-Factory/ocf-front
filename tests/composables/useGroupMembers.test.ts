@@ -57,7 +57,7 @@ describe('useGroupMembers', () => {
     composable = useGroupMembers({
       groupId: ref('group-1'),
       currentUserId: ref('current-user'),
-      isOwner: ref(false)
+      canManageMembers: ref(false)
     })
   })
 
@@ -96,12 +96,12 @@ describe('useGroupMembers', () => {
   })
 
   describe('canEditMember', () => {
-    describe('when isOwner is true', () => {
+    describe('when the caller manages the class', () => {
       beforeEach(() => {
         composable = useGroupMembers({
           groupId: ref('group-1'),
           currentUserId: ref('current-user'),
-          isOwner: ref(true)
+          canManageMembers: ref(true)
         })
       })
 
@@ -121,12 +121,12 @@ describe('useGroupMembers', () => {
       })
     })
 
-    describe('when isOwner is false', () => {
+    describe('when the caller does not manage the class', () => {
       beforeEach(() => {
         composable = useGroupMembers({
           groupId: ref('group-1'),
           currentUserId: ref('current-user'),
-          isOwner: ref(false)
+          canManageMembers: ref(false)
         })
       })
 
@@ -148,12 +148,12 @@ describe('useGroupMembers', () => {
   })
 
   describe('canRemoveMember', () => {
-    describe('when isOwner is true', () => {
+    describe('when the caller manages the class', () => {
       beforeEach(() => {
         composable = useGroupMembers({
           groupId: ref('group-1'),
           currentUserId: ref('current-user'),
-          isOwner: ref(true)
+          canManageMembers: ref(true)
         })
       })
 
@@ -183,12 +183,12 @@ describe('useGroupMembers', () => {
       })
     })
 
-    describe('when isOwner is false', () => {
+    describe('when the caller does not manage the class', () => {
       beforeEach(() => {
         composable = useGroupMembers({
           groupId: ref('group-1'),
           currentUserId: ref('current-user'),
-          isOwner: ref(false)
+          canManageMembers: ref(false)
         })
       })
 
@@ -205,34 +205,34 @@ describe('useGroupMembers', () => {
   })
 
   describe('canManageMembers', () => {
-    it('is true when isOwner is true', () => {
+    it('is true when the caller manages the class', () => {
       composable = useGroupMembers({
         groupId: ref('group-1'),
         currentUserId: ref('current-user'),
-        isOwner: ref(true)
+        canManageMembers: ref(true)
       })
       expect(composable.canManageMembers.value).toBe(true)
     })
 
-    it('is false when isOwner is false', () => {
+    it('is false when the caller does not manage the class', () => {
       composable = useGroupMembers({
         groupId: ref('group-1'),
         currentUserId: ref('current-user'),
-        isOwner: ref(false)
+        canManageMembers: ref(false)
       })
       expect(composable.canManageMembers.value).toBe(false)
     })
 
-    it('reacts to changes in isOwner ref', () => {
-      const isOwner = ref(false)
+    it('reacts to changes in the manage-class right', () => {
+      const canManageMembers = ref(false)
       composable = useGroupMembers({
         groupId: ref('group-1'),
         currentUserId: ref('current-user'),
-        isOwner
+        canManageMembers
       })
       expect(composable.canManageMembers.value).toBe(false)
 
-      isOwner.value = true
+      canManageMembers.value = true
       expect(composable.canManageMembers.value).toBe(true)
     })
   })

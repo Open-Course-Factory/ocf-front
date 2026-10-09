@@ -59,7 +59,7 @@ function mountManager(group: Record<string, any>) {
       group,
       canEditGroup: true,
       isOwner: true,
-      isManager: false,
+      canNameOwner: true,
       isPlatformAdmin: false,
       subgroups: []
     },

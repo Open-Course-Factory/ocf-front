@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
-import { ref, nextTick } from 'vue'
+import { nextTick } from 'vue'
+import axios from 'axios'
 
 // Mock axios before any imports that use it
 vi.mock('axios', () => ({
@@ -85,8 +86,8 @@ function mountComponent(propsOverrides: Record<string, unknown> = {}) {
       groupId: 'test-group-id',
       group: defaultGroup,
       canEditGroup: true,
+      canNameOwner: false,
       isOwner: false,
-      isManager: false,
       isPlatformAdmin: false,
       subgroups: [],
       ...propsOverrides
@@ -114,139 +115,85 @@ function mountComponent(propsOverrides: Record<string, unknown> = {}) {
 }
 
 describe('GroupMembersManager', () => {
-  describe('add member modal role options', () => {
-    it('shows member and manager options (no owner) when not admin and not owner', async () => {
-      const wrapper = mountComponent({ isPlatformAdmin: false, isOwner: false })
-      await nextTick()
+  // A co-trainer (class manager) manages the class like its creator, but ranks
+  // below an owner: ocf-core refuses a grant above the caller's own rank.
+  async function mountWithRoster(propsOverrides: Record<string, unknown>) {
+    vi.mocked(axios.get).mockResolvedValueOnce({
+      data: {
+        data: [
+          { id: 'gm-owner', user_id: 'owner-1', role: 'owner', user: { id: 'owner-1', email: 'owner@example.com', display_name: 'Creator' } },
+          { id: 'gm-1', user_id: 'other-user', role: 'member', user: { id: 'other-user', email: 'other@example.com', display_name: 'Other User' } }
+        ]
+      }
+    })
+    const wrapper = mountComponent(propsOverrides)
+    await flushPromises()
+    return wrapper
+  }
 
-      // Find the role select inside the add member modal (BaseModal stub)
-      const modals = wrapper.findAll('.base-modal-stub')
-      // The first modal is the "Add Member" modal
-      const addMemberModal = modals[0]
-      expect(addMemberModal).toBeDefined()
+  function addModalRoleOptions(wrapper: VueWrapper) {
+    return wrapper.findAll('.base-modal-stub')[0].find('select.form-control').findAll('option').map(o => o.attributes('value'))
+  }
 
-      const roleSelect = addMemberModal.find('select.form-control')
-      expect(roleSelect.exists()).toBe(true)
+  function addMemberButton(wrapper: VueWrapper) {
+    return wrapper.find('[data-test="add-member"]')
+  }
 
-      const options = roleSelect.findAll('option')
-      const optionValues = options.map(o => o.attributes('value'))
+  describe('a class co-trainer', () => {
+    const coTrainer = { canEditGroup: true, canNameOwner: false, isOwner: false }
 
-      expect(optionValues).toContain('member')
-      expect(optionValues).toContain('manager')
-      expect(optionValues).not.toContain('owner')
+    it('sees the member management controls', async () => {
+      const wrapper = await mountWithRoster(coTrainer)
+
+      expect(addMemberButton(wrapper).exists()).toBe(true)
+      expect(wrapper.find('[data-test="bulk-scenario-link"]').exists()).toBe(true)
+      expect(wrapper.find('.select-all-checkbox').exists()).toBe(true)
+      expect(wrapper.findAll('select.role-select')).toHaveLength(1)
     })
 
-    it('shows member, manager, and owner options when isPlatformAdmin is true', async () => {
-      const wrapper = mountComponent({ isPlatformAdmin: true, isOwner: true })
-      await nextTick()
+    it('is offered member and manager, never owner', async () => {
+      const wrapper = await mountWithRoster(coTrainer)
 
-      const modals = wrapper.findAll('.base-modal-stub')
-      const addMemberModal = modals[0]
-      const roleSelect = addMemberModal.find('select.form-control')
-      expect(roleSelect.exists()).toBe(true)
+      expect(addModalRoleOptions(wrapper)).toEqual(['member', 'manager'])
+      const editOptions = wrapper.find('select.role-select').findAll('option').map(o => o.attributes('value'))
+      expect(editOptions).toEqual(['manager', 'member'])
+    })
 
-      const options = roleSelect.findAll('option')
-      const optionValues = options.map(o => o.attributes('value'))
+    it('is not offered a change of the class creator\'s role', async () => {
+      const wrapper = await mountWithRoster(coTrainer)
 
-      expect(optionValues).toContain('member')
-      expect(optionValues).toContain('manager')
-      expect(optionValues).toContain('owner')
+      const creatorCard = wrapper.findAll('.member-card').find(card => card.text().includes('Creator'))!
+      expect(creatorCard.find('select.role-select').exists()).toBe(false)
     })
   })
 
-  describe('add member button visibility', () => {
-    it('shows add member button when isOwner is true (canManageMembers)', async () => {
-      const wrapper = mountComponent({ isOwner: true })
-      await nextTick()
+  describe('someone who ranks as class owner', () => {
+    it('may name an owner, when adding or editing a member', async () => {
+      const wrapper = await mountWithRoster({ canEditGroup: true, canNameOwner: true, isOwner: false })
 
-      // The "Add Member" button has class btn-primary.
-      // useTranslations merges real English translations, so the text is "Add Member".
-      const buttons = wrapper.findAll('button.btn-primary')
-      const addButton = buttons.find(b => b.text().toLowerCase().includes('add member'))
-      expect(addButton).toBeDefined()
+      expect(addModalRoleOptions(wrapper)).toContain('owner')
+      const editOptions = wrapper.find('select.role-select').findAll('option').map(o => o.attributes('value'))
+      expect(editOptions).toContain('owner')
     })
 
-    it('does not show add member button when isOwner is false', async () => {
-      const wrapper = mountComponent({ isOwner: false })
-      await nextTick()
+    it('shows the platform-admin marker on the owner option of an admin', async () => {
+      const wrapper = await mountWithRoster({ canEditGroup: true, canNameOwner: true, isPlatformAdmin: true })
 
-      const buttons = wrapper.findAll('button.btn-primary')
-      const addButton = buttons.find(b => b.text().toLowerCase().includes('add member'))
-      expect(addButton).toBeUndefined()
+      const ownerOption = wrapper.findAll('.base-modal-stub')[0].find('option[value="owner"]')
+      expect(ownerOption.text()).toContain('🛡️')
     })
   })
 
-  describe('role edit dropdown options', () => {
-    it('shows manager and member options in edit dropdown when isPlatformAdmin is false', async () => {
-      const wrapper = mountComponent({ isOwner: true, isPlatformAdmin: false })
-      await nextTick()
+  describe('a plain class member', () => {
+    it('sees no management control', async () => {
+      const wrapper = await mountWithRoster({ canEditGroup: false, canNameOwner: false, isOwner: false })
 
-      // We need to set members that canEditMember returns true for.
-      // Access the composable's members via the component's exposed members ref.
-      const vm = wrapper.vm as any
-      const composable = vm.groupMembersComposable || vm.$data?.groupMembersComposable
-
-      // Since the composable is internal, we can set members directly
-      // through the exposed 'members' property.
-      // The component exposes: { members: groupMembersComposable.members }
-      const exposedMembers = wrapper.vm.members
-      if (exposedMembers) {
-        exposedMembers.value = [
-          {
-            id: 'member-1',
-            user_id: 'other-user',
-            role: 'manager',
-            user: { id: 'other-user', email: 'other@example.com', display_name: 'Other User' }
-          }
-        ]
-      }
-      await nextTick()
-      await nextTick()
-
-      // Find the role-select dropdown in the members list
-      const roleSelects = wrapper.findAll('select.role-select')
-      if (roleSelects.length > 0) {
-        const roleSelect = roleSelects[0]
-        const options = roleSelect.findAll('option')
-        const optionValues = options.map(o => o.attributes('value'))
-
-        expect(optionValues).toContain('manager')
-        expect(optionValues).toContain('member')
-        expect(optionValues).not.toContain('owner')
-      }
-      // If no role-selects found, that's fine: the component might not render them
-      // without the internal composable state being editable.
-    })
-
-    it('shows owner option in edit dropdown when isPlatformAdmin is true', async () => {
-      const wrapper = mountComponent({ isOwner: true, isPlatformAdmin: true })
-      await nextTick()
-
-      // Set members via the exposed ref
-      const exposedMembers = wrapper.vm.members
-      if (exposedMembers) {
-        exposedMembers.value = [
-          {
-            id: 'member-1',
-            user_id: 'other-user',
-            role: 'manager',
-            user: { id: 'other-user', email: 'other@example.com', display_name: 'Other User' }
-          }
-        ]
-      }
-      await nextTick()
-      await nextTick()
-
-      const roleSelects = wrapper.findAll('select.role-select')
-      if (roleSelects.length > 0) {
-        const roleSelect = roleSelects[0]
-        const options = roleSelect.findAll('option')
-        const optionValues = options.map(o => o.attributes('value'))
-
-        expect(optionValues).toContain('owner')
-        expect(optionValues).toContain('manager')
-        expect(optionValues).toContain('member')
-      }
+      expect(addMemberButton(wrapper).exists()).toBe(false)
+      expect(wrapper.find('[data-test="bulk-scenario-link"]').exists()).toBe(false)
+      expect(wrapper.find('.select-all-checkbox').exists()).toBe(false)
+      expect(wrapper.find('.member-checkbox').exists()).toBe(false)
+      expect(wrapper.find('select.role-select').exists()).toBe(false)
+      expect(wrapper.find('.member-actions').exists()).toBe(false)
     })
   })
 

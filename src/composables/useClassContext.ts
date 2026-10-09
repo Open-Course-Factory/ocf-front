@@ -49,7 +49,10 @@ export interface ClassContext {
   isManager: Ref<boolean>
   /** Owner, manager or platform admin: may open the teaching pages. */
   canManageClass: Ref<boolean>
-  /** Owner or platform admin: a manager may not delete the class. */
+  /**
+   * Creator, organization manager or platform admin: a co-trainer may not delete
+   * the class. They also rank as class owner, the only ones who may name one.
+   */
   canDeleteClass: Ref<boolean>
 
   /** Refetches the class and its roster, e.g. after a page saves the class. */

@@ -72,7 +72,7 @@ function mountManager() {
       group,
       canEditGroup: true,
       isOwner: true,
-      isManager: false,
+      canNameOwner: true,
       isPlatformAdmin: false,
       subgroups: [],
     },

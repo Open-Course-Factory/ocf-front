@@ -30,8 +30,8 @@ const {
   group,
   subgroups,
   canManageClass,
+  canDeleteClass,
   isOwner,
-  isManager,
   isPlatformAdmin,
   applyMemberCountDelta
 } = useClassContext()
@@ -43,8 +43,8 @@ const {
     :group-id="groupId"
     :group="group"
     :can-edit-group="canManageClass"
+    :can-name-owner="canDeleteClass"
     :is-owner="isOwner"
-    :is-manager="isManager"
     :is-platform-admin="isPlatformAdmin"
     :subgroups="subgroups"
     @member-count-changed="applyMemberCountDelta"
