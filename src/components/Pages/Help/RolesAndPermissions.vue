@@ -124,6 +124,7 @@
           </table>
         </div>
         <p>{{ t('help.account.rolesAndPermissions.groupCannotPromoteToOwner') }}</p>
+        <p>{{ t('help.account.rolesAndPermissions.orgManagersDeleteAnyClass') }}</p>
 
         <div class="ocf-callout">
           <h3><i class="fas fa-info-circle"></i> {{ t('help.account.rolesAndPermissions.noTeacherInClassTitle') }}</h3>
@@ -226,7 +227,7 @@ const groupRoles = [
 
 // Column order follows groupRoles: owner, manager, member. Owner and manager
 // share one authority in ocf-core (GroupService.CanUserManageGroup); only the
-// role cap separates them.
+// role cap and deleting the class separate them (decided 2026-10-08).
 const groupMatrix: { key: string; marks: Mark[] }[] = [
   { key: 'groupViewClass', marks: [y, y, y] },
   { key: 'groupLaunchScenarios', marks: [y, y, y] },
@@ -234,7 +235,8 @@ const groupMatrix: { key: string; marks: Mark[] }[] = [
   { key: 'groupFollowLearners', marks: [y, y, n] },
   { key: 'groupManageMembers', marks: [y, y, n] },
   { key: 'groupChangeRoles', marks: [y, p, n] },
-  { key: 'groupEditClass', marks: [y, y, n] }
+  { key: 'groupRenameArchiveClass', marks: [y, y, n] },
+  { key: 'groupDeleteClass', marks: [y, n, n] }
 ]
 
 onMounted(async () => {

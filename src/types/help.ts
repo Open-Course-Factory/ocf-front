@@ -650,8 +650,10 @@ export interface HelpTranslations {
         groupFollowLearners: string;
         groupManageMembers: string;
         groupChangeRoles: string;
-        groupEditClass: string;
+        groupRenameArchiveClass: string;
+        groupDeleteClass: string;
         groupCannotPromoteToOwner: string;
+        orgManagersDeleteAnyClass: string;
         noTeacherInClassTitle: string;
         noTeacherInClassDesc: string;
         orgManagersManageAllClasses: string;
