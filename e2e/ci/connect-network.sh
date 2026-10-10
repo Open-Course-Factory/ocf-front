@@ -4,10 +4,15 @@
 # but $(hostname) is NOT its container name on this runner — recover the real
 # container id from the kernel's view, with fallbacks.
 #
-# Usage: connect-network.sh <network-name>
+# Usage: connect-network.sh <network-name> [connect|disconnect]
+#
+# Teardown must disconnect before `docker compose down`: Docker refuses to
+# remove a network that still has this job attached, so it leaked one per run.
 set -euo pipefail
 
-NETWORK=${1:?usage: connect-network.sh <network-name>}
+NETWORK=${1:?usage: connect-network.sh <network-name> [connect|disconnect]}
+ACTION=${2:-connect}
+case "$ACTION" in connect|disconnect) ;; *) echo "❌ unknown action: $ACTION" >&2; exit 1 ;; esac
 
 # 1. The container id appears in bind-mount sources like
 #    /var/lib/docker/containers/<id>/{hostname,resolv.conf}
@@ -28,5 +33,5 @@ if [ -z "$CID" ]; then
   exit 1
 fi
 
-echo "Connecting container $CID to network $NETWORK"
-docker network connect "$NETWORK" "$CID"
+echo "docker network $ACTION $NETWORK $CID"
+docker network "$ACTION" "$NETWORK" "$CID"

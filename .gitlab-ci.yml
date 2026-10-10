@@ -176,7 +176,9 @@ e2e:payment:
       npx playwright test payment-purchase
   after_script:
     - docker compose -p "$COMPOSE_PROJECT" -f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml logs ocf-core-e2e > ocf-core.log 2>&1 || true
-    - docker compose -p "$COMPOSE_PROJECT" -f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml down -v --remove-orphans || true
+    - bash e2e/ci/connect-network.sh "${COMPOSE_PROJECT}_default" disconnect || true
+    # --rmi local: the images are named after the per-job project, never reused.
+    - docker compose -p "$COMPOSE_PROJECT" -f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml down -v --remove-orphans --rmi local || true
   artifacts:
     when: on_failure
     paths:
@@ -234,7 +236,9 @@ e2e:scenarios:
       npx playwright test scenario-launch scenario-player scenario-provisioning
   after_script:
     - docker compose -p "$COMPOSE_PROJECT" -f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml logs ocf-core-e2e > ocf-core.log 2>&1 || true
-    - docker compose -p "$COMPOSE_PROJECT" -f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml down -v --remove-orphans || true
+    - bash e2e/ci/connect-network.sh "${COMPOSE_PROJECT}_default" disconnect || true
+    # --rmi local: the images are named after the per-job project, never reused.
+    - docker compose -p "$COMPOSE_PROJECT" -f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml down -v --remove-orphans --rmi local || true
   artifacts:
     when: on_failure
     paths:
