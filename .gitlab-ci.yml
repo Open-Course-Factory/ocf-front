@@ -160,6 +160,7 @@ e2e:payment:
     - export CASDOOR_CLIENT_SECRET=$(node -e "console.log(require('./.e2e-core/init_data.json').applications[0].clientSecret)")
     # The webhook signing secret must be known BEFORE ocf-core boots
     - export STRIPE_WEBHOOK_SECRET=$(stripe listen --print-secret --api-key "$STRIPE_TEST_SECRET_KEY")
+    - bash e2e/ci/reap-stale-stacks.sh ocf-e2e-
     - docker compose -p "$COMPOSE_PROJECT" $COMPOSE_FILES up -d --build --wait --wait-timeout 300
     # Join the stack's network so ocf-core-e2e resolves from this job (and from
     # the browser it launches).
@@ -224,6 +225,7 @@ e2e:scenarios:
     - rm -rf .e2e-core/.git
     - echo "$token_jwt_key_test" | base64 -d > .e2e-core/token_jwt_key.pem
     - export CASDOOR_CLIENT_SECRET=$(node -e "console.log(require('./.e2e-core/init_data.json').applications[0].clientSecret)")
+    - bash e2e/ci/reap-stale-stacks.sh ocf-e2e-
     - docker compose -p "$COMPOSE_PROJECT" $COMPOSE_FILES up -d --build --wait --wait-timeout 300
     - bash e2e/ci/connect-network.sh "${COMPOSE_PROJECT}_default"
     - npm ci --prefer-offline
