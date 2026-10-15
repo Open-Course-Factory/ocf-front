@@ -25,12 +25,14 @@ export interface OrgMembership {
   id: string
   name: string
   role: string
+  member_id: string
 }
 
 export interface GroupMembership {
   id: string
   name: string
   role: string
+  member_id: string
 }
 
 export interface AdminUserListing {
@@ -57,5 +59,25 @@ export const adminUsersService = {
   async fetchAll(): Promise<AdminUserListing[]> {
     const response = await axios.get<AdminUserListing[]>('admin/users-with-memberships')
     return response.data || []
+  },
+
+  /** Sends the standard password-reset email to the user — the admin never sees the new password. */
+  async sendPasswordResetEmail(userId: string): Promise<void> {
+    await axios.post(`admin/users/${userId}/send-password-reset-email`)
+  },
+
+  /** Grants the platform "administrator" role to the user. */
+  async grantAdminRole(userId: string): Promise<void> {
+    await axios.post(`admin/users/${userId}/admin-role`)
+  },
+
+  /** Revokes the platform "administrator" role from the user. */
+  async revokeAdminRole(userId: string): Promise<void> {
+    await axios.delete(`admin/users/${userId}/admin-role`)
+  },
+
+  /** Blocks or restores the user's ability to sign in. */
+  async setForbidden(userId: string, forbidden: boolean): Promise<void> {
+    await axios.put(`admin/users/${userId}/forbidden`, { forbidden })
   },
 }

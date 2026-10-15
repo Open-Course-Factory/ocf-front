@@ -14,8 +14,10 @@
           v-model="userId"
           type="text"
           class="form-control"
+          :disabled="!!presetUserId"
           :placeholder="t('adminAssign.userIdPlaceholder')"
         />
+        <span v-if="presetUserName" class="preset-user-hint">{{ presetUserName }}</span>
       </div>
 
       <div class="form-group">
@@ -148,6 +150,10 @@ const { t } = useTranslations({
 const props = defineProps<{
   visible: boolean
   planId: string | null
+  /** Pre-fills and locks the user id field — set when opened from a known user's row (e.g. AdminUsers.vue). */
+  presetUserId?: string | null
+  /** Display-only label shown next to the locked user id field (e.g. the user's display name). */
+  presetUserName?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -191,7 +197,7 @@ watch(() => props.visible, (newVal) => {
     errorMsg.value = ''
     successMsg.value = ''
     showAssignConfirm.value = false
-    userId.value = ''
+    userId.value = props.presetUserId || ''
     durationDays.value = 365
     // Clear so PlanSelect re-selects the first active plan; a provided
     // planId takes precedence.
@@ -223,6 +229,11 @@ watch(() => props.visible, (newVal) => {
 .required-mark {
   color: var(--color-danger);
   margin-left: var(--spacing-xs);
+}
+
+.preset-user-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
 .preset-buttons {
