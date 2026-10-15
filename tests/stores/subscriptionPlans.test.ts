@@ -112,6 +112,24 @@ describe('subscriptionPlans store', () => {
     })
   })
 
+  describe('boolean toggles render as a checkbox, not a text input', () => {
+    // network_access_enabled and data_persistence_enabled are Go bools; a
+    // plain "input" field left the admin typing into a text box with no
+    // way to actually flip the value, which is how this bug was reported.
+    it.each(['network_access_enabled', 'data_persistence_enabled'])(
+      'declares %s as an editable checkbox',
+      (fieldName) => {
+        const store = useSubscriptionPlansStore()
+        const field = store.fieldList.get(fieldName)
+
+        expect(field).toBeDefined()
+        expect(field!.type).toBe('checkbox')
+        expect(field!.toBeSet).toBe(true)
+        expect(field!.toBeEdited).toBe(true)
+      }
+    )
+  })
+
   describe('i18n keys for budget fields exist in both en and fr', () => {
     // Smoke-test the source file directly so we can verify both locales
     // without coupling to the i18n mock.
