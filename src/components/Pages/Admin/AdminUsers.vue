@@ -298,8 +298,20 @@
         </div>
         <div class="form-group">
           <label for="cu-password">{{ t('adminUsers.form.password') }}</label>
-          <input id="cu-password" v-model="createUserForm.password" type="text" class="form-control" required minlength="8" />
+          <input id="cu-password" v-model="createUserForm.password" type="password" autocomplete="new-password" class="form-control" required minlength="8" />
           <span class="field-hint">{{ t('adminUsers.form.passwordHint') }}</span>
+        </div>
+        <div class="form-group">
+          <label for="cu-password-confirm">{{ t('adminUsers.form.passwordConfirm') }}</label>
+          <input
+            id="cu-password-confirm"
+            v-model="createUserPasswordConfirm"
+            type="password"
+            autocomplete="new-password"
+            class="form-control"
+            required
+          />
+          <span v-if="passwordMismatch" class="field-error">{{ t('adminUsers.form.passwordMismatch') }}</span>
         </div>
         <label class="checkbox-row">
           <input v-model="createUserForm.email_verified" type="checkbox" />
@@ -315,7 +327,12 @@
         <button type="button" class="btn btn-secondary" :disabled="creatingUser" @click="closeCreateUserModal">
           {{ t('adminUsers.modal.cancel') }}
         </button>
-        <button type="button" class="btn btn-primary" :disabled="creatingUser" @click="submitCreateUser">
+        <button
+          type="button"
+          class="btn btn-primary"
+          :disabled="creatingUser || passwordMismatch || !createUserPasswordConfirm"
+          @click="submitCreateUser"
+        >
           <i v-if="creatingUser" class="fas fa-spinner fa-spin"></i>
           {{ t('adminUsers.createUser') }}
         </button>
@@ -387,6 +404,8 @@ const { t } = useTranslations({
         email: 'Email',
         password: 'Password',
         passwordHint: 'Share this with the user yourself — it is not emailed to them.',
+        passwordConfirm: 'Confirm password',
+        passwordMismatch: 'Passwords do not match',
         emailVerifiedCheckbox: 'Email already verified (I confirmed this address myself)'
       },
       actionSuccess: {
@@ -474,6 +493,8 @@ const { t } = useTranslations({
         email: 'Email',
         password: 'Mot de passe',
         passwordHint: 'Transmettez-le vous-même à l’utilisateur — il ne lui est pas envoyé par email.',
+        passwordConfirm: 'Confirmer le mot de passe',
+        passwordMismatch: 'Les mots de passe ne correspondent pas',
         emailVerifiedCheckbox: 'Email déjà validé (j’ai vérifié cette adresse moi-même)'
       },
       actionSuccess: {
@@ -558,6 +579,15 @@ function emptyCreateUserForm(): AdminCreateUserInput {
   }
 }
 const createUserForm = ref<AdminCreateUserInput>(emptyCreateUserForm())
+const createUserPasswordConfirm = ref('')
+// Only flag a mismatch once both fields have something — otherwise every
+// fresh open of the modal would show the error before the admin typed
+// anything.
+const passwordMismatch = computed(() =>
+  createUserForm.value.password.length > 0 &&
+  createUserPasswordConfirm.value.length > 0 &&
+  createUserForm.value.password !== createUserPasswordConfirm.value
+)
 
 // In-flight role update, keyed so only the select being changed shows as disabled.
 const roleUpdateKey = ref<string | null>(null)
@@ -792,6 +822,7 @@ function openPlanModal(user: AdminUserListing) {
 
 function openCreateUserModal() {
   createUserForm.value = emptyCreateUserForm()
+  createUserPasswordConfirm.value = ''
   createUserError.value = ''
   showCreateUserModal.value = true
 }
@@ -802,6 +833,7 @@ function closeCreateUserModal() {
 }
 
 async function submitCreateUser() {
+  if (passwordMismatch.value) return
   creatingUser.value = true
   createUserError.value = ''
   try {
@@ -927,6 +959,11 @@ onMounted(async () => {
 .field-hint {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+.field-error {
+  font-size: var(--font-size-xs);
+  color: var(--color-danger-text);
 }
 
 .checkbox-row {
