@@ -239,6 +239,22 @@
             <p class="field-hint">{{ t('planConfig.groupManagementHint') }}</p>
           </div>
 
+          <div class="form-group form-group-wide">
+            <div class="checkbox-wrapper">
+              <input
+                id="plan-network-access"
+                v-model="formData.network_access_enabled"
+                data-test="plan-network-access-toggle"
+                type="checkbox"
+                class="form-checkbox"
+              />
+              <label for="plan-network-access" class="checkbox-label">
+                {{ t('planConfig.networkAccessEnabled') }}
+              </label>
+            </div>
+            <p class="field-hint">{{ t('planConfig.networkAccessHint') }}</p>
+          </div>
+
           <div class="form-group form-group-wide ocf-seat-pricing">
             <h4 class="section-title">{{ t('planConfig.seatPricing.section') }}</h4>
 
@@ -499,6 +515,8 @@ const { t } = useTranslations({
       portExposureTtl: 'Lifetime of an exposed URL (minutes) — to check one’s own work, not to share links',
       groupManagementEnabled: 'Group management',
       groupManagementHint: 'Lets plan holders create and manage learner groups.',
+      networkAccessEnabled: 'Network access',
+      networkAccessHint: 'Lets sessions on this plan reach the outside network. Off by default for a sandboxed terminal.',
       defaultBackend: 'Default backend',
       defaultBackendHint: 'Backend used when the organization has no backend configured (empty = platform default).',
       platformDefaultOption: 'Platform default',
@@ -580,6 +598,8 @@ const { t } = useTranslations({
       portExposureTtl: 'Durée de vie d’une URL exposée (minutes) — pour vérifier son travail, pas pour partager des liens',
       groupManagementEnabled: 'Gestion des groupes',
       groupManagementHint: 'Permet aux titulaires du forfait de créer et gérer des groupes d\'apprenants.',
+      networkAccessEnabled: 'Accès réseau',
+      networkAccessHint: 'Permet aux sessions de ce forfait d\'accéder au réseau extérieur. Désactivé par défaut pour un terminal confiné.',
       defaultBackend: 'Backend par défaut',
       defaultBackendHint: "Backend utilisé quand l'organisation n'a pas de backend configuré (vide = défaut plateforme).",
       platformDefaultOption: 'Défaut plateforme',
@@ -676,6 +696,7 @@ const formData = reactive({
   port_exposure_enabled: false,
   port_exposure_ttl_minutes: 60,
   group_management_enabled: false,
+  network_access_enabled: false,
   bulk_purchasable: false,
   use_tiered_pricing: false,
   default_backend: ''
@@ -904,6 +925,7 @@ function populateFromPlan(plan: any) {
   // Capability toggles + backend routing (dedicated columns).
   formData.session_supervision_enabled = plan.session_supervision_enabled === true
   formData.group_management_enabled = plan.group_management_enabled === true
+  formData.network_access_enabled = plan.network_access_enabled === true
   formData.port_exposure_enabled = plan.port_exposure_enabled === true
   formData.port_exposure_ttl_minutes = plan.port_exposure_ttl_minutes || 60
   formData.bulk_purchasable = plan.bulk_purchasable === true
@@ -954,6 +976,7 @@ function resetForm() {
   formData.port_exposure_enabled = false
   formData.port_exposure_ttl_minutes = 60
   formData.group_management_enabled = false
+  formData.network_access_enabled = false
   formData.bulk_purchasable = false
   formData.use_tiered_pricing = false
   formData.default_backend = ''
@@ -1004,11 +1027,11 @@ function handleSave() {
     data_persistence_gb: preservedNumber('data_persistence_gb'),
     command_history_retention_days: preservedNumber('command_history_retention_days'),
     max_persistent_sessions: preservedNumber('max_persistent_sessions'),
-    network_access_enabled: preservedBoolean('network_access_enabled'),
     data_persistence_enabled: preservedBoolean('data_persistence_enabled'),
     persistent_sessions_enabled: preservedBoolean('persistent_sessions_enabled'),
-    // Supervision, group management + backend routing (dedicated columns).
-    // session_supervision_enabled, group_management_enabled and default_backend
+    // Supervision, group management, network access + backend routing
+    // (dedicated columns). session_supervision_enabled,
+    // group_management_enabled, network_access_enabled and default_backend
     // ride along via the formData spread above. allowed_backends comes from the
     // checked picker boxes, or the newline-separated textarea in fallback mode.
     allowed_backends: backendPickerAvailable.value
