@@ -29,6 +29,7 @@ const mockSetForbidden = vi.fn()
 const mockCreateUser = vi.fn()
 const mockVerifyEmail = vi.fn()
 const mockSetPassword = vi.fn()
+const mockDeleteUser = vi.fn()
 vi.mock('../../src/services/admin/usersService', () => ({
   adminUsersService: {
     fetchAll: (...args: any[]) => mockFetchAll(...args),
@@ -38,7 +39,8 @@ vi.mock('../../src/services/admin/usersService', () => ({
     setForbidden: (...args: any[]) => mockSetForbidden(...args),
     createUser: (...args: any[]) => mockCreateUser(...args),
     setPassword: (...args: any[]) => mockSetPassword(...args),
-    verifyEmail: (...args: any[]) => mockVerifyEmail(...args)
+    verifyEmail: (...args: any[]) => mockVerifyEmail(...args),
+    deleteUser: (...args: any[]) => mockDeleteUser(...args)
   }
 }))
 
@@ -551,6 +553,88 @@ describe('AdminUsers', () => {
 
     const btn = findActionButton(wrapper, 'Block account')
     expect((btn!.element as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  // --- Delete user (permanent erasure) ------------------------------------
+
+  it('admin cannot delete their own account (button disabled)', async () => {
+    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'admin-id', username: 'admin', display_name: 'Admin' })])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    const btn = findActionButton(wrapper, 'Delete user')
+    expect((btn!.element as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('opens the delete-user modal, with the submit button disabled until the username is typed', async () => {
+    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'u2', username: 'bob', display_name: 'Bob' })])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    await findActionButton(wrapper, 'Delete user')!.trigger('click')
+    await nextTick()
+
+    expect(wrapper.find('.base-modal-overlay').exists()).toBe(true)
+    const submitBtn = wrapper.find('.base-modal-overlay button.btn-danger')
+    expect((submitBtn.element as HTMLButtonElement).disabled).toBe(true)
+
+    await wrapper.find('#du-confirm').setValue('bob')
+    await nextTick()
+    expect((submitBtn.element as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('refuses to enable submit when the typed confirmation does not match the username', async () => {
+    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'u2', username: 'bob', display_name: 'Bob' })])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    await findActionButton(wrapper, 'Delete user')!.trigger('click')
+    await nextTick()
+
+    await wrapper.find('#du-confirm').setValue('not-bob')
+    await nextTick()
+
+    const submitBtn = wrapper.find('.base-modal-overlay button.btn-danger')
+    expect((submitBtn.element as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('submitting the delete-user form calls adminUsersService.deleteUser and removes the row', async () => {
+    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'u2', username: 'bob', display_name: 'Bob' })])
+    mockDeleteUser.mockResolvedValueOnce(undefined)
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    await findActionButton(wrapper, 'Delete user')!.trigger('click')
+    await nextTick()
+    await wrapper.find('#du-confirm').setValue('bob')
+    await nextTick()
+
+    await wrapper.find('.base-modal-overlay button.btn-danger').trigger('click')
+    await flushPromises()
+
+    expect(mockDeleteUser).toHaveBeenCalledWith('u2')
+    expect(wrapper.find('.base-modal-overlay').exists()).toBe(false)
+    expect(wrapper.findAll('tbody tr').length).toBe(0)
+  })
+
+  it('shows the backend conflict message when the user still owns an organization or group', async () => {
+    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'u2', username: 'bob', display_name: 'Bob' })])
+    mockDeleteUser.mockRejectedValueOnce({
+      response: { data: { error_message: 'user still owns a non-personal organization' } }
+    })
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    await findActionButton(wrapper, 'Delete user')!.trigger('click')
+    await nextTick()
+    await wrapper.find('#du-confirm').setValue('bob')
+    await nextTick()
+
+    await wrapper.find('.base-modal-overlay button.btn-danger').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('user still owns a non-personal organization')
+    expect(wrapper.findAll('tbody tr').length).toBe(1)
   })
 
   it('changing an organization member role calls organizationService.updateMemberRole', async () => {
