@@ -109,4 +109,9 @@ export const adminUsersService = {
   async verifyEmail(userId: string): Promise<void> {
     await axios.post(`admin/users/${userId}/verify-email`)
   },
+
+  /** Sets the user's password directly — no email is sent; the admin hands it over themselves. */
+  async setPassword(userId: string, password: string): Promise<void> {
+    await axios.put(`admin/users/${userId}/password`, { password })
+  },
 }
