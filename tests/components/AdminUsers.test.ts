@@ -22,9 +22,25 @@ vi.mock('axios', () => ({
 
 // Mock the admin users service used by the component
 const mockFetchAll = vi.fn()
+const mockSendPasswordResetEmail = vi.fn()
+const mockGrantAdminRole = vi.fn()
+const mockRevokeAdminRole = vi.fn()
+const mockSetForbidden = vi.fn()
 vi.mock('../../src/services/admin/usersService', () => ({
   adminUsersService: {
-    fetchAll: (...args: any[]) => mockFetchAll(...args)
+    fetchAll: (...args: any[]) => mockFetchAll(...args),
+    sendPasswordResetEmail: (...args: any[]) => mockSendPasswordResetEmail(...args),
+    grantAdminRole: (...args: any[]) => mockGrantAdminRole(...args),
+    revokeAdminRole: (...args: any[]) => mockRevokeAdminRole(...args),
+    setForbidden: (...args: any[]) => mockSetForbidden(...args)
+  }
+}))
+
+// Mock the organization service's member-role update used by the org chip select
+const mockUpdateMemberRole = vi.fn()
+vi.mock('../../src/services/domain/organization', () => ({
+  organizationService: {
+    updateMemberRole: (...args: any[]) => mockUpdateMemberRole(...args)
   }
 }))
 
@@ -154,7 +170,7 @@ describe('AdminUsers', () => {
     mockFetchAll.mockResolvedValueOnce([
       makeUser({
         id: 'u1',
-        organizations: [{ id: 'o1', name: 'Acme', role: 'owner' }]
+        organizations: [{ id: 'o1', name: 'Acme', role: 'owner', member_id: 'om1' }]
       })
     ])
     const wrapper = mountAdminUsers()
@@ -162,14 +178,16 @@ describe('AdminUsers', () => {
 
     const text = wrapper.text()
     expect(text).toContain('Acme')
-    expect(text).toContain('owner')
+    // Role is an editable <select>, not plain text — assert its value.
+    const roleSelect = wrapper.find('.chip-role-select')
+    expect((roleSelect.element as HTMLSelectElement).value).toBe('owner')
   })
 
   it('shows group badges with role', async () => {
     mockFetchAll.mockResolvedValueOnce([
       makeUser({
         id: 'u1',
-        groups: [{ id: 'g1', name: 'DevOps', role: 'manager' }]
+        groups: [{ id: 'g1', name: 'DevOps', role: 'manager', member_id: 'gm1' }]
       })
     ])
     const wrapper = mountAdminUsers()
@@ -177,7 +195,9 @@ describe('AdminUsers', () => {
 
     const text = wrapper.text()
     expect(text).toContain('DevOps')
-    expect(text).toContain('manager')
+    // Role is an editable <select>, not plain text — assert its value.
+    const roleSelect = wrapper.find('.chip-role-select')
+    expect((roleSelect.element as HTMLSelectElement).value).toBe('manager')
   })
 
   it('shows admin badge for is_admin: true', async () => {
@@ -393,5 +413,94 @@ describe('AdminUsers', () => {
     const bobRowBtn = rows[1].find('button.impersonate-btn')
     expect((adminRowBtn.element as HTMLButtonElement).disabled).toBe(true)
     expect((bobRowBtn.element as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  // --- Reset password / admin role / block account actions ---------------
+
+  function findActionButton(wrapper: ReturnType<typeof mountAdminUsers>, text: string) {
+    return wrapper.findAll('button.action-btn').find((b) => b.text().includes(text))
+  }
+
+  it('clicking reset password opens a confirmation modal and calls the service', async () => {
+    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'u2', username: 'bob', display_name: 'Bob' })])
+    mockSendPasswordResetEmail.mockResolvedValueOnce(undefined)
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    const btn = findActionButton(wrapper, 'Reset password')
+    expect(btn?.exists()).toBe(true)
+    await btn!.trigger('click')
+    await nextTick()
+    expect(wrapper.find('.base-modal-overlay').exists()).toBe(true)
+
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+
+    expect(mockSendPasswordResetEmail).toHaveBeenCalledWith('u2')
+  })
+
+  it('grant admin button calls grantAdminRole and flips to "Revoke admin"', async () => {
+    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'u2', username: 'bob', display_name: 'Bob', is_admin: false })])
+    mockGrantAdminRole.mockResolvedValueOnce(undefined)
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    expect(findActionButton(wrapper, 'Grant admin')?.exists()).toBe(true)
+    await findActionButton(wrapper, 'Grant admin')!.trigger('click')
+    await nextTick()
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+
+    expect(mockGrantAdminRole).toHaveBeenCalledWith('u2')
+    expect(findActionButton(wrapper, 'Revoke admin')?.exists()).toBe(true)
+  })
+
+  it('admin cannot grant/revoke their own admin role (button disabled)', async () => {
+    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'admin-id', username: 'admin', display_name: 'Admin' })])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    const btn = findActionButton(wrapper, 'Grant admin')
+    expect((btn!.element as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('block account button calls setForbidden(id, true) and flips to "Unblock account"', async () => {
+    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'u2', username: 'bob', display_name: 'Bob', is_active: true })])
+    mockSetForbidden.mockResolvedValueOnce(undefined)
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    await findActionButton(wrapper, 'Block account')!.trigger('click')
+    await nextTick()
+    await wrapper.find('button.btn-primary').trigger('click')
+    await flushPromises()
+
+    expect(mockSetForbidden).toHaveBeenCalledWith('u2', true)
+    expect(findActionButton(wrapper, 'Unblock account')?.exists()).toBe(true)
+  })
+
+  it('admin cannot block their own account (button disabled)', async () => {
+    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'admin-id', username: 'admin', display_name: 'Admin' })])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    const btn = findActionButton(wrapper, 'Block account')
+    expect((btn!.element as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('changing an organization member role calls organizationService.updateMemberRole', async () => {
+    mockFetchAll.mockResolvedValueOnce([
+      makeUser({ id: 'u2', organizations: [{ id: 'o1', name: 'Acme', role: 'member', member_id: 'om1' }] })
+    ])
+    mockUpdateMemberRole.mockResolvedValueOnce(undefined)
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    const select = wrapper.find('.chip-role-select')
+    expect(select.exists()).toBe(true)
+    await select.setValue('owner')
+    await flushPromises()
+
+    expect(mockUpdateMemberRole).toHaveBeenCalledWith('o1', 'u2', 'owner')
   })
 })
