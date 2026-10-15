@@ -538,6 +538,7 @@ describe('AdminUsers', () => {
     await wrapper.find('#cu-username').setValue('newteacher')
     await wrapper.find('#cu-email').setValue('newteacher@example.com')
     await wrapper.find('#cu-password').setValue('correct-horse-battery-staple')
+    await wrapper.find('#cu-password-confirm').setValue('correct-horse-battery-staple')
 
     await wrapper.find('.base-modal-overlay button.btn-primary').trigger('click')
     await flushPromises()
@@ -569,12 +570,52 @@ describe('AdminUsers', () => {
     await wrapper.find('#cu-username').setValue('newteacher')
     await wrapper.find('#cu-email').setValue('newteacher@example.com')
     await wrapper.find('#cu-password').setValue('correct-horse-battery-staple')
+    await wrapper.find('#cu-password-confirm').setValue('correct-horse-battery-staple')
     await wrapper.find('.checkbox-row input[type="checkbox"]').setValue(true)
 
     await wrapper.find('.base-modal-overlay button.btn-primary').trigger('click')
     await flushPromises()
 
     expect(mockCreateUser).toHaveBeenCalledWith(expect.objectContaining({ email_verified: true }))
+  })
+
+  it('password and confirm fields are masked (type="password")', async () => {
+    mockFetchAll.mockResolvedValueOnce([])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    await wrapper.find('.page-header button.btn-primary').trigger('click')
+    await nextTick()
+
+    expect(wrapper.find('#cu-password').attributes('type')).toBe('password')
+    expect(wrapper.find('#cu-password-confirm').attributes('type')).toBe('password')
+  })
+
+  it('refuses to submit when the password confirmation does not match', async () => {
+    mockFetchAll.mockResolvedValueOnce([])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    await wrapper.find('.page-header button.btn-primary').trigger('click')
+    await nextTick()
+
+    await wrapper.find('#cu-first-name').setValue('New')
+    await wrapper.find('#cu-last-name').setValue('Teacher')
+    await wrapper.find('#cu-display-name').setValue('New Teacher')
+    await wrapper.find('#cu-username').setValue('newteacher')
+    await wrapper.find('#cu-email').setValue('newteacher@example.com')
+    await wrapper.find('#cu-password').setValue('correct-horse-battery-staple')
+    await wrapper.find('#cu-password-confirm').setValue('something-else')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Passwords do not match')
+    const submitBtn = wrapper.find('.base-modal-overlay button.btn-primary')
+    expect((submitBtn.element as HTMLButtonElement).disabled).toBe(true)
+
+    await submitBtn.trigger('click')
+    await flushPromises()
+
+    expect(mockCreateUser).not.toHaveBeenCalled()
   })
 
   // --- Verify email --------------------------------------------------------
