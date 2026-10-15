@@ -43,8 +43,26 @@ export interface AdminUserListing {
   avatar?: string
   is_active: boolean
   is_admin: boolean
+  email_verified: boolean
   organizations: OrgMembership[]
   groups: GroupMembership[]
+}
+
+export interface AdminCreateUserInput {
+  username: string
+  display_name: string
+  email: string
+  password: string
+  first_name: string
+  last_name: string
+  email_verified: boolean
+  default_role?: string
+}
+
+export interface AdminCreateUserOutput {
+  id: string
+  username: string
+  email: string
 }
 
 /**
@@ -79,5 +97,16 @@ export const adminUsersService = {
   /** Blocks or restores the user's ability to sign in. */
   async setForbidden(userId: string, forbidden: boolean): Promise<void> {
     await axios.put(`admin/users/${userId}/forbidden`, { forbidden })
+  },
+
+  /** Creates a user account directly — no self-signup ToS step, no email verification link unless asked for. */
+  async createUser(input: AdminCreateUserInput): Promise<AdminCreateUserOutput> {
+    const response = await axios.post<AdminCreateUserOutput>('admin/users', input)
+    return response.data
+  },
+
+  /** Force-verifies the user's email with no token — for accounts whose owner never completed the self-service link. */
+  async verifyEmail(userId: string): Promise<void> {
+    await axios.post(`admin/users/${userId}/verify-email`)
   },
 }
