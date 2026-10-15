@@ -186,6 +186,16 @@
             <i :class="row.is_active ? 'fas fa-ban' : 'fas fa-unlock'"></i>
             {{ row.is_active ? t('adminUsers.blockAccount') : t('adminUsers.unblockAccount') }}
           </button>
+          <button
+            type="button"
+            class="action-btn action-btn-delete"
+            :disabled="row.id === currentUserStore.userId"
+            :title="t('adminUsers.deleteUser')"
+            @click="openDeleteUserModal(row)"
+          >
+            <i class="fas fa-trash-alt"></i>
+            {{ t('adminUsers.deleteUser') }}
+          </button>
         </div>
       </template>
     </EntityTable>
@@ -389,6 +399,59 @@
         </button>
       </template>
     </BaseModal>
+
+    <!-- Delete User Modal -->
+    <BaseModal
+      :visible="showDeleteUserModal"
+      :title="t('adminUsers.deleteUser')"
+      title-icon="fas fa-trash-alt"
+      size="medium"
+      :is-loading="deletingUser"
+      @close="closeDeleteUserModal"
+    >
+      <div class="confirm-modal-content">
+        <p class="confirm-warning">
+          <i class="fas fa-exclamation-triangle"></i>
+          {{ t('adminUsers.deleteWarning', { name: deleteUserName }) }}
+        </p>
+        <ul class="confirm-bullets">
+          <li>{{ t('adminUsers.deleteBulletData') }}</li>
+          <li>{{ t('adminUsers.deleteBulletIrreversible') }}</li>
+          <li>{{ t('adminUsers.deleteBulletOwnership') }}</li>
+        </ul>
+
+        <div class="form-group">
+          <label for="du-confirm">{{ t('adminUsers.deleteTypeToConfirm', { username: deleteUserTarget?.username }) }}</label>
+          <input
+            id="du-confirm"
+            v-model="deleteConfirmInput"
+            type="text"
+            class="form-control"
+            autocomplete="off"
+            :disabled="deletingUser"
+          />
+        </div>
+
+        <div v-if="deleteUserError" class="confirm-error">
+          <i class="fas fa-exclamation-circle"></i>
+          {{ deleteUserError }}
+        </div>
+      </div>
+      <template #footer>
+        <button type="button" class="btn btn-secondary" :disabled="deletingUser" @click="closeDeleteUserModal">
+          {{ t('adminUsers.modal.cancel') }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-danger"
+          :disabled="deletingUser || !deleteConfirmMatches"
+          @click="submitDeleteUser"
+        >
+          <i :class="deletingUser ? 'fas fa-spinner fa-spin' : 'fas fa-trash-alt'"></i>
+          {{ t('adminUsers.deleteUser') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -441,6 +504,13 @@ const { t } = useTranslations({
       assignPlan: 'Assign plan',
       blockAccount: 'Block account',
       unblockAccount: 'Unblock account',
+      deleteUser: 'Delete user',
+      deleteUserError: 'Failed to delete user',
+      deleteWarning: 'You are about to permanently delete {name}\'s account. This cannot be undone.',
+      deleteBulletData: 'All their data is erased: memberships, personal organization, sessions and settings. Invoices and payment records are anonymized, not deleted.',
+      deleteBulletIrreversible: 'This action is immediate and cannot be reversed.',
+      deleteBulletOwnership: 'If they still own a non-personal organization or group, deletion is refused until ownership is transferred.',
+      deleteTypeToConfirm: 'Type "{username}" to confirm',
       verifyEmail: 'Verify email',
       emailVerified: 'Email verified',
       emailNotVerified: 'Email not verified',
@@ -533,6 +603,13 @@ const { t } = useTranslations({
       assignPlan: 'Attribuer un plan',
       blockAccount: 'Bloquer le compte',
       unblockAccount: 'Débloquer le compte',
+      deleteUser: 'Supprimer l’utilisateur',
+      deleteUserError: 'Échec de la suppression de l’utilisateur',
+      deleteWarning: 'Vous êtes sur le point de supprimer définitivement le compte de {name}. Cette action est irréversible.',
+      deleteBulletData: 'Toutes ses données sont effacées : appartenances, organisation personnelle, sessions et réglages. Les factures et paiements sont anonymisés, pas supprimés.',
+      deleteBulletIrreversible: 'Cette action est immédiate et ne peut pas être annulée.',
+      deleteBulletOwnership: 'S’il/elle possède encore une organisation ou un groupe non personnel, la suppression est refusée jusqu’au transfert de propriété.',
+      deleteTypeToConfirm: 'Tapez « {username} » pour confirmer',
       verifyEmail: 'Valider l’email',
       emailVerified: 'Email validé',
       emailNotVerified: 'Email non validé',
@@ -660,6 +737,19 @@ const setPasswordMismatch = computed(() =>
   setPasswordForm.value.password.length > 0 &&
   setPasswordConfirm.value.length > 0 &&
   setPasswordForm.value.password !== setPasswordConfirm.value
+)
+
+// Modal state (delete user — permanent erasure)
+const showDeleteUserModal = ref(false)
+const deleteUserTarget = ref<AdminUserListing | null>(null)
+const deleteUserName = computed(
+  () => deleteUserTarget.value?.display_name || deleteUserTarget.value?.username || ''
+)
+const deleteConfirmInput = ref('')
+const deletingUser = ref(false)
+const deleteUserError = ref('')
+const deleteConfirmMatches = computed(
+  () => !!deleteUserTarget.value && deleteConfirmInput.value === deleteUserTarget.value.username
 )
 
 // In-flight role update, keyed so only the select being changed shows as disabled.
@@ -963,6 +1053,39 @@ async function submitSetPassword() {
   }
 }
 
+// --- Delete user (permanent erasure) ---------------------------------------
+
+function openDeleteUserModal(user: AdminUserListing) {
+  deleteUserTarget.value = user
+  deleteConfirmInput.value = ''
+  deleteUserError.value = ''
+  showDeleteUserModal.value = true
+}
+
+function closeDeleteUserModal() {
+  if (deletingUser.value) return
+  showDeleteUserModal.value = false
+  deleteUserTarget.value = null
+}
+
+async function submitDeleteUser() {
+  if (!deleteUserTarget.value || !deleteConfirmMatches.value) return
+  const targetId = deleteUserTarget.value.id
+  deletingUser.value = true
+  deleteUserError.value = ''
+  try {
+    await adminUsersService.deleteUser(targetId)
+    users.value = users.value.filter((u) => u.id !== targetId)
+    showDeleteUserModal.value = false
+    deleteUserTarget.value = null
+  } catch (err: any) {
+    deleteUserError.value =
+      err?.response?.data?.error_message || err?.response?.data?.message || t('adminUsers.deleteUserError')
+  } finally {
+    deletingUser.value = false
+  }
+}
+
 // Data load
 onMounted(async () => {
   loading.value = true
@@ -1203,6 +1326,17 @@ onMounted(async () => {
 }
 
 .action-btn-danger:hover:not(:disabled) {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.action-btn-delete {
+  border-color: var(--color-danger-border);
+  color: var(--color-danger-text);
+}
+
+.action-btn-delete:hover:not(:disabled) {
+  background: var(--color-danger-bg);
   border-color: var(--color-danger);
   color: var(--color-danger);
 }

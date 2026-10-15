@@ -114,4 +114,15 @@ export const adminUsersService = {
   async setPassword(userId: string, password: string): Promise<void> {
     await axios.put(`admin/users/${userId}/password`, { password })
   },
+
+  /**
+   * Permanently erases the user: Stripe cancellation, Casdoor identity, RBAC
+   * policies and all OCF-side data (memberships, personal organization,
+   * sessions, settings). Irreversible. The backend refuses (409) if the
+   * user still owns a non-personal organization or group — ownership must
+   * be transferred first.
+   */
+  async deleteUser(userId: string): Promise<void> {
+    await axios.delete(`users/${userId}`)
+  },
 }
