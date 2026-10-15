@@ -24,8 +24,14 @@
 <template>
   <div class="admin-users-page">
     <div class="page-header">
-      <h2><i class="fas fa-users-cog"></i> {{ t('adminUsers.pageTitle') }}</h2>
-      <p class="page-subtitle">{{ t('adminUsers.pageSubtitle') }}</p>
+      <div class="page-header-text">
+        <h2><i class="fas fa-users-cog"></i> {{ t('adminUsers.pageTitle') }}</h2>
+        <p class="page-subtitle">{{ t('adminUsers.pageSubtitle') }}</p>
+      </div>
+      <button type="button" class="btn btn-primary" @click="openCreateUserModal">
+        <i class="fas fa-user-plus"></i>
+        {{ t('adminUsers.createUser') }}
+      </button>
     </div>
 
     <EntityTable
@@ -50,6 +56,12 @@
 
       <template #cell-email="{ row }">
         <span class="email-cell">{{ row.email }}</span>
+        <span
+          :class="['verified-badge', row.email_verified ? 'verified-yes' : 'verified-no']"
+          :title="row.email_verified ? t('adminUsers.emailVerified') : t('adminUsers.emailNotVerified')"
+        >
+          <i :class="row.email_verified ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'"></i>
+        </span>
       </template>
 
       <template #cell-is_active="{ row }">
@@ -115,6 +127,16 @@
           >
             <i class="fas fa-user-secret"></i>
             {{ t('adminUsers.impersonate') }}
+          </button>
+          <button
+            v-if="!row.email_verified"
+            type="button"
+            class="action-btn"
+            :title="t('adminUsers.verifyEmail')"
+            @click="openActionConfirm(row, 'verify-email')"
+          >
+            <i class="fas fa-envelope-circle-check"></i>
+            {{ t('adminUsers.verifyEmail') }}
           </button>
           <button
             type="button"
@@ -241,6 +263,64 @@
       :preset-user-name="planModalUser ? (planModalUser.display_name || planModalUser.username) : null"
       @close="showPlanModal = false"
     />
+
+    <!-- Create User Modal -->
+    <BaseModal
+      :visible="showCreateUserModal"
+      :title="t('adminUsers.createUser')"
+      title-icon="fas fa-user-plus"
+      size="medium"
+      :is-loading="creatingUser"
+      @close="closeCreateUserModal"
+    >
+      <form class="create-user-form" @submit.prevent="submitCreateUser">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cu-first-name">{{ t('adminUsers.form.firstName') }}</label>
+            <input id="cu-first-name" v-model="createUserForm.first_name" type="text" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label for="cu-last-name">{{ t('adminUsers.form.lastName') }}</label>
+            <input id="cu-last-name" v-model="createUserForm.last_name" type="text" class="form-control" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="cu-display-name">{{ t('adminUsers.form.displayName') }}</label>
+          <input id="cu-display-name" v-model="createUserForm.display_name" type="text" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label for="cu-username">{{ t('adminUsers.form.username') }}</label>
+          <input id="cu-username" v-model="createUserForm.username" type="text" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label for="cu-email">{{ t('adminUsers.form.email') }}</label>
+          <input id="cu-email" v-model="createUserForm.email" type="email" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label for="cu-password">{{ t('adminUsers.form.password') }}</label>
+          <input id="cu-password" v-model="createUserForm.password" type="text" class="form-control" required minlength="8" />
+          <span class="field-hint">{{ t('adminUsers.form.passwordHint') }}</span>
+        </div>
+        <label class="checkbox-row">
+          <input v-model="createUserForm.email_verified" type="checkbox" />
+          {{ t('adminUsers.form.emailVerifiedCheckbox') }}
+        </label>
+
+        <div v-if="createUserError" class="confirm-error">
+          <i class="fas fa-exclamation-circle"></i>
+          {{ createUserError }}
+        </div>
+      </form>
+      <template #footer>
+        <button type="button" class="btn btn-secondary" :disabled="creatingUser" @click="closeCreateUserModal">
+          {{ t('adminUsers.modal.cancel') }}
+        </button>
+        <button type="button" class="btn btn-primary" :disabled="creatingUser" @click="submitCreateUser">
+          <i v-if="creatingUser" class="fas fa-spinner fa-spin"></i>
+          {{ t('adminUsers.createUser') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -253,7 +333,7 @@ import type { TableColumn } from '../../../utils/tableColumns'
 import type { MemberRole } from '../../../types'
 import { useImpersonationStore } from '../../../stores/impersonation'
 import { useCurrentUserStore } from '../../../stores/currentUser'
-import { adminUsersService, type AdminUserListing, type OrgMembership, type GroupMembership } from '../../../services/admin/usersService'
+import { adminUsersService, type AdminUserListing, type OrgMembership, type GroupMembership, type AdminCreateUserInput } from '../../../services/admin/usersService'
 import { organizationService } from '../../../services/domain/organization'
 import EntityTable from '../../Generic/EntityTable.vue'
 import BaseModal from '../../Modals/BaseModal.vue'
@@ -291,28 +371,47 @@ const { t } = useTranslations({
       assignPlan: 'Assign plan',
       blockAccount: 'Block account',
       unblockAccount: 'Unblock account',
+      verifyEmail: 'Verify email',
+      emailVerified: 'Email verified',
+      emailNotVerified: 'Email not verified',
+      createUser: 'Create user',
       roleUpdateSuccess: 'Role updated successfully',
       roleUpdateError: 'Failed to update role',
+      createUserSuccess: 'User created successfully',
+      createUserError: 'Failed to create user',
+      form: {
+        firstName: 'First name',
+        lastName: 'Last name',
+        displayName: 'Display name',
+        username: 'Username',
+        email: 'Email',
+        password: 'Password',
+        passwordHint: 'Share this with the user yourself — it is not emailed to them.',
+        emailVerifiedCheckbox: 'Email already verified (I confirmed this address myself)'
+      },
       actionSuccess: {
         'reset-password': 'Password reset email sent',
         'grant-admin': 'Administrator role granted',
         'revoke-admin': 'Administrator role revoked',
         block: 'Account blocked',
-        unblock: 'Account unblocked'
+        unblock: 'Account unblocked',
+        'verify-email': 'Email marked as verified'
       },
       actionTitle: {
         'reset-password': 'Send password reset email?',
         'grant-admin': 'Grant administrator role?',
         'revoke-admin': 'Revoke administrator role?',
         block: 'Block this account?',
-        unblock: 'Unblock this account?'
+        unblock: 'Unblock this account?',
+        'verify-email': 'Mark email as verified?'
       },
       actionMessage: {
         'reset-password': '{name} will receive an email with a link to set a new password. You will not see or set the password yourself.',
         'grant-admin': '{name} will gain full platform administrator access.',
         'revoke-admin': '{name} will lose platform administrator access.',
         block: '{name} will no longer be able to sign in.',
-        unblock: '{name} will be able to sign in again.'
+        unblock: '{name} will be able to sign in again.',
+        'verify-email': '{name}\'s email will be marked as verified immediately, with no link to click.'
       },
       actionError: 'Action failed',
       modal: {
@@ -359,28 +458,47 @@ const { t } = useTranslations({
       assignPlan: 'Attribuer un plan',
       blockAccount: 'Bloquer le compte',
       unblockAccount: 'Débloquer le compte',
+      verifyEmail: 'Valider l’email',
+      emailVerified: 'Email validé',
+      emailNotVerified: 'Email non validé',
+      createUser: 'Créer un utilisateur',
       roleUpdateSuccess: 'Rôle mis à jour avec succès',
       roleUpdateError: 'Échec de la mise à jour du rôle',
+      createUserSuccess: 'Utilisateur créé avec succès',
+      createUserError: 'Échec de la création de l’utilisateur',
+      form: {
+        firstName: 'Prénom',
+        lastName: 'Nom',
+        displayName: 'Nom affiché',
+        username: 'Nom d’utilisateur',
+        email: 'Email',
+        password: 'Mot de passe',
+        passwordHint: 'Transmettez-le vous-même à l’utilisateur — il ne lui est pas envoyé par email.',
+        emailVerifiedCheckbox: 'Email déjà validé (j’ai vérifié cette adresse moi-même)'
+      },
       actionSuccess: {
         'reset-password': 'Email de réinitialisation envoyé',
         'grant-admin': 'Rôle administrateur accordé',
         'revoke-admin': 'Rôle administrateur révoqué',
         block: 'Compte bloqué',
-        unblock: 'Compte débloqué'
+        unblock: 'Compte débloqué',
+        'verify-email': 'Email marqué comme validé'
       },
       actionTitle: {
         'reset-password': 'Envoyer un email de réinitialisation ?',
         'grant-admin': 'Accorder le rôle administrateur ?',
         'revoke-admin': 'Révoquer le rôle administrateur ?',
         block: 'Bloquer ce compte ?',
-        unblock: 'Débloquer ce compte ?'
+        unblock: 'Débloquer ce compte ?',
+        'verify-email': 'Marquer l’email comme validé ?'
       },
       actionMessage: {
         'reset-password': '{name} recevra un email avec un lien pour définir un nouveau mot de passe. Vous ne verrez ni ne définirez le mot de passe vous-même.',
         'grant-admin': '{name} obtiendra un accès administrateur complet à la plateforme.',
         'revoke-admin': '{name} perdra l’accès administrateur à la plateforme.',
         block: '{name} ne pourra plus se connecter.',
-        unblock: '{name} pourra à nouveau se connecter.'
+        unblock: '{name} pourra à nouveau se connecter.',
+        'verify-email': 'L’email de {name} sera marqué comme validé immédiatement, sans lien à cliquer.'
       },
       actionError: 'L’action a échoué',
       modal: {
@@ -413,8 +531,8 @@ const targetUser = ref<AdminUserListing | null>(null)
 const starting = ref(false)
 const confirmError = ref('')
 
-// Modal state (reset password / admin role / block account)
-type UserAction = 'reset-password' | 'grant-admin' | 'revoke-admin' | 'block' | 'unblock'
+// Modal state (reset password / admin role / block account / verify email)
+type UserAction = 'reset-password' | 'grant-admin' | 'revoke-admin' | 'block' | 'unblock' | 'verify-email'
 const showActionModal = ref(false)
 const pendingAction = ref<{ type: UserAction; user: AdminUserListing } | null>(null)
 const actionRunning = ref(false)
@@ -423,6 +541,23 @@ const actionError = ref('')
 // Modal state (assign subscription plan)
 const showPlanModal = ref(false)
 const planModalUser = ref<AdminUserListing | null>(null)
+
+// Modal state (create user)
+const showCreateUserModal = ref(false)
+const creatingUser = ref(false)
+const createUserError = ref('')
+function emptyCreateUserForm(): AdminCreateUserInput {
+  return {
+    username: '',
+    display_name: '',
+    email: '',
+    password: '',
+    first_name: '',
+    last_name: '',
+    email_verified: false
+  }
+}
+const createUserForm = ref<AdminCreateUserInput>(emptyCreateUserForm())
 
 // In-flight role update, keyed so only the select being changed shows as disabled.
 const roleUpdateKey = ref<string | null>(null)
@@ -631,6 +766,10 @@ async function confirmPendingAction() {
         await adminUsersService.setForbidden(user.id, false)
         user.is_active = true
         break
+      case 'verify-email':
+        await adminUsersService.verifyEmail(user.id)
+        user.email_verified = true
+        break
     }
     showActionModal.value = false
     pendingAction.value = null
@@ -647,6 +786,44 @@ async function confirmPendingAction() {
 function openPlanModal(user: AdminUserListing) {
   planModalUser.value = user
   showPlanModal.value = true
+}
+
+// --- Create user -----------------------------------------------------------
+
+function openCreateUserModal() {
+  createUserForm.value = emptyCreateUserForm()
+  createUserError.value = ''
+  showCreateUserModal.value = true
+}
+
+function closeCreateUserModal() {
+  if (creatingUser.value) return
+  showCreateUserModal.value = false
+}
+
+async function submitCreateUser() {
+  creatingUser.value = true
+  createUserError.value = ''
+  try {
+    const created = await adminUsersService.createUser(createUserForm.value)
+    users.value.push({
+      id: created.id,
+      username: created.username,
+      display_name: createUserForm.value.display_name,
+      email: created.email,
+      is_active: true,
+      is_admin: false,
+      email_verified: createUserForm.value.email_verified,
+      organizations: [],
+      groups: []
+    })
+    showCreateUserModal.value = false
+  } catch (err: any) {
+    createUserError.value =
+      err?.response?.data?.error_message || err?.response?.data?.message || t('adminUsers.createUserError')
+  } finally {
+    creatingUser.value = false
+  }
 }
 
 // Data load
@@ -674,6 +851,11 @@ onMounted(async () => {
 }
 
 .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
   margin-bottom: var(--spacing-xl);
 }
 
@@ -711,6 +893,49 @@ onMounted(async () => {
 
 .email-cell {
   color: var(--color-text-secondary);
+}
+
+.verified-badge {
+  margin-left: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+}
+
+.verified-yes {
+  color: var(--color-success-text);
+}
+
+.verified-no {
+  color: var(--color-warning-text);
+}
+
+/* Create user form */
+.create-user-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.form-row {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.field-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
 }
 
 /* Status badge */

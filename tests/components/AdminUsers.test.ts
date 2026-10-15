@@ -26,13 +26,17 @@ const mockSendPasswordResetEmail = vi.fn()
 const mockGrantAdminRole = vi.fn()
 const mockRevokeAdminRole = vi.fn()
 const mockSetForbidden = vi.fn()
+const mockCreateUser = vi.fn()
+const mockVerifyEmail = vi.fn()
 vi.mock('../../src/services/admin/usersService', () => ({
   adminUsersService: {
     fetchAll: (...args: any[]) => mockFetchAll(...args),
     sendPasswordResetEmail: (...args: any[]) => mockSendPasswordResetEmail(...args),
     grantAdminRole: (...args: any[]) => mockGrantAdminRole(...args),
     revokeAdminRole: (...args: any[]) => mockRevokeAdminRole(...args),
-    setForbidden: (...args: any[]) => mockSetForbidden(...args)
+    setForbidden: (...args: any[]) => mockSetForbidden(...args),
+    createUser: (...args: any[]) => mockCreateUser(...args),
+    verifyEmail: (...args: any[]) => mockVerifyEmail(...args)
   }
 }))
 
@@ -88,6 +92,7 @@ function makeUser(overrides: Partial<AdminUserListing> = {}): AdminUserListing {
     email: 'alice@example.com',
     is_active: true,
     is_admin: false,
+    email_verified: true,
     organizations: [],
     groups: [],
     ...overrides
@@ -433,7 +438,7 @@ describe('AdminUsers', () => {
     await nextTick()
     expect(wrapper.find('.base-modal-overlay').exists()).toBe(true)
 
-    await wrapper.find('button.btn-primary').trigger('click')
+    await wrapper.find('.base-modal-overlay button.btn-primary').trigger('click')
     await flushPromises()
 
     expect(mockSendPasswordResetEmail).toHaveBeenCalledWith('u2')
@@ -448,7 +453,7 @@ describe('AdminUsers', () => {
     expect(findActionButton(wrapper, 'Grant admin')?.exists()).toBe(true)
     await findActionButton(wrapper, 'Grant admin')!.trigger('click')
     await nextTick()
-    await wrapper.find('button.btn-primary').trigger('click')
+    await wrapper.find('.base-modal-overlay button.btn-primary').trigger('click')
     await flushPromises()
 
     expect(mockGrantAdminRole).toHaveBeenCalledWith('u2')
@@ -472,7 +477,7 @@ describe('AdminUsers', () => {
 
     await findActionButton(wrapper, 'Block account')!.trigger('click')
     await nextTick()
-    await wrapper.find('button.btn-primary').trigger('click')
+    await wrapper.find('.base-modal-overlay button.btn-primary').trigger('click')
     await flushPromises()
 
     expect(mockSetForbidden).toHaveBeenCalledWith('u2', true)
@@ -502,5 +507,105 @@ describe('AdminUsers', () => {
     await flushPromises()
 
     expect(mockUpdateMemberRole).toHaveBeenCalledWith('o1', 'u2', 'owner')
+  })
+
+  // --- Create user -------------------------------------------------------
+
+  it('opens the create user modal from the page header button', async () => {
+    mockFetchAll.mockResolvedValueOnce([])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    expect(wrapper.find('.base-modal-overlay').exists()).toBe(false)
+    await wrapper.find('.page-header button.btn-primary').trigger('click')
+    await nextTick()
+
+    expect(wrapper.find('.base-modal-overlay').exists()).toBe(true)
+  })
+
+  it('submitting the create user form calls adminUsersService.createUser and adds the row', async () => {
+    mockFetchAll.mockResolvedValueOnce([])
+    mockCreateUser.mockResolvedValueOnce({ id: 'new-id', username: 'newteacher', email: 'newteacher@example.com' })
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    await wrapper.find('.page-header button.btn-primary').trigger('click')
+    await nextTick()
+
+    await wrapper.find('#cu-first-name').setValue('New')
+    await wrapper.find('#cu-last-name').setValue('Teacher')
+    await wrapper.find('#cu-display-name').setValue('New Teacher')
+    await wrapper.find('#cu-username').setValue('newteacher')
+    await wrapper.find('#cu-email').setValue('newteacher@example.com')
+    await wrapper.find('#cu-password').setValue('correct-horse-battery-staple')
+
+    await wrapper.find('.base-modal-overlay button.btn-primary').trigger('click')
+    await flushPromises()
+
+    expect(mockCreateUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        username: 'newteacher',
+        email: 'newteacher@example.com',
+        password: 'correct-horse-battery-staple',
+        email_verified: false
+      })
+    )
+    expect(wrapper.find('.base-modal-overlay').exists()).toBe(false)
+    expect(wrapper.text()).toContain('newteacher@example.com')
+  })
+
+  it('checking "email already verified" sends email_verified: true', async () => {
+    mockFetchAll.mockResolvedValueOnce([])
+    mockCreateUser.mockResolvedValueOnce({ id: 'new-id', username: 'newteacher', email: 'newteacher@example.com' })
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    await wrapper.find('.page-header button.btn-primary').trigger('click')
+    await nextTick()
+
+    await wrapper.find('#cu-first-name').setValue('New')
+    await wrapper.find('#cu-last-name').setValue('Teacher')
+    await wrapper.find('#cu-display-name').setValue('New Teacher')
+    await wrapper.find('#cu-username').setValue('newteacher')
+    await wrapper.find('#cu-email').setValue('newteacher@example.com')
+    await wrapper.find('#cu-password').setValue('correct-horse-battery-staple')
+    await wrapper.find('.checkbox-row input[type="checkbox"]').setValue(true)
+
+    await wrapper.find('.base-modal-overlay button.btn-primary').trigger('click')
+    await flushPromises()
+
+    expect(mockCreateUser).toHaveBeenCalledWith(expect.objectContaining({ email_verified: true }))
+  })
+
+  // --- Verify email --------------------------------------------------------
+
+  it('shows a "Verify email" button only for unverified accounts', async () => {
+    mockFetchAll.mockResolvedValueOnce([
+      makeUser({ id: 'u1', username: 'alice', email_verified: true }),
+      makeUser({ id: 'u2', username: 'bob', email_verified: false })
+    ])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    const rows = wrapper.findAll('tbody tr')
+    expect(rows[0].findAll('button.action-btn').some((b) => b.text().includes('Verify email'))).toBe(false)
+    expect(rows[1].findAll('button.action-btn').some((b) => b.text().includes('Verify email'))).toBe(true)
+  })
+
+  it('clicking "Verify email" calls adminUsersService.verifyEmail and flips the badge', async () => {
+    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'u2', username: 'bob', email_verified: false })])
+    mockVerifyEmail.mockResolvedValueOnce(undefined)
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    const btn = wrapper.findAll('button.action-btn').find((b) => b.text().includes('Verify email'))
+    expect(btn?.exists()).toBe(true)
+    await btn!.trigger('click')
+    await nextTick()
+    await wrapper.find('.base-modal-overlay button.btn-primary').trigger('click')
+    await flushPromises()
+
+    expect(mockVerifyEmail).toHaveBeenCalledWith('u2')
+    expect(wrapper.findAll('button.action-btn').some((b) => b.text().includes('Verify email'))).toBe(false)
   })
 })
