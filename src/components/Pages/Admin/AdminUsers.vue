@@ -150,6 +150,15 @@
           <button
             type="button"
             class="action-btn"
+            :title="t('adminUsers.setPassword')"
+            @click="openSetPasswordModal(row)"
+          >
+            <i class="fas fa-unlock-keyhole"></i>
+            {{ t('adminUsers.setPassword') }}
+          </button>
+          <button
+            type="button"
+            class="action-btn"
             :disabled="row.id === currentUserStore.userId"
             :title="row.is_admin ? t('adminUsers.revokeAdmin') : t('adminUsers.grantAdmin')"
             @click="openActionConfirm(row, row.is_admin ? 'revoke-admin' : 'grant-admin')"
@@ -338,6 +347,48 @@
         </button>
       </template>
     </BaseModal>
+
+    <!-- Set Password Modal (no email sent) -->
+    <BaseModal
+      :visible="showSetPasswordModal"
+      :title="t('adminUsers.setPassword')"
+      title-icon="fas fa-unlock-keyhole"
+      size="medium"
+      :is-loading="settingPassword"
+      @close="closeSetPasswordModal"
+    >
+      <form class="create-user-form" @submit.prevent="submitSetPassword">
+        <p class="field-hint">{{ t('adminUsers.form.setPasswordWarning', { name: setPasswordUserName }) }}</p>
+        <div class="form-group">
+          <label for="sp-password">{{ t('adminUsers.form.password') }}</label>
+          <input id="sp-password" v-model="setPasswordForm.password" type="password" autocomplete="new-password" class="form-control" required minlength="8" />
+        </div>
+        <div class="form-group">
+          <label for="sp-password-confirm">{{ t('adminUsers.form.passwordConfirm') }}</label>
+          <input id="sp-password-confirm" v-model="setPasswordConfirm" type="password" autocomplete="new-password" class="form-control" required />
+          <span v-if="setPasswordMismatch" class="field-error">{{ t('adminUsers.form.passwordMismatch') }}</span>
+        </div>
+
+        <div v-if="setPasswordError" class="confirm-error">
+          <i class="fas fa-exclamation-circle"></i>
+          {{ setPasswordError }}
+        </div>
+      </form>
+      <template #footer>
+        <button type="button" class="btn btn-secondary" :disabled="settingPassword" @click="closeSetPasswordModal">
+          {{ t('adminUsers.modal.cancel') }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          :disabled="settingPassword || setPasswordMismatch || !setPasswordConfirm || setPasswordForm.password.length < 8"
+          @click="submitSetPassword"
+        >
+          <i v-if="settingPassword" class="fas fa-spinner fa-spin"></i>
+          {{ t('adminUsers.setPassword') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -383,6 +434,8 @@ const { t } = useTranslations({
       roleOptManager: 'Manager',
       roleOptOwner: 'Owner',
       resetPassword: 'Reset password',
+      setPassword: 'Set password',
+      setPasswordError: 'Failed to set password',
       grantAdmin: 'Grant admin',
       revokeAdmin: 'Revoke admin',
       assignPlan: 'Assign plan',
@@ -406,7 +459,8 @@ const { t } = useTranslations({
         passwordHint: 'Share this with the user yourself — it is not emailed to them.',
         passwordConfirm: 'Confirm password',
         passwordMismatch: 'Passwords do not match',
-        emailVerifiedCheckbox: 'Email already verified (I confirmed this address myself)'
+        emailVerifiedCheckbox: 'Email already verified (I confirmed this address myself)',
+        setPasswordWarning: 'Set a new password for {name} directly. No email is sent — share it with them yourself.'
       },
       actionSuccess: {
         'reset-password': 'Password reset email sent',
@@ -472,6 +526,8 @@ const { t } = useTranslations({
       roleOptManager: 'Gestionnaire',
       roleOptOwner: 'Propriétaire',
       resetPassword: 'Réinitialiser le mot de passe',
+      setPassword: 'Définir le mot de passe',
+      setPasswordError: 'Échec de la définition du mot de passe',
       grantAdmin: 'Accorder admin',
       revokeAdmin: 'Révoquer admin',
       assignPlan: 'Attribuer un plan',
@@ -495,7 +551,8 @@ const { t } = useTranslations({
         passwordHint: 'Transmettez-le vous-même à l’utilisateur — il ne lui est pas envoyé par email.',
         passwordConfirm: 'Confirmer le mot de passe',
         passwordMismatch: 'Les mots de passe ne correspondent pas',
-        emailVerifiedCheckbox: 'Email déjà validé (j’ai vérifié cette adresse moi-même)'
+        emailVerifiedCheckbox: 'Email déjà validé (j’ai vérifié cette adresse moi-même)',
+        setPasswordWarning: 'Définissez directement un nouveau mot de passe pour {name}. Aucun email n’est envoyé — transmettez-le vous-même.'
       },
       actionSuccess: {
         'reset-password': 'Email de réinitialisation envoyé',
@@ -587,6 +644,22 @@ const passwordMismatch = computed(() =>
   createUserForm.value.password.length > 0 &&
   createUserPasswordConfirm.value.length > 0 &&
   createUserForm.value.password !== createUserPasswordConfirm.value
+)
+
+// Modal state (set password directly — no email sent)
+const showSetPasswordModal = ref(false)
+const setPasswordUser = ref<AdminUserListing | null>(null)
+const setPasswordUserName = computed(
+  () => setPasswordUser.value?.display_name || setPasswordUser.value?.username || ''
+)
+const setPasswordForm = ref({ password: '' })
+const setPasswordConfirm = ref('')
+const settingPassword = ref(false)
+const setPasswordError = ref('')
+const setPasswordMismatch = computed(() =>
+  setPasswordForm.value.password.length > 0 &&
+  setPasswordConfirm.value.length > 0 &&
+  setPasswordForm.value.password !== setPasswordConfirm.value
 )
 
 // In-flight role update, keyed so only the select being changed shows as disabled.
@@ -855,6 +928,38 @@ async function submitCreateUser() {
       err?.response?.data?.error_message || err?.response?.data?.message || t('adminUsers.createUserError')
   } finally {
     creatingUser.value = false
+  }
+}
+
+// --- Set password directly (no email) -------------------------------------
+
+function openSetPasswordModal(user: AdminUserListing) {
+  setPasswordUser.value = user
+  setPasswordForm.value = { password: '' }
+  setPasswordConfirm.value = ''
+  setPasswordError.value = ''
+  showSetPasswordModal.value = true
+}
+
+function closeSetPasswordModal() {
+  if (settingPassword.value) return
+  showSetPasswordModal.value = false
+  setPasswordUser.value = null
+}
+
+async function submitSetPassword() {
+  if (!setPasswordUser.value || setPasswordMismatch.value || setPasswordForm.value.password.length < 8) return
+  settingPassword.value = true
+  setPasswordError.value = ''
+  try {
+    await adminUsersService.setPassword(setPasswordUser.value.id, setPasswordForm.value.password)
+    showSetPasswordModal.value = false
+    setPasswordUser.value = null
+  } catch (err: any) {
+    setPasswordError.value =
+      err?.response?.data?.error_message || err?.response?.data?.message || t('adminUsers.setPasswordError')
+  } finally {
+    settingPassword.value = false
   }
 }
 

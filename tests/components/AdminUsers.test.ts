@@ -28,6 +28,7 @@ const mockRevokeAdminRole = vi.fn()
 const mockSetForbidden = vi.fn()
 const mockCreateUser = vi.fn()
 const mockVerifyEmail = vi.fn()
+const mockSetPassword = vi.fn()
 vi.mock('../../src/services/admin/usersService', () => ({
   adminUsersService: {
     fetchAll: (...args: any[]) => mockFetchAll(...args),
@@ -36,6 +37,7 @@ vi.mock('../../src/services/admin/usersService', () => ({
     revokeAdminRole: (...args: any[]) => mockRevokeAdminRole(...args),
     setForbidden: (...args: any[]) => mockSetForbidden(...args),
     createUser: (...args: any[]) => mockCreateUser(...args),
+    setPassword: (...args: any[]) => mockSetPassword(...args),
     verifyEmail: (...args: any[]) => mockVerifyEmail(...args)
   }
 }))
@@ -442,6 +444,64 @@ describe('AdminUsers', () => {
     await flushPromises()
 
     expect(mockSendPasswordResetEmail).toHaveBeenCalledWith('u2')
+  })
+
+  // --- Set password directly (no email) -----------------------------------
+
+  it('opens the set-password modal from the row action, with masked fields', async () => {
+    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'u2', username: 'bob', display_name: 'Bob' })])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    const btn = findActionButton(wrapper, 'Set password')
+    expect(btn?.exists()).toBe(true)
+    await btn!.trigger('click')
+    await nextTick()
+
+    expect(wrapper.find('.base-modal-overlay').exists()).toBe(true)
+    expect(wrapper.find('#sp-password').attributes('type')).toBe('password')
+    expect(wrapper.find('#sp-password-confirm').attributes('type')).toBe('password')
+  })
+
+  it('submitting the set-password form calls adminUsersService.setPassword with no email sent', async () => {
+    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'u2', username: 'bob', display_name: 'Bob' })])
+    mockSetPassword.mockResolvedValueOnce(undefined)
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    await findActionButton(wrapper, 'Set password')!.trigger('click')
+    await nextTick()
+
+    await wrapper.find('#sp-password').setValue('correct-horse-battery-staple')
+    await wrapper.find('#sp-password-confirm').setValue('correct-horse-battery-staple')
+    await wrapper.find('.base-modal-overlay button.btn-primary').trigger('click')
+    await flushPromises()
+
+    expect(mockSetPassword).toHaveBeenCalledWith('u2', 'correct-horse-battery-staple')
+    expect(mockSendPasswordResetEmail).not.toHaveBeenCalled()
+    expect(wrapper.find('.base-modal-overlay').exists()).toBe(false)
+  })
+
+  it('refuses to submit the set-password form when confirmation does not match', async () => {
+    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'u2', username: 'bob', display_name: 'Bob' })])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    await findActionButton(wrapper, 'Set password')!.trigger('click')
+    await nextTick()
+
+    await wrapper.find('#sp-password').setValue('correct-horse-battery-staple')
+    await wrapper.find('#sp-password-confirm').setValue('something-else')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Passwords do not match')
+    const submitBtn = wrapper.find('.base-modal-overlay button.btn-primary')
+    expect((submitBtn.element as HTMLButtonElement).disabled).toBe(true)
+
+    await submitBtn.trigger('click')
+    await flushPromises()
+
+    expect(mockSetPassword).not.toHaveBeenCalled()
   })
 
   it('grant admin button calls grantAdminRole and flips to "Revoke admin"', async () => {
