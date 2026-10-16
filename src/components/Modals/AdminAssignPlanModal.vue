@@ -65,12 +65,12 @@
           </div>
         </div>
         <div class="confirm-actions">
+          <button class="btn btn-secondary" :disabled="isAssigning" @click="showAssignConfirm = false">
+            {{ t('adminAssign.goBack') }}
+          </button>
           <button class="btn btn-primary" :disabled="isAssigning" @click="handleAssign">
             <i :class="isAssigning ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
             {{ t('adminAssign.confirm') }}
-          </button>
-          <button class="btn btn-secondary" :disabled="isAssigning" @click="showAssignConfirm = false">
-            {{ t('adminAssign.goBack') }}
           </button>
         </div>
       </div>
