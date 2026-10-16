@@ -539,11 +539,81 @@ describe('AdminUsers', () => {
 
     await findActionButton(wrapper, 'Block account')!.trigger('click')
     await nextTick()
-    await wrapper.find('.base-modal-overlay button.btn-primary').trigger('click')
+    // Blocking is a sensitive action — its confirm button is styled danger,
+    // not the neutral btn-primary the other action-confirm modals use.
+    await wrapper.find('.base-modal-overlay button.btn-danger').trigger('click')
     await flushPromises()
 
     expect(mockSetForbidden).toHaveBeenCalledWith('u2', true)
     expect(findActionButton(wrapper, 'Unblock account')?.exists()).toBe(true)
+  })
+
+  // --- Action-confirm popup consistency ------------------------------------
+  // Each action type's popup must show ITS OWN icon and severity — a popup
+  // that always looked the same regardless of which row button opened it is
+  // exactly the kind of thing that reads as "the wrong popup" to an admin
+  // clicking through the row quickly.
+
+  it('shows a danger-styled confirm button for block, but a neutral one for reset-password', async () => {
+    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'u2', username: 'bob', display_name: 'Bob', is_active: true })])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    await findActionButton(wrapper, 'Reset password')!.trigger('click')
+    await nextTick()
+    expect(wrapper.find('.base-modal-overlay button.btn-primary').exists()).toBe(true)
+    expect(wrapper.find('.base-modal-overlay button.btn-danger').exists()).toBe(false)
+    await wrapper.find('.base-modal-overlay button.btn-secondary').trigger('click')
+    await nextTick()
+
+    await findActionButton(wrapper, 'Block account')!.trigger('click')
+    await nextTick()
+    expect(wrapper.find('.base-modal-overlay button.btn-danger').exists()).toBe(true)
+  })
+
+  it('shows a danger-styled confirm button for revoking admin, but not for granting it', async () => {
+    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'u2', username: 'bob', display_name: 'Bob', is_admin: false })])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    await findActionButton(wrapper, 'Grant admin')!.trigger('click')
+    await nextTick()
+    expect(wrapper.find('.base-modal-overlay button.btn-primary').exists()).toBe(true)
+    expect(wrapper.find('.base-modal-overlay button.btn-danger').exists()).toBe(false)
+    await wrapper.find('.base-modal-overlay button.btn-secondary').trigger('click')
+    await nextTick()
+
+    mockGrantAdminRole.mockResolvedValueOnce(undefined)
+    await findActionButton(wrapper, 'Grant admin')!.trigger('click')
+    await nextTick()
+    await wrapper.find('.base-modal-overlay button.btn-primary').trigger('click')
+    await flushPromises()
+
+    await findActionButton(wrapper, 'Revoke admin')!.trigger('click')
+    await nextTick()
+    expect(wrapper.find('.base-modal-overlay button.btn-danger').exists()).toBe(true)
+  })
+
+  it('each action-confirm popup shows an icon matching its own action, not a generic one', async () => {
+    mockFetchAll.mockResolvedValueOnce([
+      makeUser({ id: 'u2', username: 'bob', display_name: 'Bob', is_active: true, email_verified: false })
+    ])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    const cases: Array<[string, string]> = [
+      ['Verify email', 'fa-envelope-circle-check'],
+      ['Reset password', 'fa-key'],
+      ['Block account', 'fa-ban']
+    ]
+
+    for (const [buttonText, expectedIconClass] of cases) {
+      await findActionButton(wrapper, buttonText)!.trigger('click')
+      await nextTick()
+      expect(wrapper.find(`.base-modal-overlay i.${expectedIconClass}`).exists()).toBe(true)
+      await wrapper.find('.base-modal-overlay button.btn-secondary').trigger('click')
+      await nextTick()
+    }
   })
 
   it('admin cannot block their own account (button disabled)', async () => {

@@ -118,84 +118,104 @@
 
       <template #row-actions="{ row }">
         <div class="row-actions-group">
-          <button
-            type="button"
-            class="impersonate-btn"
-            :disabled="isImpersonateDisabled(row.id)"
-            :title="impersonateButtonTitle(row.id)"
-            @click="openConfirmModal(row)"
-          >
-            <i class="fas fa-user-secret"></i>
-            {{ t('adminUsers.impersonate') }}
-          </button>
-          <button
-            v-if="!row.email_verified"
-            type="button"
-            class="action-btn"
-            :title="t('adminUsers.verifyEmail')"
-            @click="openActionConfirm(row, 'verify-email')"
-          >
-            <i class="fas fa-envelope-circle-check"></i>
-            {{ t('adminUsers.verifyEmail') }}
-          </button>
-          <button
-            type="button"
-            class="action-btn"
-            :title="t('adminUsers.resetPassword')"
-            @click="openActionConfirm(row, 'reset-password')"
-          >
-            <i class="fas fa-key"></i>
-            {{ t('adminUsers.resetPassword') }}
-          </button>
-          <button
-            type="button"
-            class="action-btn"
-            :title="t('adminUsers.setPassword')"
-            @click="openSetPasswordModal(row)"
-          >
-            <i class="fas fa-unlock-keyhole"></i>
-            {{ t('adminUsers.setPassword') }}
-          </button>
-          <button
-            type="button"
-            class="action-btn"
-            :disabled="row.id === currentUserStore.userId"
-            :title="row.is_admin ? t('adminUsers.revokeAdmin') : t('adminUsers.grantAdmin')"
-            @click="openActionConfirm(row, row.is_admin ? 'revoke-admin' : 'grant-admin')"
-          >
-            <i class="fas fa-shield-alt"></i>
-            {{ row.is_admin ? t('adminUsers.revokeAdmin') : t('adminUsers.grantAdmin') }}
-          </button>
-          <button
-            type="button"
-            class="action-btn"
-            :title="t('adminUsers.assignPlan')"
-            @click="openPlanModal(row)"
-          >
-            <i class="fas fa-layer-group"></i>
-            {{ t('adminUsers.assignPlan') }}
-          </button>
-          <button
-            type="button"
-            class="action-btn"
-            :class="{ 'action-btn-danger': row.is_active }"
-            :disabled="row.id === currentUserStore.userId"
-            :title="row.is_active ? t('adminUsers.blockAccount') : t('adminUsers.unblockAccount')"
-            @click="openActionConfirm(row, row.is_active ? 'block' : 'unblock')"
-          >
-            <i :class="row.is_active ? 'fas fa-ban' : 'fas fa-unlock'"></i>
-            {{ row.is_active ? t('adminUsers.blockAccount') : t('adminUsers.unblockAccount') }}
-          </button>
-          <button
-            type="button"
-            class="action-btn action-btn-delete"
-            :disabled="row.id === currentUserStore.userId"
-            :title="t('adminUsers.deleteUser')"
-            @click="openDeleteUserModal(row)"
-          >
-            <i class="fas fa-trash-alt"></i>
-            {{ t('adminUsers.deleteUser') }}
-          </button>
+          <!-- Acting-as-this-user: kept alone and visually distinct (its own
+               button class, own icon) since it's unlike every other action
+               here — nothing else makes the admin temporarily become the user. -->
+          <div class="action-group">
+            <button
+              type="button"
+              class="impersonate-btn"
+              :disabled="isImpersonateDisabled(row.id)"
+              :title="impersonateButtonTitle(row.id)"
+              @click="openConfirmModal(row)"
+            >
+              <i class="fas fa-user-secret"></i>
+              {{ t('adminUsers.impersonate') }}
+            </button>
+          </div>
+
+          <span class="action-group-divider" aria-hidden="true"></span>
+
+          <!-- Account help: none of these change what the account can do. -->
+          <div class="action-group">
+            <button
+              v-if="!row.email_verified"
+              type="button"
+              class="action-btn"
+              :title="t('adminUsers.verifyEmail')"
+              @click="openActionConfirm(row, 'verify-email')"
+            >
+              <i class="fas fa-envelope-circle-check"></i>
+              {{ t('adminUsers.verifyEmail') }}
+            </button>
+            <button
+              type="button"
+              class="action-btn"
+              :title="t('adminUsers.resetPassword')"
+              @click="openActionConfirm(row, 'reset-password')"
+            >
+              <i class="fas fa-key"></i>
+              {{ t('adminUsers.resetPassword') }}
+            </button>
+            <button
+              type="button"
+              class="action-btn"
+              :title="t('adminUsers.setPassword')"
+              @click="openSetPasswordModal(row)"
+            >
+              <i class="fas fa-unlock-keyhole"></i>
+              {{ t('adminUsers.setPassword') }}
+            </button>
+            <button
+              type="button"
+              class="action-btn"
+              :title="t('adminUsers.assignPlan')"
+              @click="openPlanModal(row)"
+            >
+              <i class="fas fa-layer-group"></i>
+              {{ t('adminUsers.assignPlan') }}
+            </button>
+          </div>
+
+          <span class="action-group-divider" aria-hidden="true"></span>
+
+          <!-- Access-changing: these take something away from, or hand
+               something to, the account — grouped together and styled danger
+               so they read as a different kind of action at a glance. -->
+          <div class="action-group">
+            <button
+              type="button"
+              class="action-btn"
+              :class="{ 'action-btn-danger': row.is_admin }"
+              :disabled="row.id === currentUserStore.userId"
+              :title="row.is_admin ? t('adminUsers.revokeAdmin') : t('adminUsers.grantAdmin')"
+              @click="openActionConfirm(row, row.is_admin ? 'revoke-admin' : 'grant-admin')"
+            >
+              <i class="fas fa-shield-alt"></i>
+              {{ row.is_admin ? t('adminUsers.revokeAdmin') : t('adminUsers.grantAdmin') }}
+            </button>
+            <button
+              type="button"
+              class="action-btn"
+              :class="{ 'action-btn-danger': row.is_active }"
+              :disabled="row.id === currentUserStore.userId"
+              :title="row.is_active ? t('adminUsers.blockAccount') : t('adminUsers.unblockAccount')"
+              @click="openActionConfirm(row, row.is_active ? 'block' : 'unblock')"
+            >
+              <i :class="row.is_active ? 'fas fa-ban' : 'fas fa-unlock'"></i>
+              {{ row.is_active ? t('adminUsers.blockAccount') : t('adminUsers.unblockAccount') }}
+            </button>
+            <button
+              type="button"
+              class="action-btn action-btn-delete"
+              :disabled="row.id === currentUserStore.userId"
+              :title="t('adminUsers.deleteUser')"
+              @click="openDeleteUserModal(row)"
+            >
+              <i class="fas fa-trash-alt"></i>
+              {{ t('adminUsers.deleteUser') }}
+            </button>
+          </div>
         </div>
       </template>
     </EntityTable>
@@ -247,11 +267,11 @@
       </template>
     </BaseModal>
 
-    <!-- Action Confirmation Modal (reset password / admin role / block) -->
+    <!-- Action Confirmation Modal (verify email / reset password / admin role / block) -->
     <BaseModal
       :visible="showActionModal"
       :title="actionModalTitle"
-      title-icon="fas fa-exclamation-triangle"
+      :title-icon="actionModalIcon"
       size="medium"
       :is-loading="actionRunning"
       @close="closeActionConfirm"
@@ -267,7 +287,12 @@
         <button type="button" class="btn btn-secondary" :disabled="actionRunning" @click="closeActionConfirm">
           {{ t('adminUsers.modal.cancel') }}
         </button>
-        <button type="button" class="btn btn-primary" :disabled="actionRunning" @click="confirmPendingAction">
+        <button
+          type="button"
+          :class="['btn', actionIsSensitive ? 'btn-danger' : 'btn-primary']"
+          :disabled="actionRunning"
+          @click="confirmPendingAction"
+        >
           <i v-if="actionRunning" class="fas fa-spinner fa-spin"></i>
           {{ t('adminUsers.modal.confirm') }}
         </button>
@@ -920,6 +945,30 @@ const actionModalMessage = computed(() => {
   return t(`adminUsers.actionMessage.${pendingAction.value.type}`, { name })
 })
 
+// Each action type gets its own icon (matching its row button) rather than
+// one generic warning triangle for all five — so the popup itself tells you
+// which action it is, not just its title text.
+const ACTION_ICONS: Record<UserAction, string> = {
+  'verify-email': 'fas fa-envelope-circle-check',
+  'reset-password': 'fas fa-key',
+  'grant-admin': 'fas fa-shield-alt',
+  'revoke-admin': 'fas fa-shield-alt',
+  block: 'fas fa-ban',
+  unblock: 'fas fa-unlock'
+}
+const actionModalIcon = computed(() =>
+  pendingAction.value ? ACTION_ICONS[pendingAction.value.type] : 'fas fa-exclamation-triangle'
+)
+
+// Revoking admin access and blocking sign-in are the two actions here that
+// take something away from the account — styled danger (red confirm
+// button) like the delete-user modal, instead of looking identical to a
+// harmless "send a reset email" confirmation.
+const SENSITIVE_ACTIONS: UserAction[] = ['revoke-admin', 'block']
+const actionIsSensitive = computed(
+  () => !!pendingAction.value && SENSITIVE_ACTIONS.includes(pendingAction.value.type)
+)
+
 function openActionConfirm(user: AdminUserListing, type: UserAction) {
   pendingAction.value = { type, user }
   actionError.value = ''
@@ -1296,7 +1345,24 @@ onMounted(async () => {
 .row-actions-group {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--spacing-xs);
+}
+
+.action-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+/* Separates "acting as the user" / benign account help / access-changing
+   actions, so they don't read as one undifferentiated row of buttons. */
+.action-group-divider {
+  align-self: stretch;
+  width: 1px;
+  min-height: 1.5rem;
+  background: var(--color-border-light);
 }
 
 .action-btn {
