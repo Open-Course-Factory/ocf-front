@@ -224,6 +224,77 @@ describe('ScenarioAiModal — prompt language', () => {
   })
 })
 
+describe('ScenarioAiModal — organization AI assistant (auto-generate)', () => {
+  it('shows an auto-generate button when the destination organization has AI configured, fills the answer and lands on step 3', async () => {
+    getMock.mockImplementation((url: string) => {
+      if (url.includes('/ai-config')) return Promise.resolve({ data: { enabled: true, endpoint: 'https://x', model: 'm', has_api_key: true } })
+      return Promise.reject(new Error('unexpected GET'))
+    })
+    postMock.mockImplementation((url: string) => {
+      if (url.includes('/ai-config/generate')) return Promise.resolve({ data: { answer: '{"title":"Ping","steps":[{"title":"a"}]}' } })
+      return Promise.reject(new Error('unexpected POST'))
+    })
+
+    const wrapper = mountModal({ mode: 'create' })
+    await wrapper.setProps({ visible: true })
+    await flushPromises()
+    await wrapper.find('#ai-description').setValue('A lab about ping')
+    await wrapper.find('[data-testid="scenario-ai-next"]').trigger('click')
+    await flushPromises()
+
+    const autoBtn = wrapper.find('[data-testid="scenario-ai-auto-generate"]')
+    expect(autoBtn.exists()).toBe(true)
+    await autoBtn.trigger('click')
+    await flushPromises()
+
+    expect(postMock).toHaveBeenCalledWith('/organizations/org-1/ai-config/generate', expect.objectContaining({ prompt: expect.any(String) }))
+    expect(wrapper.find('[data-testid="scenario-ai-step-answer"]').exists()).toBe(true)
+    expect((wrapper.find('#ai-answer').element as HTMLTextAreaElement).value).toBe('{"title":"Ping","steps":[{"title":"a"}]}')
+  })
+
+  it('does not show the auto-generate button when the organization has no AI configured', async () => {
+    getMock.mockImplementation((url: string) => {
+      if (url.includes('/ai-config')) return Promise.resolve({ data: { enabled: false, endpoint: '', model: '', has_api_key: false } })
+      return Promise.reject(new Error('catalog unavailable'))
+    })
+
+    const wrapper = mountModal({ mode: 'create' })
+    await wrapper.setProps({ visible: true })
+    await flushPromises()
+    await wrapper.find('#ai-description').setValue('A lab about ping')
+    await wrapper.find('[data-testid="scenario-ai-next"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="scenario-ai-auto-generate"]').exists()).toBe(false)
+    // The manual flow must still be there regardless.
+    expect(wrapper.find('[data-testid="scenario-ai-copy-prompt"]').exists()).toBe(true)
+  })
+
+  it('stays on step 2 with an error, and the manual flow still available, when the AI assistant fails', async () => {
+    getMock.mockImplementation((url: string) => {
+      if (url.includes('/ai-config')) return Promise.resolve({ data: { enabled: true, endpoint: 'https://x', model: 'm', has_api_key: true } })
+      return Promise.reject(new Error('unexpected GET'))
+    })
+    postMock.mockImplementation((url: string) => {
+      if (url.includes('/ai-config/generate')) return Promise.reject({ response: { data: { error_message: 'AI assistant is not configured for this organization' } } })
+      return Promise.reject(new Error('unexpected POST'))
+    })
+
+    const wrapper = mountModal({ mode: 'create' })
+    await wrapper.setProps({ visible: true })
+    await flushPromises()
+    await wrapper.find('#ai-description').setValue('A lab about ping')
+    await wrapper.find('[data-testid="scenario-ai-next"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-testid="scenario-ai-auto-generate"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="scenario-ai-step-prompt"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('AI assistant is not configured for this organization')
+    expect(wrapper.find('[data-testid="scenario-ai-copy-prompt"]').exists()).toBe(true)
+  })
+})
+
 describe('ScenarioAiModal — step effects follow their flag', () => {
   async function promptShown(): Promise<string> {
     const wrapper = mountModal({ mode: 'create' })

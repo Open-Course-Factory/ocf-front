@@ -16,6 +16,30 @@ import type {
 const BASE_URL = '/organizations'
 
 /**
+ * The organization's own AI-assisted scenario authoring config. The API key
+ * itself is never part of this shape — has_api_key is the only signal that
+ * one is already set.
+ */
+export interface OrganizationAiConfig {
+  enabled: boolean
+  endpoint: string
+  model: string
+  has_api_key: boolean
+}
+
+/**
+ * api_key is optional on purpose: the frontend never holds the real value
+ * to send back, so omitting it means "keep whatever is stored". Sending ""
+ * explicitly clears it.
+ */
+export interface UpdateOrganizationAiConfigInput {
+  enabled: boolean
+  endpoint: string
+  model: string
+  api_key?: string
+}
+
+/**
  * What the backend applies when an organization sets no retention delay
  * (OCF_DEFAULT_RETENTION_DAYS, ocf-core#492). Display only — the backend
  * never reads it from here.
@@ -126,5 +150,28 @@ export const organizationService = {
    */
   async eraseMember(organizationId: string, userId: string): Promise<void> {
     await axios.post(`${BASE_URL}/${organizationId}/members/${userId}/erase`)
+  },
+
+  /** Reads the organization's AI-assisted authoring config. Never includes the API key. */
+  async getAiConfig(organizationId: string): Promise<OrganizationAiConfig> {
+    const response = await axios.get<OrganizationAiConfig>(`${BASE_URL}/${organizationId}/ai-config`)
+    return response.data
+  },
+
+  /** Manager and owner only. Omit api_key to keep the stored one; send "" to clear it. */
+  async updateAiConfig(organizationId: string, input: UpdateOrganizationAiConfigInput): Promise<OrganizationAiConfig> {
+    const response = await axios.put<OrganizationAiConfig>(`${BASE_URL}/${organizationId}/ai-config`, input)
+    return response.data
+  },
+
+  /**
+   * Calls the organization's configured AI assistant with the given prompt
+   * and returns its raw completion text — the same text a teacher would
+   * otherwise paste in manually into ScenarioAiModal. Throws (409) if the
+   * organization has no usable configuration.
+   */
+  async generateWithAi(organizationId: string, prompt: string): Promise<string> {
+    const response = await axios.post<{ answer: string }>(`${BASE_URL}/${organizationId}/ai-config/generate`, { prompt })
+    return response.data.answer
   },
 }

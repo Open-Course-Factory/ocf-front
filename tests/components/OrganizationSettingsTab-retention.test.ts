@@ -12,6 +12,20 @@ const updateRetentionDays = vi.fn()
 const toastSuccess = vi.fn()
 const toastError = vi.fn()
 
+// The AI assistant section (src/services/domain/organization/organizationService.ts)
+// fetches its config on mount — stub axios so these retention-focused tests
+// never make a real HTTP call.
+const getMock = vi.fn()
+const putMock = vi.fn()
+vi.mock('axios', () => ({
+  default: {
+    get: (...args: any[]) => getMock(...args),
+    put: (...args: any[]) => putMock(...args),
+    post: vi.fn(),
+    delete: vi.fn()
+  }
+}))
+
 vi.mock('../../src/stores/organizations', () => ({
   useOrganizationsStore: () => ({
     updateRetentionDays: (...args: any[]) => updateRetentionDays(...args),
@@ -65,6 +79,7 @@ describe('OrganizationSettingsTab retention delay', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     updateRetentionDays.mockResolvedValue({ ...organization, retention_days: 30 })
+    getMock.mockResolvedValue({ data: { enabled: false, endpoint: '', model: '', has_api_key: false } })
   })
 
   it('shows the platform default as a placeholder when the organization has none', () => {
