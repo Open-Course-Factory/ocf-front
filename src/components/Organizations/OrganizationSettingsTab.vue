@@ -91,6 +91,86 @@
       </p>
     </div>
 
+    <!-- AI assistant: the organization's own bring-your-own-key config,
+         replacing the scenario editor's manual copy-prompt/paste-answer
+         flow with a direct call when switched on. Reaching the Settings
+         tab already implies canManage, so no extra owner gate here. -->
+    <div class="ocf-ai-config-section">
+      <h4>
+        <i class="fas fa-wand-magic-sparkles"></i>
+        {{ t('settings.aiConfigTitle') }}
+      </h4>
+      <p>{{ t('settings.aiConfigDescription') }}</p>
+
+      <div v-if="aiConfigLoading" class="ocf-ai-config-loading">
+        <i class="fas fa-spinner fa-spin"></i>
+      </div>
+      <template v-else>
+        <label class="checkbox-row">
+          <input v-model="aiConfigForm.enabled" type="checkbox" data-test="ai-config-enabled" />
+          {{ t('settings.aiConfigEnabled') }}
+        </label>
+
+        <div class="form-group">
+          <label for="ai-config-endpoint">{{ t('settings.aiConfigEndpoint') }}</label>
+          <input
+            id="ai-config-endpoint"
+            v-model="aiConfigForm.endpoint"
+            type="text"
+            class="form-control"
+            data-test="ai-config-endpoint"
+            placeholder="https://api.openai.com/v1/chat/completions"
+          />
+          <p class="form-help-text">{{ t('settings.aiConfigEndpointHelp') }}</p>
+        </div>
+
+        <div class="form-group">
+          <label for="ai-config-model">{{ t('settings.aiConfigModel') }}</label>
+          <input
+            id="ai-config-model"
+            v-model="aiConfigForm.model"
+            type="text"
+            class="form-control"
+            data-test="ai-config-model"
+            placeholder="gpt-4o-mini"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="ai-config-key">{{ t('settings.aiConfigApiKey') }}</label>
+          <input
+            id="ai-config-key"
+            v-model="aiConfigKeyInput"
+            type="password"
+            autocomplete="new-password"
+            class="form-control"
+            data-test="ai-config-api-key"
+            :placeholder="aiConfigHasKey ? t('settings.aiConfigKeyStoredPlaceholder') : t('settings.aiConfigKeyPlaceholder')"
+          />
+          <p class="form-help-text">
+            {{ aiConfigHasKey ? t('settings.aiConfigKeyStoredHelp') : t('settings.aiConfigKeyHelp') }}
+          </p>
+        </div>
+
+        <div class="ocf-ai-config-actions">
+          <button
+            class="btn btn-primary"
+            data-test="ai-config-save"
+            :disabled="isSavingAiConfig"
+            @click="saveAiConfig"
+          >
+            <i :class="isSavingAiConfig ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
+            {{ t('settings.aiConfigSave') }}
+          </button>
+        </div>
+
+        <p v-if="aiConfigError" class="alert alert-danger" data-test="ai-config-error">
+          <i class="fas fa-exclamation-triangle"></i>
+          {{ aiConfigError }}
+        </p>
+      </template>
+    </div>
+
     <div class="danger-zone">
       <h4>{{ t('settings.dangerZone') }}</h4>
       <p>{{ t('settings.deleteWarning') }}</p>
@@ -186,7 +266,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import BaseModal from '../Modals/BaseModal.vue'
 import AdminBadge from '../Common/AdminBadge.vue'
@@ -194,7 +274,7 @@ import { useOrganizationsStore } from '../../stores/organizations'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useTranslations } from '../../composables/useTranslations'
 import { useToast } from '../../composables/useToast'
-import { PLATFORM_DEFAULT_RETENTION_DAYS } from '../../services/domain/organization'
+import { PLATFORM_DEFAULT_RETENTION_DAYS, organizationService } from '../../services/domain/organization'
 import type { Organization } from '../../types'
 
 const props = defineProps<{
@@ -235,6 +315,56 @@ const isConvertFormValid = computed(() => {
 // stay distinguishable from 0.
 const retentionInput = ref<string | number>('')
 const isSavingRetention = ref(false)
+
+// AI assistant config. aiConfigKeyInput is deliberately separate from
+// aiConfigForm: the real key never arrives from the backend (has_api_key is
+// the only signal), so there is no "current value" to pre-fill — only
+// typing something here means "replace the stored key". Left empty on an
+// existing config, saving omits api_key entirely rather than sending "" and
+// accidentally clearing it.
+const aiConfigLoading = ref(true)
+const aiConfigHasKey = ref(false)
+const aiConfigKeyInput = ref('')
+const aiConfigForm = ref({ enabled: false, endpoint: '', model: '' })
+const isSavingAiConfig = ref(false)
+const aiConfigError = ref('')
+
+async function loadAiConfig() {
+  aiConfigLoading.value = true
+  aiConfigError.value = ''
+  try {
+    const cfg = await organizationService.getAiConfig(props.organizationId)
+    aiConfigForm.value = { enabled: cfg.enabled, endpoint: cfg.endpoint, model: cfg.model }
+    aiConfigHasKey.value = cfg.has_api_key
+    aiConfigKeyInput.value = ''
+  } catch (err: any) {
+    aiConfigError.value = err.response?.data?.error_message || err.message || t('settings.aiConfigLoadError')
+  } finally {
+    aiConfigLoading.value = false
+  }
+}
+
+onMounted(loadAiConfig)
+
+async function saveAiConfig() {
+  isSavingAiConfig.value = true
+  aiConfigError.value = ''
+  try {
+    const cfg = await organizationService.updateAiConfig(props.organizationId, {
+      ...aiConfigForm.value,
+      // Only sent when the admin actually typed something — an empty
+      // field means "leave the stored key untouched", not "clear it".
+      ...(aiConfigKeyInput.value ? { api_key: aiConfigKeyInput.value } : {})
+    })
+    aiConfigHasKey.value = cfg.has_api_key
+    aiConfigKeyInput.value = ''
+    toast.success(t('settings.aiConfigSaved'))
+  } catch (err: any) {
+    aiConfigError.value = err.response?.data?.error_message || err.message || t('settings.aiConfigSaveError')
+  } finally {
+    isSavingAiConfig.value = false
+  }
+}
 
 const storedRetentionAsText = (org: Organization | undefined) =>
   org?.retention_days == null ? '' : String(org.retention_days)
@@ -297,6 +427,21 @@ const { t } = useTranslations({
       retentionOwnerOnly: 'Only organization owners can change the retention delay.',
       retentionSaved: 'Retention delay saved',
       retentionError: 'The retention delay could not be saved',
+      aiConfigTitle: 'AI assistant',
+      aiConfigDescription: 'Bring your own AI assistant to the scenario editor\'s "Create/Improve with AI" flow. When on, writing a scenario calls your configured endpoint directly instead of asking you to copy a prompt into your own chat assistant and paste the answer back.',
+      aiConfigEnabled: 'Use this endpoint instead of the manual copy/paste flow',
+      aiConfigEndpoint: 'Endpoint URL',
+      aiConfigEndpointHelp: 'An OpenAI-compatible "chat completions" URL — works with OpenAI itself, Mistral, or a self-hosted Ollama/vLLM instance exposing the same API shape.',
+      aiConfigModel: 'Model',
+      aiConfigApiKey: 'API key',
+      aiConfigKeyPlaceholder: 'Enter an API key',
+      aiConfigKeyStoredPlaceholder: 'Leave blank to keep the stored key',
+      aiConfigKeyHelp: 'Stored encrypted, never shown again once saved.',
+      aiConfigKeyStoredHelp: 'A key is already configured. Type a new one to replace it, or leave this blank to keep it.',
+      aiConfigSave: 'Save',
+      aiConfigSaved: 'AI assistant configuration saved',
+      aiConfigLoadError: 'Failed to load the AI assistant configuration',
+      aiConfigSaveError: 'The AI assistant configuration could not be saved',
     }
   },
   fr: {
@@ -338,6 +483,21 @@ const { t } = useTranslations({
       retentionOwnerOnly: 'Seuls les propriétaires de l\'organisation peuvent modifier le délai de conservation.',
       retentionSaved: 'Délai de conservation enregistré',
       retentionError: 'Le délai de conservation n\'a pas pu être enregistré',
+      aiConfigTitle: 'Assistant IA',
+      aiConfigDescription: 'Apportez votre propre assistant IA au flux « Créer/Améliorer avec l\'IA » de l\'éditeur de scénario. Une fois activé, la rédaction d\'un scénario appelle directement votre endpoint configuré, au lieu de vous demander de copier un prompt dans votre assistant de discussion puis de coller la réponse.',
+      aiConfigEnabled: 'Utiliser cet endpoint au lieu du copier-coller manuel',
+      aiConfigEndpoint: 'URL de l\'endpoint',
+      aiConfigEndpointHelp: 'Une URL « chat completions » compatible OpenAI — fonctionne avec OpenAI lui-même, Mistral, ou une instance Ollama/vLLM auto-hébergée exposant le même format d\'API.',
+      aiConfigModel: 'Modèle',
+      aiConfigApiKey: 'Clé API',
+      aiConfigKeyPlaceholder: 'Saisissez une clé API',
+      aiConfigKeyStoredPlaceholder: 'Laissez vide pour conserver la clé enregistrée',
+      aiConfigKeyHelp: 'Stockée chiffrée, jamais réaffichée une fois enregistrée.',
+      aiConfigKeyStoredHelp: 'Une clé est déjà configurée. Saisissez-en une nouvelle pour la remplacer, ou laissez ce champ vide pour la conserver.',
+      aiConfigSave: 'Enregistrer',
+      aiConfigSaved: 'Configuration de l\'assistant IA enregistrée',
+      aiConfigLoadError: 'Échec du chargement de la configuration de l\'assistant IA',
+      aiConfigSaveError: 'La configuration de l\'assistant IA n\'a pas pu être enregistrée',
     }
   }
 })
@@ -603,6 +763,54 @@ const deleteOrganization = async () => {
 
 .ocf-retention-input {
   width: 8rem;
+}
+
+.ocf-ai-config-section {
+  padding: 1.5rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ocf-ai-config-section h4 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ocf-ai-config-section h4 i {
+  color: var(--color-primary);
+}
+
+.ocf-ai-config-section > p {
+  margin: -0.5rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.ocf-ai-config-loading {
+  color: var(--color-text-secondary);
+}
+
+.ocf-ai-config-actions {
+  display: flex;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  color: var(--color-text-primary);
+  cursor: pointer;
 }
 
 .danger-zone {

@@ -108,8 +108,24 @@
       </template>
     </div>
 
-    <!-- 2. Copy the prompt -->
+    <!-- 2. Copy the prompt (or generate automatically, when the destination's
+         organization has its own AI assistant configured) -->
     <div v-else-if="step === 2" class="ocf-ai-body" data-testid="scenario-ai-step-prompt">
+      <div v-if="aiConfigEnabled" class="ocf-ai-auto-row" data-testid="scenario-ai-auto-generate-row">
+        <button
+          type="button"
+          class="btn btn-primary"
+          data-testid="scenario-ai-auto-generate"
+          :disabled="generating"
+          @click="generateAutomatically"
+        >
+          <i :class="generating ? 'fas fa-spinner fa-spin' : 'fas fa-bolt'" aria-hidden="true"></i>
+          {{ t('scenarioAi.generateAutomatically') }}
+        </button>
+        <span class="ocf-ai-hint">{{ t('scenarioAi.generateAutomaticallyHint') }}</span>
+      </div>
+      <p v-if="aiConfigEnabled" class="ocf-ai-manual-divider">{{ t('scenarioAi.orDoItManually') }}</p>
+
       <p class="ocf-ai-help">{{ t('scenarioAi.promptHelp') }}</p>
       <div class="ocf-ai-copy-row">
         <button type="button" class="ocf-btn-outline" data-testid="scenario-ai-copy-prompt" @click="copy(prompt, 'prompt')">
@@ -212,6 +228,7 @@ import { useScenarioCreateScopes } from '../../composables/useScenarioCreateScop
 import { useScenarioAiTranslations } from '../../composables/useScenarioAiTranslations'
 import { useScenarioImportError } from '../../composables/useScenarioImportError'
 import { teacherService } from '../../services/domain/scenario'
+import { organizationService } from '../../services/domain/organization'
 import { useScenarioAiCatalog } from '../../composables/useScenarioAiCatalog'
 import { scenarioImportProblems } from '../../utils/scenarioImportProblems'
 import {
@@ -245,7 +262,7 @@ const describeImportError = useScenarioImportError()
 const { t } = useScenarioAiTranslations()
 // The user's chosen UI language, as the language selector and preferences set it.
 const { currentLocale } = useLocale()
-const { parseScopeKey, pickDefaultScopeKey, scopeKeyForScenario, loadScopeSources } = useScenarioCreateScopes()
+const { parseScopeKey, pickDefaultScopeKey, scopeKeyForScenario, loadScopeSources, allGroups } = useScenarioCreateScopes()
 const { loadCatalog } = useScenarioAiCatalog()
 
 const step = ref(1)
@@ -264,11 +281,53 @@ const problems = ref<string[]>([])
 const errorMessage = ref('')
 const copied = ref<'' | 'prompt' | 'fix'>('')
 
+// Whether the destination's own organization has a usable AI assistant
+// configured (src/components/Organizations/OrganizationSettingsTab.vue sets
+// this up). null while unknown/loading: the auto-generate row only shows
+// once we're sure, rather than flashing in and out.
+const aiConfigEnabled = ref(false)
+const generating = ref(false)
+
 const canWritePrompt = computed(() =>
   props.mode === 'create'
     ? brief.description.trim() !== '' && !!parseScopeKey(destinationKey.value)
     : instruction.value.trim() !== '' && !!props.scenario
 )
+
+// The organization whose AI assistant (if any) applies here: the scenario's
+// own org when improving, or the chosen destination's org when creating —
+// resolved through the group's own organization_id when the destination is
+// a class rather than an org directly. null for a platform-scoped create or
+// an org-less (personal) scenario — no AI assistant can apply there.
+const targetOrganizationId = computed<string | null>(() => {
+  if (props.mode === 'improve') return props.scenario?.organization_id || null
+  const scope = parseScopeKey(destinationKey.value)
+  if (!scope) return null
+  if (scope.kind === 'org') return scope.id
+  if (scope.kind === 'group') {
+    const group = allGroups.value.find((g: any) => g.id === scope.id)
+    return group?.organization_id || null
+  }
+  return null
+})
+
+async function refreshAiConfigAvailability() {
+  const orgId = targetOrganizationId.value
+  if (!orgId) {
+    aiConfigEnabled.value = false
+    return
+  }
+  try {
+    const cfg = await organizationService.getAiConfig(orgId)
+    aiConfigEnabled.value = cfg.enabled && cfg.has_api_key && !!cfg.endpoint
+  } catch {
+    // No access, or the org simply never set one up — the manual
+    // copy/paste flow below is always there regardless.
+    aiConfigEnabled.value = false
+  }
+}
+
+watch(targetOrganizationId, refreshAiConfigAvailability)
 
 // Computed rather than written once, so that switching the prompt language —
 // or going back to change the brief — rewrites the prompt in place.
@@ -312,6 +371,7 @@ watch(() => props.visible, async (open) => {
     await loadScopeSources()
     destinationKey.value = pickDefaultScopeKey()
   }
+  await refreshAiConfigAvailability()
 })
 
 function reset() {
@@ -327,6 +387,8 @@ function reset() {
   problems.value = []
   errorMessage.value = ''
   copied.value = ''
+  aiConfigEnabled.value = false
+  generating.value = false
 }
 
 async function writePrompt() {
@@ -360,6 +422,26 @@ async function copy(text: string, what: 'prompt' | 'fix') {
     // No clipboard (insecure origin, denied permission): the prompt stays in
     // the read-only box, which selects itself on focus for a manual copy.
     errorMessage.value = t('scenarioAi.copyFailed')
+  }
+}
+
+// Calls the destination organization's configured AI assistant with the
+// current prompt and lands straight on step 3 with the answer pre-filled —
+// the same answer field a manual paste would fill, parsed and validated the
+// same way. Never throws into the caller: a failure here just leaves the
+// teacher on step 2 with the manual copy/paste flow still available.
+async function generateAutomatically() {
+  const orgId = targetOrganizationId.value
+  if (!orgId) return
+  generating.value = true
+  errorMessage.value = ''
+  try {
+    answer.value = await organizationService.generateWithAi(orgId, prompt.value)
+    step.value = 3
+  } catch (err: any) {
+    errorMessage.value = err.response?.data?.error_message || err.message || t('scenarioAi.generateError')
+  } finally {
+    generating.value = false
   }
 }
 
@@ -486,6 +568,20 @@ function close() {
 .ocf-ai-help {
   margin: 0;
   color: var(--color-text-secondary);
+}
+
+.ocf-ai-auto-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.ocf-ai-manual-divider {
+  margin: var(--spacing-xs) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: center;
 }
 
 .ocf-ai-copy-row {
