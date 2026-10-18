@@ -504,7 +504,6 @@
         readonly
         class="iframe-code"
         rows="4"
-        ref="iframeCodeRef"
       ></textarea>
 
       <template #footer>
@@ -888,7 +887,6 @@ const copiedSessions = ref(new Set())
 const copiedIframes = ref(new Set())
 const showIframeModal = ref(false)
 const currentIframeCode = ref('')
-const iframeCodeRef = ref(null)
 
 const isSyncing = ref(false)
 const lastSyncTime = ref(null)

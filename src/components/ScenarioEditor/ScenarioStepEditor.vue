@@ -1211,7 +1211,25 @@ interface QuestionData {
 // limit while typing instead of a 400 on save.
 const EFFECT_TEXT_MAX = 500
 
-const formData = ref<Record<string, any>>({
+interface StepFormData {
+  title: string
+  order: number
+  text_content: string
+  hint_content: string
+  verify_script: string
+  background_script: string
+  foreground_script: string
+  flag_path: string
+  flag_level: number
+  show_immediate_feedback: boolean
+  intro_effect: string
+  intro_text: string
+  outro_effect: string
+  outro_text: string
+  questions: QuestionData[]
+}
+
+const formData = ref<StepFormData>({
   title: '',
   order: 0,
   text_content: '',
@@ -1226,7 +1244,7 @@ const formData = ref<Record<string, any>>({
   intro_text: '',
   outro_effect: '',
   outro_text: '',
-  questions: [] as QuestionData[]
+  questions: []
 })
 
 const collapsedQuestions = ref(new Set<number>())
@@ -1368,7 +1386,7 @@ watch(isDirty, dirty => emit('update:dirty', dirty), { immediate: true })
 // Rendered with the learner's own pipeline, from whichever language is edited.
 const previewTitle = computed(() => (isTranslating.value && translationData.value.title) || formData.value.title)
 // The text the read-only copy button takes from the open tab.
-const TAB_TEXT_FIELDS: Record<string, string> = {
+const TAB_TEXT_FIELDS: Record<string, keyof StepFormData> = {
   content: 'text_content',
   hints: 'hint_content',
   verify: 'verify_script',
@@ -1556,7 +1574,7 @@ const pendingTypeToLabel = computed(() =>
 const handleSave = () => {
   const cleaned = {
     ...formData.value,
-    questions: (formData.value.questions as QuestionData[]).map((q) => {
+    questions: formData.value.questions.map((q) => {
       let ca: string
       if (q.question_type === 'multiple_choice') {
         ca = q.correct_answer === '' || q.correct_answer == null ? '' : String(q.correct_answer)

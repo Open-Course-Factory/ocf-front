@@ -312,7 +312,7 @@ watch(visibleTabs, tabs => {
   }
 }, { immediate: true })
 
-const { tablist, tabProps, panelProps, onKeydown } = useTabList(activeTab, 'org')
+const { tabProps, panelProps, onKeydown } = useTabList(activeTab, 'org')
 
 onMounted(async () => {
   await Promise.all([

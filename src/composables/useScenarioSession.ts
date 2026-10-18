@@ -10,7 +10,7 @@
  * (returning the fetched step) to do revealed-hint loading + transient resets.
  */
 
-import { ref, computed, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, onBeforeUnmount, nextTick, useTemplateRef } from 'vue'
 import { useTranslations } from './useTranslations'
 import { useScrollFade } from './useScrollFade'
 import {
@@ -61,8 +61,9 @@ export function useScenarioSession(
   const reviewingStep = ref<CurrentStepResponse | null>(null)
   const isLoadingReview = ref(false)
 
-  // Ref for step content container (for copy-to-clipboard injection)
-  const stepContentRef = ref<HTMLElement | null>(null)
+  // Step content container, bound with ref="stepContentRef" in the template
+  // (copy-to-clipboard injection, image loading, scroll fade).
+  const stepContentRef = useTemplateRef<HTMLElement>('stepContentRef')
 
   // A level's instructions routinely run past the bottom of the panel, and the
   // panel scrolls inside itself, so nothing else tells the learner to keep

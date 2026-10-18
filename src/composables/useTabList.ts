@@ -34,11 +34,14 @@
  * the document would be a dangling reference.
  */
 
-import { ref, watch, type Ref } from 'vue'
+import { ref, useTemplateRef, watch, type Ref } from 'vue'
 
 export function useTabList<T extends string>(activeId: Ref<T>, idPrefix: string) {
-  /** The element carrying `role="tablist"`; arrow navigation reads its tabs from the DOM. */
-  const tablist = ref<HTMLElement | null>(null)
+  /**
+   * The element carrying `role="tablist"` (bound with `ref="tablist"` in the template);
+   * arrow navigation reads its tabs from the DOM.
+   */
+  const tablist = useTemplateRef<HTMLElement>('tablist')
 
   // Roving tabindex: exactly one tab is in the page's tab sequence. It follows
   // focus while arrowing, and returns to the selected tab whenever the selection

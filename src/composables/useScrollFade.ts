@@ -23,7 +23,7 @@ const BOTTOM_EPSILON_PX = 10
  * Call `check()` after replacing the element's content: nothing observed here
  * fires when text is swapped for text of a different length.
  */
-export function useScrollFade(elementRef: Ref<HTMLElement | null>) {
+export function useScrollFade(elementRef: Readonly<Ref<HTMLElement | null>>) {
   const hasOverflow = ref(false)
 
   function check() {

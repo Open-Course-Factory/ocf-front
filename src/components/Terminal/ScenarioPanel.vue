@@ -519,7 +519,6 @@ const {
   scenarioInfo,
   sessionStartedAt,
   reviewingStep,
-  stepContentRef,
   stepHasOverflow,
   checkStepFade,
   displayedStep,

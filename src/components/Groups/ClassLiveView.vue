@@ -89,7 +89,7 @@ const activeView = ref<ClassLiveViewMode>(
  */
 const focusSessionId = ref<string | null>(null)
 
-const { tablist, tabProps, panelProps, onKeydown } = useTabList(activeView, 'class-live')
+const { tabProps, panelProps, onKeydown } = useTabList(activeView, 'class-live')
 
 const VIEWS: { id: ClassLiveViewMode; icon: string; labelKey: string }[] = [
   { id: 'progress', icon: 'fas fa-list-ul', labelKey: 'classLiveView.progression' },

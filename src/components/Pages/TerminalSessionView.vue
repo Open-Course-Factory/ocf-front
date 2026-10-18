@@ -175,7 +175,6 @@
       <!-- Terminal only (active session without scenario) -->
       <div v-else-if="isSessionActive" class="terminal-standalone-area">
         <TerminalSessionPanel
-          ref="standaloneTerminalRef"
           :show-exposed-ports="true"
           :session-info="sessionInfo"
           :is-active="isSessionActive"
@@ -494,7 +493,6 @@ function handleScenarioInfoLoaded(info: ScenarioInfo) {
 const scenarioSessionId = ref<string | null>(null)
 const scenarioSessionStatus = ref<string | null>(null)
 const scenarioTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null>(null)
-const standaloneTerminalRef = ref<InstanceType<typeof TerminalSessionPanel> | null>(null)
 const scenarioPanelRef = ref<InstanceType<typeof ScenarioPanel> | null>(null)
 const terminalHadScenario = ref(false)
 
