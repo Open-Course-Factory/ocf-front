@@ -483,7 +483,7 @@ const router = createRouter({
   routes: basicRoutes as RouteRecordRaw[],
 });
 
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, from) => {
   const currentUserStore = useCurrentUserStore();
   const { storePreviousRoute } = useSettingsNavigation();
 
@@ -497,40 +497,34 @@ router.beforeEach(async (to, from, next) => {
     console.log('🔐 Navigation to', to.name, '- isAuthenticated:', currentUserStore.isAuthenticated);
     if (currentUserStore.isAuthenticated) {
       console.log('🔐 Blocking access, redirecting to /terminal-sessions');
-      next({ path: '/terminal-sessions' });
-      return;
+      return { path: '/terminal-sessions' };
     }
   }
 
   // Always allow password reset and email verification pages (even for authenticated users)
   if (to.name === 'PasswordReset' || to.name === 'ForgotPassword' || to.name === 'ResetPassword' || to.name === 'VerifyEmail') {
-    next();
-    return;
+    return true;
   }
 
   // Allow ForceChangePassword page itself
   if (to.name === 'ForceChangePassword') {
-    next();
-    return;
+    return true;
   }
 
   // Force password change: block ALL authenticated routes until password is changed
   if (currentUserStore.needsPasswordChange) {
-    next({ name: 'ForceChangePassword' });
-    return;
+    return { name: 'ForceChangePassword' };
   }
 
   // Allow access if requiresAuth is explicitly false (public routes)
   if (to.meta.requiresAuth === false) {
-    next();
-    return;
+    return true;
   }
 
   // Check authentication for protected routes
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!currentUserStore.isAuthenticated) {
-      next({ name: 'Login' });
-      return;
+      return { name: 'Login' };
     }
   }
 
@@ -550,11 +544,10 @@ router.beforeEach(async (to, from, next) => {
     if (!isFeatureEnabled) {
       console.warn(`🏴 Access denied: Feature "${requiredFeature}" is disabled`);
       // Redirect to home with error message
-      next({
+      return {
         name: 'LandingPage',
         query: { error: 'feature_disabled', feature: requiredFeature }
-      });
-      return;
+      };
     }
   }
 
@@ -593,11 +586,10 @@ router.beforeEach(async (to, from, next) => {
         roles: currentUserStore.userRoles
       });
       // Redirect to dashboard or home
-      next({
+      return {
         name: 'TerminalSessions', // Default page for authenticated users
         query: { error: 'insufficient_permissions' }
-      });
-      return;
+      };
     }
 
     console.log('✅ Permission check passed for', to.path);
@@ -610,8 +602,7 @@ router.beforeEach(async (to, from, next) => {
     const features = await usePermissionsStore().ensureEffectiveFeaturesLoaded().catch(() => null);
     const redirect = classroomRefusalRedirect(features);
     if (redirect) {
-      next(redirect);
-      return;
+      return redirect;
     }
   }
 
@@ -628,11 +619,10 @@ router.beforeEach(async (to, from, next) => {
     const { canAccessScenarioEditor } = useScenarioEditorAccess()
     if (memberships.isLoaded && !canAccessScenarioEditor.value) {
       console.warn(`❌ Access denied to ${to.path}: not a scenario manager`);
-      next({
+      return {
         name: 'TerminalSessions',
         query: { error: 'insufficient_permissions' }
-      });
-      return;
+      };
     }
   }
 
@@ -657,14 +647,11 @@ router.beforeEach(async (to, from, next) => {
 
   if (to.meta.requiresEmailVerification && !currentUserStore.emailVerified) {
     console.warn(`📧 Access denied to ${to.path}: Email not verified`);
-    next({
+    return {
       name: 'VerifyEmail',
       query: { redirect: to.fullPath }
-    });
-    return;
+    };
   }
-
-  next();
 });
 
 // Handle chunk load failures after deployment (new build = new chunk hashes)
