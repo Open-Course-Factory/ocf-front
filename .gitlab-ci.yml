@@ -112,7 +112,7 @@ e2e:payment:
   # Playwright's own image: browsers + system deps preinstalled (saves ~7 min
   # over installing them per run). Keep the tag in lockstep with the
   # @playwright/test version in package.json.
-  image: mcr.microsoft.com/playwright:v1.59.1-noble
+  image: mcr.microsoft.com/playwright:v1.64.1-noble
   # No dind service: the runner exposes the shared host Docker daemon (same as
   # ocf-core's test:auth job), so the stack runs there and this job joins the
   # compose network to reach it by service name.
@@ -200,7 +200,7 @@ e2e:scenarios:
   # Both e2e jobs build a full ocf-core stack on the shared host Docker daemon;
   # one stack at a time per project, or they starve the runner host together.
   resource_group: e2e-stack
-  image: mcr.microsoft.com/playwright:v1.59.1-noble
+  image: mcr.microsoft.com/playwright:v1.64.1-noble
   cache:
     - key: "${CI_COMMIT_REF_SLUG}-npm"
       paths:
@@ -283,7 +283,7 @@ e2e:scenarios:
 # ============================================================================
 .e2e:gameshell:
   stage: test
-  image: mcr.microsoft.com/playwright:v1.59.1-noble
+  image: mcr.microsoft.com/playwright:v1.64.1-noble
   cache:
     - key: "${CI_COMMIT_REF_SLUG}-npm"
       paths:

@@ -5,5 +5,12 @@
   ],
   "constraints": {
     "npm": "^10"
-  }
+  },
+  "packageRules": [
+    {
+      "description": "The CI image ships the browsers for one Playwright version; @playwright/test must move with it.",
+      "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"],
+      "groupName": "playwright"
+    }
+  ]
 }
