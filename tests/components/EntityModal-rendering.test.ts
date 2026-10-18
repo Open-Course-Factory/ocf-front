@@ -287,3 +287,25 @@ describe('EntityModal — rendering', () => {
     })
   })
 })
+
+describe('EntityModal — sub-entity picker', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('offers the sub-entity store\'s choices in a filterable select bound to the field', async () => {
+    const fieldList = new Map([
+      ['theme_id', { label: 'Theme', type: 'input', toBeSet: true, toBeEdited: true }]
+    ])
+    const themes = { selectDatas: [{ text: 'Dark', value: 't1' }, { text: 'Light', value: 't2' }] }
+    const store = createMockStore({ fieldList, subEntitiesStores: new Map([['theme_id', themes]]) })
+    const wrapper = mountEntityModal({ entityStore: store })
+    await nextTick()
+
+    const select = wrapper.findComponent({ name: 'ElSelect' })
+    expect(select.exists()).toBe(true)
+    expect(select.props('filterable')).toBe(true)
+    const options = wrapper.findAllComponents({ name: 'ElOption' })
+    expect(options.map(o => [o.props('label'), o.props('value')])).toEqual([['Dark', 't1'], ['Light', 't2']])
+  })
+})

@@ -38,11 +38,6 @@ import { registerAllHelp, registerHelpRoutes } from './help'
 import { helpFr } from './locales/help/fr'
 import { helpEn } from './locales/help/en'
 
-// Vuetify
-import 'vuetify/styles'
-import { createVuetify } from 'vuetify'
-import * as components from 'vuetify/components'
-import * as directives from 'vuetify/directives'
 
 declare module 'pinia' {
   export interface PiniaCustomProperties {
@@ -62,11 +57,6 @@ declare module 'pinia' {
 const pinia = createPinia()
 pinia.use(piniaPluginPersist)
 
-const vuetify = createVuetify({
-    components,
-    directives,
-  })
-
 setupAxiosDefaults()
 setupAxiosInterceptors()
 
@@ -85,7 +75,6 @@ async function initializeApp() {
         .use(router)
         .use(pinia)  // ← Pinia must be registered before feature flags are fetched!
         .use(i18n)
-        .use(vuetify)
 
     // Preload help translations synchronously so direct page loads of
     // /help-public/* render translated content on first paint.

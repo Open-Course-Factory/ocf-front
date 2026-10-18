@@ -34,8 +34,7 @@
     "pinia": "^4.1.0",
     "vue": "^3.5.44",
     "vue-i18n": "^11.4.16",
-    "vue-router": "^5.4.0",
-    "vuetify": "^3.13.7"
+    "vue-router": "^5.4.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

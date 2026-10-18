@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
 import EntityModal from '../../src/components/Modals/EntityModal.vue'
+import ElementPlus from 'element-plus'
 
 /**
  * Shared fixtures and helpers for EntityModal test files.
@@ -93,10 +94,7 @@ export function mountEntityModal(props: Record<string, any> = {}) {
       ...props
     },
     global: {
-      plugins: [i18n],
-      stubs: {
-        'v-autocomplete': true
-      }
+      plugins: [i18n, ElementPlus]
     }
   })
 }

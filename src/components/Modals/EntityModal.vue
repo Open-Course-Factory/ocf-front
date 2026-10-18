@@ -189,15 +189,19 @@
       <div v-if="entityStore.subEntitiesStores.size > 0" v-for="[name, store] of entityStore.subEntitiesStores" class="form-group">
         <template v-if="entityStore.fieldList.get(name)?.toBeSet">
           <label :for="name">{{ name }}</label>
-          <v-autocomplete
-            label="Autocomplete"
+          <el-select
             v-model="data[name]"
-            :items="store.selectDatas"
-            item-text="text"
-            item-value="value"
-            item-title="text"
-            :class="['form-control', { 'is-invalid': errors[name] }]"
-          />
+            :id="name"
+            filterable
+            :class="['w-100', { 'is-invalid': errors[name] }]"
+          >
+            <el-option
+              v-for="item in store.selectDatas"
+              :key="item.value"
+              :label="item.text"
+              :value="item.value"
+            />
+          </el-select>
         </template>
       </div>
     </div>
