@@ -147,7 +147,7 @@ const { t } = useTranslations({
 
 const metricsStore = useTerminalMetricsStore()
 
-let refreshIntervalId: NodeJS.Timeout | null = null
+let refreshIntervalId: ReturnType<typeof setTimeout> | null = null
 
 onMounted(() => {
   // Initial fetch

@@ -8,7 +8,7 @@
     "build": "vue-tsc && vite build",
     "preview": "vite preview --port 4000 --host",
     "test": "vitest run",
-    "typecheck:e2e": "tsc --noEmit --target ES2020 --module ESNext --moduleResolution bundler --skipLibCheck --types node e2e/*.spec.ts",
+    "typecheck:e2e": "tsc --noEmit --ignoreConfig --target ES2020 --module ESNext --moduleResolution bundler --skipLibCheck --types node e2e/*.spec.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "precommit": "bash scripts/pre-commit-checks.sh",
@@ -45,7 +45,7 @@
     "@vue/test-utils": "^2.5.1",
     "happy-dom": "^20.14.6",
     "sass": "^1.105.2",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "vite": "^8.3.4",
     "vitest": "^5.0.5",
     "vue-tsc": "^3.3.13"

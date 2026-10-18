@@ -132,7 +132,7 @@ const isSearching = ref(false)
 const isAssigning = ref(false)
 const error = ref('')
 
-let searchTimeout: NodeJS.Timeout | null = null
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const handleSearch = () => {
   if (searchTimeout) {

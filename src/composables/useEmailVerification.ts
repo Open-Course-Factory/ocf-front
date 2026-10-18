@@ -9,7 +9,7 @@ export function useEmailVerification() {
   const resendCooldown = ref(0)
   const lastResendTime = ref<number | null>(null)
 
-  let cooldownTimer: NodeJS.Timeout | null = null
+  let cooldownTimer: ReturnType<typeof setTimeout> | null = null
 
   const canResend = computed(() => resendCooldown.value === 0 && !isResending.value)
 

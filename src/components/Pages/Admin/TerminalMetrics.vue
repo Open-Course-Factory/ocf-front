@@ -263,7 +263,7 @@ function filteredOrgsByBackend(backendId: string) {
 
 // Auto-refresh
 const autoRefreshInterval = 30000
-let refreshIntervalId: NodeJS.Timeout | null = null
+let refreshIntervalId: ReturnType<typeof setTimeout> | null = null
 
 // Computed: online/offline counts
 const onlineCount = computed(() => backendsStore.onlineBackends.length)

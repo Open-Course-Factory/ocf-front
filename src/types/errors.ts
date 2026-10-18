@@ -69,10 +69,12 @@ export class ApiError extends Error {
     this.timestamp = new Date();
     this.context = context;
 
-    // Maintains proper stack trace for where our error was thrown (only available on V8)
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, ApiError);
-    }
+    // Maintains proper stack trace for where our error was thrown (only available on V8,
+    // and not part of the standard library types)
+    const v8Error = Error as ErrorConstructor & {
+      captureStackTrace?: (target: object, constructor?: Function) => void
+    };
+    v8Error.captureStackTrace?.(this, ApiError);
   }
 
   /**

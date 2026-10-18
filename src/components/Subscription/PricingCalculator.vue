@@ -277,7 +277,7 @@ const discountPercentage = computed(() => {
 })
 
 // Debounce timer for quantity changes
-let debounceTimer: NodeJS.Timeout | null = null
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const handleQuantityChange = () => {
   // Clear existing timer

@@ -413,7 +413,7 @@ const sessionInfo = ref<any>(null)
 const isStopping = ref(false)
 const isRecording = ref(false)
 const timeRemaining = ref(0)
-let timerInterval: NodeJS.Timeout | null = null
+let timerInterval: ReturnType<typeof setTimeout> | null = null
 // All pending expiry-refresh setTimeout IDs. Tracked as a Set because the
 // post-expiry polling schedules multiple sequential timeouts; onBeforeUnmount
 // must clear every one to avoid post-unmount axios calls.

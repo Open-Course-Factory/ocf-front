@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page, type Locator } from '@playwright/test';
 import { loginFresh } from './helpers/auth';
 import { dismissVerificationBanner, navigateViaMenuCategory } from './helpers/ui';
 import { typeInTerminal, readTerminalText, waitForLiveTerminal } from './helpers/xterm';
@@ -905,7 +905,7 @@ test.describe('GameShell — the whole adventure, in a real container', () => {
     // The card renders before its actions do — availability is resolved in a
     // second request — so this has to wait for a way in rather than glance
     // once and conclude there is none.
-    let start = null;
+    let start: Locator | null = null;
     const deadline = Date.now() + 45_000;
     while (Date.now() < deadline && start === null) {
       for (const id of ['scenario-launch-btn', 'scenario-relaunch-btn', 'scenario-resume-btn']) {
@@ -923,6 +923,8 @@ test.describe('GameShell — the whole adventure, in a real container', () => {
       start === null,
       'GameShell is not launchable here (no tt-backend/Incus, or a run is already open)'
     );
+    // test.skip throws when its condition holds; TypeScript cannot see that.
+    if (start === null) return;
 
     // Playing in another language means choosing it here, not merely expecting
     // it: the world is built at launch, and a run that only changed what it

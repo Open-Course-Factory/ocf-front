@@ -202,7 +202,7 @@ const manualToken = ref('')
 const redirectCountdown = ref(5)
 const showResendSuccess = ref(false)
 
-let redirectTimer: NodeJS.Timeout | null = null
+let redirectTimer: ReturnType<typeof setTimeout> | null = null
 
 onMounted(async () => {
   const token = route.query.token as string

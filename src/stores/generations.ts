@@ -36,7 +36,7 @@ export const useGenerationsStore = defineStore('generations', () => {
     const base = useBaseStore();
 
     // État pour le polling des statuts
-    const pollingIntervals = ref(new Map<string, NodeJS.Timeout>());
+    const pollingIntervals = ref(new Map<string, ReturnType<typeof setTimeout>>());
     const previousStatuses = new Map<string, string>();
 
     const { t } = useStoreTranslations({
