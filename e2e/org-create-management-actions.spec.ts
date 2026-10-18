@@ -22,7 +22,11 @@ import { apiLogin, type ApiSession } from './helpers/paymentApi'
  * allows organizations, and it self-skips when the seeded trainer has none.
  */
 
-const TRAINER_EMAIL = process.env.E2E_TRAINER_EMAIL || 'marc@test.ocf'
+// Sophie, not marc: this spec creates an organization (its creator becomes the
+// owner) and deletes it at the end, while org-context-switching asserts the
+// exact list of organizations karim, jp and marc belong to. Sharing marc made
+// the two race whenever they ran in parallel.
+const TRAINER_EMAIL = process.env.E2E_TRAINER_EMAIL || 'sophie@test.ocf'
 const TRAINER_PASSWORD = process.env.E2E_TRAINER_PASSWORD || 'OcfTest2026!'
 
 const API_BASE = process.env.OCF_API_URL || 'http://localhost:8080/api/v1'
