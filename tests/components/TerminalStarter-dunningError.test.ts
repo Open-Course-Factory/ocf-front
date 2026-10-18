@@ -119,13 +119,18 @@ vi.mock('../../src/stores/subscriptions', () => ({
   useSubscriptionsStore: () => subscriptionsStub
 }))
 
-vi.mock('../../src/stores/organizations', () => ({
-  useOrganizationsStore: () => ({
-    currentOrganization: null,
-    currentOrganizationId: null,
-    loadOrganizations: vi.fn().mockResolvedValue(undefined),
-  })
-}))
+// Shaped like a real Pinia store (refs inside a reactive): storeToRefs reads
+// every raw property, so a plain object holding null crashes it.
+vi.mock('../../src/stores/organizations', async () => {
+  const { reactive, ref } = await import('vue')
+  return {
+    useOrganizationsStore: () => reactive({
+      currentOrganization: ref(null),
+      currentOrganizationId: ref(null),
+      loadOrganizations: vi.fn().mockResolvedValue(undefined),
+    })
+  }
+})
 
 vi.mock('../../src/stores/terminalBackends', () => ({
   useTerminalBackendsStore: () => ({
