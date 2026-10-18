@@ -91,7 +91,7 @@ withDefaults(defineProps<Props>(), {
   isLoading: false
 })
 
-const emit = defineEmits<{
+defineEmits<{
   downloadInvoice: [invoiceId: string]
 }>()
 

@@ -179,7 +179,7 @@ const props = withDefaults(defineProps<Props>(), {
   isRefreshing: false
 })
 
-const emit = defineEmits<{
+defineEmits<{
   upgrade: []
   refresh: []
 }>()

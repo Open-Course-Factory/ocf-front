@@ -84,7 +84,7 @@ withDefaults(defineProps<Props>(), {
   error: ''
 })
 
-const emit = defineEmits<{
+defineEmits<{
   (e: 'create'): void
   (e: 'bulkImport', id: string): void
   (e: 'manage', id: string): void

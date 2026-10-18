@@ -54,7 +54,7 @@ withDefaults(defineProps<Props>(), {
   isConfirming: false
 })
 
-const emit = defineEmits<{
+defineEmits<{
   close: []
   confirm: []
 }>()

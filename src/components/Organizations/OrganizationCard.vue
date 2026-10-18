@@ -106,7 +106,7 @@ const isAdminGranted = computed(() => {
   return props.organization.owner_user_id !== currentUser.userId
 })
 
-const emit = defineEmits<{
+defineEmits<{
   (e: 'bulkImport', id: string): void
   (e: 'manage', id: string): void
   (e: 'view', id: string): void
