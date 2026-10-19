@@ -99,7 +99,6 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
 import axios from 'axios'
-import html2canvas from 'html2canvas'
 import { useTranslations } from '../../composables/useTranslations'
 import BaseModal from '../Modals/BaseModal.vue'
 
@@ -203,6 +202,8 @@ async function captureScreenshot() {
   try {
     // html2canvas renders a cloned document, where CSS entry animations
     // (Layout's fadeIn) restart from opacity 0 and get captured washed out
+    // Loaded on demand: only feedback with a screenshot needs it
+    const { default: html2canvas } = await import('html2canvas')
     const canvas = await html2canvas(document.body, {
       onclone: (doc) => {
         const style = doc.createElement('style')
