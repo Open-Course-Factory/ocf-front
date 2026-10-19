@@ -522,8 +522,4 @@ onBeforeUnmount(cleanup)
   height: 100% !important;
   padding: var(--spacing-xs);
 }
-
-.supervision-viewer :deep(.xterm-viewport) {
-  overflow-y: auto;
-}
 </style>
