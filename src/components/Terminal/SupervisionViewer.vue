@@ -104,6 +104,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import '@xterm/xterm/css/xterm.css'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
 import { getTerminalTheme } from '../../utils/terminalTheme'
