@@ -17,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # === Runtime stage ===
-FROM nginx:1.27-alpine
+FROM nginx:1.31-alpine
 
 # Runtime-configurable proxy target for Incus UI
 # (envsubst replaces ${INCUS_PROXY_TARGET} in nginx config at container startup)
