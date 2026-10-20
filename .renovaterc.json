@@ -11,6 +11,11 @@
       "description": "The CI image ships the browsers for one Playwright version; @playwright/test must move with it.",
       "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"],
       "groupName": "playwright"
+    },
+    {
+      "description": "TypeScript 7 drops typescript/lib/tsc, which vue-tsc loads; lift once vue-tsc runs on the native compiler.",
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<7"
     }
   ]
 }
