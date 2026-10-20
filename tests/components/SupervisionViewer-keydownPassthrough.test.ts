@@ -26,7 +26,7 @@ import { nextTick } from 'vue'
 vi.mock('@xterm/xterm', () => ({
   Terminal: class {
     open() {}
-    loadAddon() {}
+    loadAddon() {} attachCustomKeyEventHandler() {}
     dispose() {}
     reset() {}
     write() {}

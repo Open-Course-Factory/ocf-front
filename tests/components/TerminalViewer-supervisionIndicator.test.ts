@@ -100,7 +100,7 @@ vi.mock('../../src/services/domain/terminal/terminalService', () => ({
   terminalService: { syncSession: vi.fn().mockResolvedValue({}) }
 }))
 
-vi.mock('@xterm/xterm', () => ({ Terminal: class { open() {} loadAddon() {} dispose() {} onResize() {} onData() { return { dispose() {} } } focus() {} reset() {} write() {} paste() {} cols = 80; rows = 24; element = null } }))
+vi.mock('@xterm/xterm', () => ({ Terminal: class { open() {} loadAddon() {} attachCustomKeyEventHandler() {} dispose() {} onResize() {} onData() { return { dispose() {} } } focus() {} reset() {} write() {} paste() {} cols = 80; rows = 24; element = null } }))
 vi.mock('@xterm/addon-fit', () => ({ FitAddon: class { fit() {} dispose() {} } }))
 vi.mock('@xterm/addon-attach', () => ({ AttachAddon: class { dispose() {} } }))
 

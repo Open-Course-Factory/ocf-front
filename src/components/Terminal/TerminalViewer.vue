@@ -268,6 +268,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { useEndStateConfig, type EndStateReason, type EndStateActionKey } from '../../composables/useEndStateConfig'
 import { getTerminalTheme } from '../../utils/terminalTheme'
+import { terminalKeyHandler } from '../../utils/terminalShortcuts'
 import { canConnectToTerminal, preConnectError, sessionHasNetwork } from '../../utils/sessionState'
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import {
@@ -615,6 +616,8 @@ async function initXterm(): Promise<boolean> {
 
     fitAddon = new FitAddon()
     terminal.value.loadAddon(fitAddon)
+    const term = terminal.value
+    term.attachCustomKeyEventHandler(terminalKeyHandler(() => term.getSelection()))
 
     error.value = ''
     return true
@@ -1116,7 +1119,16 @@ watch(() => props.sessionInfo, async (newSessionInfo, oldSessionInfo) => {
   }
 }, { immediate: false })
 
+// Ctrl+W deletes a word in the shell, but the browser closes the tab before the
+// page sees the key. Asking before leaving a live console is the only catch.
+function confirmLeavingLiveConsole(event: BeforeUnloadEvent) {
+  if (!isConnected.value) return
+  event.preventDefault()
+  event.returnValue = ''
+}
+
 onMounted(async () => {
+  window.addEventListener('beforeunload', confirmLeavingLiveConsole)
   if (!displaySessionId.value) {
     error.value = t('terminal.sessionMissing')
     return
@@ -1135,6 +1147,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', confirmLeavingLiveConsole)
   cleanup()
 })
 

@@ -108,6 +108,7 @@ import '@xterm/xterm/css/xterm.css'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
 import { getTerminalTheme } from '../../utils/terminalTheme'
+import { terminalKeyHandler } from '../../utils/terminalShortcuts'
 import { buildSuperviseWsUrl } from '../../services/domain/terminal/supervisionService'
 import {
   createSupervisionMessageHandler,
@@ -234,6 +235,8 @@ async function initTerminal() {
 
   fitAddon = new FitAddon()
   terminal.loadAddon(fitAddon)
+  const term = terminal
+  term.attachCustomKeyEventHandler(terminalKeyHandler(() => term.getSelection()))
 
   if (terminalRef.value) {
     terminal.open(terminalRef.value)
