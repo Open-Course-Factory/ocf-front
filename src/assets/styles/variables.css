@@ -4,6 +4,10 @@
  */
 
 :root {
+  /* Font Awesome 7 draws every icon 1.25em wide by default; v6 sized each icon
+     to its glyph, and the layouts were built around that. fa-fw still works. */
+  --fa-width: auto;
+
   /* === COLOR PALETTE === */
 
   /* Primary Colors */
