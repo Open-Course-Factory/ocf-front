@@ -167,6 +167,7 @@
               <router-link
                 :to="{ name: 'TerminalSessionView', params: { sessionId: session.terminal_session_id } }"
                 class="btn btn-sm btn-secondary review-btn"
+                data-testid="scenario-review-btn"
                 @click.stop
               >
                 <i class="fas fa-eye"></i>

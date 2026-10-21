@@ -11,7 +11,7 @@ import {
   type ApiSession,
 } from './helpers/scenarioApi';
 import { adminSession } from './helpers/freshUsers';
-import { readFlagFileFromTerminal, typeInTerminal, waitForLiveTerminal } from './helpers/xterm';
+import { readFlagFileFromTerminal, readTerminalText, typeInTerminal, waitForLiveTerminal } from './helpers/xterm';
 
 // ---------------------------------------------------------------------------
 // Tier B recipe spec — one real end-to-end scenario run, containers included.
@@ -186,7 +186,25 @@ test('learner launches, follows and completes a real scenario', async ({ page })
     )
     .toEqual({ status: 'completed', grade: 100 });
 
-  // Aftermath — history: the run shows up on /my-scenarios via real navigation
+  // Completing does not stop the machine: the console stays live on this page
+  // and the learner keeps working in the same container (ocf-front #357).
+  await expect(page.locator('.terminal-end-state')).toHaveCount(0);
+  await typeInTerminal(page, 'touch /tmp/touched-after-completion');
+
+  // Aftermath — history: the run shows up on /my-scenarios via real navigation,
+  // and Review leads back into that same live machine.
   await navigateViaMenuCategory(page, 'scenarios', '/my-scenarios');
-  await expect(page.locator('body')).toContainText(FIXTURE_TITLE, { timeout: 15_000 });
+  const historyCard = page.locator('.scenario-group').filter({ hasText: FIXTURE_TITLE });
+  await expect(historyCard).toBeVisible({ timeout: 15_000 });
+  await historyCard.getByTestId('scenario-review-btn').click();
+  await page.waitForURL(/\/terminal-session\//, { timeout: 30_000 });
+  // Reopened, the run shows the completion overlay; Continue dismisses it and
+  // the console is the same machine, file included.
+  const overlay = page.locator('.terminal-end-state');
+  await expect(overlay).toBeVisible({ timeout: 30_000 });
+  await overlay.getByRole('button', { name: /Continue experimenting|Continuer à expérimenter/ }).click();
+  await expect(overlay).toBeHidden();
+  await waitForLiveTerminal(page);
+  await typeInTerminal(page, 'ls /tmp/touched-after-completion && echo FOUND$((40+2))');
+  await expect.poll(() => readTerminalText(page), { timeout: 10_000 }).toContain('FOUND42');
 });

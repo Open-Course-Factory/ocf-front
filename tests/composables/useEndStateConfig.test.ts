@@ -41,7 +41,7 @@ function createTestI18n(locale: 'en' | 'fr' = 'en') {
 function getConfig(
   reason: EndStateReason,
   locale: 'en' | 'fr' = 'en',
-  options?: { hasScenario?: boolean }
+  options?: { hasScenario?: boolean; canContinue?: boolean }
 ) {
   let captured!: ReturnType<ReturnType<typeof useEndStateConfig>['getEndStateConfig']>
   const Dummy = defineComponent({
@@ -185,5 +185,27 @@ describe('useEndStateConfig — expired guard (regression fence)', () => {
     const config = getConfig('expired', 'fr')
     expect(config.title).toBe('Session expirée')
     expect(config.body).toContain('limite de temps')
+  })
+})
+
+describe('useEndStateConfig — completed (continue on a live machine)', () => {
+  it('offers Continue experimenting as an in-place action while the machine runs', () => {
+    const config = getConfig('completed', 'en', { canContinue: true })
+
+    expect(config.primary).toEqual({ kind: 'action', label: 'Continue experimenting', actionKey: 'continue' })
+    expect(config.secondary).toEqual({ kind: 'route', label: 'View My Scenarios', route: { name: 'MyScenarios' } })
+  })
+
+  it('French: Continue label is localized', () => {
+    const config = getConfig('completed', 'fr', { canContinue: true })
+
+    expect(config.primary.label).toBe('Continuer à expérimenter')
+  })
+
+  it('without a live machine, keeps the navigation-only buttons', () => {
+    const config = getConfig('completed', 'en')
+
+    expect(config.primary).toEqual({ kind: 'route', label: 'View My Scenarios', route: { name: 'MyScenarios' } })
+    expect(config.secondary).toEqual({ kind: 'route', label: 'Back to Sessions', route: { name: 'TerminalSessions' } })
   })
 })

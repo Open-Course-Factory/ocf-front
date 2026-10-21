@@ -14,7 +14,8 @@ const endStateTranslations = {
       completed: {
         title: 'Session Complete',
         body: 'You have successfully completed this scenario. Well done!',
-        primary: 'View My Scenarios'
+        primary: 'View My Scenarios',
+        continue: 'Continue experimenting'
       },
       abandoned: {
         title: 'Scenario Abandoned',
@@ -63,7 +64,8 @@ const endStateTranslations = {
       completed: {
         title: 'Session terminée',
         body: 'Vous avez terminé ce scénario avec succès. Bravo !',
-        primary: 'Voir mes scénarios'
+        primary: 'Voir mes scénarios',
+        continue: 'Continuer à expérimenter'
       },
       abandoned: {
         title: 'Scénario abandonné',
@@ -113,7 +115,7 @@ export type EndStateReason = 'completed' | 'abandoned' | 'expired' | 'stopped' |
 
 // Action buttons trigger an in-place handler (emitted by the overlay) instead of
 // navigating. The consumer wires the concrete handler for each key.
-export type EndStateActionKey = 'reconnect' | 'endSession'
+export type EndStateActionKey = 'reconnect' | 'endSession' | 'continue'
 
 // A single end-state button. Discriminated on `kind`: a 'route' button
 // navigates via <router-link>; an 'action' button emits its actionKey for the
@@ -132,17 +134,29 @@ export interface EndStateConfig {
   secondary?: EndStateButton
 }
 
+export interface EndStateOptions {
+  hasScenario?: boolean
+  // The session's machine still runs, so the learner can go back to it.
+  canContinue?: boolean
+}
+
 export function useEndStateConfig() {
   const { t } = useTranslations(endStateTranslations)
 
-  const configs: Record<EndStateReason, (hasScenario?: boolean) => EndStateConfig> = {
-    completed: () => ({
+  const configs: Record<EndStateReason, (options: EndStateOptions) => EndStateConfig> = {
+    // Completing a run does not stop its machine: while it runs, the learner
+    // may dismiss the overlay and keep experimenting in the console.
+    completed: ({ canContinue }) => ({
       icon: 'fas fa-trophy',
       tone: 'success',
       title: t('endState.completed.title'),
       body: t('endState.completed.body'),
-      primary: { kind: 'route', label: t('endState.completed.primary'), route: { name: 'MyScenarios' } },
-      secondary: { kind: 'route', label: t('endState.backToSessions'), route: { name: 'TerminalSessions' } }
+      primary: canContinue
+        ? { kind: 'action', label: t('endState.completed.continue'), actionKey: 'continue' }
+        : { kind: 'route', label: t('endState.completed.primary'), route: { name: 'MyScenarios' } },
+      secondary: canContinue
+        ? { kind: 'route', label: t('endState.completed.primary'), route: { name: 'MyScenarios' } }
+        : { kind: 'route', label: t('endState.backToSessions'), route: { name: 'TerminalSessions' } }
     }),
     abandoned: () => ({
       icon: 'fas fa-door-open',
@@ -152,7 +166,7 @@ export function useEndStateConfig() {
       primary: { kind: 'route', label: t('endState.abandoned.primary'), route: { name: 'MyScenarios' } },
       secondary: { kind: 'route', label: t('endState.backToSessions'), route: { name: 'TerminalSessions' } }
     }),
-    expired: (hasScenario?: boolean) => ({
+    expired: ({ hasScenario }) => ({
       icon: 'fas fa-hourglass-end',
       tone: 'warning',
       title: t('endState.expired.title'),
@@ -166,7 +180,7 @@ export function useEndStateConfig() {
         ? { kind: 'route', label: t('endState.backToSessions'), route: { name: 'TerminalSessions' } }
         : undefined
     }),
-    stopped: (hasScenario?: boolean) => ({
+    stopped: ({ hasScenario }) => ({
       icon: 'fas fa-stop-circle',
       tone: 'info',
       title: t('endState.stopped.title'),
@@ -221,8 +235,8 @@ export function useEndStateConfig() {
     })
   }
 
-  function getEndStateConfig(reason: EndStateReason, options?: { hasScenario?: boolean }): EndStateConfig {
-    return configs[reason](options?.hasScenario)
+  function getEndStateConfig(reason: EndStateReason, options: EndStateOptions = {}): EndStateConfig {
+    return configs[reason](options)
   }
 
   return { getEndStateConfig }

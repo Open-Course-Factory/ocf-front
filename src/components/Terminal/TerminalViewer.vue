@@ -269,7 +269,7 @@ import { useNotification } from '../../composables/useNotification'
 import { useEndStateConfig, type EndStateReason, type EndStateActionKey } from '../../composables/useEndStateConfig'
 import { getTerminalTheme } from '../../utils/terminalTheme'
 import { terminalKeyHandler } from '../../utils/terminalShortcuts'
-import { canConnectToTerminal, preConnectError, sessionHasNetwork } from '../../utils/sessionState'
+import { canConnectToTerminal, isSessionActive, preConnectError, sessionHasNetwork } from '../../utils/sessionState'
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import {
   createSupervisionMessageHandler,
@@ -480,11 +480,18 @@ const { getEndStateConfig } = useEndStateConfig()
 // successful (re)connect.
 const runtimeEndReason = ref<EndStateReason | ''>('')
 
+// A completed run leaves its machine running. Continue on the overlay sets this,
+// and the overlay stays away for as long as the machine runs.
+const continuedAfterCompletion = ref(false)
+const isMachineRunning = computed(() => isSessionActive(sessionInfo.value))
+
 // The reason actually rendered by the overlay: the runtime end-state takes
 // precedence over the prop-driven end reason.
-const effectiveEndReason = computed<EndStateReason | ''>(() =>
-  runtimeEndReason.value || props.endReason
-)
+const effectiveEndReason = computed<EndStateReason | ''>(() => {
+  if (runtimeEndReason.value) return runtimeEndReason.value
+  if (props.endReason === 'completed' && continuedAfterCompletion.value && isMachineRunning.value) return ''
+  return props.endReason
+})
 
 const stopTitle = computed(() =>
   props.canStop ? t('terminal.stop') : t('terminal.stopDisabledProvisioning')
@@ -493,7 +500,10 @@ const stopTitle = computed(() =>
 const activeEndState = computed(() => {
   const reason = effectiveEndReason.value
   if (!reason) return null
-  return getEndStateConfig(reason as EndStateReason, { hasScenario: props.hasScenario }) ?? null
+  return getEndStateConfig(reason as EndStateReason, {
+    hasScenario: props.hasScenario,
+    canContinue: isMachineRunning.value
+  }) ?? null
 })
 
 // State
@@ -978,13 +988,16 @@ function reloadPage() {
   window.location.reload()
 }
 
-// Handle an action button emitted by the end-state overlay (Reconnect / End Session).
+// Handle an action button emitted by the end-state overlay (Reconnect / End Session / Continue).
 function handleEndStateAction(key: EndStateActionKey) {
   if (key === 'reconnect') {
     runtimeEndReason.value = ''
     reconnect()
   } else if (key === 'endSession') {
     endSession()
+  } else if (key === 'continue') {
+    continuedAfterCompletion.value = true
+    nextTick(() => terminal.value?.focus())
   }
 }
 
