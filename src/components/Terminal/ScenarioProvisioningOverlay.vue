@@ -9,7 +9,11 @@
 -->
 
 <template>
-  <div class="provisioning-overlay" data-testid="scenario-provisioning-overlay">
+  <div
+    class="provisioning-overlay"
+    :class="{ 'provisioning-overlay--fullscreen': fullscreen }"
+    data-testid="scenario-provisioning-overlay"
+  >
     <div class="provisioning-content">
       <template v-if="ready">
         <div class="provisioning-icon">
@@ -68,6 +72,9 @@ interface Props {
   ready?: boolean
   phase?: string // 'terminal_creation' (client-side only) | 'setup_script' | 'step_setup' | 'replay' (from backend) | ''
   cancellable?: boolean
+  // Over the whole viewport instead of the positioned parent: a page that
+  // scrolls would otherwise centre the card off-screen.
+  fullscreen?: boolean
 }
 
 interface Emits {
@@ -77,7 +84,8 @@ interface Emits {
 withDefaults(defineProps<Props>(), {
   ready: false,
   phase: '',
-  cancellable: false
+  cancellable: false,
+  fullscreen: false
 })
 
 const emit = defineEmits<Emits>()
@@ -133,11 +141,20 @@ const { t } = useTranslations({
   border-radius: var(--border-radius-lg);
 }
 
+.provisioning-overlay--fullscreen {
+  position: fixed;
+  z-index: var(--z-index-modal);
+  padding: var(--spacing-md);
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 0;
+}
+
 .provisioning-content {
   background: var(--color-bg-primary);
   border-radius: var(--border-radius-lg);
   padding: var(--spacing-2xl);
   text-align: center;
+  width: 100%;
   max-width: 400px;
   box-shadow: var(--shadow-lg);
 }

@@ -67,7 +67,12 @@ test.describe('Scenario launch gating (mocked backend)', () => {
     await navigateViaMenuCategory(page, 'scenarios', '/scenarios');
 
     await page.getByTestId('scenario-launch-btn').click();
-    await expect(page.getByTestId('scenario-provisioning-overlay')).toBeVisible({ timeout: 10_000 });
+    const overlay = page.getByTestId('scenario-provisioning-overlay');
+    await expect(overlay).toBeVisible({ timeout: 10_000 });
+    // It covers the viewport, not the launcher's scrollable content: on a long
+    // scenario list the card was centred below the fold.
+    const viewport = page.viewportSize()!;
+    expect(await overlay.boundingBox()).toEqual({ x: 0, y: 0, width: viewport.width, height: viewport.height });
 
     // pollProvisioningStatus polls every 3s; after the configured polls the
     // mock flips to setup_failed and the launcher clears the overlay.
