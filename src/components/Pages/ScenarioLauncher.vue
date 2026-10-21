@@ -256,6 +256,7 @@
       v-if="provisioningMessage"
       :phase="provisioningPhase"
       :cancellable="!!provisioningSessionId"
+      fullscreen
       @cancel="handleCancelProvisioning"
     />
   </div>
