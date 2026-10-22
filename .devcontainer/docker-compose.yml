@@ -6,7 +6,7 @@ services:
     # docker-compose.yml file (the first in the devcontainer.json "dockerComposeFile"
     # array). The sample below assumes your primary file is in the root of your project.
     #
-    image: mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
+    image: mcr.microsoft.com/devcontainers/typescript-node:5-22-bookworm
 
     ports:
       - "4000:4000"
