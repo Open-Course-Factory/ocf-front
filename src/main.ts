@@ -31,6 +31,7 @@ import ElementPlus from 'element-plus'
 import { piniaPluginPersist } from './piniaPluginPersist'
 import { useCurrentUserStore } from './stores/currentUser'
 import { useImpersonationStore } from './stores/impersonation'
+import { useBrandingStore } from './stores/branding'
 import { setupAxiosInterceptors, setupAxiosDefaults } from './services/core/http'
 import { featureFlagService } from './services/features'
 import i18n from './i18n'
@@ -112,6 +113,12 @@ async function initializeApp() {
     // will then either confirm (impersonated_by present) or clear it.
     useImpersonationStore().hydrate()
 
+    // Instance branding is public. Fetched alongside the flags and awaited
+    // before mount so the first paint already shows the right name, logo
+    // and colors instead of swapping them in (layout shift, color flash).
+    const brandingLoaded = useBrandingStore().load()
+        .catch((err: any) => console.warn('⚠️ Instance branding unavailable, using defaults:', err?.message || err))
+
     // Step 3: Clear any stale localStorage flags to prevent conflicts with backend
     // Backend is the source of truth, localStorage is only for emergency fallback
     const storedFlags = localStorage.getItem('ocf_feature_flags')
@@ -146,6 +153,7 @@ async function initializeApp() {
     }
 
     // Step 6: Mount the app
+    await brandingLoaded
     app.mount('#app')
     console.log('✅ App mounted successfully')
 
