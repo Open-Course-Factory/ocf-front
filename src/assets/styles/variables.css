@@ -18,8 +18,8 @@
   --color-primary-dark: #0056b3;
   /* Channel triplet for rgba() focus rings, which cannot take a hex var. */
   --color-primary-rgb: 0, 123, 255;
-  --color-primary-light: rgba(0, 123, 255, 0.1);
-  --color-primary-shadow: rgba(0, 123, 255, 0.2);
+  --color-primary-light: rgba(var(--color-primary-rgb), 0.1);
+  --color-primary-shadow: rgba(var(--color-primary-rgb), 0.2);
 
   /* Secondary Colors */
   --color-secondary: #6c757d;
@@ -93,7 +93,7 @@
   --color-surface-hover: rgba(0, 0, 0, 0.05);
   --color-surface-active: rgba(0, 0, 0, 0.1);
   --color-surface-variant: rgba(0, 0, 0, 0.08);
-  --color-primary-bg: rgba(0, 123, 255, 0.1);
+  --color-primary-bg: rgba(var(--color-primary-rgb), 0.1);
 
   /* Sidebar Colors (always dark background with light text) */
   --color-sidebar-bg: #3b3e47;
@@ -281,7 +281,7 @@
   --color-surface-hover: rgba(255, 255, 255, 0.05);
   --color-surface-active: rgba(255, 255, 255, 0.1);
   --color-surface-variant: rgba(255, 255, 255, 0.08);
-  --color-primary-bg: rgba(0, 123, 255, 0.15);
+  --color-primary-bg: rgba(var(--color-primary-rgb), 0.15);
 
   /* Sidebar - darker background, text stays light */
   --color-sidebar-bg: #1a1a1a;

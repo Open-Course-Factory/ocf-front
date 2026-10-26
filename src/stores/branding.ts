@@ -4,51 +4,91 @@ import axios from 'axios'
 
 export interface Branding {
   name: string
-  logo: string
+  logo_version: string
+  logo_width: number
+  logo_height: number
   primary_color: string
   secondary_color: string
 }
 
-export const defaultBranding: Branding = {
-  name: 'OCF', logo: '', primary_color: '#007bff', secondary_color: '#6c757d'
+/** PUT body: omit logo to keep it, '' removes it, a data URI replaces it. */
+export interface BrandingUpdate {
+  name: string
+  primary_color: string
+  secondary_color: string
+  logo?: string
 }
 
-export function applyBrandingColors(brand: Branding) {
-  const style = document.documentElement.style
-  for (const [name, color] of [['primary', brand.primary_color], ['secondary', brand.secondary_color]]) {
-    if (!/^#[0-9a-f]{6}$/i.test(color)) continue
-    const rgb = [1, 3, 5].map(offset => parseInt(color.slice(offset, offset + 2), 16))
-    const hoverRGB = rgb.map(value => Math.round(value * 0.8))
-    const hover = `rgb(${hoverRGB.join(', ')})`
-    const foreground = (channels: number[]) => {
-      const linear = channels.map(value => value / 255 <= 0.04045 ? value / 255 / 12.92 : ((value / 255 + 0.055) / 1.055) ** 2.4)
-      const luminance = linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722
-      return luminance > 0.179 ? 'var(--color-black)' : 'var(--color-white)'
-    }
-    style.setProperty(`--color-${name}`, color)
-    style.setProperty(`--color-${name}-hover`, hover)
-    style.setProperty(`--color-on-${name}`, foreground(rgb))
-    style.setProperty(`--color-on-${name}-hover`, foreground(hoverRGB))
-    if (name === 'primary') {
-      style.setProperty('--color-primary-dark', hover)
-      style.setProperty('--color-primary-rgb', rgb.join(', '))
-      for (const suffix of ['light', 'bg']) style.setProperty(`--color-primary-${suffix}`, `rgba(${rgb.join(', ')}, 0.1)`)
-      style.setProperty('--color-primary-shadow', `rgba(${rgb.join(', ')}, 0.2)`)
-    }
+export const defaultBranding: Branding = {
+  name: 'OCF', logo_version: '', logo_width: 0, logo_height: 0, primary_color: '#007bff', secondary_color: '#6c757d'
+}
+
+const STYLE_ELEMENT_ID = 'ocf-branding'
+
+function channels(hex: string): number[] {
+  return [1, 3, 5].map(offset => parseInt(hex.slice(offset, offset + 2), 16))
+}
+
+function darkened(rgb: number[]): string {
+  return `rgb(${rgb.map(value => Math.round(value * 0.8)).join(', ')})`
+}
+
+/**
+ * CSS overriding only the brand base tokens that differ from variables.css.
+ * Everything else (light/bg/shadow tints, dark-theme variants) derives from
+ * these tokens there, so theme rules keep working. '' when on defaults.
+ */
+export function brandingStyleRules(brand: Branding): string {
+  const declarations: string[] = []
+  if (brand.primary_color.toLowerCase() !== defaultBranding.primary_color) {
+    const rgb = channels(brand.primary_color)
+    declarations.push(
+      `--color-primary: ${brand.primary_color}`,
+      `--color-primary-hover: ${darkened(rgb)}`,
+      `--color-primary-dark: ${darkened(rgb)}`,
+      `--color-primary-rgb: ${rgb.join(', ')}`
+    )
   }
+  if (brand.secondary_color.toLowerCase() !== defaultBranding.secondary_color) {
+    declarations.push(
+      `--color-secondary: ${brand.secondary_color}`,
+      `--color-secondary-hover: ${darkened(channels(brand.secondary_color))}`
+    )
+  }
+  return declarations.length ? `:root { ${declarations.join('; ')}; }` : ''
+}
+
+export function applyBrandingStyle(brand: Branding) {
+  const rules = brandingStyleRules(brand)
+  let element = document.getElementById(STYLE_ELEMENT_ID)
+  if (!rules) {
+    element?.remove()
+    return
+  }
+  if (!element) {
+    element = document.createElement('style')
+    element.id = STYLE_ELEMENT_ID
+    document.head.appendChild(element)
+  }
+  element.textContent = rules
+}
+
+/** Versioned so a new logo busts the browser cache; '' when there is none. */
+export function brandingLogoUrl(brand: Branding): string {
+  return brand.logo_version ? `${axios.defaults.baseURL ?? ''}/branding/logo?v=${brand.logo_version}` : ''
 }
 
 export const useBrandingStore = defineStore('branding', () => {
   const branding = ref<Branding>({ ...defaultBranding })
   function apply(value: Branding) {
     branding.value = value
-    applyBrandingColors(value)
+    applyBrandingStyle(value)
   }
   async function load() {
     const { data } = await axios.get<Branding>('/branding')
     apply(data)
   }
-  async function save(value: Branding) {
+  async function save(value: BrandingUpdate) {
     const { data } = await axios.put<Branding>('/branding', value)
     apply(data)
   }
