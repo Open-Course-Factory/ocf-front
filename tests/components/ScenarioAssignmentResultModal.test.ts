@@ -37,7 +37,7 @@ function createTestI18n() {
 interface MountProps {
   visible?: boolean
   message?: string
-  noKeyUsers?: Array<{ user_id: string; user_name?: string; user_email?: string }>
+  noKeyUsers?: Array<{ user_id: string; user_name?: string; user_email?: string; reason?: string }>
   errors?: Array<{ user_id: string; error?: string }>
 }
 
@@ -87,6 +87,18 @@ describe('ScenarioAssignmentResultModal', () => {
     expect(items[0].text()).toContain('Alice')
     // Falls back to user_id when no name/email.
     expect(items[1].text()).toContain('u2')
+  })
+
+  it('marks a learner skipped because their account is blocked', () => {
+    const wrapper = mountModal({
+      noKeyUsers: [
+        { user_id: 'u1', user_name: 'Alice', reason: 'user_blocked' },
+        { user_id: 'u2', user_name: 'Bob' },
+      ],
+    })
+    const items = wrapper.findAll('.no-key-list li')
+    expect(items[0].find('.no-key-reason').exists()).toBe(true)
+    expect(items[1].find('.no-key-reason').exists()).toBe(false)
   })
 
   it('renders the errors list only when non-empty, with "user_id: error"', () => {

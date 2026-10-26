@@ -36,6 +36,8 @@ export interface NoKeyUser {
   user_id: string
   user_name?: string
   user_email?: string
+  /** 'user_blocked' when the account is blocked; absent for any other cause. */
+  reason?: string
 }
 
 export interface AssignmentResultError {

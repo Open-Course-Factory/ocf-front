@@ -23,6 +23,9 @@
           <span v-if="user.user_email && user.user_name" class="no-key-email">
             ({{ user.user_email }})
           </span>
+          <span v-if="user.reason === 'user_blocked'" class="no-key-reason">
+            — {{ t('groupScenarios.accountBlocked') }}
+          </span>
         </li>
       </ul>
     </div>
@@ -65,7 +68,8 @@ const { t } = useTranslations({
       bulkStartTitle: 'Sessions Started',
       close: 'Close',
       noKeyWarning: 'The following learners couldn\'t get a terminal key provisioned:',
-      terminalErrors: 'Some terminals could not be created:'
+      terminalErrors: 'Some terminals could not be created:',
+      accountBlocked: 'account blocked by an administrator'
     }
   },
   fr: {
@@ -73,7 +77,8 @@ const { t } = useTranslations({
       bulkStartTitle: 'Sessions démarrées',
       close: 'Fermer',
       noKeyWarning: 'Les apprenants suivants n\'ont pas pu recevoir de clé terminal :',
-      terminalErrors: 'Certains terminaux n\'ont pas pu être créés :'
+      terminalErrors: 'Certains terminaux n\'ont pas pu être créés :',
+      accountBlocked: 'compte bloqué par un administrateur'
     }
   }
 })
@@ -122,7 +127,8 @@ const { t } = useTranslations({
   margin-bottom: 2px;
 }
 
-.no-key-email {
+.no-key-email,
+.no-key-reason {
   color: var(--color-text-muted);
 }
 </style>
