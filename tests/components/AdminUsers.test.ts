@@ -30,6 +30,7 @@ const mockCreateUser = vi.fn()
 const mockVerifyEmail = vi.fn()
 const mockSetPassword = vi.fn()
 const mockDeleteUser = vi.fn()
+const mockUpdateGroupMemberRole = vi.fn()
 vi.mock('../../src/services/admin/usersService', () => ({
   adminUsersService: {
     fetchAll: (...args: any[]) => mockFetchAll(...args),
@@ -40,7 +41,8 @@ vi.mock('../../src/services/admin/usersService', () => ({
     createUser: (...args: any[]) => mockCreateUser(...args),
     setPassword: (...args: any[]) => mockSetPassword(...args),
     verifyEmail: (...args: any[]) => mockVerifyEmail(...args),
-    deleteUser: (...args: any[]) => mockDeleteUser(...args)
+    deleteUser: (...args: any[]) => mockDeleteUser(...args),
+    updateGroupMemberRole: (...args: any[]) => mockUpdateGroupMemberRole(...args)
   }
 }))
 
@@ -103,11 +105,17 @@ function makeUser(overrides: Partial<AdminUserListing> = {}): AdminUserListing {
   }
 }
 
+// Attached to the document: the modals' submit buttons sit in BaseModal's
+// footer and reach their <form> through the form attribute, which resolves
+// by id in the document only.
+const mountedWrappers: Array<{ unmount: () => void }> = []
+
 function mountAdminUsers() {
   const i18n = createTestI18n()
   setActivePinia(createPinia())
 
-  return mount(AdminUsers, {
+  const wrapper = mount(AdminUsers, {
+    attachTo: document.body,
     global: {
       plugins: [i18n],
       stubs: {
@@ -118,6 +126,8 @@ function mountAdminUsers() {
       }
     }
   })
+  mountedWrappers.push(wrapper)
+  return wrapper
 }
 
 describe('AdminUsers', () => {
@@ -136,6 +146,7 @@ describe('AdminUsers', () => {
   })
 
   afterEach(() => {
+    mountedWrappers.splice(0).forEach((w) => w.unmount())
     // @ts-ignore
     ;(window as any).location = originalLocation
   })
@@ -785,7 +796,7 @@ describe('AdminUsers', () => {
     await wrapper.find('#cu-email').setValue('newteacher@example.com')
     await wrapper.find('#cu-password').setValue('correct-horse-battery-staple')
     await wrapper.find('#cu-password-confirm').setValue('correct-horse-battery-staple')
-    await wrapper.find('.checkbox-row input[type="checkbox"]').setValue(true)
+    await wrapper.find('.checkbox-label input[type="checkbox"]').setValue(true)
 
     await wrapper.find('.base-modal-overlay button.btn-primary').trigger('click')
     await flushPromises()
@@ -862,5 +873,90 @@ describe('AdminUsers', () => {
 
     expect(mockVerifyEmail).toHaveBeenCalledWith('u2')
     expect(wrapper.findAll('button.action-btn').some((b) => b.text().includes('Verify email'))).toBe(false)
+  })
+
+  // --- Review fixes ---------------------------------------------------------
+
+  async function fillCreateUserForm(wrapper: ReturnType<typeof mountAdminUsers>, overrides: Record<string, string> = {}) {
+    const values: Record<string, string> = {
+      '#cu-first-name': 'New',
+      '#cu-last-name': 'Teacher',
+      '#cu-display-name': 'New Teacher',
+      '#cu-username': 'newteacher',
+      '#cu-email': 'newteacher@example.com',
+      '#cu-password': 'correct-horse-battery-staple',
+      '#cu-password-confirm': 'correct-horse-battery-staple',
+      ...overrides
+    }
+    for (const [selector, value] of Object.entries(values)) {
+      await wrapper.find(selector).setValue(value)
+    }
+  }
+
+  it('keeps create-user submit disabled for a password shorter than 8 characters', async () => {
+    mockFetchAll.mockResolvedValueOnce([])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+    await wrapper.find('.page-header button.btn-primary').trigger('click')
+    await nextTick()
+
+    await fillCreateUserForm(wrapper, { '#cu-password': 'short', '#cu-password-confirm': 'short' })
+
+    const submitBtn = wrapper.find('.base-modal-overlay button.btn-primary')
+    expect((submitBtn.element as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('runs native form validation on create-user submit: an invalid email never reaches the service', async () => {
+    mockFetchAll.mockResolvedValueOnce([])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+    await wrapper.find('.page-header button.btn-primary').trigger('click')
+    await nextTick()
+
+    await fillCreateUserForm(wrapper, { '#cu-email': 'not-an-email' })
+    const submitBtn = wrapper.find('.base-modal-overlay button.btn-primary')
+    expect(submitBtn.attributes('type')).toBe('submit')
+    await submitBtn.trigger('click')
+    await flushPromises()
+
+    expect(mockCreateUser).not.toHaveBeenCalled()
+  })
+
+  it('translates the backend error code of a failed creation', async () => {
+    mockFetchAll.mockResolvedValueOnce([])
+    mockCreateUser.mockRejectedValueOnce({ response: { data: { error_code: 400, error_message: 'create_failed' } } })
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+    await wrapper.find('.page-header button.btn-primary').trigger('click')
+    await nextTick()
+
+    await fillCreateUserForm(wrapper)
+    await wrapper.find('.base-modal-overlay button.btn-primary').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('The username or email may already be in use')
+    expect(wrapper.text()).not.toContain('create_failed')
+  })
+
+  it('changing a group member role goes through adminUsersService.updateGroupMemberRole', async () => {
+    mockFetchAll.mockResolvedValueOnce([
+      makeUser({ id: 'u2', groups: [{ id: 'g1', name: 'DevOps', role: 'member', member_id: 'gm1' }] })
+    ])
+    mockUpdateGroupMemberRole.mockResolvedValueOnce(undefined)
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    await wrapper.find('.chip-role-select').setValue('manager')
+    await flushPromises()
+
+    expect(mockUpdateGroupMemberRole).toHaveBeenCalledWith('gm1', 'manager')
+  })
+
+  it('reserves the "Verify email" slot on verified rows so the buttons do not shift', async () => {
+    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'u1', username: 'alice', email_verified: true })])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    expect(wrapper.find('tbody tr .action-btn-placeholder').exists()).toBe(true)
   })
 })

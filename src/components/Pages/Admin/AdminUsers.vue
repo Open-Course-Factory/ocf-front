@@ -28,7 +28,7 @@
         <h2><i class="fas fa-users-cog"></i> {{ t('adminUsers.pageTitle') }}</h2>
         <p class="page-subtitle">{{ t('adminUsers.pageSubtitle') }}</p>
       </div>
-      <button type="button" class="btn btn-primary" @click="openCreateUserModal">
+      <button type="button" class="btn btn-primary" @click="showCreateUserModal = true">
         <i class="fas fa-user-plus"></i>
         {{ t('adminUsers.createUser') }}
       </button>
@@ -148,6 +148,12 @@
               <i class="fas fa-envelope-circle-check"></i>
               {{ t('adminUsers.verifyEmail') }}
             </button>
+            <!-- Same footprint as the button above, so verified and
+                 unverified rows keep their buttons in the same place. -->
+            <span v-else class="action-btn action-btn-placeholder" aria-hidden="true">
+              <i class="fas fa-envelope-circle-check"></i>
+              {{ t('adminUsers.verifyEmail') }}
+            </span>
             <button
               type="button"
               class="action-btn"
@@ -161,7 +167,7 @@
               type="button"
               class="action-btn"
               :title="t('adminUsers.setPassword')"
-              @click="openSetPasswordModal(row)"
+              @click="setPasswordUser = row"
             >
               <i class="fas fa-unlock-keyhole"></i>
               {{ t('adminUsers.setPassword') }}
@@ -210,7 +216,7 @@
               class="action-btn action-btn-delete"
               :disabled="row.id === currentUserStore.userId"
               :title="t('adminUsers.deleteUser')"
-              @click="openDeleteUserModal(row)"
+              @click="deleteUserTarget = row"
             >
               <i class="fas fa-trash-alt"></i>
               {{ t('adminUsers.deleteUser') }}
@@ -308,193 +314,45 @@
       @close="showPlanModal = false"
     />
 
-    <!-- Create User Modal -->
-    <BaseModal
+    <AdminCreateUserModal
       :visible="showCreateUserModal"
-      :title="t('adminUsers.createUser')"
-      title-icon="fas fa-user-plus"
-      size="medium"
-      :is-loading="creatingUser"
-      @close="closeCreateUserModal"
-    >
-      <form class="create-user-form" @submit.prevent="submitCreateUser">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="cu-first-name">{{ t('adminUsers.form.firstName') }}</label>
-            <input id="cu-first-name" v-model="createUserForm.first_name" type="text" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label for="cu-last-name">{{ t('adminUsers.form.lastName') }}</label>
-            <input id="cu-last-name" v-model="createUserForm.last_name" type="text" class="form-control" required />
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="cu-display-name">{{ t('adminUsers.form.displayName') }}</label>
-          <input id="cu-display-name" v-model="createUserForm.display_name" type="text" class="form-control" required />
-        </div>
-        <div class="form-group">
-          <label for="cu-username">{{ t('adminUsers.form.username') }}</label>
-          <input id="cu-username" v-model="createUserForm.username" type="text" class="form-control" required />
-        </div>
-        <div class="form-group">
-          <label for="cu-email">{{ t('adminUsers.form.email') }}</label>
-          <input id="cu-email" v-model="createUserForm.email" type="email" class="form-control" required />
-        </div>
-        <div class="form-group">
-          <label for="cu-password">{{ t('adminUsers.form.password') }}</label>
-          <input id="cu-password" v-model="createUserForm.password" type="password" autocomplete="new-password" class="form-control" required minlength="8" />
-          <span class="field-hint">{{ t('adminUsers.form.passwordHint') }}</span>
-        </div>
-        <div class="form-group">
-          <label for="cu-password-confirm">{{ t('adminUsers.form.passwordConfirm') }}</label>
-          <input
-            id="cu-password-confirm"
-            v-model="createUserPasswordConfirm"
-            type="password"
-            autocomplete="new-password"
-            class="form-control"
-            required
-          />
-          <span v-if="passwordMismatch" class="field-error">{{ t('adminUsers.form.passwordMismatch') }}</span>
-        </div>
-        <label class="checkbox-row">
-          <input v-model="createUserForm.email_verified" type="checkbox" />
-          {{ t('adminUsers.form.emailVerifiedCheckbox') }}
-        </label>
+      @close="showCreateUserModal = false"
+      @created="onUserCreated"
+    />
 
-        <div v-if="createUserError" class="confirm-error">
-          <i class="fas fa-exclamation-circle"></i>
-          {{ createUserError }}
-        </div>
-      </form>
-      <template #footer>
-        <button type="button" class="btn btn-secondary" :disabled="creatingUser" @click="closeCreateUserModal">
-          {{ t('adminUsers.modal.cancel') }}
-        </button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          :disabled="creatingUser || passwordMismatch || !createUserPasswordConfirm"
-          @click="submitCreateUser"
-        >
-          <i v-if="creatingUser" class="fas fa-spinner fa-spin"></i>
-          {{ t('adminUsers.createUser') }}
-        </button>
-      </template>
-    </BaseModal>
+    <AdminSetPasswordModal
+      :visible="!!setPasswordUser"
+      :user="setPasswordUser"
+      @close="setPasswordUser = null"
+    />
 
-    <!-- Set Password Modal (no email sent) -->
-    <BaseModal
-      :visible="showSetPasswordModal"
-      :title="t('adminUsers.setPassword')"
-      title-icon="fas fa-unlock-keyhole"
-      size="medium"
-      :is-loading="settingPassword"
-      @close="closeSetPasswordModal"
-    >
-      <form class="create-user-form" @submit.prevent="submitSetPassword">
-        <p class="field-hint">{{ t('adminUsers.form.setPasswordWarning', { name: setPasswordUserName }) }}</p>
-        <div class="form-group">
-          <label for="sp-password">{{ t('adminUsers.form.password') }}</label>
-          <input id="sp-password" v-model="setPasswordForm.password" type="password" autocomplete="new-password" class="form-control" required minlength="8" />
-        </div>
-        <div class="form-group">
-          <label for="sp-password-confirm">{{ t('adminUsers.form.passwordConfirm') }}</label>
-          <input id="sp-password-confirm" v-model="setPasswordConfirm" type="password" autocomplete="new-password" class="form-control" required />
-          <span v-if="setPasswordMismatch" class="field-error">{{ t('adminUsers.form.passwordMismatch') }}</span>
-        </div>
-
-        <div v-if="setPasswordError" class="confirm-error">
-          <i class="fas fa-exclamation-circle"></i>
-          {{ setPasswordError }}
-        </div>
-      </form>
-      <template #footer>
-        <button type="button" class="btn btn-secondary" :disabled="settingPassword" @click="closeSetPasswordModal">
-          {{ t('adminUsers.modal.cancel') }}
-        </button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          :disabled="settingPassword || setPasswordMismatch || !setPasswordConfirm || setPasswordForm.password.length < 8"
-          @click="submitSetPassword"
-        >
-          <i v-if="settingPassword" class="fas fa-spinner fa-spin"></i>
-          {{ t('adminUsers.setPassword') }}
-        </button>
-      </template>
-    </BaseModal>
-
-    <!-- Delete User Modal -->
-    <BaseModal
-      :visible="showDeleteUserModal"
-      :title="t('adminUsers.deleteUser')"
-      title-icon="fas fa-trash-alt"
-      size="medium"
-      :is-loading="deletingUser"
-      @close="closeDeleteUserModal"
-    >
-      <div class="confirm-modal-content">
-        <p class="confirm-warning">
-          <i class="fas fa-exclamation-triangle"></i>
-          {{ t('adminUsers.deleteWarning', { name: deleteUserName }) }}
-        </p>
-        <ul class="confirm-bullets">
-          <li>{{ t('adminUsers.deleteBulletData') }}</li>
-          <li>{{ t('adminUsers.deleteBulletIrreversible') }}</li>
-          <li>{{ t('adminUsers.deleteBulletOwnership') }}</li>
-        </ul>
-
-        <div class="form-group">
-          <label for="du-confirm">{{ t('adminUsers.deleteTypeToConfirm', { username: deleteUserTarget?.username }) }}</label>
-          <input
-            id="du-confirm"
-            v-model="deleteConfirmInput"
-            type="text"
-            class="form-control"
-            autocomplete="off"
-            :disabled="deletingUser"
-          />
-        </div>
-
-        <div v-if="deleteUserError" class="confirm-error">
-          <i class="fas fa-exclamation-circle"></i>
-          {{ deleteUserError }}
-        </div>
-      </div>
-      <template #footer>
-        <button type="button" class="btn btn-secondary" :disabled="deletingUser" @click="closeDeleteUserModal">
-          {{ t('adminUsers.modal.cancel') }}
-        </button>
-        <button
-          type="button"
-          class="btn btn-danger"
-          :disabled="deletingUser || !deleteConfirmMatches"
-          @click="submitDeleteUser"
-        >
-          <i :class="deletingUser ? 'fas fa-spinner fa-spin' : 'fas fa-trash-alt'"></i>
-          {{ t('adminUsers.deleteUser') }}
-        </button>
-      </template>
-    </BaseModal>
+    <AdminDeleteUserModal
+      :visible="!!deleteUserTarget"
+      :user="deleteUserTarget"
+      @close="deleteUserTarget = null"
+      @deleted="onUserDeleted"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
 import { useTranslations } from '../../../composables/useTranslations'
 import { type SortState } from '../../../composables/useClientTable'
 import type { TableColumn } from '../../../utils/tableColumns'
 import type { MemberRole } from '../../../types'
 import { useImpersonationStore } from '../../../stores/impersonation'
 import { useCurrentUserStore } from '../../../stores/currentUser'
-import { adminUsersService, type AdminUserListing, type OrgMembership, type GroupMembership, type AdminCreateUserInput } from '../../../services/admin/usersService'
+import { useAdminUserError } from '../../../composables/useAdminUserError'
+import { adminUsersService, type AdminUserListing, type OrgMembership, type GroupMembership } from '../../../services/admin/usersService'
 import { organizationService } from '../../../services/domain/organization'
 import EntityTable from '../../Generic/EntityTable.vue'
 import BaseModal from '../../Modals/BaseModal.vue'
 import AdminBadge from '../../Common/AdminBadge.vue'
 import AdminAssignPlanModal from '../../Modals/AdminAssignPlanModal.vue'
+import AdminCreateUserModal from '../../Modals/AdminCreateUserModal.vue'
+import AdminSetPasswordModal from '../../Modals/AdminSetPasswordModal.vue'
+import AdminDeleteUserModal from '../../Modals/AdminDeleteUserModal.vue'
 
 const { t } = useTranslations({
   en: {
@@ -523,40 +381,17 @@ const { t } = useTranslations({
       roleOptOwner: 'Owner',
       resetPassword: 'Reset password',
       setPassword: 'Set password',
-      setPasswordError: 'Failed to set password',
       grantAdmin: 'Grant admin',
       revokeAdmin: 'Revoke admin',
       assignPlan: 'Assign plan',
       blockAccount: 'Block account',
       unblockAccount: 'Unblock account',
       deleteUser: 'Delete user',
-      deleteUserError: 'Failed to delete user',
-      deleteWarning: 'You are about to permanently delete {name}\'s account. This cannot be undone.',
-      deleteBulletData: 'All their data is erased: memberships, personal organization, sessions and settings. Invoices and payment records are anonymized, not deleted.',
-      deleteBulletIrreversible: 'This action is immediate and cannot be reversed.',
-      deleteBulletOwnership: 'If they still own a non-personal organization or group, deletion is refused until ownership is transferred.',
-      deleteTypeToConfirm: 'Type "{username}" to confirm',
       verifyEmail: 'Verify email',
       emailVerified: 'Email verified',
       emailNotVerified: 'Email not verified',
       createUser: 'Create user',
-      roleUpdateSuccess: 'Role updated successfully',
       roleUpdateError: 'Failed to update role',
-      createUserSuccess: 'User created successfully',
-      createUserError: 'Failed to create user',
-      form: {
-        firstName: 'First name',
-        lastName: 'Last name',
-        displayName: 'Display name',
-        username: 'Username',
-        email: 'Email',
-        password: 'Password',
-        passwordHint: 'Share this with the user yourself — it is not emailed to them.',
-        passwordConfirm: 'Confirm password',
-        passwordMismatch: 'Passwords do not match',
-        emailVerifiedCheckbox: 'Email already verified (I confirmed this address myself)',
-        setPasswordWarning: 'Set a new password for {name} directly. No email is sent — share it with them yourself.'
-      },
       actionSuccess: {
         'reset-password': 'Password reset email sent',
         'grant-admin': 'Administrator role granted',
@@ -622,40 +457,17 @@ const { t } = useTranslations({
       roleOptOwner: 'Propriétaire',
       resetPassword: 'Réinitialiser le mot de passe',
       setPassword: 'Définir le mot de passe',
-      setPasswordError: 'Échec de la définition du mot de passe',
       grantAdmin: 'Accorder admin',
       revokeAdmin: 'Révoquer admin',
       assignPlan: 'Attribuer un plan',
       blockAccount: 'Bloquer le compte',
       unblockAccount: 'Débloquer le compte',
       deleteUser: 'Supprimer l’utilisateur',
-      deleteUserError: 'Échec de la suppression de l’utilisateur',
-      deleteWarning: 'Vous êtes sur le point de supprimer définitivement le compte de {name}. Cette action est irréversible.',
-      deleteBulletData: 'Toutes ses données sont effacées : appartenances, organisation personnelle, sessions et réglages. Les factures et paiements sont anonymisés, pas supprimés.',
-      deleteBulletIrreversible: 'Cette action est immédiate et ne peut pas être annulée.',
-      deleteBulletOwnership: 'S’il/elle possède encore une organisation ou un groupe non personnel, la suppression est refusée jusqu’au transfert de propriété.',
-      deleteTypeToConfirm: 'Tapez « {username} » pour confirmer',
       verifyEmail: 'Valider l’email',
       emailVerified: 'Email validé',
       emailNotVerified: 'Email non validé',
       createUser: 'Créer un utilisateur',
-      roleUpdateSuccess: 'Rôle mis à jour avec succès',
       roleUpdateError: 'Échec de la mise à jour du rôle',
-      createUserSuccess: 'Utilisateur créé avec succès',
-      createUserError: 'Échec de la création de l’utilisateur',
-      form: {
-        firstName: 'Prénom',
-        lastName: 'Nom',
-        displayName: 'Nom affiché',
-        username: 'Nom d’utilisateur',
-        email: 'Email',
-        password: 'Mot de passe',
-        passwordHint: 'Transmettez-le vous-même à l’utilisateur — il ne lui est pas envoyé par email.',
-        passwordConfirm: 'Confirmer le mot de passe',
-        passwordMismatch: 'Les mots de passe ne correspondent pas',
-        emailVerifiedCheckbox: 'Email déjà validé (j’ai vérifié cette adresse moi-même)',
-        setPasswordWarning: 'Définissez directement un nouveau mot de passe pour {name}. Aucun email n’est envoyé — transmettez-le vous-même.'
-      },
       actionSuccess: {
         'reset-password': 'Email de réinitialisation envoyé',
         'grant-admin': 'Rôle administrateur accordé',
@@ -697,6 +509,7 @@ const { t } = useTranslations({
   }
 })
 
+const describeError = useAdminUserError()
 const impersonationStore = useImpersonationStore()
 const currentUserStore = useCurrentUserStore()
 
@@ -722,60 +535,10 @@ const actionError = ref('')
 const showPlanModal = ref(false)
 const planModalUser = ref<AdminUserListing | null>(null)
 
-// Modal state (create user)
+// Modal state (create user / set password / delete user)
 const showCreateUserModal = ref(false)
-const creatingUser = ref(false)
-const createUserError = ref('')
-function emptyCreateUserForm(): AdminCreateUserInput {
-  return {
-    username: '',
-    display_name: '',
-    email: '',
-    password: '',
-    first_name: '',
-    last_name: '',
-    email_verified: false
-  }
-}
-const createUserForm = ref<AdminCreateUserInput>(emptyCreateUserForm())
-const createUserPasswordConfirm = ref('')
-// Only flag a mismatch once both fields have something — otherwise every
-// fresh open of the modal would show the error before the admin typed
-// anything.
-const passwordMismatch = computed(() =>
-  createUserForm.value.password.length > 0 &&
-  createUserPasswordConfirm.value.length > 0 &&
-  createUserForm.value.password !== createUserPasswordConfirm.value
-)
-
-// Modal state (set password directly — no email sent)
-const showSetPasswordModal = ref(false)
 const setPasswordUser = ref<AdminUserListing | null>(null)
-const setPasswordUserName = computed(
-  () => setPasswordUser.value?.display_name || setPasswordUser.value?.username || ''
-)
-const setPasswordForm = ref({ password: '' })
-const setPasswordConfirm = ref('')
-const settingPassword = ref(false)
-const setPasswordError = ref('')
-const setPasswordMismatch = computed(() =>
-  setPasswordForm.value.password.length > 0 &&
-  setPasswordConfirm.value.length > 0 &&
-  setPasswordForm.value.password !== setPasswordConfirm.value
-)
-
-// Modal state (delete user — permanent erasure)
-const showDeleteUserModal = ref(false)
 const deleteUserTarget = ref<AdminUserListing | null>(null)
-const deleteUserName = computed(
-  () => deleteUserTarget.value?.display_name || deleteUserTarget.value?.username || ''
-)
-const deleteConfirmInput = ref('')
-const deletingUser = ref(false)
-const deleteUserError = ref('')
-const deleteConfirmMatches = computed(
-  () => !!deleteUserTarget.value && deleteConfirmInput.value === deleteUserTarget.value.username
-)
 
 // In-flight role update, keyed so only the select being changed shows as disabled.
 const roleUpdateKey = ref<string | null>(null)
@@ -906,8 +669,7 @@ async function changeOrgRole(row: AdminUserListing, org: OrgMembership, newRole:
     await organizationService.updateMemberRole(org.id, row.id, newRole)
     org.role = newRole
   } catch (err: any) {
-    error.value =
-      err?.response?.data?.error_message || err?.response?.data?.message || t('adminUsers.roleUpdateError')
+    error.value = describeError(err, t('adminUsers.roleUpdateError'))
   } finally {
     if (roleUpdateKey.value === key) roleUpdateKey.value = null
   }
@@ -918,14 +680,10 @@ async function changeGroupRole(row: AdminUserListing, group: GroupMembership, ne
   const key = groupRoleKey(row.id, group.id)
   roleUpdateKey.value = key
   try {
-    // No dedicated /groups/:id/members/:userId endpoint exists (unlike
-    // organizations) — the generic entity route targets the group_members
-    // row directly by its own id, carried as group.member_id.
-    await axios.patch(`/group-members/${group.member_id}`, { role: newRole })
+    await adminUsersService.updateGroupMemberRole(group.member_id, newRole)
     group.role = newRole
   } catch (err: any) {
-    error.value =
-      err?.response?.data?.error_message || err?.response?.data?.message || t('adminUsers.roleUpdateError')
+    error.value = describeError(err, t('adminUsers.roleUpdateError'))
   } finally {
     if (roleUpdateKey.value === key) roleUpdateKey.value = null
   }
@@ -1016,8 +774,7 @@ async function confirmPendingAction() {
     showActionModal.value = false
     pendingAction.value = null
   } catch (err: any) {
-    actionError.value =
-      err?.response?.data?.error_message || err?.response?.data?.message || t('adminUsers.actionError')
+    actionError.value = describeError(err, t('adminUsers.actionError'))
   } finally {
     actionRunning.value = false
   }
@@ -1030,109 +787,16 @@ function openPlanModal(user: AdminUserListing) {
   showPlanModal.value = true
 }
 
-// --- Create user -----------------------------------------------------------
+// --- Create / delete user --------------------------------------------------
 
-function openCreateUserModal() {
-  createUserForm.value = emptyCreateUserForm()
-  createUserPasswordConfirm.value = ''
-  createUserError.value = ''
-  showCreateUserModal.value = true
-}
-
-function closeCreateUserModal() {
-  if (creatingUser.value) return
+function onUserCreated(user: AdminUserListing) {
+  users.value.push(user)
   showCreateUserModal.value = false
 }
 
-async function submitCreateUser() {
-  if (passwordMismatch.value) return
-  creatingUser.value = true
-  createUserError.value = ''
-  try {
-    const created = await adminUsersService.createUser(createUserForm.value)
-    users.value.push({
-      id: created.id,
-      username: created.username,
-      display_name: createUserForm.value.display_name,
-      email: created.email,
-      is_active: true,
-      is_admin: false,
-      email_verified: createUserForm.value.email_verified,
-      organizations: [],
-      groups: []
-    })
-    showCreateUserModal.value = false
-  } catch (err: any) {
-    createUserError.value =
-      err?.response?.data?.error_message || err?.response?.data?.message || t('adminUsers.createUserError')
-  } finally {
-    creatingUser.value = false
-  }
-}
-
-// --- Set password directly (no email) -------------------------------------
-
-function openSetPasswordModal(user: AdminUserListing) {
-  setPasswordUser.value = user
-  setPasswordForm.value = { password: '' }
-  setPasswordConfirm.value = ''
-  setPasswordError.value = ''
-  showSetPasswordModal.value = true
-}
-
-function closeSetPasswordModal() {
-  if (settingPassword.value) return
-  showSetPasswordModal.value = false
-  setPasswordUser.value = null
-}
-
-async function submitSetPassword() {
-  if (!setPasswordUser.value || setPasswordMismatch.value || setPasswordForm.value.password.length < 8) return
-  settingPassword.value = true
-  setPasswordError.value = ''
-  try {
-    await adminUsersService.setPassword(setPasswordUser.value.id, setPasswordForm.value.password)
-    showSetPasswordModal.value = false
-    setPasswordUser.value = null
-  } catch (err: any) {
-    setPasswordError.value =
-      err?.response?.data?.error_message || err?.response?.data?.message || t('adminUsers.setPasswordError')
-  } finally {
-    settingPassword.value = false
-  }
-}
-
-// --- Delete user (permanent erasure) ---------------------------------------
-
-function openDeleteUserModal(user: AdminUserListing) {
-  deleteUserTarget.value = user
-  deleteConfirmInput.value = ''
-  deleteUserError.value = ''
-  showDeleteUserModal.value = true
-}
-
-function closeDeleteUserModal() {
-  if (deletingUser.value) return
-  showDeleteUserModal.value = false
+function onUserDeleted(userId: string) {
+  users.value = users.value.filter((u) => u.id !== userId)
   deleteUserTarget.value = null
-}
-
-async function submitDeleteUser() {
-  if (!deleteUserTarget.value || !deleteConfirmMatches.value) return
-  const targetId = deleteUserTarget.value.id
-  deletingUser.value = true
-  deleteUserError.value = ''
-  try {
-    await adminUsersService.deleteUser(targetId)
-    users.value = users.value.filter((u) => u.id !== targetId)
-    showDeleteUserModal.value = false
-    deleteUserTarget.value = null
-  } catch (err: any) {
-    deleteUserError.value =
-      err?.response?.data?.error_message || err?.response?.data?.message || t('adminUsers.deleteUserError')
-  } finally {
-    deletingUser.value = false
-  }
 }
 
 // Data load
@@ -1215,41 +879,6 @@ onMounted(async () => {
 
 .verified-no {
   color: var(--color-warning-text);
-}
-
-/* Create user form */
-.create-user-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
-}
-
-.form-row {
-  display: flex;
-  gap: var(--spacing-md);
-}
-
-.form-row .form-group {
-  flex: 1;
-}
-
-.field-hint {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
-.field-error {
-  font-size: var(--font-size-xs);
-  color: var(--color-danger-text);
-}
-
-.checkbox-row {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
-  cursor: pointer;
 }
 
 /* Status badge */
@@ -1384,6 +1013,10 @@ onMounted(async () => {
   background: var(--color-bg-secondary);
   border-color: var(--color-primary);
   color: var(--color-primary);
+}
+
+.action-btn-placeholder {
+  visibility: hidden;
 }
 
 .action-btn:disabled {

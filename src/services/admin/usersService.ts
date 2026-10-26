@@ -125,4 +125,13 @@ export const adminUsersService = {
   async deleteUser(userId: string): Promise<void> {
     await axios.delete(`users/${userId}`)
   },
+
+  /**
+   * Changes a class-group member's role. Groups have no
+   * /groups/:id/members/:userId route (unlike organizations), so this targets
+   * the group_members row itself through the generic entity route.
+   */
+  async updateGroupMemberRole(memberId: string, role: string): Promise<void> {
+    await axios.patch(`group-members/${memberId}`, { role })
+  },
 }
