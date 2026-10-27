@@ -39,6 +39,18 @@ vi.mock('../../src/composables/useScenarioCreateScopes', () => ({
   }),
 }))
 
+// The caller's role in org-1, as /users/me's memberships would report it.
+const orgRole = { value: 'manager' }
+vi.mock('../../src/stores/userMemberships', () => ({
+  useUserMembershipsStore: () => ({
+    ensureLoaded: () => Promise.resolve(),
+    canManageOrg: () => ['manager', 'owner'].includes(orgRole.value),
+  }),
+}))
+vi.mock('../../src/composables/useAdminViewMode', () => ({
+  useAdminViewMode: () => ({ isAdmin: computed(() => false) }),
+}))
+
 // The step-effects flag, as the feature flag service would answer it.
 const stepEffects = { value: false }
 vi.mock('../../src/composables/useFeatureFlags', () => ({
@@ -78,6 +90,7 @@ beforeEach(() => {
   getMock.mockReset()
   postMock.mockReset()
   clipboard.writeText.mockClear()
+  orgRole.value = 'manager'
   Object.defineProperty(navigator, 'clipboard', { value: clipboard, configurable: true })
   getMock.mockImplementation((url: string) => {
     if (url.includes('/export')) return Promise.resolve({ data: CURRENT })
@@ -324,6 +337,25 @@ describe('ScenarioAiModal — organization AI assistant (auto-generate)', () => 
     const wrapper = await generateFailingWith({ error_code: 500, error_message: 'dial tcp: connection refused' })
     expect(wrapper.text()).toContain('The AI assistant did not answer.')
     expect(wrapper.text()).not.toContain('dial tcp')
+  })
+
+  it('offers no auto-generate to a teacher, who is below manager in the organization', async () => {
+    orgRole.value = 'teacher'
+    getMock.mockImplementation((url: string) => {
+      if (url.includes('/ai-config')) return Promise.resolve({ data: { enabled: true, endpoint: 'https://x', model: 'm', has_api_key: true } })
+      return Promise.reject(new Error('catalog unavailable'))
+    })
+
+    const wrapper = mountModal({ mode: 'create' })
+    await wrapper.setProps({ visible: true })
+    await flushPromises()
+    await wrapper.find('#ai-description').setValue('A lab about ping')
+    await wrapper.find('[data-testid="scenario-ai-next"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="scenario-ai-auto-generate"]').exists()).toBe(false)
+    expect(getMock).not.toHaveBeenCalledWith(expect.stringContaining('/ai-config'))
+    expect(wrapper.find('[data-testid="scenario-ai-copy-prompt"]').exists()).toBe(true)
   })
 })
 

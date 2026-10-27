@@ -230,6 +230,8 @@ import { useScenarioImportError } from '../../composables/useScenarioImportError
 import { teacherService } from '../../services/domain/scenario'
 import { organizationService } from '../../services/domain/organization'
 import { useAiAssistantError } from '../../composables/useAiAssistantError'
+import { useAdminViewMode } from '../../composables/useAdminViewMode'
+import { useUserMembershipsStore } from '../../stores/userMemberships'
 import { useScenarioAiCatalog } from '../../composables/useScenarioAiCatalog'
 import { scenarioImportProblems } from '../../utils/scenarioImportProblems'
 import {
@@ -262,6 +264,8 @@ useScenarioEditorI18n()
 const describeImportError = useScenarioImportError()
 const { t } = useScenarioAiTranslations()
 const { aiAssistantErrorMessage } = useAiAssistantError()
+const { isAdmin } = useAdminViewMode()
+const membershipsStore = useUserMembershipsStore()
 // The user's chosen UI language, as the language selector and preferences set it.
 const { currentLocale } = useLocale()
 const { parseScopeKey, pickDefaultScopeKey, scopeKeyForScenario, loadScopeSources, allGroups } = useScenarioCreateScopes()
@@ -285,8 +289,8 @@ const copied = ref<'' | 'prompt' | 'fix'>('')
 
 // Whether the destination's own organization has a usable AI assistant
 // configured (src/components/Organizations/OrganizationSettingsTab.vue sets
-// this up). null while unknown/loading: the auto-generate row only shows
-// once we're sure, rather than flashing in and out.
+// this up) that the user may call. false while unknown/loading: the
+// auto-generate row only shows once we're sure, rather than flashing in and out.
 const aiConfigEnabled = ref(false)
 const generating = ref(false)
 
@@ -316,6 +320,13 @@ const targetOrganizationId = computed<string | null>(() => {
 async function refreshAiConfigAvailability() {
   const orgId = targetOrganizationId.value
   if (!orgId) {
+    aiConfigEnabled.value = false
+    return
+  }
+  // ocf-core lets org managers and owners (and platform admins) generate;
+  // a teacher keeps the manual copy/paste flow.
+  await membershipsStore.ensureLoaded().catch(() => null)
+  if (!isAdmin.value && !membershipsStore.canManageOrg(orgId)) {
     aiConfigEnabled.value = false
     return
   }
