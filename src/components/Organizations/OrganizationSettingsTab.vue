@@ -121,7 +121,10 @@
             data-test="ai-config-endpoint"
             placeholder="https://api.openai.com/v1/chat/completions"
           />
-          <p class="form-help-text">{{ t('settings.aiConfigEndpointHelp') }}</p>
+          <p v-if="aiConfigEndpointNotHttps" class="form-help-text ocf-ai-config-invalid" data-test="ai-config-endpoint-invalid">
+            {{ t('settings.aiConfigEndpointNotHttps') }}
+          </p>
+          <p v-else class="form-help-text">{{ t('settings.aiConfigEndpointHelp') }}</p>
         </div>
 
         <div class="form-group">
@@ -145,18 +148,17 @@
             autocomplete="new-password"
             class="form-control"
             data-test="ai-config-api-key"
-            :placeholder="aiConfigHasKey ? t('settings.aiConfigKeyStoredPlaceholder') : t('settings.aiConfigKeyPlaceholder')"
+            :required="aiConfigKeyRequired"
+            :placeholder="aiConfigKeyPlaceholder"
           />
-          <p class="form-help-text">
-            {{ aiConfigHasKey ? t('settings.aiConfigKeyStoredHelp') : t('settings.aiConfigKeyHelp') }}
-          </p>
+          <p class="form-help-text" data-test="ai-config-api-key-help">{{ aiConfigKeyHelp }}</p>
         </div>
 
         <div class="ocf-ai-config-actions">
           <button
             class="btn btn-primary"
             data-test="ai-config-save"
-            :disabled="isSavingAiConfig"
+            :disabled="isSavingAiConfig || !canSaveAiConfig"
             @click="saveAiConfig"
           >
             <i :class="isSavingAiConfig ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
@@ -274,7 +276,7 @@ import { useOrganizationsStore } from '../../stores/organizations'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useTranslations } from '../../composables/useTranslations'
 import { useToast } from '../../composables/useToast'
-import { PLATFORM_DEFAULT_RETENTION_DAYS, organizationService } from '../../services/domain/organization'
+import { PLATFORM_DEFAULT_RETENTION_DAYS, organizationService, type OrganizationAiConfig } from '../../services/domain/organization'
 import { useAiAssistantError } from '../../composables/useAiAssistantError'
 import type { Organization } from '../../types'
 
@@ -327,18 +329,54 @@ const aiConfigLoading = ref(true)
 const aiConfigHasKey = ref(false)
 const aiConfigKeyInput = ref('')
 const aiConfigForm = ref({ enabled: false, endpoint: '', model: '' })
+const aiConfigSavedEndpoint = ref('')
 const isSavingAiConfig = ref(false)
 const aiConfigError = ref('')
 const { aiAssistantErrorMessage } = useAiAssistantError()
+
+// Mirrors ocf-core's UpdateConfig (organizationAiService.go): the endpoint
+// must be https, and moving it away from a stored key needs the key again in
+// the same request, so the key is never sent to a host its owner never
+// approved. The backend stays the judge (it also refuses private hosts); this
+// only says so before the round trip.
+const aiConfigEndpointNotHttps = computed(() => {
+  const endpoint = aiConfigForm.value.endpoint
+  if (endpoint === '') return false
+  try {
+    return new URL(endpoint).protocol !== 'https:'
+  } catch {
+    return true
+  }
+})
+const aiConfigKeyRequired = computed(() =>
+  aiConfigHasKey.value && aiConfigForm.value.endpoint !== aiConfigSavedEndpoint.value
+)
+const canSaveAiConfig = computed(() =>
+  !aiConfigEndpointNotHttps.value && !(aiConfigKeyRequired.value && aiConfigKeyInput.value === '')
+)
+const aiConfigKeyPlaceholder = computed(() => {
+  if (aiConfigKeyRequired.value) return t('settings.aiConfigKeyRequiredPlaceholder')
+  return aiConfigHasKey.value ? t('settings.aiConfigKeyStoredPlaceholder') : t('settings.aiConfigKeyPlaceholder')
+})
+const aiConfigKeyHelp = computed(() => {
+  if (aiConfigKeyRequired.value) return t('settings.aiConfigKeyRequiredHelp')
+  return aiConfigHasKey.value ? t('settings.aiConfigKeyStoredHelp') : t('settings.aiConfigKeyHelp')
+})
+
+// The form always restarts from what the backend holds, so the endpoint the
+// stored key belongs to is the one shown.
+function applyAiConfig(cfg: OrganizationAiConfig) {
+  aiConfigForm.value = { enabled: cfg.enabled, endpoint: cfg.endpoint, model: cfg.model }
+  aiConfigSavedEndpoint.value = cfg.endpoint
+  aiConfigHasKey.value = cfg.has_api_key
+  aiConfigKeyInput.value = ''
+}
 
 async function loadAiConfig() {
   aiConfigLoading.value = true
   aiConfigError.value = ''
   try {
-    const cfg = await organizationService.getAiConfig(props.organizationId)
-    aiConfigForm.value = { enabled: cfg.enabled, endpoint: cfg.endpoint, model: cfg.model }
-    aiConfigHasKey.value = cfg.has_api_key
-    aiConfigKeyInput.value = ''
+    applyAiConfig(await organizationService.getAiConfig(props.organizationId))
   } catch (err: any) {
     aiConfigError.value = aiAssistantErrorMessage(err, t('settings.aiConfigLoadError'))
   } finally {
@@ -352,14 +390,12 @@ async function saveAiConfig() {
   isSavingAiConfig.value = true
   aiConfigError.value = ''
   try {
-    const cfg = await organizationService.updateAiConfig(props.organizationId, {
+    applyAiConfig(await organizationService.updateAiConfig(props.organizationId, {
       ...aiConfigForm.value,
       // Only sent when the admin actually typed something — an empty
       // field means "leave the stored key untouched", not "clear it".
       ...(aiConfigKeyInput.value ? { api_key: aiConfigKeyInput.value } : {})
-    })
-    aiConfigHasKey.value = cfg.has_api_key
-    aiConfigKeyInput.value = ''
+    }))
     toast.success(t('settings.aiConfigSaved'))
   } catch (err: any) {
     aiConfigError.value = aiAssistantErrorMessage(err, t('settings.aiConfigSaveError'))
@@ -433,13 +469,16 @@ const { t } = useTranslations({
       aiConfigDescription: 'Bring your own AI assistant to the scenario editor\'s "Create/Improve with AI" flow. When on, writing a scenario calls your configured endpoint directly instead of asking you to copy a prompt into your own chat assistant and paste the answer back.',
       aiConfigEnabled: 'Use this endpoint instead of the manual copy/paste flow',
       aiConfigEndpoint: 'Endpoint URL',
-      aiConfigEndpointHelp: 'An OpenAI-compatible "chat completions" URL — works with OpenAI itself, Mistral, or a self-hosted Ollama/vLLM instance exposing the same API shape.',
+      aiConfigEndpointHelp: 'An OpenAI-compatible "chat completions" https:// URL — works with OpenAI itself, Mistral, or a self-hosted Ollama/vLLM instance exposing the same API shape.',
+      aiConfigEndpointNotHttps: 'The endpoint must start with https://.',
       aiConfigModel: 'Model',
       aiConfigApiKey: 'API key',
       aiConfigKeyPlaceholder: 'Enter an API key',
       aiConfigKeyStoredPlaceholder: 'Leave blank to keep the stored key',
       aiConfigKeyHelp: 'Stored encrypted, never shown again once saved.',
       aiConfigKeyStoredHelp: 'A key is already configured. Type a new one to replace it, or leave this blank to keep it.',
+      aiConfigKeyRequiredPlaceholder: 'Enter the API key for the new endpoint',
+      aiConfigKeyRequiredHelp: 'The endpoint changed, so the stored key is not sent there: enter the API key again to save.',
       aiConfigSave: 'Save',
       aiConfigSaved: 'AI assistant configuration saved',
       aiConfigLoadError: 'Failed to load the AI assistant configuration',
@@ -489,13 +528,16 @@ const { t } = useTranslations({
       aiConfigDescription: 'Apportez votre propre assistant IA au flux « Créer/Améliorer avec l\'IA » de l\'éditeur de scénario. Une fois activé, la rédaction d\'un scénario appelle directement votre endpoint configuré, au lieu de vous demander de copier un prompt dans votre assistant de discussion puis de coller la réponse.',
       aiConfigEnabled: 'Utiliser cet endpoint au lieu du copier-coller manuel',
       aiConfigEndpoint: 'URL de l\'endpoint',
-      aiConfigEndpointHelp: 'Une URL « chat completions » compatible OpenAI — fonctionne avec OpenAI lui-même, Mistral, ou une instance Ollama/vLLM auto-hébergée exposant le même format d\'API.',
+      aiConfigEndpointNotHttps: 'L\'endpoint doit commencer par https://.',
+      aiConfigEndpointHelp: 'Une URL https:// « chat completions » compatible OpenAI — fonctionne avec OpenAI lui-même, Mistral, ou une instance Ollama/vLLM auto-hébergée exposant le même format d\'API.',
       aiConfigModel: 'Modèle',
       aiConfigApiKey: 'Clé API',
       aiConfigKeyPlaceholder: 'Saisissez une clé API',
       aiConfigKeyStoredPlaceholder: 'Laissez vide pour conserver la clé enregistrée',
       aiConfigKeyHelp: 'Stockée chiffrée, jamais réaffichée une fois enregistrée.',
       aiConfigKeyStoredHelp: 'Une clé est déjà configurée. Saisissez-en une nouvelle pour la remplacer, ou laissez ce champ vide pour la conserver.',
+      aiConfigKeyRequiredPlaceholder: 'Saisissez la clé API du nouvel endpoint',
+      aiConfigKeyRequiredHelp: 'L\'endpoint a changé, la clé enregistrée n\'y est donc pas envoyée : saisissez à nouveau la clé API pour enregistrer.',
       aiConfigSave: 'Enregistrer',
       aiConfigSaved: 'Configuration de l\'assistant IA enregistrée',
       aiConfigLoadError: 'Échec du chargement de la configuration de l\'assistant IA',
@@ -789,6 +831,10 @@ const deleteOrganization = async () => {
 
 .ocf-ai-config-section h4 i {
   color: var(--color-primary);
+}
+
+.form-help-text.ocf-ai-config-invalid {
+  color: var(--color-danger);
 }
 
 .ocf-ai-config-section > p {

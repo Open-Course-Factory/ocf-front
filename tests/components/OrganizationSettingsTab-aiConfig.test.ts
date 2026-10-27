@@ -167,4 +167,47 @@ describe('OrganizationSettingsTab AI assistant config', () => {
     expect(wrapper.find('[data-test="ai-config-save"]').attributes('disabled')).toBeUndefined()
     expect(toastSuccess).not.toHaveBeenCalled()
   })
+
+  it('says the endpoint must be https and blocks saving until it is', async () => {
+    const wrapper = mountTab()
+    await flushPromises()
+
+    await wrapper.find('[data-test="ai-config-endpoint"]').setValue('http://api.example.com/v1/chat/completions')
+    expect(wrapper.find('[data-test="ai-config-endpoint-invalid"]').text()).toContain('must start with https://')
+    expect(wrapper.find('[data-test="ai-config-save"]').attributes('disabled')).toBeDefined()
+
+    await wrapper.find('[data-test="ai-config-endpoint"]').setValue('https://api.example.com/v1/chat/completions')
+    expect(wrapper.find('[data-test="ai-config-endpoint-invalid"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="ai-config-save"]').attributes('disabled')).toBeUndefined()
+  })
+
+  it('requires the key again once the endpoint moves away from a stored key', async () => {
+    getMock.mockResolvedValue({
+      data: { enabled: true, endpoint: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini', has_api_key: true }
+    })
+    putMock.mockResolvedValue({ data: { enabled: true, endpoint: 'https://api.mistral.ai/v1/chat/completions', model: 'gpt-4o-mini', has_api_key: true } })
+
+    const wrapper = mountTab()
+    await flushPromises()
+    const key = () => wrapper.find('[data-test="ai-config-api-key"]')
+    const save = () => wrapper.find('[data-test="ai-config-save"]')
+    expect(key().attributes('required')).toBeUndefined()
+
+    await wrapper.find('[data-test="ai-config-endpoint"]').setValue('https://api.mistral.ai/v1/chat/completions')
+    expect(key().attributes('required')).toBeDefined()
+    expect(wrapper.find('[data-test="ai-config-api-key-help"]').text()).toContain('enter the API key again')
+    expect(save().attributes('disabled')).toBeDefined()
+
+    await key().setValue('sk-mistral')
+    expect(save().attributes('disabled')).toBeUndefined()
+    await save().trigger('click')
+    await flushPromises()
+
+    expect(putMock).toHaveBeenCalledWith('/organizations/org-1/ai-config', expect.objectContaining({
+      endpoint: 'https://api.mistral.ai/v1/chat/completions',
+      api_key: 'sk-mistral'
+    }))
+    // Saved: the new endpoint is now the one the key belongs to.
+    expect(key().attributes('required')).toBeUndefined()
+  })
 })
