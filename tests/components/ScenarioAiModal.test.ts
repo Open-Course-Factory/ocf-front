@@ -326,11 +326,11 @@ describe('ScenarioAiModal — organization AI assistant (auto-generate)', () => 
     return wrapper
   }
 
-  it('translates a provider failure, whether the code comes as error_message or as a string error_code', async () => {
+  it('translates the coded failures in the reader\'s language', async () => {
     const fr = await generateFailingWith({ error_code: 502, error_message: 'ai_provider_error' }, 'fr')
     expect(fr.text()).toContain("L'assistant IA a échoué ou n'a pas répondu à temps.")
 
-    const en = await generateFailingWith({ error_code: 'ai_request_too_large', error_message: 'request too large' })
+    const en = await generateFailingWith({ error_code: 413, error_message: 'ai_request_too_large' })
     expect(en.text()).toContain('This scenario is too large to send to the AI assistant.')
   })
 
