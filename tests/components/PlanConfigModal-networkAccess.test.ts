@@ -169,3 +169,49 @@ describe('PlanConfigModal — network access', () => {
     expect(payload.network_access_enabled).toBe(false)
   })
 })
+
+describe('PlanConfigModal — data persistence', () => {
+  const persistentPlan = {
+    id: 'plan-1',
+    name: 'Persistent',
+    max_cpu: 1000,
+    max_memory_mb: 512,
+    features: [],
+    network_access_enabled: true,
+    data_persistence_enabled: true
+  }
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('reflects a loaded plan into the toggle', async () => {
+    const wrapper = await mountModal(persistentPlan)
+
+    const toggle = wrapper.find('[data-test="plan-data-persistence-toggle"]').element as HTMLInputElement
+    expect(toggle.checked).toBe(true)
+  })
+
+  it('turns data persistence off without touching network access', async () => {
+    const wrapper = await mountModal(persistentPlan)
+
+    await wrapper.find('[data-test="plan-data-persistence-toggle"]').setValue(false)
+    await wrapper.find('[data-test="plan-save-button"]').trigger('click')
+
+    const payload = wrapper.emitted('save')![0][0] as any
+    expect(payload.data_persistence_enabled).toBe(false)
+    expect(payload.network_access_enabled).toBe(true)
+    expect(payload.name).toBe('Persistent')
+  })
+
+  it('keeps data persistence on when another toggle is edited', async () => {
+    const wrapper = await mountModal(persistentPlan)
+
+    await wrapper.find('[data-test="plan-network-access-toggle"]').setValue(false)
+    await wrapper.find('[data-test="plan-save-button"]').trigger('click')
+
+    const payload = wrapper.emitted('save')![0][0] as any
+    expect(payload.data_persistence_enabled).toBe(true)
+  })
+})
