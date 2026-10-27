@@ -105,6 +105,12 @@
       <div v-if="aiConfigLoading" class="ocf-ai-config-loading">
         <i class="fas fa-spinner fa-spin"></i>
       </div>
+      <!-- A form we could not load is not shown: saving its blank defaults
+           would overwrite the stored config. -->
+      <p v-else-if="aiConfigLoadError" class="alert alert-danger" data-test="ai-config-error">
+        <i class="fas fa-exclamation-triangle"></i>
+        {{ aiConfigLoadError }}
+      </p>
       <template v-else>
         <label class="checkbox-row">
           <input v-model="aiConfigForm.enabled" type="checkbox" data-test="ai-config-enabled" />
@@ -171,11 +177,6 @@
             {{ t('settings.aiConfigSave') }}
           </button>
         </div>
-
-        <p v-if="aiConfigError" class="alert alert-danger" data-test="ai-config-error">
-          <i class="fas fa-exclamation-triangle"></i>
-          {{ aiConfigError }}
-        </p>
       </template>
     </div>
 
@@ -337,7 +338,7 @@ const aiConfigKeyInput = ref('')
 const aiConfigForm = ref({ enabled: false, endpoint: '', model: '' })
 const aiConfigSavedEndpoint = ref('')
 const isSavingAiConfig = ref(false)
-const aiConfigError = ref('')
+const aiConfigLoadError = ref('')
 const { aiAssistantErrorMessage } = useAiAssistantError()
 
 // Mirrors ocf-core's UpdateConfig (organizationAiService.go): the endpoint
@@ -380,11 +381,11 @@ function applyAiConfig(cfg: OrganizationAiConfig) {
 
 async function loadAiConfig() {
   aiConfigLoading.value = true
-  aiConfigError.value = ''
+  aiConfigLoadError.value = ''
   try {
     applyAiConfig(await organizationService.getAiConfig(props.organizationId))
   } catch (err: any) {
-    aiConfigError.value = aiAssistantErrorMessage(err, t('settings.aiConfigLoadError'))
+    aiConfigLoadError.value = aiAssistantErrorMessage(err, t('settings.aiConfigLoadError'))
   } finally {
     aiConfigLoading.value = false
   }
@@ -394,7 +395,6 @@ onMounted(loadAiConfig)
 
 async function saveAiConfig() {
   isSavingAiConfig.value = true
-  aiConfigError.value = ''
   try {
     applyAiConfig(await organizationService.updateAiConfig(props.organizationId, {
       ...aiConfigForm.value,
@@ -404,7 +404,9 @@ async function saveAiConfig() {
     }))
     toast.success(t('settings.aiConfigSaved'))
   } catch (err: any) {
-    aiConfigError.value = aiAssistantErrorMessage(err, t('settings.aiConfigSaveError'))
+    // A toast, like the retention save: an inline alert would push the
+    // Danger zone down under the user's pointer.
+    toast.error(aiAssistantErrorMessage(err, t('settings.aiConfigSaveError')))
   } finally {
     isSavingAiConfig.value = false
   }

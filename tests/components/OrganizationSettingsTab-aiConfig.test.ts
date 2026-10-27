@@ -151,9 +151,11 @@ describe('OrganizationSettingsTab AI assistant config', () => {
     const error = wrapper.find('[data-test="ai-config-error"]').text()
     expect(error).toContain('Failed to load the AI assistant configuration')
     expect(error).not.toContain('boom')
+    // Nothing to save over the stored config with.
+    expect(wrapper.find('[data-test="ai-config-save"]').exists()).toBe(false)
   })
 
-  it('translates a refused endpoint and keeps the form editable', async () => {
+  it('translates a refused endpoint in a toast, without inserting anything into the page', async () => {
     putMock.mockRejectedValue({ response: { status: 400, data: { error_code: 400, error_message: 'ai_endpoint_invalid' } } })
 
     const wrapper = mountTab()
@@ -163,7 +165,8 @@ describe('OrganizationSettingsTab AI assistant config', () => {
     await wrapper.find('[data-test="ai-config-save"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('[data-test="ai-config-error"]').text()).toContain('The endpoint must be a public https:// address.')
+    expect(toastError).toHaveBeenCalledWith('The endpoint must be a public https:// address.')
+    expect(wrapper.find('[data-test="ai-config-error"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="ai-config-save"]').attributes('disabled')).toBeUndefined()
     expect(toastSuccess).not.toHaveBeenCalled()
   })
