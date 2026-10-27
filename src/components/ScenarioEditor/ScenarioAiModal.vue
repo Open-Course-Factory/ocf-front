@@ -323,10 +323,10 @@ async function refreshAiConfigAvailability() {
     aiConfigEnabled.value = false
     return
   }
-  // ocf-core lets org managers and owners (and platform admins) generate;
-  // a teacher keeps the manual copy/paste flow.
+  // ocf-core lets org teachers and above (and platform admins) generate —
+  // the scenario authoring threshold; a plain member keeps the manual flow.
   await membershipsStore.ensureLoaded().catch(() => null)
-  if (!isAdmin.value && !membershipsStore.canManageOrg(orgId)) {
+  if (!isAdmin.value && !membershipsStore.canAuthorInOrg(orgId)) {
     aiConfigEnabled.value = false
     return
   }

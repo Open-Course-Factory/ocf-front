@@ -40,11 +40,12 @@ vi.mock('../../src/composables/useScenarioCreateScopes', () => ({
 }))
 
 // The caller's role in org-1, as /users/me's memberships would report it.
+// Teacher by default: the lowest role offered auto-generate.
 const orgRole = { value: 'manager' }
 vi.mock('../../src/stores/userMemberships', () => ({
   useUserMembershipsStore: () => ({
     ensureLoaded: () => Promise.resolve(),
-    canManageOrg: () => ['manager', 'owner'].includes(orgRole.value),
+    canAuthorInOrg: () => ['teacher', 'manager', 'owner'].includes(orgRole.value),
   }),
 }))
 vi.mock('../../src/composables/useAdminViewMode', () => ({
@@ -90,7 +91,7 @@ beforeEach(() => {
   getMock.mockReset()
   postMock.mockReset()
   clipboard.writeText.mockClear()
-  orgRole.value = 'manager'
+  orgRole.value = 'teacher'
   Object.defineProperty(navigator, 'clipboard', { value: clipboard, configurable: true })
   getMock.mockImplementation((url: string) => {
     if (url.includes('/export')) return Promise.resolve({ data: CURRENT })
@@ -339,8 +340,8 @@ describe('ScenarioAiModal — organization AI assistant (auto-generate)', () => 
     expect(wrapper.text()).not.toContain('dial tcp')
   })
 
-  it('offers no auto-generate to a teacher, who is below manager in the organization', async () => {
-    orgRole.value = 'teacher'
+  it('offers no auto-generate to a plain member of the organization', async () => {
+    orgRole.value = 'member'
     getMock.mockImplementation((url: string) => {
       if (url.includes('/ai-config')) return Promise.resolve({ data: { enabled: true, endpoint: 'https://x', model: 'm', has_api_key: true } })
       return Promise.reject(new Error('catalog unavailable'))
