@@ -11,6 +11,7 @@ import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { useAdminUserError } from '../../src/composables/useAdminUserError'
 import { useAiAssistantError } from '../../src/composables/useAiAssistantError'
+import { apiErrorCode } from '../../src/composables/useApiErrorCode'
 
 function runInSetup<T>(fn: () => T, locale: 'en' | 'fr' = 'en'): T {
   let captured!: T
@@ -43,5 +44,13 @@ describe('useApiErrorCode', () => {
     const { aiAssistantErrorMessage } = runInSetup(() => useAiAssistantError())
     expect(aiAssistantErrorMessage(aborted(400, 'ai_key_required'), 'generic')).toContain('enter the API key again')
     expect(aiAssistantErrorMessage(aborted(500, 'dial tcp: connection refused'), 'generic')).toBe('generic')
+  })
+})
+
+describe('apiErrorCode', () => {
+  it('reads the code from error_message under errors.Abort, or from a string error_code', () => {
+    expect(apiErrorCode({ response: { data: { error_code: 409, error_message: 'ai_not_configured' } } })).toBe('ai_not_configured')
+    expect(apiErrorCode({ response: { data: { error_code: 'subscription_past_due', error_message: 'Payment overdue' } } })).toBe('subscription_past_due')
+    expect(apiErrorCode(new Error('Network Error'))).toBeUndefined()
   })
 })
