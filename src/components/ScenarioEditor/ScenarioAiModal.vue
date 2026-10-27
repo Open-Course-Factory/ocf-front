@@ -229,6 +229,7 @@ import { useScenarioAiTranslations } from '../../composables/useScenarioAiTransl
 import { useScenarioImportError } from '../../composables/useScenarioImportError'
 import { teacherService } from '../../services/domain/scenario'
 import { organizationService } from '../../services/domain/organization'
+import { useAiAssistantError } from '../../composables/useAiAssistantError'
 import { useScenarioAiCatalog } from '../../composables/useScenarioAiCatalog'
 import { scenarioImportProblems } from '../../utils/scenarioImportProblems'
 import {
@@ -260,6 +261,7 @@ const emit = defineEmits<{
 useScenarioEditorI18n()
 const describeImportError = useScenarioImportError()
 const { t } = useScenarioAiTranslations()
+const { aiAssistantErrorMessage } = useAiAssistantError()
 // The user's chosen UI language, as the language selector and preferences set it.
 const { currentLocale } = useLocale()
 const { parseScopeKey, pickDefaultScopeKey, scopeKeyForScenario, loadScopeSources, allGroups } = useScenarioCreateScopes()
@@ -439,7 +441,7 @@ async function generateAutomatically() {
     answer.value = await organizationService.generateWithAi(orgId, prompt.value)
     step.value = 3
   } catch (err: any) {
-    errorMessage.value = err.response?.data?.error_message || err.message || t('scenarioAi.generateError')
+    errorMessage.value = aiAssistantErrorMessage(err, t('scenarioAi.generateError'))
   } finally {
     generating.value = false
   }

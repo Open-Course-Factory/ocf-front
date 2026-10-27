@@ -275,6 +275,7 @@ import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useTranslations } from '../../composables/useTranslations'
 import { useToast } from '../../composables/useToast'
 import { PLATFORM_DEFAULT_RETENTION_DAYS, organizationService } from '../../services/domain/organization'
+import { useAiAssistantError } from '../../composables/useAiAssistantError'
 import type { Organization } from '../../types'
 
 const props = defineProps<{
@@ -328,6 +329,7 @@ const aiConfigKeyInput = ref('')
 const aiConfigForm = ref({ enabled: false, endpoint: '', model: '' })
 const isSavingAiConfig = ref(false)
 const aiConfigError = ref('')
+const { aiAssistantErrorMessage } = useAiAssistantError()
 
 async function loadAiConfig() {
   aiConfigLoading.value = true
@@ -338,7 +340,7 @@ async function loadAiConfig() {
     aiConfigHasKey.value = cfg.has_api_key
     aiConfigKeyInput.value = ''
   } catch (err: any) {
-    aiConfigError.value = err.response?.data?.error_message || err.message || t('settings.aiConfigLoadError')
+    aiConfigError.value = aiAssistantErrorMessage(err, t('settings.aiConfigLoadError'))
   } finally {
     aiConfigLoading.value = false
   }
@@ -360,7 +362,7 @@ async function saveAiConfig() {
     aiConfigKeyInput.value = ''
     toast.success(t('settings.aiConfigSaved'))
   } catch (err: any) {
-    aiConfigError.value = err.response?.data?.error_message || err.message || t('settings.aiConfigSaveError')
+    aiConfigError.value = aiAssistantErrorMessage(err, t('settings.aiConfigSaveError'))
   } finally {
     isSavingAiConfig.value = false
   }

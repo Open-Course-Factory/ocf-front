@@ -142,26 +142,29 @@ describe('OrganizationSettingsTab AI assistant config', () => {
     expect(wrapper.find('[data-test="ai-config-api-key"]').attributes('placeholder')).toContain('keep')
   })
 
-  it('surfaces a load error', async () => {
-    getMock.mockRejectedValue({ response: { data: { error_message: 'boom' } } })
+  it('shows a generic translated message when loading fails, never the raw backend text', async () => {
+    getMock.mockRejectedValue({ response: { status: 500, data: { error_code: 500, error_message: 'boom' } } })
 
     const wrapper = mountTab()
     await flushPromises()
 
-    expect(wrapper.find('[data-test="ai-config-error"]').text()).toContain('boom')
+    const error = wrapper.find('[data-test="ai-config-error"]').text()
+    expect(error).toContain('Failed to load the AI assistant configuration')
+    expect(error).not.toContain('boom')
   })
 
-  it('surfaces a save error and keeps the form editable', async () => {
-    putMock.mockRejectedValue({ response: { data: { error_message: 'invalid endpoint' } } })
+  it('translates a refused endpoint and keeps the form editable', async () => {
+    putMock.mockRejectedValue({ response: { status: 400, data: { error_code: 400, error_message: 'ai_endpoint_invalid' } } })
 
     const wrapper = mountTab()
     await flushPromises()
 
-    await wrapper.find('[data-test="ai-config-endpoint"]').setValue('not-a-url')
+    await wrapper.find('[data-test="ai-config-endpoint"]').setValue('https://127.0.0.1/v1/chat/completions')
     await wrapper.find('[data-test="ai-config-save"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('[data-test="ai-config-error"]').text()).toContain('invalid endpoint')
+    expect(wrapper.find('[data-test="ai-config-error"]').text()).toContain('The endpoint must be a public https:// address.')
+    expect(wrapper.find('[data-test="ai-config-save"]').attributes('disabled')).toBeUndefined()
     expect(toastSuccess).not.toHaveBeenCalled()
   })
 })

@@ -276,7 +276,7 @@ describe('ScenarioAiModal — organization AI assistant (auto-generate)', () => 
       return Promise.reject(new Error('unexpected GET'))
     })
     postMock.mockImplementation((url: string) => {
-      if (url.includes('/ai-config/generate')) return Promise.reject({ response: { data: { error_message: 'AI assistant is not configured for this organization' } } })
+      if (url.includes('/ai-config/generate')) return Promise.reject({ response: { status: 409, data: { error_code: 409, error_message: 'ai_not_configured' } } })
       return Promise.reject(new Error('unexpected POST'))
     })
 
@@ -290,8 +290,40 @@ describe('ScenarioAiModal — organization AI assistant (auto-generate)', () => 
     await flushPromises()
 
     expect(wrapper.find('[data-testid="scenario-ai-step-prompt"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('AI assistant is not configured for this organization')
+    expect(wrapper.text()).toContain('This organization has no AI assistant switched on.')
+    expect(wrapper.text()).not.toContain('ai_not_configured')
     expect(wrapper.find('[data-testid="scenario-ai-copy-prompt"]').exists()).toBe(true)
+  })
+
+  async function generateFailingWith(data: unknown, uiLocale: 'en' | 'fr' = 'en'): Promise<VueWrapper> {
+    getMock.mockImplementation((url: string) => {
+      if (url.includes('/ai-config')) return Promise.resolve({ data: { enabled: true, endpoint: 'https://x', model: 'm', has_api_key: true } })
+      return Promise.reject(new Error('unexpected GET'))
+    })
+    postMock.mockRejectedValue({ response: { status: 502, data } })
+    const wrapper = mountModal({ mode: 'create' }, uiLocale)
+    await wrapper.setProps({ visible: true })
+    await flushPromises()
+    await wrapper.find('#ai-description').setValue('A lab about ping')
+    await wrapper.find('[data-testid="scenario-ai-next"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-testid="scenario-ai-auto-generate"]').trigger('click')
+    await flushPromises()
+    return wrapper
+  }
+
+  it('translates a provider failure, whether the code comes as error_message or as a string error_code', async () => {
+    const fr = await generateFailingWith({ error_code: 502, error_message: 'ai_provider_error' }, 'fr')
+    expect(fr.text()).toContain("L'assistant IA a échoué ou n'a pas répondu à temps.")
+
+    const en = await generateFailingWith({ error_code: 'ai_request_too_large', error_message: 'request too large' })
+    expect(en.text()).toContain('This scenario is too large to send to the AI assistant.')
+  })
+
+  it('falls back to the generic message for any other failure, never the raw backend text', async () => {
+    const wrapper = await generateFailingWith({ error_code: 500, error_message: 'dial tcp: connection refused' })
+    expect(wrapper.text()).toContain('The AI assistant did not answer.')
+    expect(wrapper.text()).not.toContain('dial tcp')
   })
 })
 
