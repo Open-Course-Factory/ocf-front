@@ -173,11 +173,13 @@ describe('OrganizationSettingsTab AI assistant config', () => {
     await flushPromises()
 
     await wrapper.find('[data-test="ai-config-endpoint"]').setValue('http://api.example.com/v1/chat/completions')
-    expect(wrapper.find('[data-test="ai-config-endpoint-invalid"]').text()).toContain('must start with https://')
+    expect(wrapper.find('[data-test="ai-config-endpoint-help"]').classes()).toContain('ocf-ai-config-invalid')
+    expect(wrapper.find('[data-test="ai-config-endpoint-help"]').text()).toContain('https://')
+    expect(wrapper.find('[data-test="ai-config-endpoint"]').attributes('aria-invalid')).toBe('true')
     expect(wrapper.find('[data-test="ai-config-save"]').attributes('disabled')).toBeDefined()
 
     await wrapper.find('[data-test="ai-config-endpoint"]').setValue('https://api.example.com/v1/chat/completions')
-    expect(wrapper.find('[data-test="ai-config-endpoint-invalid"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="ai-config-endpoint-help"]').classes()).not.toContain('ocf-ai-config-invalid')
     expect(wrapper.find('[data-test="ai-config-save"]').attributes('disabled')).toBeUndefined()
   })
 

@@ -119,12 +119,18 @@
             type="text"
             class="form-control"
             data-test="ai-config-endpoint"
+            :aria-invalid="aiConfigEndpointNotHttps"
             placeholder="https://api.openai.com/v1/chat/completions"
           />
-          <p v-if="aiConfigEndpointNotHttps" class="form-help-text ocf-ai-config-invalid" data-test="ai-config-endpoint-invalid">
-            {{ t('settings.aiConfigEndpointNotHttps') }}
+          <!-- Same text either way, only recoloured: swapping in a shorter
+               message would move every field below while the user types. -->
+          <p
+            class="form-help-text"
+            :class="{ 'ocf-ai-config-invalid': aiConfigEndpointNotHttps }"
+            data-test="ai-config-endpoint-help"
+          >
+            {{ t('settings.aiConfigEndpointHelp') }}
           </p>
-          <p v-else class="form-help-text">{{ t('settings.aiConfigEndpointHelp') }}</p>
         </div>
 
         <div class="form-group">
@@ -469,8 +475,7 @@ const { t } = useTranslations({
       aiConfigDescription: 'Bring your own AI assistant to the scenario editor\'s "Create/Improve with AI" flow. When on, writing a scenario calls your configured endpoint directly instead of asking you to copy a prompt into your own chat assistant and paste the answer back.',
       aiConfigEnabled: 'Use this endpoint instead of the manual copy/paste flow',
       aiConfigEndpoint: 'Endpoint URL',
-      aiConfigEndpointHelp: 'An OpenAI-compatible "chat completions" https:// URL — works with OpenAI itself, Mistral, or a self-hosted Ollama/vLLM instance exposing the same API shape.',
-      aiConfigEndpointNotHttps: 'The endpoint must start with https://.',
+      aiConfigEndpointHelp: 'Must start with https://. An OpenAI-compatible "chat completions" URL — works with OpenAI itself, Mistral, or a self-hosted Ollama/vLLM instance exposing the same API shape.',
       aiConfigModel: 'Model',
       aiConfigApiKey: 'API key',
       aiConfigKeyPlaceholder: 'Enter an API key',
@@ -528,8 +533,7 @@ const { t } = useTranslations({
       aiConfigDescription: 'Apportez votre propre assistant IA au flux « Créer/Améliorer avec l\'IA » de l\'éditeur de scénario. Une fois activé, la rédaction d\'un scénario appelle directement votre endpoint configuré, au lieu de vous demander de copier un prompt dans votre assistant de discussion puis de coller la réponse.',
       aiConfigEnabled: 'Utiliser cet endpoint au lieu du copier-coller manuel',
       aiConfigEndpoint: 'URL de l\'endpoint',
-      aiConfigEndpointNotHttps: 'L\'endpoint doit commencer par https://.',
-      aiConfigEndpointHelp: 'Une URL https:// « chat completions » compatible OpenAI — fonctionne avec OpenAI lui-même, Mistral, ou une instance Ollama/vLLM auto-hébergée exposant le même format d\'API.',
+      aiConfigEndpointHelp: 'Doit commencer par https://. Une URL « chat completions » compatible OpenAI — fonctionne avec OpenAI lui-même, Mistral, ou une instance Ollama/vLLM auto-hébergée exposant le même format d\'API.',
       aiConfigModel: 'Modèle',
       aiConfigApiKey: 'Clé API',
       aiConfigKeyPlaceholder: 'Saisissez une clé API',
