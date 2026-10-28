@@ -413,6 +413,14 @@ export const teacherService = {
     return response.data
   },
 
+  async skipToStep(groupId: string, sessionId: string, stepOrder: number): Promise<any> {
+    const response = await axios.post(
+      `/teacher/groups/${groupId}/sessions/${sessionId}/skip-to-step`,
+      { step_order: stepOrder }
+    )
+    return response.data
+  },
+
   // The distribution is resolved server-side from the scenario; only the
   // backend is the teacher's choice.
   async bulkStartScenario(groupId: string, scenarioId: string, data: { backend?: string }): Promise<any> {

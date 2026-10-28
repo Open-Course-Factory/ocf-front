@@ -152,7 +152,7 @@ export function getStatusClass(status: string): string {
   switch (status) {
     case 'completed': return 'status-completed'
     case 'active': case 'in_progress': return 'status-active'
-    case 'locked': return 'status-locked'
+    case 'locked': case 'skipped': return 'status-locked'
     case 'abandoned': return 'status-abandoned'
     default: return ''
   }

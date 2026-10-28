@@ -22,17 +22,20 @@ import { createI18n } from 'vue-i18n'
 
 const mockGetSessionDetail = vi.fn()
 const mockGetSessionCommands = vi.fn()
+const mockSkipToStep = vi.fn()
+const mockShowConfirm = vi.fn()
 
 vi.mock('../../src/services/domain/scenario', () => ({
   teacherService: {
     getSessionDetail: (...a: any[]) => mockGetSessionDetail(...a),
     getSessionCommands: (...a: any[]) => mockGetSessionCommands(...a),
+    skipToStep: (...a: any[]) => mockSkipToStep(...a),
   },
 }))
 
 // Avoid pulling in element-plus etc. via the notification composable.
 vi.mock('../../src/composables/useNotification', () => ({
-  useNotification: () => ({ showError: vi.fn(), showSuccess: vi.fn(), showConfirm: vi.fn() }),
+  useNotification: () => ({ showError: vi.fn(), showSuccess: vi.fn(), showConfirm: (...a: any[]) => mockShowConfirm(...a) }),
 }))
 
 import SessionDetailModal from '../../src/components/Groups/SessionDetailModal.vue'
@@ -161,6 +164,62 @@ describe('SessionDetailModal', () => {
     await pageButtons[1].trigger('click')
     await flushPromises()
     expect(mockGetSessionCommands).toHaveBeenLastCalledWith('g1', 'sess-1', 100, 100)
+  })
+
+  describe('skip to a step', () => {
+    function activeDetail() {
+      return {
+        ...makeDetail([
+          { ...terminalStep(0, 'First step'), status: 'completed' },
+          { ...terminalStep(1, 'Second step'), status: 'active' },
+          { ...terminalStep(2, 'Third step'), status: 'locked' },
+        ]),
+        status: 'active',
+      }
+    }
+
+    it('offers the skip only on locked steps of a running session', async () => {
+      mockGetSessionDetail.mockResolvedValue(activeDetail())
+      const wrapper = mountModal({ visible: true })
+      await flushPromises()
+
+      const rows = wrapper.findAll('.steps-table tbody tr')
+      expect(rows.map(r => r.find('.ocf-skip-step-btn').exists())).toEqual([false, false, true])
+    })
+
+    it('offers nothing on a finished session', async () => {
+      mockGetSessionDetail.mockResolvedValue({ ...activeDetail(), status: 'completed' })
+      const wrapper = mountModal({ visible: true })
+      await flushPromises()
+
+      expect(wrapper.find('.ocf-skip-step-btn').exists()).toBe(false)
+    })
+
+    it('skips after confirmation and reloads the detail', async () => {
+      mockGetSessionDetail.mockResolvedValue(activeDetail())
+      mockShowConfirm.mockResolvedValue(true)
+      mockSkipToStep.mockResolvedValue({ step_order: 2 })
+      const wrapper = mountModal({ visible: true })
+      await flushPromises()
+
+      await wrapper.find('.ocf-skip-step-btn').trigger('click')
+      await flushPromises()
+
+      expect(mockSkipToStep).toHaveBeenCalledWith('g1', 'sess-1', 2)
+      expect(mockGetSessionDetail).toHaveBeenCalledTimes(2)
+    })
+
+    it('does nothing when the confirmation is declined', async () => {
+      mockGetSessionDetail.mockResolvedValue(activeDetail())
+      mockShowConfirm.mockResolvedValue(false)
+      const wrapper = mountModal({ visible: true })
+      await flushPromises()
+
+      await wrapper.find('.ocf-skip-step-btn').trigger('click')
+      await flushPromises()
+
+      expect(mockSkipToStep).not.toHaveBeenCalled()
+    })
   })
 
   it('emits close when the BaseModal close button is clicked', async () => {

@@ -69,6 +69,7 @@
               <th>{{ t('groupScenarios.hintsUsed') }}</th>
               <th>{{ t('groupScenarios.timeSpent') }}</th>
               <th>{{ t('groupScenarios.completedAt') }}</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -124,6 +125,19 @@
                 </td>
                 <td>{{ formatDuration(step.time_spent_seconds) }}</td>
                 <td class="date-cell">{{ step.completed_at ? formatDate(step.completed_at) : '—' }}</td>
+                <td>
+                  <button
+                    v-if="canSkipTo(step)"
+                    type="button"
+                    class="ocf-skip-step-btn"
+                    :disabled="skipping"
+                    :title="t('groupScenarios.skipToStepTitle')"
+                    @click="skipTo(step)"
+                  >
+                    <i class="fas fa-forward"></i>
+                    {{ t('groupScenarios.skipToStep') }}
+                  </button>
+                </td>
               </tr>
               <tr
                 v-if="normalizedStepType(step.step_type) === 'quiz'
@@ -132,7 +146,7 @@
                 :key="`questions-${step.step_order}`"
                 class="quiz-questions-row"
               >
-                <td :colspan="8" :id="`quiz-questions-${step.step_order}`">
+                <td :colspan="9" :id="`quiz-questions-${step.step_order}`">
                   <QuizAnswerReview :step="step" />
                 </td>
               </tr>
@@ -359,13 +373,13 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import BaseModal from '../Modals/BaseModal.vue'
 import QuizAnswerReview from './QuizAnswerReview.vue'
 import { useSessionDetail } from '../../composables/useSessionDetail'
 import { teacherService } from '../../services/domain/scenario'
-import type { SessionCommand } from '../../services/domain/scenario'
+import type { SessionCommand, SessionStepDetail } from '../../services/domain/scenario'
 import {
   getStatusClass,
   formatDate,
@@ -420,7 +434,14 @@ const { t } = useTranslations({
       activeStatus: 'active',
       in_progress: 'in progress',
       locked: 'locked',
+      skipped: 'skipped',
       abandoned: 'abandoned',
+      skipToStep: 'Skip here',
+      skipToStepTitle: 'Move the learner to this step: the steps before it are marked skipped',
+      skipConfirm: 'Move {name} to step {n}, "{title}"? The steps in between are marked skipped and are not graded. Only this step\'s setup runs; the learner reloads the page to see it.',
+      skipConfirmTitle: 'Skip to a step',
+      skipDone: 'Session moved to step {n}',
+      skipError: 'Could not skip to this step',
       showQuestions: 'Show questions',
       hideQuestions: 'Hide questions',
       tabsLabel: 'Session detail tabs',
@@ -476,7 +497,14 @@ const { t } = useTranslations({
       activeStatus: 'actif',
       in_progress: 'en cours',
       locked: 'verrouillé',
+      skipped: 'sautée',
       abandoned: 'abandonné',
+      skipToStep: 'Aller ici',
+      skipToStepTitle: 'Amener l\'apprenant à cette étape : les étapes d\'avant sont marquées sautées',
+      skipConfirm: 'Amener {name} à l\'étape {n}, « {title} » ? Les étapes intermédiaires sont marquées sautées et ne comptent pas dans la note. Seule la préparation de cette étape s\'exécute ; l\'apprenant recharge la page pour la voir.',
+      skipConfirmTitle: 'Aller à une étape',
+      skipDone: 'Session amenée à l\'étape {n}',
+      skipError: 'Impossible d\'aller à cette étape',
       showQuestions: 'Afficher les questions',
       hideQuestions: 'Masquer les questions',
       tabsLabel: 'Onglets du détail de session',
@@ -505,7 +533,7 @@ const { t } = useTranslations({
   }
 })
 
-const { showError: notifyError } = useNotification()
+const { showError: notifyError, showSuccess: notifySuccess, showConfirm } = useNotification()
 
 const {
   sessionDetail,
@@ -577,9 +605,43 @@ function translateStatus(status: string): string {
     active: t('groupScenarios.activeStatus'),
     in_progress: t('groupScenarios.in_progress'),
     locked: t('groupScenarios.locked'),
+    skipped: t('groupScenarios.skipped'),
     abandoned: t('groupScenarios.abandoned')
   }
   return statusMap[status] || status
+}
+
+// Only forward, only on a running session: the backend refuses anything else,
+// and the button must not offer what it refuses.
+function canSkipTo(step: SessionStepDetail): boolean {
+  const status = sessionDetail.value?.status
+  return (status === 'active' || status === 'in_progress') && step.status === 'locked'
+}
+
+const skipping = ref(false)
+
+async function skipTo(step: SessionStepDetail) {
+  if (!detailResult.value || !sessionDetail.value) return
+  const n = step.step_order + 1
+  const confirmed = await showConfirm(
+    t('groupScenarios.skipConfirm', {
+      name: sessionDetail.value.user_name || sessionDetail.value.user_id,
+      n,
+      title: step.step_title
+    }),
+    t('groupScenarios.skipConfirmTitle')
+  )
+  if (!confirmed) return
+  skipping.value = true
+  try {
+    await teacherService.skipToStep(props.groupId, detailResult.value.session_id, step.step_order)
+    notifySuccess(t('groupScenarios.skipDone', { n }))
+    await loadDetail(detailResult.value)
+  } catch (err: any) {
+    notifyError(err.response?.data?.error || t('groupScenarios.skipError'))
+  } finally {
+    skipping.value = false
+  }
 }
 
 function stepTypeLabel(stepType?: string): string {
@@ -863,7 +925,8 @@ async function exportCommandsCsv() {
   color: var(--color-text-muted);
 }
 
-.quiz-toggle-btn {
+.quiz-toggle-btn,
+.ocf-skip-step-btn {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
@@ -879,14 +942,26 @@ async function exportCommandsCsv() {
   transition: var(--transition-fast);
 }
 
-.quiz-toggle-btn:hover {
+.quiz-toggle-btn:hover,
+.ocf-skip-step-btn:hover:not(:disabled) {
   background: var(--color-bg-tertiary);
   color: var(--color-text-primary);
 }
 
-.quiz-toggle-btn:focus-visible {
+.quiz-toggle-btn:focus-visible,
+.ocf-skip-step-btn:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+.ocf-skip-step-btn {
+  margin-left: 0;
+  white-space: nowrap;
+}
+
+.ocf-skip-step-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .quiz-questions-row td {
