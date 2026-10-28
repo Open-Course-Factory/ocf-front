@@ -1,5 +1,5 @@
 # === Build stage ===
-FROM node:24-bookworm-slim AS build
+FROM node:26-bookworm-slim AS build
 
 # VITE_* vars are statically replaced by Vite at build time (import.meta.env.*)
 # Defaults here are production values — CI can override via --build-arg if needed
