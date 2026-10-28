@@ -318,10 +318,11 @@
                 completed: n < currentPosition,
                 active: n === currentPosition,
                 locked: n > currentPosition,
-                clickable: n <= currentPosition,
+                clickable: n <= currentPosition || canSkip,
                 reviewing: reviewingStep && n === stepPosition(reviewingStep)
               }"
-              @click="n <= currentPosition ? navigateToStep(orderForPosition(n)) : undefined"
+              :title="canSkip && n > currentPosition ? t('scenarioPanel.skipToStepTitle', { step: n }) : undefined"
+              @click="onDotClick(n)"
             ></span>
           </div>
         </div>
@@ -442,7 +443,12 @@ const { t } = useTranslations({
       infoAck: "I've read this, next",
       previous: 'Previous',
       // Quiz step
-      quizSubmitError: 'Failed to submit your answers. Please try again.'
+      quizSubmitError: 'Failed to submit your answers. Please try again.',
+      // Trainer skipping their own run
+      skipToStepTitle: 'Go to step {step} (trainer)',
+      skipConfirmTitle: 'Go to step {step}',
+      skipConfirm: 'Your run moves straight to step {step}: the steps in between are marked skipped and only the setup of step {step} runs.',
+      skipFailed: 'Could not move to that step.'
     }
   },
   fr: {
@@ -496,7 +502,12 @@ const { t } = useTranslations({
       infoAck: 'J\'ai lu, suivant',
       previous: 'Précédent',
       // Quiz step
-      quizSubmitError: 'Échec de l\'envoi de vos réponses. Réessayez.'
+      quizSubmitError: 'Échec de l\'envoi de vos réponses. Réessayez.',
+      // Trainer skipping their own run
+      skipToStepTitle: 'Aller à l\'étape {step} (formateur)',
+      skipConfirmTitle: 'Aller à l\'étape {step}',
+      skipConfirm: 'Votre session passe directement à l\'étape {step} : les étapes intermédiaires sont marquées comme sautées et seule la préparation de l\'étape {step} s\'exécute.',
+      skipFailed: 'Impossible de passer à cette étape.'
     }
   }
 })
@@ -657,15 +668,49 @@ function advanceAfterSuccess(
     // session 'active'. That second case has nothing to poll, so reading the
     // flag here is the only way it can ever surface — without it the learner
     // lands on a step whose environment was never built and nothing says so.
-    if (result.next_step_provisioning_failed) {
-      transitionState.value = 'failed'
-    } else if (result.next_step_provisioning) {
-      startStepProvisioningPoll(result.provisioning_timeout_seconds)
-    } else {
-      transitionState.value = 'loading'
-      loadCurrentStep()
-    }
+    enterStep(result)
   }, validatedMs)
+}
+
+// Shows the step the run moved to, or waits for its setup, or offers the retry
+// when that setup failed inline.
+function enterStep(result: {
+  next_step_provisioning?: boolean
+  provisioning_timeout_seconds?: number
+  next_step_provisioning_failed?: boolean
+}) {
+  if (result.next_step_provisioning_failed) {
+    transitionState.value = 'failed'
+  } else if (result.next_step_provisioning) {
+    startStepProvisioningPoll(result.provisioning_timeout_seconds)
+  } else {
+    transitionState.value = 'loading'
+    loadCurrentStep()
+  }
+}
+
+// A trainer running the lab themselves may jump ahead, as they can from the
+// class view for a learner. Learners never see it: can_run is the backend's
+// verdict, and the backend refuses the skip on the same rule.
+const canSkip = computed(() => scenarioInfo.value?.can_run === true && canAnswer.value && !isReviewMode.value)
+
+async function onDotClick(position: number) {
+  if (position <= currentPosition.value) {
+    navigateToStep(orderForPosition(position))
+    return
+  }
+  if (!canSkip.value) return
+  const confirmed = await showConfirm(
+    t('scenarioPanel.skipConfirm', { step: position }),
+    t('scenarioPanel.skipConfirmTitle', { step: position })
+  )
+  if (!confirmed) return
+  try {
+    const result = await scenarioSessionService.skipToStep(props.scenarioSessionId, orderForPosition(position))
+    enterStep(result)
+  } catch (err: any) {
+    showError(err.response?.data?.error_message || t('scenarioPanel.skipFailed'))
+  }
 }
 
 // The retry offered on a provisioning failure. Reloading the step was never a

@@ -96,6 +96,13 @@ export interface SubmitFlagResponse {
   next_step_provisioning_failed?: boolean
 }
 
+export interface SkipToStepResponse {
+  step_order: number
+  next_step_provisioning?: boolean
+  provisioning_timeout_seconds?: number
+  next_step_provisioning_failed?: boolean
+}
+
 export interface ReprovisionStepResponse {
   step_order: number
   // Session status immediately after the call: 'provisioning' when the setup
@@ -219,6 +226,9 @@ export interface ScenarioInfo {
   // Mirrors Scenario.HasFlagSteps: whether any step is a flag step. Sent even
   // to learners, whose copy has no steps. Absent from an older ocf-core.
   has_flag_steps?: boolean
+  // The backend's CanRunScenario verdict for the caller (a trainer of the
+  // scenario): the panel lets them skip their own run to a later step.
+  can_run?: boolean
 }
 
 // What launch, preview and resume answer. provisioning_timeout_seconds is set
@@ -371,6 +381,13 @@ export const scenarioSessionService = {
    */
   async reprovisionStep(sessionId: string, force = false): Promise<ReprovisionStepResponse> {
     const response = await axios.post(`/scenario-sessions/${sessionId}/reprovision-step`, { force })
+    return response.data
+  },
+
+  // A trainer moving their own run forward; the backend refuses anyone who
+  // may not run the scenario with a class (ScenarioInfo.can_run).
+  async skipToStep(sessionId: string, stepOrder: number): Promise<SkipToStepResponse> {
+    const response = await axios.post(`/scenario-sessions/${sessionId}/skip-to-step`, { step_order: stepOrder })
     return response.data
   }
 }
