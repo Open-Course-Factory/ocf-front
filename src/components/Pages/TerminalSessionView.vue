@@ -286,7 +286,7 @@ import { useEndStateConfig, type EndStateReason } from '../../composables/useEnd
 import { useLimitReachedMessage } from '../../composables/useLimitReachedMessage'
 import { useScenarioRunRecovery } from '../../composables/useScenarioRunRecovery'
 import { useDunningRejection } from '../../composables/useDunningRejection'
-import { useBudgetRejection } from '../../composables/useBudgetRejection'
+import { isQuotaFullRejection, useBudgetRejection } from '../../composables/useBudgetRejection'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import SessionPausedBanner from '../Terminal/SessionPausedBanner.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
@@ -609,7 +609,7 @@ const { getLimitReachedMessage } = useLimitReachedMessage()
 
 // Dunning (past-due) rejection detection + copy, shared across terminal flows.
 const { isDunningRejection, getDunningCopy } = useDunningRejection()
-const { isQuotaFullRejection, getResumeQuotaFullMessage } = useBudgetRejection()
+const { getResumeQuotaFullMessage } = useBudgetRejection()
 
 const activeEndBanner = computed(() => {
   const reason = terminalEndReason.value

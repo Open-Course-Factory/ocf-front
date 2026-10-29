@@ -195,8 +195,7 @@
                     <i class="fas fa-memory"></i>
                     {{ session.machine_size.toUpperCase() }}
                   </span>
-                  <!-- Only the backend knows which machines use the quota;
-                       absent flag (older backend) shows nothing. -->
+                  <!-- Only the backend knows which machines use the quota. -->
                   <span
                     v-if="session.counts_toward_quota === false"
                     class="metadata-item ocf-quota-free-badge"
@@ -620,11 +619,11 @@ import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import { useClassGroupsStore } from '../../stores/classGroups'
 import { useGroupMemberNames } from '../../composables/useGroupMemberNames'
 import { extractErrorMessage } from '../../utils/formatters'
-import { useBudgetRejection } from '../../composables/useBudgetRejection'
+import { isQuotaFullRejection, useBudgetRejection } from '../../composables/useBudgetRejection'
 import { getEffectiveSessionState, sessionHasNetwork, type EffectiveSessionState, type SessionLifecycleFields } from '../../utils/sessionState'
 
 const { showConfirm, showError } = useNotification()
-const { isQuotaFullRejection, getResumeQuotaFullMessage } = useBudgetRejection()
+const { getResumeQuotaFullMessage } = useBudgetRejection()
 const { formatDateTime: formatDateTimeTz } = useFormatters()
 const { isEnabled } = useFeatureFlags()
 const groupStore = useClassGroupsStore()

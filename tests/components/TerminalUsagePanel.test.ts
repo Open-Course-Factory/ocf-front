@@ -425,10 +425,4 @@ describe('TerminalUsagePanel — what uses the quota', () => {
     expect(badges).toEqual(['Uses quota', 'Paused — not using quota (disk kept)'])
     expect(wrapper.find('[data-testid="quota-rule"]').text()).toMatch(/Only running machines use your quota/)
   })
-
-  it('claims nothing about the quota when the backend sends no flag', async () => {
-    const wrapper = await rowsFor([{ name: 'db', state: 'stopped' }])
-    expect(wrapper.find('[data-testid="quota-badge"]').exists()).toBe(false)
-    expect(wrapper.find('.session-state').text()).toBe('paused')
-  })
 })

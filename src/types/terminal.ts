@@ -43,8 +43,8 @@ export interface TerminalSession extends BaseEntity {
   composed_features?: string
   // Whether this machine takes CPU/RAM from the plan's quota right now (only
   // while running or starting). Decided by ocf-core — read it, never re-derive
-  // it from `state`. Absent on older backends: then the UI says nothing.
-  counts_toward_quota?: boolean
+  // it from `state`.
+  counts_toward_quota: boolean
 }
 
 /**
@@ -240,8 +240,8 @@ export interface ActiveSession {
   size_memory_mb: number
   state: 'running' | 'starting' | 'stopped'
   persistence_mode: 'ephemeral' | 'persistent'
-  /** Takes CPU/RAM from the quota right now. Absent on older backends — unknown. */
-  counts_toward_quota?: boolean
+  /** Takes CPU/RAM from the quota right now. */
+  counts_toward_quota: boolean
   /** ISO 8601 */
   last_started_at: string
   /** ISO 8601 */

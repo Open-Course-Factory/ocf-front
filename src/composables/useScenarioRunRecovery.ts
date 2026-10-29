@@ -15,14 +15,14 @@ import { useRouter } from 'vue-router'
 import { useTranslations } from './useTranslations'
 import { useNotification } from './useNotification'
 import { useDunningRejection } from './useDunningRejection'
-import { useBudgetRejection } from './useBudgetRejection'
+import { isBudgetRejection, isQuotaFullRejection, useBudgetRejection } from './useBudgetRejection'
 import { scenarioSessionService } from '../services/domain/scenario'
 
 export function useScenarioRunRecovery() {
   const router = useRouter()
   const { showError, showConfirm } = useNotification()
   const { isDunningRejection, getDunningCopy } = useDunningRejection()
-  const { isBudgetRejection, isQuotaFullRejection, getResumeQuotaFullMessage } = useBudgetRejection()
+  const { getResumeQuotaFullMessage } = useBudgetRejection()
   const { t } = useTranslations({
     en: {
       runRecovery: {

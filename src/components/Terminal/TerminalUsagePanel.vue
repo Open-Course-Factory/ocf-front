@@ -150,18 +150,12 @@
               <span class="session-specs" data-test="session-specs">
                 {{ formatMcpuAsVcpu(session.size_cpu) }} vCPU · {{ formatMemoryMb(session.size_memory_mb) }}
               </span>
-              <!-- The backend says which machines use the quota; without the
-                   flag (older backend) fall back to the bare state. -->
               <span
-                v-if="session.counts_toward_quota !== undefined"
                 class="session-state ocf-quota-badge"
                 :class="session.counts_toward_quota ? 'is-counting' : 'is-free'"
                 data-testid="quota-badge"
               >
                 {{ session.counts_toward_quota ? t('terminals.quota.counts') : t('terminals.quota.free') }}
-              </span>
-              <span v-else class="session-state">
-                {{ session.state === 'running' ? t('terminals.state.running') : t('terminals.state.paused') }}
               </span>
               <span class="session-elapsed">{{ formatElapsed(session.last_started_at) }}</span>
             </li>
@@ -230,10 +224,6 @@ const { t } = useTranslations({
         sessionsHeader: 'Sessions',
         noActiveSessions: 'No active sessions',
       },
-      state: {
-        running: 'running',
-        paused: 'paused',
-      },
     }
   },
   fr: {
@@ -261,10 +251,6 @@ const { t } = useTranslations({
         memUsed: 'RAM utilisée',
         sessionsHeader: 'Sessions',
         noActiveSessions: 'Aucune session active',
-      },
-      state: {
-        running: 'en cours',
-        paused: 'en pause',
       },
     }
   }

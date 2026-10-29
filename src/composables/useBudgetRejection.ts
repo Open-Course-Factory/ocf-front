@@ -62,5 +62,5 @@ export function useBudgetRejection() {
     return t('budgetRejection.resumeQuotaFullUnnamed')
   }
 
-  return { isBudgetRejection, isQuotaFullRejection, getResumeQuotaFullMessage }
+  return { getResumeQuotaFullMessage }
 }
