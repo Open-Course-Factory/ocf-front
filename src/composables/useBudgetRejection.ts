@@ -23,7 +23,7 @@ export function isBudgetRejection(err: any): boolean {
 
 /** A budget refusal because the quota is full — not because the plan excludes the size. */
 export function isQuotaFullRejection(err: any): boolean {
-  return isBudgetRejection(err) && err.response.data.reason !== 'plan_restriction'
+  return isBudgetRejection(err) && err.response.data.reason === 'budget_exhausted'
 }
 
 export function useBudgetRejection() {
