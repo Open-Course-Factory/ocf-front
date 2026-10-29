@@ -75,10 +75,10 @@ const { t } = useTranslations({
   en: {
     pausedBanner: {
       title: 'Session paused',
-      body: "The container's disk is preserved. Resume to pick up where you left off.",
+      body: "The container's disk is preserved, and a paused machine uses none of your quota. Resume to pick up where you left off — resuming needs free quota.",
       resume: 'Resume session',
       scenarioTitle: 'Scenario paused',
-      scenarioBody: 'Your progress and your machine are kept. Resume to continue the scenario at the step you were on.',
+      scenarioBody: 'Your progress and your machine are kept, and a paused machine uses none of your quota. Resume to continue the scenario at the step you were on — resuming needs free quota.',
       resumeScenario: 'Resume the scenario',
       resuming: 'Resuming…',
       deleteButton: 'Delete permanently',
@@ -90,10 +90,10 @@ const { t } = useTranslations({
   fr: {
     pausedBanner: {
       title: 'Session en pause',
-      body: 'Le disque du conteneur est conservé. Reprenez où vous en étiez.',
+      body: 'Le disque du conteneur est conservé, et une machine en pause n\'utilise rien de votre quota. Reprenez où vous en étiez — la reprise demande du quota libre.',
       resume: 'Reprendre la session',
       scenarioTitle: 'Scénario en pause',
-      scenarioBody: 'Votre progression et votre machine sont conservées. Reprenez pour continuer le scénario à l\'étape où vous en étiez.',
+      scenarioBody: 'Votre progression et votre machine sont conservées, et une machine en pause n\'utilise rien de votre quota. Reprenez pour continuer le scénario à l\'étape où vous en étiez — la reprise demande du quota libre.',
       resumeScenario: 'Reprendre le scénario',
       resuming: 'Reprise…',
       deleteButton: 'Supprimer définitivement',

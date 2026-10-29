@@ -195,6 +195,17 @@
                     <i class="fas fa-memory"></i>
                     {{ session.machine_size.toUpperCase() }}
                   </span>
+                  <!-- Only the backend knows which machines use the quota;
+                       absent flag (older backend) shows nothing. -->
+                  <span
+                    v-if="session.counts_toward_quota === false"
+                    class="metadata-item ocf-quota-free-badge"
+                    data-testid="session-quota-free"
+                    :title="t('terminalMySessions.quotaFreeTooltip')"
+                  >
+                    <i class="fas fa-pause-circle"></i>
+                    {{ t('terminalMySessions.quotaFree') }}
+                  </span>
                   <span
                     class="metadata-item network-badge"
                     :class="sessionHasNetwork(session) ? 'network-on' : 'network-off'"
@@ -609,9 +620,11 @@ import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import { useClassGroupsStore } from '../../stores/classGroups'
 import { useGroupMemberNames } from '../../composables/useGroupMemberNames'
 import { extractErrorMessage } from '../../utils/formatters'
+import { useBudgetRejection } from '../../composables/useBudgetRejection'
 import { getEffectiveSessionState, sessionHasNetwork, type EffectiveSessionState, type SessionLifecycleFields } from '../../utils/sessionState'
 
 const { showConfirm, showError } = useNotification()
+const { isQuotaFullRejection, getResumeQuotaFullMessage } = useBudgetRejection()
 const { formatDateTime: formatDateTimeTz } = useFormatters()
 const { isEnabled } = useFeatureFlags()
 const groupStore = useClassGroupsStore()
@@ -675,7 +688,9 @@ const { t } = useTranslations({
       buttonStop: 'Stop',
       buttonDelete: 'Delete',
       buttonHideSession: 'Hide',
-      tooltipStart: 'Resume this session (preserves disk and history)',
+      tooltipStart: 'Resume this session (disk and history kept; needs free quota)',
+      quotaFree: 'Not using quota',
+      quotaFreeTooltip: 'Paused: the disk is kept, but no CPU or RAM is taken from your quota. Resuming needs free quota.',
       tooltipStop: 'Stop this session (preserves disk so you can resume later)',
       tooltipStopEphemeral: 'Persistence is not enabled for this terminal — use Destroy (trash) to terminate it.',
       tooltipDelete: 'Delete this session permanently',
@@ -799,7 +814,9 @@ const { t } = useTranslations({
       buttonStop: 'Arrêter',
       buttonDelete: 'Supprimer',
       buttonHideSession: 'Masquer',
-      tooltipStart: 'Reprendre cette session (conserve le disque et l\'historique)',
+      tooltipStart: 'Reprendre cette session (disque et historique conservés ; demande du quota libre)',
+      quotaFree: 'Hors quota',
+      quotaFreeTooltip: 'En pause : le disque est conservé, mais aucun CPU ni RAM n\'est pris sur votre quota. La reprise demande du quota libre.',
       tooltipStop: 'Arrêter cette session (conserve le disque pour reprise ultérieure)',
       tooltipStopEphemeral: 'La persistance n\'est pas activée pour ce terminal — utilisez Détruire (corbeille) pour le terminer.',
       tooltipDelete: 'Supprimer définitivement cette session',
@@ -1157,7 +1174,9 @@ async function handleStartSession(sessionId: string) {
     await loadSessions()
   } catch (err: any) {
     console.error('Erreur lors du démarrage:', err)
-    const message = err.response?.data?.error_message || t('terminalMySessions.startFailed')
+    const message = isQuotaFullRejection(err)
+      ? await getResumeQuotaFullMessage(sessions.value.find((s: any) => s.session_id === sessionId)?.organization_id)
+      : err.response?.data?.error_message || t('terminalMySessions.startFailed')
     showError(message, t('terminalMySessions.startFailed'))
     // Do NOT mutate the local session state here — the row stays as it was.
     // On 409, refetch to catch up to backend reality.
@@ -1914,6 +1933,14 @@ async function hideAllInactiveSessions() {
 .metadata-item i {
   font-size: var(--font-size-xs);
   opacity: 0.7;
+}
+
+/* Paused machine: says it takes nothing from the quota (ocf-core decides). */
+.metadata-item.ocf-quota-free-badge {
+  padding: 0 var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
 }
 
 /* Size badge — small pill with the catalog size key (XS/S/M/L/XL).

@@ -41,6 +41,10 @@ export interface TerminalSession extends BaseEntity {
   // JSON string of the features enabled at composition time, e.g. `{"network":true}`.
   // Omitted/empty for legacy sessions created before the composed-feature model.
   composed_features?: string
+  // Whether this machine takes CPU/RAM from the plan's quota right now (only
+  // while running or starting). Decided by ocf-core — read it, never re-derive
+  // it from `state`. Absent on older backends: then the UI says nothing.
+  counts_toward_quota?: boolean
 }
 
 /**
@@ -181,7 +185,7 @@ export interface OrgTerminalUsageUser {
   email: string
   /** Running-only session count (display). */
   active_count: number
-  /** Budget-scope count (running + stopped-reserving); matches active_cpu/active_memory_mb. */
+  /** Budget-scope count (machines using the quota); matches active_cpu/active_memory_mb. */
   occupying_slots: number
   /** Aggregate CPU consumed by this user's active sessions */
   active_cpu: number
@@ -211,7 +215,7 @@ export interface OrgTerminalUsage {
   plan_name: string
   is_fallback: boolean
   users: OrgTerminalUsageUser[]
-  /** Org-wide budget-scope count (running + stopped-reserving); matches quota.used_*. */
+  /** Org-wide budget-scope count (machines using the quota); matches quota.used_*. */
   occupying_slots: number
   /** Aggregate CPU/RAM quota across the organization */
   quota: SessionQuota
@@ -222,9 +226,9 @@ export interface OrgTerminalUsage {
 /**
  * One row of the active-sessions list returned by GET /terminals/my-usage.
  *
- * Stopped persistent sessions appear in this list because they still reserve
- * CPU/RAM against the plan budget (per D6). Stopped ephemeral sessions are
- * fully released and never appear here.
+ * Stopped persistent sessions are listed (they keep their disk) but only
+ * running/starting ones take CPU/RAM from the quota — `counts_toward_quota`
+ * carries that rule from ocf-core. Stopped ephemeral sessions never appear.
  */
 export interface ActiveSession {
   session_id: string
@@ -234,8 +238,10 @@ export interface ActiveSession {
   size_key: string
   size_cpu: number
   size_memory_mb: number
-  state: 'running' | 'stopped'
+  state: 'running' | 'starting' | 'stopped'
   persistence_mode: 'ephemeral' | 'persistent'
+  /** Takes CPU/RAM from the quota right now. Absent on older backends — unknown. */
+  counts_toward_quota?: boolean
   /** ISO 8601 */
   last_started_at: string
   /** ISO 8601 */

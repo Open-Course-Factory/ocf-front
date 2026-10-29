@@ -34,6 +34,18 @@ vi.mock('../../src/services/domain/scenario', () => ({
   pollProvisioningStatus: (...args: any[]) => pollProvisioningStatusMock(...args),
 }))
 
+// The quota-full resume message names the machines that use the quota.
+vi.mock('../../src/services/domain/terminal', () => ({
+  terminalService: {
+    getMyUsage: vi.fn().mockResolvedValue({
+      active_sessions: [
+        { session_id: 't-run', name: 'lab-web', size_key: 'm', counts_toward_quota: true },
+        { session_id: 't-paused', name: 'lab-db', size_key: 's', counts_toward_quota: false },
+      ],
+    }),
+  }
+}))
+
 // Start over and Abandon ask first — whichever way the page asks, the learner
 // says yes here.
 const showErrorMock = vi.fn()
@@ -405,7 +417,9 @@ describe('MyScenarios — a run to rebuild', () => {
 
     expect(showErrorMock).toHaveBeenCalledTimes(1)
     const message = String(showErrorMock.mock.calls[0][0])
-    expect(message).toMatch(/machines are all in use right now/i)
+    expect(message).toMatch(/quota is full/i)
+    expect(message).toMatch(/lab-web \(M\)/)
+    expect(message).not.toMatch(/lab-db/)
     expect(message).toMatch(/progress is kept/i)
     expect(message).not.toMatch(/start over|abandon/i)
     expect(routerPushMock).not.toHaveBeenCalled()

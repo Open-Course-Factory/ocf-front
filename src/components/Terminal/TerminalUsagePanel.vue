@@ -116,6 +116,10 @@
 
         <!-- Sessions list -->
         <div class="sessions-section">
+          <p class="ocf-quota-rule" data-testid="quota-rule">
+            <i class="fas fa-info-circle"></i>
+            {{ t('terminals.quotaRule') }}
+          </p>
           <div class="sessions-header">
             <i class="fas fa-terminal"></i>
             {{ t('terminals.budget.sessionsHeader') }} ({{ usage.active_sessions.length }})
@@ -146,7 +150,17 @@
               <span class="session-specs" data-test="session-specs">
                 {{ formatMcpuAsVcpu(session.size_cpu) }} vCPU · {{ formatMemoryMb(session.size_memory_mb) }}
               </span>
-              <span class="session-state">
+              <!-- The backend says which machines use the quota; without the
+                   flag (older backend) fall back to the bare state. -->
+              <span
+                v-if="session.counts_toward_quota !== undefined"
+                class="session-state ocf-quota-badge"
+                :class="session.counts_toward_quota ? 'is-counting' : 'is-free'"
+                data-testid="quota-badge"
+              >
+                {{ session.counts_toward_quota ? t('terminals.quota.counts') : t('terminals.quota.free') }}
+              </span>
+              <span v-else class="session-state">
                 {{ session.state === 'running' ? t('terminals.state.running') : t('terminals.state.paused') }}
               </span>
               <span class="session-elapsed">{{ formatElapsed(session.last_started_at) }}</span>
@@ -203,7 +217,12 @@ const { t } = useTranslations({
       fetchError: 'Could not load usage data.',
       remainingCapacity: 'Remaining capacity',
       budgetUnknown: 'capacity unavailable right now — you can still start sessions',
-      remainingExhausted: 'No capacity left — stop a session to start another',
+      remainingExhausted: 'No capacity left — stop a running machine to start or resume another',
+      quotaRule: 'Only running machines use your quota (their CPU and RAM). Paused machines keep their disk but use none of it — resuming one needs free quota.',
+      quota: {
+        counts: 'Uses quota',
+        free: 'Paused — not using quota (disk kept)',
+      },
       or: 'OR',
       budget: {
         cpuUsed: 'CPU used',
@@ -230,7 +249,12 @@ const { t } = useTranslations({
       fetchError: 'Impossible de charger les données d\'utilisation.',
       remainingCapacity: 'Capacité restante',
       budgetUnknown: 'capacité indisponible pour le moment — vous pouvez tout de même lancer des sessions',
-      remainingExhausted: 'Plus de capacité — arrêtez une session pour en lancer une autre',
+      remainingExhausted: 'Plus de capacité — arrêtez une machine en cours pour en lancer ou en reprendre une autre',
+      quotaRule: 'Seules les machines en cours utilisent votre quota (leur CPU et leur RAM). Les machines en pause gardent leur disque mais n\'en utilisent rien — en reprendre une demande du quota libre.',
+      quota: {
+        counts: 'Compte dans le quota',
+        free: 'En pause — hors quota (disque conservé)',
+      },
       or: 'OU',
       budget: {
         cpuUsed: 'CPU utilisé',
@@ -608,6 +632,37 @@ onBeforeUnmount(() => {
   font-size: var(--font-size-xs, 0.75rem);
 }
 
+.ocf-quota-badge {
+  padding: 2px var(--spacing-sm);
+  border-radius: var(--border-radius-full);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.ocf-quota-badge.is-counting {
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+.ocf-quota-badge.is-free {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+}
+
+.ocf-quota-rule {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.ocf-quota-rule i {
+  margin-top: 0.2em;
+  color: var(--color-primary);
+}
+
 .session-elapsed {
   font-family: var(--font-family-mono, monospace);
   color: var(--color-text-muted);
@@ -685,11 +740,10 @@ onBeforeUnmount(() => {
   }
 
   .session-row {
-    grid-template-columns: 1.5em 1fr auto;
+    grid-template-columns: 1.5em 1fr auto auto;
   }
 
   .session-specs,
-  .session-state,
   .session-elapsed {
     display: none;
   }

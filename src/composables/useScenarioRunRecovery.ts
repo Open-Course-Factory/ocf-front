@@ -15,12 +15,14 @@ import { useRouter } from 'vue-router'
 import { useTranslations } from './useTranslations'
 import { useNotification } from './useNotification'
 import { useDunningRejection } from './useDunningRejection'
+import { useBudgetRejection } from './useBudgetRejection'
 import { scenarioSessionService } from '../services/domain/scenario'
 
 export function useScenarioRunRecovery() {
   const router = useRouter()
   const { showError, showConfirm } = useNotification()
   const { isDunningRejection, getDunningCopy } = useDunningRejection()
+  const { isBudgetRejection, isQuotaFullRejection, getResumeQuotaFullMessage } = useBudgetRejection()
   const { t } = useTranslations({
     en: {
       runRecovery: {
@@ -29,8 +31,8 @@ export function useScenarioRunRecovery() {
         notInPlan: 'Your plan no longer covers this machine. Ask your trainer.',
         cannotResume: 'This run can no longer be resumed. Abandon it to clear it from your list.',
         cannotLaunch: 'This scenario can\'t be launched for you any more. Ask your trainer.',
-        budgetResume: 'Your plan\'s machines are all in use right now. Stop another terminal or try again in a moment — your progress is kept.',
         budgetLaunch: 'Your plan\'s machines are all in use right now. Stop another terminal or try again in a moment.',
+        progressKept: 'Your progress is kept.',
         alreadyRunning: 'You are already running this scenario. Resume it from its card.',
         setupFailed: 'Scenario setup failed. The environment could not be prepared.',
         setupTimeout: 'Scenario setup timed out. Please try again.',
@@ -47,8 +49,8 @@ export function useScenarioRunRecovery() {
         notInPlan: 'Votre offre ne couvre plus cette machine. Demandez à votre formateur.',
         cannotResume: 'Cette session ne peut plus être reprise. Abandonnez-la pour la retirer de votre liste.',
         cannotLaunch: 'Ce scénario ne peut plus être lancé pour vous. Demandez à votre formateur.',
-        budgetResume: 'Les machines de votre offre sont toutes utilisées pour le moment. Arrêtez un autre terminal ou réessayez dans un instant — votre progression est conservée.',
         budgetLaunch: 'Les machines de votre offre sont toutes utilisées pour le moment. Arrêtez un autre terminal ou réessayez dans un instant.',
+        progressKept: 'Votre progression est conservée.',
         alreadyRunning: 'Vous avez déjà un scénario en cours. Reprenez-le depuis sa carte.',
         setupFailed: 'La préparation du scénario a échoué. L\'environnement n\'a pas pu être configuré.',
         setupTimeout: 'La préparation du scénario a expiré. Veuillez réessayer.',
@@ -66,7 +68,7 @@ export function useScenarioRunRecovery() {
     const status = err?.response?.status
     const data = err?.response?.data || {}
     // The org budget is shared by the class: a miss is transient.
-    if (data.source === 'budget') return t(action === 'resume' ? 'runRecovery.budgetResume' : 'runRecovery.budgetLaunch')
+    if (isBudgetRejection(err)) return t('runRecovery.budgetLaunch')
     if (data.reason === 'not_in_plan') return t('runRecovery.notInPlan')
     if (action === 'launch') {
       if (data.reason === 'session_exists') return t('runRecovery.alreadyRunning')
@@ -97,6 +99,10 @@ export function useScenarioRunRecovery() {
       return
     }
     if (err?.response?.data?.reason === 'resume_in_progress') return
+    if (action === 'resume' && isQuotaFullRejection(err)) {
+      showError(`${await getResumeQuotaFullMessage()} ${t('runRecovery.progressKept')}`)
+      return
+    }
     showError(refusalMessage(err, action))
   }
 

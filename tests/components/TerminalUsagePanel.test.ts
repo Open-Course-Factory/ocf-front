@@ -175,7 +175,7 @@ describe('TerminalUsagePanel — live usage view', () => {
     const text = wrapper.text()
     expect(text).toContain('capacity unavailable')
     expect(text).not.toMatch(/unlimited/i)
-    expect(text.toLowerCase()).not.toContain('stop a session')
+    expect(text.toLowerCase()).not.toContain('stop a running machine')
     // No cap to draw → no bar fills, mirroring OrgTerminalUsagePanel.
     expect(wrapper.find('[data-test="cpu-bar-fill"]').exists()).toBe(false)
     expect(wrapper.find('[data-test="mem-bar-fill"]').exists()).toBe(false)
@@ -394,7 +394,41 @@ describe('TerminalUsagePanel — remaining capacity as sizes', () => {
     const text = line.text()
     expect(text).not.toContain('≈')
     expect(text).not.toMatch(/\bOR\b/) // no size-count string
-    // Actionable: point the user at stopping a session to reclaim budget.
-    expect(text.toLowerCase()).toContain('stop a session')
+    // Actionable: point the user at stopping a running machine to reclaim budget.
+    expect(text.toLowerCase()).toContain('stop a running machine')
+  })
+})
+
+describe('TerminalUsagePanel — what uses the quota', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  async function rowsFor(sessions: Partial<MyTerminalUsageResponse['active_sessions'][number]>[]) {
+    const base = makeUsage().active_sessions[0]
+    mockGetMyUsage.mockResolvedValue(makeUsage({
+      active_sessions: sessions.map((s, i) => ({ ...base, session_id: `s${i}`, ...s })),
+    }))
+    const wrapper = mountPanel({}, 'en')
+    await flushPromises()
+    await wrapper.find('.collapsible-header').trigger('click')
+    await flushPromises()
+    return wrapper
+  }
+
+  it('labels each machine from the backend flag and states the rule', async () => {
+    const wrapper = await rowsFor([
+      { name: 'web', state: 'running', counts_toward_quota: true },
+      { name: 'db', state: 'stopped', counts_toward_quota: false },
+    ])
+    const badges = wrapper.findAll('[data-testid="quota-badge"]').map(b => b.text())
+    expect(badges).toEqual(['Uses quota', 'Paused — not using quota (disk kept)'])
+    expect(wrapper.find('[data-testid="quota-rule"]').text()).toMatch(/Only running machines use your quota/)
+  })
+
+  it('claims nothing about the quota when the backend sends no flag', async () => {
+    const wrapper = await rowsFor([{ name: 'db', state: 'stopped' }])
+    expect(wrapper.find('[data-testid="quota-badge"]').exists()).toBe(false)
+    expect(wrapper.find('.session-state').text()).toBe('paused')
   })
 })

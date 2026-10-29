@@ -177,7 +177,7 @@ export const helpEn = {
             title: "Action buttons",
             open: "Screen icon — open the session in the page, with the command history. Available for running and stopped sessions.",
             popup: "External-link icon — open the terminal alone in a new tab. Running sessions only.",
-            resume: "Play — resume a stopped session, disk and history intact.",
+            resume: "Play — resume a stopped session, disk and history intact. Resuming needs free quota: if your running machines already use it all, stop one first.",
             stop: "Stop — stop a running session and keep its disk. The button is greyed on an ephemeral session, with a tooltip saying why: there is no disk to keep, use Destroy. On a scenario run's page Stop is offered even so: after a confirmation it deletes the environment, and the run can be rebuilt at its step later, or ends for a crash-trap or preview run.",
             destroy: "Trash — destroy the session after a confirmation. The disk and the command history are lost.",
             more: "The ⋮ menu of a running session offers Copy link, Copy iframe code (to embed the terminal in a page of yours) and Sync."
@@ -187,7 +187,7 @@ export const helpEn = {
           title: "Ephemeral or persistent",
           description: "The choice is made when you create the session, in Advanced options › Save my work between sessions, and it decides what Stop means.",
           ephemeral: "Ephemeral (Discard when done) — the default. The container is removed shortly after the session ends, whether you destroyed it or it expired. Nothing is kept except the command history.",
-          persistent: "Persistent (Keep my work) — needs a plan that allows it. Stop keeps the disk; the card shows Stopped with a countdown, and Resume brings the same machine back with your files. When the countdown reaches zero the session is deleted like any other.",
+          persistent: "Persistent (Keep my work) — needs a plan that allows it. Stop keeps the disk and frees the machine's CPU and RAM from your quota; the card shows Stopped and Not using quota with a countdown, and Resume brings the same machine back with your files — as long as your quota has room for it. When the countdown reaches zero the session is deleted like any other.",
           expired: "Both modes have a time limit, with warnings at 10, 5 and 1 minutes. When it is reached, an ephemeral session expires and only its command history remains; a persistent session is auto-stopped, its disk kept, and the card's date reads Auto-stops on rather than Expires on."
         },
         usage: {
@@ -195,8 +195,8 @@ export const helpEn = {
           description: "On the Create a session page, the My usage block (folded, with a badge counting your running sessions) shows what your plan gives you and what is left. The refresh icon reloads it.",
           plan: "Plan — the name of the plan in effect and where it comes from: personal, or provided by your organisation.",
           capacity: "Capacity — the total CPU and RAM of the plan, and the maximum duration of a session.",
-          remaining: "Remaining capacity — the same budget expressed in sessions, for example \"≈ 1 XL or 2 L or 4 M\". Every running session, whatever its size, is taken from this one shared budget. If it reads No capacity left, stop or destroy a session to free some.",
-          bars: "CPU and RAM bars — used versus total, and the list of the sessions that count, with their size and state (running or paused).",
+          remaining: "Remaining capacity — the same budget expressed in sessions, for example \"≈ 1 XL or 2 L or 4 M\". Every running session, whatever its size, is taken from this one shared budget; a stopped session takes nothing from it. If it reads No capacity left, stop or destroy a running session to free some.",
+          bars: "CPU and RAM bars — used versus total. Below, every machine with its size and a label: Uses quota for a running machine, Paused — not using quota (disk kept) for a stopped one.",
           composer: "The same information appears in short form in the composer itself: the remaining vCPU and RAM line, the \"You can spawn …\" line and the ×n badges on the size pills. If capacity cannot be computed right now, the panel says so rather than showing a wrong number; you can still start a session."
         },
         history: {
@@ -720,9 +720,9 @@ export const helpEn = {
           description: "Below the card, the My usage panel expands to show your consumption in real time:",
           plan: "The plan that applies and its source (personal, or provided by your organisation).",
           capacity: "The plan capacity and the remaining capacity, expressed as the machine sizes you can still start (“≈ 1 L or 2 M”).",
-          bars: "Two bars, CPU and RAM: what your active sessions take out of the plan budget.",
-          sessions: "The list of active sessions: name, size, vCPU and memory, state (running or paused) and elapsed time.",
-          refresh: "The panel refreshes every 30 seconds; the refresh button forces an update. When capacity is exhausted, stop a session to start another.",
+          bars: "Two bars, CPU and RAM: what your running machines take out of the plan budget. Paused machines take nothing.",
+          sessions: "The list of your machines: name, size, vCPU and memory, whether it uses the quota (running) or not (paused, disk kept), and elapsed time. Resuming a paused machine needs free quota.",
+          refresh: "The panel refreshes every 30 seconds; the refresh button forces an update. When capacity is exhausted, stop a running machine to start or resume another.",
           orgPanel: "If you manage an organisation, a second panel shows the usage of all its members: the budget is shared between them."
         },
 

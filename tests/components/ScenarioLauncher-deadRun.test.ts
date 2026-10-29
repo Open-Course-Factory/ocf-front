@@ -58,6 +58,12 @@ vi.mock('../../src/services/domain/terminal/terminalService', () => ({
   terminalService: {
     getSessionOptions: vi.fn().mockResolvedValue({ allowed_sizes: [] }),
     getSizes: vi.fn().mockResolvedValue([]),
+    getMyUsage: vi.fn().mockResolvedValue({
+      active_sessions: [
+        { session_id: 't-run', name: 'lab-web', size_key: 'm', counts_toward_quota: true },
+        { session_id: 't-paused', name: 'lab-db', size_key: 's', counts_toward_quota: false },
+      ],
+    }),
   }
 }))
 
@@ -435,7 +441,7 @@ describe('run to rebuild', () => {
       [/can no longer be resumed/i, /abandon it/i], [/start over/i]],
     // Transient: never send the learner to destroy their progress.
     ['the plan\'s machines are all in use', BUDGET,
-      [/machines are all in use right now/i, /progress is kept/i], [/start over/i, /abandon/i, /rebuil/i]],
+      [/quota is full/i, /lab-web \(M\)/, /progress is kept/i], [/lab-db/, /start over/i, /abandon/i, /rebuil/i]],
     ['the terminal service is at capacity', CAPACITY, [/try again/i], [/Server at capacity/]],
     ['the server failed', SERVER_ERROR, [/try again/i], [/Failed to resume/]],
   ])('explains a refusal when %s', async (_label, err, expected, forbidden) => {

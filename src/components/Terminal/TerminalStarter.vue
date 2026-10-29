@@ -142,6 +142,7 @@ import { useNotification } from '../../composables/useNotification'
 import { useTranslations } from '../../composables/useTranslations'
 import { useComposeErrorMessage } from '../../composables/useComposeErrorMessage'
 import { useDunningRejection } from '../../composables/useDunningRejection'
+import { isBudgetRejection } from '../../composables/useBudgetRejection'
 
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
@@ -569,17 +570,6 @@ function isPersistencePlanDisabledError(err: any): boolean {
     err?.message
   ].filter(Boolean).join(' ').toLowerCase()
   return haystacks.includes('plan_disabled') && haystacks.includes('persistence')
-}
-
-/**
- * Detect a budget-mode 403 rejection from POST /terminals/start-composed-session.
- * The backend marks these with `source: "budget"` so we can show a more
- * specific toast instead of the generic launch-error path.
- */
-function isBudgetRejection(err: any): boolean {
-  if (err?.response?.status !== 403) return false
-  const data = err?.response?.data
-  return data?.source === 'budget'
 }
 
 /**

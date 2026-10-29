@@ -224,7 +224,7 @@ const canManage = computed(() => {
   return permissionsStore.canManageOrganization(props.organizationId)
 })
 
-// Canonical org-wide budget-scope count (running + stopped-reserving), shown as
+// Canonical org-wide budget-scope count (machines using the quota), shown as
 // an informational total in the header badge.
 const totalOccupyingSlots = computed<number>(() => usageData.value?.occupying_slots ?? 0)
 

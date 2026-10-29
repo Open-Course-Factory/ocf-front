@@ -177,7 +177,7 @@ export const helpFr = {
             title: "Les boutons d'action",
             open: "Icône écran — ouvrir la session dans la page, avec l'historique des commandes. Disponible pour les sessions en cours et arrêtées.",
             popup: "Icône lien externe — ouvrir le terminal seul dans un nouvel onglet. Sessions en cours uniquement.",
-            resume: "Lecture — reprendre une session arrêtée, disque et historique intacts.",
+            resume: "Lecture — reprendre une session arrêtée, disque et historique intacts. La reprise demande du quota libre : si vos machines en cours l'utilisent déjà entièrement, arrêtez-en une d'abord.",
             stop: "Stop — arrêter une session en cours en gardant son disque. Le bouton est grisé sur une session éphémère, avec une infobulle qui explique pourquoi : il n'y a pas de disque à garder, utilisez Détruire. Sur la page d'un scénario, Stop est proposé malgré tout : après confirmation, il supprime l'environnement, et l'exécution pourra être reconstruite plus tard à son étape, ou se termine pour un scénario à pièges ou un aperçu.",
             destroy: "Corbeille — détruire la session après confirmation. Le disque et l'historique des commandes sont perdus.",
             more: "Le menu ⋮ d'une session en cours propose Copier le lien, Copier le code iframe (pour intégrer le terminal dans une page à vous) et Sync."
@@ -187,7 +187,7 @@ export const helpFr = {
           title: "Éphémère ou persistante",
           description: "Le choix se fait à la création de la session, dans Options avancées › Conserver mon travail entre les sessions, et il décide de ce que veut dire Arrêter.",
           ephemeral: "Éphémère (Tout effacer à la fin) — le mode par défaut. Le conteneur est supprimé peu après la fin de la session, que vous l'ayez détruite ou qu'elle ait expiré. Rien n'est conservé, sauf l'historique des commandes.",
-          persistent: "Persistante (Conserver mon travail) — demande une offre qui l'autorise. Arrêter garde le disque ; la carte affiche Arrêté avec un compte à rebours, et Reprendre ramène la même machine avec vos fichiers. Quand le compte à rebours atteint zéro, la session est supprimée comme les autres.",
+          persistent: "Persistante (Conserver mon travail) — demande une offre qui l'autorise. Arrêter garde le disque et libère le CPU et la RAM de la machine sur votre quota ; la carte affiche Arrêté et Hors quota avec un compte à rebours, et Reprendre ramène la même machine avec vos fichiers — si votre quota a de la place pour elle. Quand le compte à rebours atteint zéro, la session est supprimée comme les autres.",
           expired: "Les deux modes ont une durée limite, avec des avertissements à 10, 5 et 1 minutes. Quand elle est atteinte, une session éphémère expire et seul son historique de commandes subsiste ; une session persistante est arrêtée automatiquement, disque conservé, et la date de sa carte se lit Arrêt automatique le plutôt qu'Expire le."
         },
         usage: {
@@ -195,8 +195,8 @@ export const helpFr = {
           description: "Sur la page Créer une session, le bloc Mon utilisation (replié, avec un badge qui compte vos sessions en cours) montre ce que votre offre vous donne et ce qu'il en reste. L'icône de rafraîchissement le recharge.",
           plan: "Offre — le nom de l'offre en vigueur et sa provenance : personnelle, ou fournie par votre organisation.",
           capacity: "Capacité — le total de CPU et de RAM de l'offre, et la durée maximale d'une session.",
-          remaining: "Capacité restante — le même budget exprimé en sessions, par exemple « ≈ 1 XL ou 2 L ou 4 M ». Chaque session en cours, quelle que soit sa taille, est prise sur ce budget unique. S'il affiche Plus de capacité, arrêtez ou détruisez une session pour en libérer.",
-          bars: "Barres CPU et RAM — utilisé sur total, et la liste des sessions qui comptent, avec leur taille et leur état (en cours ou en pause).",
+          remaining: "Capacité restante — le même budget exprimé en sessions, par exemple « ≈ 1 XL ou 2 L ou 4 M ». Chaque session en cours, quelle que soit sa taille, est prise sur ce budget unique ; une session arrêtée n'y prend rien. S'il affiche Plus de capacité, arrêtez ou détruisez une session en cours pour en libérer.",
+          bars: "Barres CPU et RAM — utilisé sur total. En dessous, chaque machine avec sa taille et une étiquette : Compte dans le quota pour une machine en cours, En pause — hors quota (disque conservé) pour une machine arrêtée.",
           composer: "La même information apparaît en raccourci dans le composeur lui-même : la ligne des vCPU et RAM restants, la ligne « Vous pouvez lancer … » et les badges ×n des pastilles de taille. Si la capacité ne peut pas être calculée à cet instant, le panneau le dit au lieu d'afficher un chiffre faux ; vous pouvez tout de même démarrer une session."
         },
         history: {
@@ -720,9 +720,9 @@ export const helpFr = {
           description: "Sous la carte, le panneau Mon utilisation se déplie pour montrer votre consommation en temps réel :",
           plan: "Le plan qui s'applique et sa source (personnel, ou fourni par votre organisation).",
           capacity: "La capacité du plan et la capacité restante, exprimées en tailles de machines encore lançables (« ≈ 1 L ou 2 M »).",
-          bars: "Deux barres CPU et RAM : ce qu'occupent vos sessions actives sur le budget du plan.",
-          sessions: "La liste des sessions actives : nom, taille, vCPU et mémoire, état (en cours ou en pause) et temps écoulé.",
-          refresh: "Le panneau se rafraîchit toutes les 30 secondes ; le bouton de rafraîchissement force une mise à jour. Quand la capacité est épuisée, arrêtez une session pour pouvoir en lancer une autre.",
+          bars: "Deux barres CPU et RAM : ce qu'occupent vos machines en cours sur le budget du plan. Les machines en pause n'y prennent rien.",
+          sessions: "La liste de vos machines : nom, taille, vCPU et mémoire, si elle compte dans le quota (en cours) ou non (en pause, disque conservé), et temps écoulé. Reprendre une machine en pause demande du quota libre.",
+          refresh: "Le panneau se rafraîchit toutes les 30 secondes ; le bouton de rafraîchissement force une mise à jour. Quand la capacité est épuisée, arrêtez une machine en cours pour pouvoir en lancer ou en reprendre une autre.",
           orgPanel: "Si vous gérez une organisation, un second panneau montre l'utilisation de l'ensemble de ses membres : le budget est partagé entre eux."
         },
 
