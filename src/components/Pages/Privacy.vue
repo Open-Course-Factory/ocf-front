@@ -51,7 +51,6 @@
           <h2>{{ t('privacy.legalBasis.title') }}</h2>
           <div class="info-block">
             <ul>
-              <li>{{ t('privacy.legalBasis.consent') }}</li>
               <li>{{ t('privacy.legalBasis.contract') }}</li>
               <li>{{ t('privacy.legalBasis.legitimateInterest') }}</li>
             </ul>
@@ -93,7 +92,7 @@
               <li>{{ t('privacy.rights.rectification') }}</li>
               <li>{{ t('privacy.rights.erasure') }}</li>
               <li>{{ t('privacy.rights.portability') }}</li>
-              <li>{{ t('privacy.rights.withdrawConsent') }}</li>
+              <li>{{ t('privacy.rights.object') }}</li>
               <li>{{ t('privacy.rights.complaint') }}</li>
             </ul>
           </div>
@@ -142,7 +141,7 @@ const { t } = useTranslations({
     privacy: {
       title: 'Privacy Policy',
       lastUpdated: 'Last updated',
-      updateDate: 'February 2026',
+      updateDate: 'November 2026',
 
       dataController: {
         title: 'Data Controller',
@@ -156,7 +155,7 @@ const { t } = useTranslations({
         title: 'Data We Collect',
         account: 'Account data (email, username) for account creation and authentication',
         terminal: 'Terminal session data (session IDs, connection times, instance types) for service delivery',
-        commandHistory: 'Command history (when consented) for pedagogical feedback and self-review',
+        commandHistory: 'Command history and scenario progress (steps, time, attempts) for pedagogical follow-up, self-review and platform security',
         usage: 'Usage metrics (anonymized) for service improvement',
         billing: 'Billing data (processed via Stripe) for subscription management'
       },
@@ -165,24 +164,23 @@ const { t } = useTranslations({
         title: 'Why We Collect It',
         account: 'Account data: service operation and authentication',
         terminal: 'Terminal sessions: delivering the training platform',
-        commandHistory: 'Command history: enabling learners to review their work and, where applicable, instructors to give personalized feedback',
+        commandHistory: 'Command history and progress: enabling learners to review their work, instructors to follow it and give feedback, and us to investigate misuse of the platform',
         usage: 'Usage metrics: improving the platform',
         billing: 'Billing: subscription and payment processing'
       },
 
       legalBasis: {
         title: 'Legal Basis (RGPD Art. 6)',
-        consent: 'Consent (Art. 6.1.a): command history recording — you choose whether to enable this',
         contract: 'Contract (Art. 6.1.b): account data and billing — necessary for providing the service',
-        legitimateInterest: 'Legitimate interest (Art. 6.1.f): anonymized usage metrics and security logs'
+        legitimateInterest: 'Legitimate interest (Art. 6.1.f): command history, scenario progress and live supervision (pedagogical follow-up and platform security), anonymized usage metrics and security logs'
       },
 
       commandHistory: {
         title: 'Command History Recording',
         captured: 'What is captured: terminal commands you type during sessions.',
         notCaptured: 'What is NOT captured: passwords and tokens are redacted when possible, but you should avoid typing secrets directly in the terminal.',
-        access: 'Who can see it: you (the learner), platform administrators and, if applicable, your instructor.',
-        retention: 'Retention: based on your subscription plan (shown as number of days when you consent).',
+        access: 'Who can see it: you (the learner), platform administrators and, if applicable, your instructor. An instructor supervising your session sees it live: an indicator tells you so, and keystrokes are not stored by this supervision.',
+        retention: 'Retention: 7 to 365 days depending on your subscription plan.',
         control: 'Your control: you can export your command history or request deletion at any time.'
       },
 
@@ -190,7 +188,7 @@ const { t } = useTranslations({
         title: 'Data Retention',
         account: 'Account data: retained while your account is active, deleted within 30 days of account closure',
         terminal: 'Terminal sessions: session metadata retained for 90 days after session end',
-        commandHistory: 'Command history: retention period depends on subscription plan (displayed at consent time)',
+        commandHistory: 'Command history: 7 to 365 days depending on subscription plan',
         billing: 'Billing data: retained as required by French accounting law (10 years for invoices)',
         usage: 'Usage metrics: anonymized, retained indefinitely'
       },
@@ -201,7 +199,7 @@ const { t } = useTranslations({
         rectification: 'Right to rectification (Art. 16): correct inaccurate data',
         erasure: 'Right to erasure (Art. 17): request deletion of your data',
         portability: 'Right to data portability (Art. 20): receive your data in a structured format',
-        withdrawConsent: 'Right to withdraw consent (Art. 7.3): withdraw consent for command recording at any time',
+        object: 'Right to object (Art. 21): object to the processing of your data based on legitimate interest, for reasons relating to your situation',
         complaint: 'Right to lodge a complaint: with the CNIL (Commission Nationale de l\'Informatique et des Libertés)'
       },
 
@@ -227,7 +225,7 @@ const { t } = useTranslations({
     privacy: {
       title: 'Politique de confidentialité',
       lastUpdated: 'Dernière mise à jour',
-      updateDate: 'Février 2026',
+      updateDate: 'Novembre 2026',
 
       dataController: {
         title: 'Responsable du traitement',
@@ -241,7 +239,7 @@ const { t } = useTranslations({
         title: 'Données que nous collectons',
         account: 'Données de compte (email, nom d\'utilisateur) pour la création de compte et l\'authentification',
         terminal: 'Données de sessions terminal (identifiants de session, horaires de connexion, types d\'instance) pour la fourniture du service',
-        commandHistory: 'Historique des commandes (avec consentement) pour le retour pédagogique et l\'auto-évaluation',
+        commandHistory: 'Historique des commandes et progression dans les scénarios (étapes, temps, tentatives) pour le suivi pédagogique, l\'auto-évaluation et la sécurité de la plateforme',
         usage: 'Métriques d\'utilisation (anonymisées) pour l\'amélioration du service',
         billing: 'Données de facturation (traitées via Stripe) pour la gestion des abonnements'
       },
@@ -250,24 +248,23 @@ const { t } = useTranslations({
         title: 'Pourquoi nous collectons ces données',
         account: 'Données de compte : fonctionnement du service et authentification',
         terminal: 'Sessions terminal : fourniture de la plateforme de formation',
-        commandHistory: 'Historique des commandes : permettre aux apprenants de revoir leur travail et, le cas échéant, aux encadrants de fournir un retour personnalisé',
+        commandHistory: 'Historique des commandes et progression : permettre aux apprenants de revoir leur travail, aux encadrants de le suivre et de faire un retour, et à nous d\'enquêter sur un usage abusif de la plateforme',
         usage: 'Métriques d\'utilisation : amélioration de la plateforme',
         billing: 'Facturation : gestion des abonnements et traitement des paiements'
       },
 
       legalBasis: {
         title: 'Base légale (RGPD Art. 6)',
-        consent: 'Consentement (Art. 6.1.a) : enregistrement de l\'historique des commandes — vous choisissez d\'activer ou non cette fonctionnalité',
         contract: 'Contrat (Art. 6.1.b) : données de compte et facturation — nécessaires à la fourniture du service',
-        legitimateInterest: 'Intérêt légitime (Art. 6.1.f) : métriques d\'utilisation anonymisées et journaux de sécurité'
+        legitimateInterest: 'Intérêt légitime (Art. 6.1.f) : historique des commandes, progression dans les scénarios et supervision en direct (suivi pédagogique et sécurité de la plateforme), métriques d\'utilisation anonymisées et journaux de sécurité'
       },
 
       commandHistory: {
         title: 'Enregistrement de l\'historique des commandes',
         captured: 'Ce qui est capturé : les commandes terminal que vous saisissez pendant vos sessions.',
         notCaptured: 'Ce qui n\'est PAS capturé : les mots de passe et tokens sont masqués dans la mesure du possible, mais vous devez éviter de saisir des secrets directement dans le terminal.',
-        access: 'Qui peut le consulter : vous (l\'apprenant), les administrateurs de la plateforme et, le cas échéant, votre encadrant.',
-        retention: 'Conservation : basée sur votre plan d\'abonnement (affichée en nombre de jours lors du consentement).',
+        access: 'Qui peut le consulter : vous (l\'apprenant), les administrateurs de la plateforme et, le cas échéant, votre encadrant. Un encadrant qui supervise votre session la voit en direct : un indicateur vous en informe, et cette supervision ne stocke pas les frappes.',
+        retention: 'Conservation : de 7 à 365 jours selon votre plan d\'abonnement.',
         control: 'Votre contrôle : vous pouvez exporter votre historique de commandes ou demander sa suppression à tout moment.'
       },
 
@@ -275,7 +272,7 @@ const { t } = useTranslations({
         title: 'Conservation des données',
         account: 'Données de compte : conservées tant que votre compte est actif, supprimées dans les 30 jours suivant la fermeture du compte',
         terminal: 'Sessions terminal : métadonnées de session conservées 90 jours après la fin de la session',
-        commandHistory: 'Historique des commandes : durée de conservation selon le plan d\'abonnement (affichée au moment du consentement)',
+        commandHistory: 'Historique des commandes : de 7 à 365 jours selon le plan d\'abonnement',
         billing: 'Données de facturation : conservées conformément à la loi comptable française (10 ans pour les factures)',
         usage: 'Métriques d\'utilisation : anonymisées, conservées indéfiniment'
       },
@@ -286,7 +283,7 @@ const { t } = useTranslations({
         rectification: 'Droit de rectification (Art. 16) : corriger des données inexactes',
         erasure: 'Droit à l\'effacement (Art. 17) : demander la suppression de vos données',
         portability: 'Droit à la portabilité (Art. 20) : recevoir vos données dans un format structuré',
-        withdrawConsent: 'Droit de retrait du consentement (Art. 7.3) : retirer votre consentement pour l\'enregistrement des commandes à tout moment',
+        object: 'Droit d\'opposition (Art. 21) : vous opposer au traitement de vos données fondé sur l\'intérêt légitime, pour des raisons tenant à votre situation',
         complaint: 'Droit de déposer une réclamation : auprès de la CNIL (Commission Nationale de l\'Informatique et des Libertés)'
       },
 
