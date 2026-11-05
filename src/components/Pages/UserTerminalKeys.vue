@@ -54,6 +54,7 @@ const { t } = useTranslations({
       loadError: 'Error loading key',
       regenerateSuccess: 'Key regenerated successfully',
       regenerateError: 'Error regenerating key',
+      terminalsInUse: 'Delete your running and paused terminals before regenerating your key: they only work with the current key.',
       error: 'Error'
     }
   },
@@ -78,6 +79,7 @@ const { t } = useTranslations({
       loadError: 'Erreur lors du chargement de la clé',
       regenerateSuccess: 'Clé régénérée avec succès',
       regenerateError: 'Erreur lors de la régénération',
+      terminalsInUse: 'Supprimez vos terminaux en cours et en pause avant de régénérer votre clé : ils ne fonctionnent qu\'avec la clé actuelle.',
       error: 'Erreur'
     }
   }
@@ -113,11 +115,15 @@ async function regenerateKey() {
     try {
       await axios.post('/user-terminal-keys/regenerate');
       await loadKey();
-      showConfirm.value = false;
       showSuccess(t('terminalKeys.regenerateSuccess'));
     } catch (err: any) {
       console.error('Error regenerating key:', err);
-      showError(extractErrorMessage(err, t('terminalKeys.regenerateError')), t('terminalKeys.error'));
+      const message = err.response?.data?.reason === 'terminals_in_use'
+        ? t('terminalKeys.terminalsInUse')
+        : extractErrorMessage(err, t('terminalKeys.regenerateError'));
+      showError(message, t('terminalKeys.error'));
+    } finally {
+      showConfirm.value = false;
     }
   });
 }
