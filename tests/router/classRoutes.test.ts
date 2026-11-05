@@ -2,7 +2,7 @@
  * The class routes as the application actually declares them.
  *
  * `classPagesRedirect.test.ts` pins the mapping in isolation; this file proves
- * the router is wired to it — that the five pages exist at the URLs the banner
+ * the router is wired to it — that the six pages exist at the URLs the banner
  * links to, that the retired `/class-groups/:id` path really redirects, and that
  * every class page tells the sidebar which entry it belongs under.
  */
@@ -28,12 +28,13 @@ function destinationOf(url: string): string {
   return router.resolve(redirect(resolved) as never).fullPath
 }
 
-describe('the five class pages', () => {
+describe('the six class pages', () => {
   it.each([
     ['/classes/g-1/live', 'ClassLive'],
     ['/classes/g-1/members', 'ClassMembers'],
     ['/classes/g-1/scenarios', 'ClassScenarios'],
     ['/classes/g-1/analytics', 'ClassAnalytics'],
+    ['/classes/g-1/participation', 'ClassParticipation'],
     ['/classes/g-1/settings', 'ClassSettings'],
   ])('serves %s', (path, name) => {
     const resolved = router.resolve(path)
@@ -45,8 +46,8 @@ describe('the five class pages', () => {
     expect(destinationOf('/classes/g-1')).toBe('/classes/g-1/live')
   })
 
-  it('shares one layout across all five, so the banner is mounted once', () => {
-    const pages = ['live', 'members', 'scenarios', 'analytics', 'settings']
+  it('shares one layout across all six, so the banner is mounted once', () => {
+    const pages = ['live', 'members', 'scenarios', 'analytics', 'participation', 'settings']
       .map(page => router.resolve(`/classes/g-1/${page}`))
 
     const layouts = pages.map(page => page.matched.at(-2))

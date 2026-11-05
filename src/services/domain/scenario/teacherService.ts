@@ -308,6 +308,46 @@ export interface LearnerLiveProgress {
   assignments: LearnerAssignmentProgress[]
 }
 
+// GET /teacher/groups/:groupId/participation-report: recorded activity over a
+// period. Evidence of activity, not of hours attended.
+export interface ParticipationDay {
+  date: string
+  first_activity: string
+  last_activity: string
+}
+
+export interface ScenarioParticipation {
+  title: string
+  status: string
+  started_at: string
+  completed_at?: string
+  grade?: number
+  steps_completed: number
+  steps_total: number
+  verify_attempts: number
+}
+
+export interface LearnerParticipation {
+  user_id: string
+  name: string
+  email: string
+  commands: number
+  days: ParticipationDay[]
+  scenarios: ScenarioParticipation[]
+}
+
+export interface ParticipationReport {
+  title: string
+  organization_name: string
+  from: string
+  to: string // last day, inclusive
+  timezone: string
+  generated_at: string
+  trainers: string[]
+  learners: LearnerParticipation[]
+  commands_available: boolean
+}
+
 export const teacherService = {
   // --- Cross-class overview ---
 
@@ -324,6 +364,13 @@ export const teacherService = {
   // scenario position and assignment results — the data behind the merged
   // "Classe en direct" view (issue #310). Always an array: an unknown class, a
   // class with no member and a class with no assignment all list nothing.
+  async getParticipationReport(groupId: string, from: string, to: string, timezone: string): Promise<ParticipationReport> {
+    const response = await axios.get(`/teacher/groups/${groupId}/participation-report`, {
+      params: { from, to, tz: timezone },
+    })
+    return response.data
+  },
+
   async getGroupLiveProgress(groupId: string): Promise<LearnerLiveProgress[]> {
     const response = await axios.get(`/teacher/groups/${groupId}/live-progress`)
     return Array.isArray(response.data) ? response.data : []

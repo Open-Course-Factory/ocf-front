@@ -204,6 +204,7 @@ const basicRoutes = [
           { path: 'members', name: CLASS_PAGE_NAMES.members, component: () => import('../components/Class/ClassMembersPage.vue') },
           { path: 'scenarios', name: CLASS_PAGE_NAMES.scenarios, component: () => import('../components/Class/ClassScenariosPage.vue') },
           { path: 'analytics', name: CLASS_PAGE_NAMES.analytics, component: () => import('../components/Class/ClassAnalyticsPage.vue') },
+          { path: 'participation', name: CLASS_PAGE_NAMES.participation, component: () => import('../components/Class/ClassParticipationPage.vue') },
           { path: 'settings', name: CLASS_PAGE_NAMES.settings, component: () => import('../components/Class/ClassSettingsPage.vue') }
         ]
       },

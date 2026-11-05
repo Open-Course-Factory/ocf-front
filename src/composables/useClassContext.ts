@@ -25,7 +25,7 @@ import type { Organization } from '../types/organization'
 import type { User } from '../services/domain/user'
 
 /**
- * Everything the five pages of a class share, resolved once by ClassLayout.
+ * Everything the six pages of a class share, resolved once by ClassLayout.
  *
  * The old eight-tab page let every tab work out the caller's rights for itself,
  * which is how five of them could appear a moment after the page did. The layout

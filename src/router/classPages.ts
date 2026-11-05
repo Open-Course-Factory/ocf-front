@@ -22,7 +22,7 @@
 import type { LocationQuery, RouteLocationRaw } from 'vue-router'
 
 /**
- * The five pages of a class, each its own route and its own URL.
+ * The six pages of a class, each its own route and its own URL.
  *
  * Named here rather than spelled out at every call site because three things
  * have to agree on them: the banner links, the layout's access guard, and the
@@ -33,6 +33,7 @@ export const CLASS_PAGE_NAMES = {
   members: 'ClassMembers',
   scenarios: 'ClassScenarios',
   analytics: 'ClassAnalytics',
+  participation: 'ClassParticipation',
   settings: 'ClassSettings',
 } as const
 

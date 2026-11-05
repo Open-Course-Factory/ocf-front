@@ -63,6 +63,7 @@ const { t } = useTranslations({
       pageMembers: 'Learners',
       pageScenarios: 'Scenarios',
       pageAnalytics: 'Analytics',
+      pageParticipation: 'Participation',
       pageSettings: 'Settings',
       connected: '{live}/{total} connected',
       loading: 'Loading the class…',
@@ -79,6 +80,7 @@ const { t } = useTranslations({
       pageMembers: 'Apprenants',
       pageScenarios: 'Scénarios',
       pageAnalytics: 'Analytiques',
+      pageParticipation: 'Participation',
       pageSettings: 'Réglages',
       connected: '{live}/{total} connectés',
       loading: 'Chargement de la classe…',
@@ -98,7 +100,7 @@ interface ClassPageLink {
 }
 
 /**
- * The five pages, in the order the banner lists them.
+ * The six pages, in the order the banner lists them.
  *
  * One declaration drives three things — which links are drawn, which pages the
  * guard below turns away, and where a turned-away caller lands. A page cannot be
@@ -109,6 +111,7 @@ const CLASS_PAGES: ClassPageLink[] = [
   { name: CLASS_PAGE_NAMES.members, icon: 'fas fa-users', labelKey: 'classLayout.pageMembers', managerOnly: false },
   { name: CLASS_PAGE_NAMES.scenarios, icon: 'fas fa-clipboard-list', labelKey: 'classLayout.pageScenarios', managerOnly: true },
   { name: CLASS_PAGE_NAMES.analytics, icon: 'fas fa-chart-bar', labelKey: 'classLayout.pageAnalytics', managerOnly: true },
+  { name: CLASS_PAGE_NAMES.participation, icon: 'fas fa-file-alt', labelKey: 'classLayout.pageParticipation', managerOnly: true },
   { name: CLASS_PAGE_NAMES.settings, icon: 'fas fa-cog', labelKey: 'classLayout.pageSettings', managerOnly: true }
 ]
 

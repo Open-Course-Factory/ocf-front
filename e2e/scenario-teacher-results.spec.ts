@@ -206,6 +206,25 @@ test('the class analytics count the completion', async ({ page }) => {
   await expect(row.locator('td').nth(3)).toHaveText('1');
 });
 
+test('the participation report records the run and prints without the application around it', async ({ page }, testInfo) => {
+  test.skip(!completed, 'no run was completed, so there is nothing to report on');
+  test.setTimeout(180_000);
+
+  await openFixtureClass(page);
+  await page.locator('.class-nav a[href$="/participation"]').click();
+  await page.locator('[data-test="participation-generate"]').click();
+
+  const row = page.locator('[data-test="participation-learner"]').filter({ hasText: LEARNER_EMAIL });
+  await expect(row).toContainText(FIXTURE_TITLE, { timeout: 30_000 });
+  await expect(row.locator('[data-test="participation-day"]')).not.toHaveCount(0);
+
+  await page.emulateMedia({ media: 'print' });
+  await expect(row).toBeVisible();
+  await expect(page.locator('.class-nav')).toBeHidden();
+  await expect(page.locator('[data-test="participation-generate"]')).toBeHidden();
+  await page.screenshot({ path: testInfo.outputPath('printed-report.png'), fullPage: true });
+});
+
 test('the learner session detail replays the commands typed in the container', async ({ page }) => {
   test.skip(!completed, 'no run was completed, so there is nothing to replay');
   test.setTimeout(180_000);

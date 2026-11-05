@@ -154,6 +154,7 @@ function createTestRouter(settingsPage = pageStub('settings')) {
           { path: 'members', name: 'ClassMembers', component: pageStub('members') },
           { path: 'scenarios', name: 'ClassScenarios', component: pageStub('scenarios') },
           { path: 'analytics', name: 'ClassAnalytics', component: pageStub('analytics') },
+          { path: 'participation', name: 'ClassParticipation', component: pageStub('participation') },
           { path: 'settings', name: 'ClassSettings', component: settingsPage }
         ]
       }
@@ -182,7 +183,7 @@ function reservedLinkLabels(wrapper: Wrapper) {
   return wrapper.findAll('.cnav-reserved').map(link => link.text().trim())
 }
 
-const ALL_PAGES = ['Live', 'Learners', 'Scenarios', 'Analytics', 'Settings']
+const ALL_PAGES = ['Live', 'Learners', 'Scenarios', 'Analytics', 'Participation', 'Settings']
 const MANAGER_PAGES = ALL_PAGES.filter(label => label !== 'Learners')
 
 describe('the class banner — what it says about the class', () => {
@@ -305,7 +306,7 @@ describe('the class banner — what it says about the class', () => {
     expect(wrapper.find('.crumb-link').text()).toBe('Mes classes')
     expect(wrapper.find('.banner-live').text()).toContain('connectés')
     expect(pageLinkLabels(wrapper)).toEqual([
-      'En direct', 'Apprenants', 'Scénarios', 'Analytiques', 'Réglages'
+      'En direct', 'Apprenants', 'Scénarios', 'Analytiques', 'Participation', 'Réglages'
     ])
   })
 })

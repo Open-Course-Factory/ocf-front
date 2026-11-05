@@ -206,6 +206,7 @@ test.describe('Teacher creates a class', () => {
         'Apprenants',
         'Scénarios',
         'Analytiques',
+        'Participation',
         'Réglages'
       ])
 
