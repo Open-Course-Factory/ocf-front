@@ -96,7 +96,7 @@ describe('buildSuperviseWsUrl', () => {
 
   it('targets the ocf-core supervise endpoint for the given session id', () => {
     import.meta.env.VITE_PROTOCOL = 'https'
-    const url = buildSuperviseWsUrl('sess-42', 'tok')
+    const url = buildSuperviseWsUrl('sess-42')
     expect(url).toContain('/terminals/sess-42/supervise')
     // WS does not pass through the axios interceptor, so the /api/v1/ prefix is
     // explicit here (mirrors the console URL builder in TerminalViewer).
@@ -105,23 +105,17 @@ describe('buildSuperviseWsUrl', () => {
 
   it('uses wss when VITE_PROTOCOL is https', () => {
     import.meta.env.VITE_PROTOCOL = 'https'
-    const url = buildSuperviseWsUrl('sess-42', 'tok')
+    const url = buildSuperviseWsUrl('sess-42')
     expect(url.startsWith('wss://api.example.com')).toBe(true)
   })
 
   it('uses ws when VITE_PROTOCOL is not https', () => {
     import.meta.env.VITE_PROTOCOL = 'http'
-    const url = buildSuperviseWsUrl('sess-42', 'tok')
+    const url = buildSuperviseWsUrl('sess-42')
     expect(url.startsWith('ws://api.example.com')).toBe(true)
   })
 
-  it('appends the auth token as an encoded query param', () => {
-    import.meta.env.VITE_PROTOCOL = 'https'
-    const url = buildSuperviseWsUrl('sess-42', 'a b/c')
-    expect(url).toContain(`token=${encodeURIComponent('a b/c')}`)
-  })
-
-  it('omits the token param when no token is provided', () => {
+  it('never puts the access token in the URL', () => {
     import.meta.env.VITE_PROTOCOL = 'https'
     const url = buildSuperviseWsUrl('sess-42')
     expect(url).not.toContain('token=')

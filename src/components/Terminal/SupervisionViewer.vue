@@ -110,6 +110,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { getTerminalTheme } from '../../utils/terminalTheme'
 import { terminalKeyHandler } from '../../utils/terminalShortcuts'
 import { buildSuperviseWsUrl } from '../../services/domain/terminal/supervisionService'
+import { webSocketAuthProtocols } from '../../utils/webSocketAuth'
 import {
   createSupervisionMessageHandler,
   initialSupervisionState,
@@ -297,13 +298,12 @@ function baseFontSize() {
 watch(() => [controlState.value.cols, controlState.value.rows], applyLearnerSize)
 
 function connect() {
-  const token = userStore.secretToken
-  const url = buildSuperviseWsUrl(props.sessionId, token)
+  const url = buildSuperviseWsUrl(props.sessionId)
 
   controlState.value = initialSupervisionState()
 
   try {
-    socket.value = new WebSocket(url)
+    socket.value = new WebSocket(url, webSocketAuthProtocols(userStore.secretToken))
     // Control frames arrive as binary; deliver them as ArrayBuffer so they can be
     // told apart from text output synchronously.
     socket.value.binaryType = 'arraybuffer'

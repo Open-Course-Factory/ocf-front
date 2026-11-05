@@ -50,12 +50,8 @@ export const supervisionService = {
  * the /api/v1/ prefix is explicit (WS bypasses the axios interceptor) and the
  * scheme is wss iff VITE_PROTOCOL is https.
  */
-export function buildSuperviseWsUrl(sessionId: string, token?: string): string {
+export function buildSuperviseWsUrl(sessionId: string): string {
   const protocol = import.meta.env.VITE_PROTOCOL === 'https' ? 'wss' : 'ws'
   const apiUrl = import.meta.env.VITE_API_URL
-  let url = `${protocol}://${apiUrl}/api/v1/terminals/${sessionId}/supervise`
-  if (token) {
-    url += `?token=${encodeURIComponent(token)}`
-  }
-  return url
+  return `${protocol}://${apiUrl}/api/v1/terminals/${sessionId}/supervise`
 }

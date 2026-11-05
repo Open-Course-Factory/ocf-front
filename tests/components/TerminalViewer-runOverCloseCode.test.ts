@@ -109,7 +109,7 @@ class FakeWebSocket {
   readyState = 1
   binaryType = 'arraybuffer'
 
-  constructor(public url: string) {
+  constructor(public url: string, public protocols: string[] = []) {
     FakeWebSocket.instances.push(this)
   }
 
@@ -204,6 +204,21 @@ async function closeSocketWith(code: number, props: Record<string, unknown> = {}
 
   return wrapper
 }
+
+describe('TerminalViewer — console authentication', () => {
+  beforeEach(() => {
+    FakeWebSocket.instances = []
+    vi.stubGlobal('WebSocket', FakeWebSocket)
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+  })
+
+  it('sends the access token as a subprotocol, never in the URL, which reaches access logs', async () => {
+    const { socket } = await openConsole({ hasScenario: true, scenarioCrashTraps: true })
+
+    expect(socket.protocols).toEqual(['ocf.bearer', 'tok'])
+    expect(socket.url).not.toContain('tok')
+  })
+})
 
 describe('TerminalViewer — SIGKILLed shell (close code 4137)', () => {
   beforeEach(() => {

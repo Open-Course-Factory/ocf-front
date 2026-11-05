@@ -269,6 +269,7 @@ import { useNotification } from '../../composables/useNotification'
 import { useEndStateConfig, type EndStateReason, type EndStateActionKey } from '../../composables/useEndStateConfig'
 import { getTerminalTheme } from '../../utils/terminalTheme'
 import { terminalKeyHandler } from '../../utils/terminalShortcuts'
+import { webSocketAuthProtocols } from '../../utils/webSocketAuth'
 import { canConnectToTerminal, isSessionActive, preConnectError, sessionHasNetwork } from '../../utils/sessionState'
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import {
@@ -809,14 +810,12 @@ async function connectToTerminal() {
     if (props.supervisionEnabled) {
       wsUrl += `&control=1`
     }
-    if (token) {
-      wsUrl += `&token=${encodeURIComponent(token)}`
-    } else {
+    if (!token) {
       console.warn('No authentication token available for WebSocket connection')
     }
 
     // Create WebSocket connection
-    socket.value = new WebSocket(wsUrl)
+    socket.value = new WebSocket(wsUrl, webSocketAuthProtocols(token))
 
     socket.value.onopen = () => {
       isWsOpen.value = true

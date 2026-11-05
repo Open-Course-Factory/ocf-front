@@ -61,7 +61,7 @@ class FakeWebSocket {
   onmessage: ((e: { data: unknown }) => void) | null = null
   onclose: ((e?: unknown) => void) | null = null
   onerror: ((e?: unknown) => void) | null = null
-  constructor(url: string) {
+  constructor(url: string, public protocols: string[] = []) {
     this.url = url
     FakeWebSocket.instances.push(this)
   }
@@ -114,6 +114,13 @@ describe('SupervisionViewer — observer-count chip', () => {
   })
   afterEach(() => {
     vi.unstubAllGlobals()
+  })
+
+  it('sends the access token as a subprotocol, never in the URL, which reaches access logs', async () => {
+    await mountViewer()
+
+    expect(lastSocket().protocols).toEqual(['ocf.bearer', 'tok'])
+    expect(lastSocket().url).not.toContain('tok')
   })
 
   it('shows the observer chip with the count when more than one trainer watches', async () => {
