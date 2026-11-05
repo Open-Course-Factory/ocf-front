@@ -37,7 +37,6 @@ import CourseDetails from '../components/Pages/CourseDetails.vue';
 import ChapterDetails from '../components/Pages/ChapterDetails.vue';
 import SectionDetails from '../components/Pages/SectionDetails.vue';
 import CourseEditor from '../components/Pages/CourseEditor.vue';
-import LandingPage from '../components/Pages/LandingPage.vue';
 import User from '../components/Pages/User.vue';
 import Generations from '../components/Pages/Generations.vue';
 import Themes from '../components/Pages/Themes.vue';
@@ -53,7 +52,8 @@ import OrganizationDetail from '../components/Pages/OrganizationDetail.vue';
 import BulkImport from '../components/Pages/BulkImport.vue';
 
 const basicRoutes = [
-  { path: '/', name: 'LandingPage', component: LandingPage, meta: { requiresAuth: false } },
+  // Marketing lives on www.labinux.com. A signed-in user is sent on by the guard on Login.
+  { path: '/', redirect: { name: 'Login' } },
   { path: '/login', name: 'Login', component: () => import('../components/Pages/Login.vue'), meta: { requiresAuth: false } },
   {
     path: '/register',
@@ -544,9 +544,8 @@ router.beforeEach(async (to, from) => {
 
     if (!isFeatureEnabled) {
       console.warn(`🏴 Access denied: Feature "${requiredFeature}" is disabled`);
-      // Redirect to home with error message
       return {
-        name: 'LandingPage',
+        name: 'Login',
         query: { error: 'feature_disabled', feature: requiredFeature }
       };
     }

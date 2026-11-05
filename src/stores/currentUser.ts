@@ -135,8 +135,8 @@ export const useCurrentUserStore = defineStore('currentUser', {
             this.$reset();
             // Only redirect if on a protected page — don't kick users off public pages
             const currentRoute = router.currentRoute.value;
-            if (currentRoute.meta.requiresAuth !== false && currentRoute.name !== 'LandingPage') {
-                router.push({ name: 'LandingPage' });
+            if (currentRoute.meta.requiresAuth !== false) {
+                router.push({ name: 'Login' });
             }
         },
 
@@ -149,7 +149,7 @@ export const useCurrentUserStore = defineStore('currentUser', {
             // Use nextTick to ensure reactivity has updated before navigation
             await new Promise(resolve => setTimeout(resolve, 0));
             console.log('🔐 After delay, isAuthenticated:', this.isAuthenticated);
-            await router.push({ name: 'LandingPage' });
+            await router.push({ name: 'Login' });
         },
         
         // Modifier le reset pour utiliser tokenService

@@ -150,7 +150,7 @@ const expandedSections = ref(new Set<string>())
 const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
 const routePrefix = computed(() => isPublicHelp.value ? '/help-public' : '/help')
 
-// Back button: the public hub returns to the landing page, the in-app hub to
+// Back button: the public hub returns to the login page, the in-app hub to
 // the user's own home page (same resolution as the OCF logo, see useLandingPage).
 const backButtonText = computed(() => isPublicHelp.value ? t('help.backToHome') : t('help.backToApp'))
 
