@@ -18,6 +18,7 @@ export interface ClassGroup extends BaseEntity {
   max_members: number
   member_count: number
   expires_at?: string
+  course_days?: string[] // YYYY-MM-DD, the days of the training
   casdoor_group_name?: string
   /**
    * Set when the class is archived (ocf-core#491). The ONE flag the front reads

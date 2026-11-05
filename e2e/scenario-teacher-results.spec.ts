@@ -215,14 +215,29 @@ test('the participation report records the run and prints without the applicatio
   await page.locator('[data-test="participation-generate"]').click();
 
   const row = page.locator('[data-test="participation-learner"]').filter({ hasText: LEARNER_EMAIL });
-  await expect(row).toContainText(FIXTURE_TITLE, { timeout: 30_000 });
+  await expect(row).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('[data-test="participation-scenario"]').filter({ hasText: FIXTURE_TITLE }).first()).toBeVisible();
   await expect(row.locator('[data-test="participation-day"]')).not.toHaveCount(0);
+
+  // Saved through the real class PATCH: the choice must survive a new visit.
+  const dayChoice = page.locator('[data-test="participation-day-choice"]').first();
+  const courseDay = await dayChoice.inputValue();
+  await dayChoice.check();
+  await page.locator('[data-test="participation-save-days"]').click();
+  await expect(page.locator('[data-test="participation-day-column"]')).toHaveCount(1, { timeout: 30_000 });
+  await page.locator('.class-nav a[href$="/members"]').click();
+  await page.locator('.class-nav a[href$="/participation"]').click();
+  await expect(page.locator('[data-test="participation-from"]')).toHaveValue(courseDay);
+  await page.locator('[data-test="participation-generate"]').click();
+  await expect(page.locator('[data-test="participation-day-column"]')).toHaveCount(1, { timeout: 30_000 });
 
   await page.emulateMedia({ media: 'print' });
   await expect(row).toBeVisible();
   await expect(page.locator('.class-nav')).toBeHidden();
   await expect(page.locator('[data-test="participation-generate"]')).toBeHidden();
   await page.screenshot({ path: testInfo.outputPath('printed-report.png'), fullPage: true });
+  const pdf = await page.pdf({ path: testInfo.outputPath('printed-report.pdf'), preferCSSPageSize: true });
+  expect(pdf.toString('latin1')).toMatch(/\/MediaBox \[ ?0 0 841\.\d+ 59\d/); // A4 landscape
 });
 
 test('the learner session detail replays the commands typed in the container', async ({ page }) => {

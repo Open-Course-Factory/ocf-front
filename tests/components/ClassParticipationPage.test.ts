@@ -5,25 +5,36 @@ import { createI18n } from 'vue-i18n'
 import type { ParticipationReport } from '../../src/services/domain/scenario/teacherService'
 
 const getParticipationReport = vi.fn()
+const saveCourseDays = vi.fn()
+const reload = vi.fn()
 
 vi.mock('../../src/services/domain/scenario/teacherService', () => ({
-  teacherService: { getParticipationReport: (...args: unknown[]) => getParticipationReport(...args) }
+  teacherService: {
+    getParticipationReport: (...args: unknown[]) => getParticipationReport(...args),
+    saveCourseDays: (...args: unknown[]) => saveCourseDays(...args)
+  }
 }))
 
 import ClassParticipationPage from '../../src/components/Class/ClassParticipationPage.vue'
 import { provideClassContext } from '../../src/composables/useClassContext'
 
-const Host = defineComponent({
-  components: { ClassParticipationPage },
-  setup() {
-    provideClassContext({ groupId: computed(() => 'g-1') } as never)
-  },
-  template: '<ClassParticipationPage />'
-})
+function hostWith(courseDays: string[]) {
+  return defineComponent({
+    components: { ClassParticipationPage },
+    setup() {
+      provideClassContext({
+        groupId: computed(() => 'g-1'),
+        group: computed(() => ({ course_days: courseDays })),
+        reload
+      } as never)
+    },
+    template: '<ClassParticipationPage />'
+  })
+}
 
-function mountPage() {
+function mountPage(courseDays: string[] = []) {
   const i18n = createI18n({ legacy: false, locale: 'en', fallbackLocale: 'en', messages: { en: {}, fr: {} }, missingWarn: false, fallbackWarn: false })
-  return mount(Host, { global: { plugins: [i18n] } })
+  return mount(hostWith(courseDays), { global: { plugins: [i18n] } })
 }
 
 function reportWith(overrides: Partial<ParticipationReport> = {}): ParticipationReport {
@@ -35,25 +46,27 @@ function reportWith(overrides: Partial<ParticipationReport> = {}): Participation
     timezone: 'Europe/Paris',
     generated_at: '2026-03-07T10:00:00Z',
     trainers: ['Tess Trainer'],
+    days: ['2026-03-02', '2026-03-03'],
+    activity_days: [{ date: '2026-03-02', active_learners: 1 }, { date: '2026-03-04', active_learners: 1 }],
+    other_activity_days: 0,
     learners: [
       {
         user_id: 'u-1',
         name: 'Lea Learner',
         email: 'lea@example.org',
+        has_left: false,
         commands: 42,
-        days: [{ date: '2026-03-02', first_activity: '2026-03-02T08:05:00Z', last_activity: '2026-03-02T16:30:00Z' }],
+        days: [{ date: '2026-03-02', commands: 42, first_activity: '2026-03-02T08:05:00Z', last_activity: '2026-03-02T16:30:00Z' }],
         scenarios: [{
           title: 'Docker basics',
           status: 'completed',
-          started_at: '2026-03-02T08:10:00Z',
-          completed_at: '2026-03-02T09:00:00Z',
           grade: 90,
           steps_completed: 5,
           steps_total: 5,
           verify_attempts: 7
         }]
       },
-      { user_id: 'u-2', name: 'Sam Silent', email: 'sam@example.org', commands: 0, days: [], scenarios: [] }
+      { user_id: 'u-2', name: 'Sam Silent', email: 'sam@example.org', has_left: true, commands: 0, days: [], scenarios: [] }
     ],
     commands_available: true,
     ...overrides
@@ -69,6 +82,9 @@ describe('ClassParticipationPage', () => {
   beforeEach(() => {
     getParticipationReport.mockReset()
     getParticipationReport.mockResolvedValue(reportWith())
+    saveCourseDays.mockReset()
+    saveCourseDays.mockResolvedValue(undefined)
+    reload.mockReset()
   })
 
   afterEach(() => {
@@ -83,7 +99,7 @@ describe('ClassParticipationPage', () => {
     await generate(wrapper)
 
     const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-    expect(getParticipationReport).toHaveBeenCalledWith('g-1', '2026-03-02', '2026-03-06', browserTimezone)
+    expect(getParticipationReport).toHaveBeenCalledWith('g-1', '2026-03-02', '2026-03-06', browserTimezone, [])
   })
 
   it('shows each day in the timezone of the report', async () => {
@@ -93,8 +109,8 @@ describe('ClassParticipationPage', () => {
 
     const row = wrapper.findAll('[data-test="participation-learner"]')[0]
     expect(row.text()).toContain('Lea Learner')
-    expect(row.text()).toContain('42')
-    expect(row.text()).toContain('Docker basics')
+    expect(row.find('[data-test="participation-commands"]').text()).toBe('42')
+    expect(wrapper.find('[data-test="participation-scenario"]').text()).toContain('Docker basics')
     // 08:05 UTC is 09:05 in Paris, whatever timezone the test machine is in.
     expect(row.find('[data-test="participation-day"]').text()).toMatch(/09:05 AM.*05:30 PM/)
   })
@@ -106,7 +122,71 @@ describe('ClassParticipationPage', () => {
 
     const row = wrapper.findAll('[data-test="participation-learner"]')[1]
     expect(row.text()).toContain('Sam Silent')
-    expect(row.text()).toContain('No recorded activity')
+    expect(row.find('[data-test="participation-day"]').text()).toBe('none')
+    expect(row.find('[data-test="participation-days-active"]').text()).toBe('0/2')
+    expect(row.find('[data-test="participation-commands"]').text()).toBe('None recorded')
+  })
+
+  it('marks a learner who left the class', async () => {
+    const wrapper = mountPage()
+
+    await generate(wrapper)
+
+    const rows = wrapper.findAll('[data-test="participation-learner"]')
+    expect(rows[0].find('[data-test="participation-has-left"]').exists()).toBe(false)
+    expect(rows[1].find('[data-test="participation-has-left"]').exists()).toBe(true)
+  })
+
+  it('opens on the saved course days and asks for them', async () => {
+    const wrapper = mountPage(['2026-03-02', '2026-03-05'])
+    expect((wrapper.find('[data-test="participation-from"]').element as HTMLInputElement).value).toBe('2026-03-02')
+    expect((wrapper.find('[data-test="participation-to"]').element as HTMLInputElement).value).toBe('2026-03-05')
+
+    await generate(wrapper)
+
+    expect(getParticipationReport.mock.calls[0][4]).toEqual(['2026-03-02', '2026-03-05'])
+  })
+
+  it('offers a saved course day with no activity, so an absence can be reported', async () => {
+    const wrapper = mountPage(['2026-03-05'])
+
+    await generate(wrapper)
+
+    const offered = wrapper.findAll('[data-test="participation-day-choice"]').map(input => (input.element as HTMLInputElement).value)
+    expect(offered).toEqual(['2026-03-02', '2026-03-04', '2026-03-05'])
+  })
+
+  it('saves the ticked days on the class, then reports them', async () => {
+    const wrapper = mountPage()
+    await generate(wrapper)
+    await wrapper.findAll('[data-test="participation-day-choice"]')[1].setValue(true)
+    await wrapper.findAll('[data-test="participation-day-choice"]')[0].setValue(true)
+
+    await wrapper.find('[data-test="participation-save-days"]').trigger('click')
+    await flushPromises()
+
+    expect(saveCourseDays).toHaveBeenCalledWith('g-1', ['2026-03-02', '2026-03-04'])
+    expect(reload).toHaveBeenCalledOnce()
+    expect(getParticipationReport.mock.lastCall?.[4]).toEqual(expect.arrayContaining(['2026-03-02', '2026-03-04']))
+  })
+
+  it('can still show every day once course days are set', async () => {
+    const wrapper = mountPage(['2026-03-02'])
+    await generate(wrapper)
+
+    await wrapper.find('[data-test="participation-show-all"]').setValue(true)
+    await flushPromises()
+
+    expect(getParticipationReport.mock.lastCall?.[4]).toEqual([])
+  })
+
+  it('states how many days of activity the report leaves out', async () => {
+    getParticipationReport.mockResolvedValue(reportWith({ other_activity_days: 3 }))
+    const wrapper = mountPage(['2026-03-02'])
+
+    await generate(wrapper)
+
+    expect(wrapper.find('[data-test="participation-other-days"]').text()).toContain('3')
   })
 
   it('says commands are unknown rather than zero when they could not be read', async () => {
@@ -118,6 +198,8 @@ describe('ClassParticipationPage', () => {
     const commandCell = wrapper.findAll('[data-test="participation-commands"]')[0]
     expect(commandCell.text()).toBe('Unknown')
     expect(wrapper.find('[data-test="participation-commands-warning"]').exists()).toBe(true)
+    const emptyDay = wrapper.findAll('[data-test="participation-learner"]')[1].find('[data-test="participation-day"]')
+    expect(emptyDay.text()).toBe('Unknown')
   })
 
   it('says the report is not a record of hours attended', async () => {
@@ -131,11 +213,11 @@ describe('ClassParticipationPage', () => {
   it('shows the error and drops the previous report when generating fails', async () => {
     const wrapper = mountPage()
     await generate(wrapper)
-    getParticipationReport.mockRejectedValue({ response: { data: { error: 'period too long' } } })
+    getParticipationReport.mockRejectedValue(new Error('period too long'))
 
     await generate(wrapper)
 
-    expect(wrapper.find('[role="alert"]').text()).toContain('period too long')
+    expect(wrapper.find('[role="alert"]').text()).toContain('could not be generated')
     expect(wrapper.find('[data-test="participation-learner"]').exists()).toBe(false)
   })
 

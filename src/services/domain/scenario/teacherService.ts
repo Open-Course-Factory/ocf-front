@@ -312,6 +312,7 @@ export interface LearnerLiveProgress {
 // period. Evidence of activity, not of hours attended.
 export interface ParticipationDay {
   date: string
+  commands: number
   first_activity: string
   last_activity: string
 }
@@ -319,8 +320,6 @@ export interface ParticipationDay {
 export interface ScenarioParticipation {
   title: string
   status: string
-  started_at: string
-  completed_at?: string
   grade?: number
   steps_completed: number
   steps_total: number
@@ -331,9 +330,15 @@ export interface LearnerParticipation {
   user_id: string
   name: string
   email: string
-  commands: number
+  has_left: boolean
+  commands: number // on the reported days
   days: ParticipationDay[]
   scenarios: ScenarioParticipation[]
+}
+
+export interface ActivityDay {
+  date: string
+  active_learners: number
 }
 
 export interface ParticipationReport {
@@ -344,6 +349,9 @@ export interface ParticipationReport {
   timezone: string
   generated_at: string
   trainers: string[]
+  days: string[] // the report's columns
+  activity_days: ActivityDay[] // every day with activity, reported or not
+  other_activity_days: number
   learners: LearnerParticipation[]
   commands_available: boolean
 }
@@ -364,16 +372,21 @@ export const teacherService = {
   // scenario position and assignment results — the data behind the merged
   // "Classe en direct" view (issue #310). Always an array: an unknown class, a
   // class with no member and a class with no assignment all list nothing.
-  async getParticipationReport(groupId: string, from: string, to: string, timezone: string): Promise<ParticipationReport> {
+  async getGroupLiveProgress(groupId: string): Promise<LearnerLiveProgress[]> {
+    const response = await axios.get(`/teacher/groups/${groupId}/live-progress`)
+    return Array.isArray(response.data) ? response.data : []
+  },
+
+  // No course days reports every day with activity.
+  async getParticipationReport(groupId: string, from: string, to: string, timezone: string, courseDays: string[]): Promise<ParticipationReport> {
     const response = await axios.get(`/teacher/groups/${groupId}/participation-report`, {
-      params: { from, to, tz: timezone },
+      params: { from, to, tz: timezone, days: courseDays.join(',') || undefined },
     })
     return response.data
   },
 
-  async getGroupLiveProgress(groupId: string): Promise<LearnerLiveProgress[]> {
-    const response = await axios.get(`/teacher/groups/${groupId}/live-progress`)
-    return Array.isArray(response.data) ? response.data : []
+  async saveCourseDays(groupId: string, courseDays: string[]): Promise<void> {
+    await axios.patch(`/class-groups/${groupId}`, { course_days: courseDays })
   },
 
   // --- Group scenario assignment operations ---
