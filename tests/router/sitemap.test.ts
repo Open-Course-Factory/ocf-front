@@ -17,9 +17,9 @@ const robots = readFileSync(resolve(publicDir, 'robots.txt'), 'utf8')
 const sitemapUrls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => new URL(m[1]))
 
 describe('public/sitemap.xml', () => {
-  it('lists at least the landing and pricing pages', () => {
+  it('lists at least the login and pricing pages', () => {
     const paths = sitemapUrls.map(u => u.pathname)
-    expect(paths).toContain('/')
+    expect(paths).toContain('/login')
     expect(paths).toContain('/pricing')
   })
 

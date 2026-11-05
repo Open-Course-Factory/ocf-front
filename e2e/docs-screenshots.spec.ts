@@ -54,7 +54,6 @@ const CREDENTIALS: Record<Exclude<Persona, 'public'>, { email: string; password:
 
 const SCREENS: Screen[] = [
   // Public
-  { name: 'landing', path: '/', as: 'public', fullPage: true },
   { name: 'pricing', path: '/pricing', as: 'public', fullPage: true },
   { name: 'login', path: '/login', as: 'public' },
   { name: 'register', path: '/register', as: 'public' },
@@ -356,9 +355,6 @@ async function prepareFullPage(page: Page): Promise<void> {
       await new Promise((r) => setTimeout(r, 80));
     }
     window.scrollTo(0, 0);
-    // The landing page reveals cards through an IntersectionObserver that the
-    // sweep does not always reach in time; a shot is not the place to wait for it.
-    document.querySelectorAll('.scroll-reveal').forEach((el) => el.classList.add('revealed'));
   });
   await page.waitForTimeout(800);
 }
