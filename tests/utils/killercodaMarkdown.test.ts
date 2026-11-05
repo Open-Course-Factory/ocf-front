@@ -252,4 +252,33 @@ describe('stripRepeatedTitleHeading', () => {
   it('returns empty text unchanged', () => {
     expect(stripRepeatedTitleHeading('', 'Anything')).toBe('')
   })
+
+  describe('inside a numbered list', () => {
+    async function render(md: string) {
+      const { marked } = await import('marked')
+      marked.setOptions({ breaks: true, gfm: true })
+      return processExecSyntax(marked.parse(preprocessKillercodaMarkdown(md)) as string)
+    }
+
+    const list = (marker: string) =>
+      `1. First\n\n   \`\`\`\n   ls\n   \`\`\`{{${marker}}}\n\n2. Second\n\n   \`\`\`\n   pwd\n   \`\`\`{{${marker}}}\n\n3. Third`
+
+    it.each([
+      ['exec', 'exec-block'],
+      ['execute', 'exec-block'],
+      ['copy', 'copy-block'],
+    ])('{{%s}} keeps the list whole and marks every block', async (marker, blockClass) => {
+      const html = await render(list(marker))
+
+      expect(html.match(/<ol/g)).toHaveLength(1)
+      expect(html.match(new RegExp(`<pre class="${blockClass}"`, 'g'))).toHaveLength(2)
+      expect(html).not.toContain('BLOCK -->')
+    })
+
+    it('still handles a marker that does not start its line', async () => {
+      const html = await render('Run this:```{{exec}}')
+
+      expect(html).not.toContain('{{exec}}')
+    })
+  })
 })

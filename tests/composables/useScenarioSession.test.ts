@@ -34,7 +34,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 
@@ -266,6 +266,69 @@ describe('useScenarioSession', () => {
       c.handleExecClick({ target: el } as unknown as MouseEvent)
 
       expect(paste).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('code block buttons', () => {
+    const stepResponse = { step_order: 1, title: 'Second', text: 'x', total_steps: 2, status: 'active', has_flag: false }
+
+    // The panel only renders the step content once its transition is over, which
+    // is after loadStepData returned.
+    function mountWithDelayedContent() {
+      const contentOnScreen = ref(false)
+      let session!: Composable
+      const Panel = defineComponent({
+        setup() {
+          session = useScenarioSession(() => 'session-1', { paste: vi.fn(), scenarioInfoLoaded: vi.fn() })
+          return () =>
+            contentOnScreen.value ? h('div', { ref: 'stepContentRef', innerHTML: '<pre><code>ls -l</code></pre>' }) : h('div')
+        },
+      })
+      const wrapper = mount(Panel, { global: { plugins: [createTestI18n()] } })
+      return { wrapper, contentOnScreen, session }
+    }
+
+    it('adds the buttons when the step content appears after the data loaded', async () => {
+      mockGetCurrentStep.mockResolvedValue(stepResponse)
+      const { wrapper, contentOnScreen, session } = mountWithDelayedContent()
+
+      await session.loadStepData({ skipSpinner: true })
+      contentOnScreen.value = true
+      await nextTick()
+      await nextTick()
+      await nextTick()
+
+      expect(wrapper.find('.copy-code-btn').exists()).toBe(true)
+      expect(wrapper.find('.paste-terminal-btn').exists()).toBe(true)
+    })
+
+    it('adds them only once when the content reappears', async () => {
+      mockGetCurrentStep.mockResolvedValue(stepResponse)
+      const { wrapper, contentOnScreen, session } = mountWithDelayedContent()
+
+      await session.loadStepData({ skipSpinner: true })
+      contentOnScreen.value = true
+      await nextTick()
+      await nextTick()
+      await session.loadStepData({ skipSpinner: true })
+      await nextTick()
+
+      expect(wrapper.findAll('.copy-code-btn')).toHaveLength(1)
+    })
+
+    it('puts both buttons in one row, so neither can cover the other', async () => {
+      mockGetCurrentStep.mockResolvedValue(stepResponse)
+      const { wrapper, contentOnScreen, session } = mountWithDelayedContent()
+
+      await session.loadStepData({ skipSpinner: true })
+      contentOnScreen.value = true
+      await nextTick()
+      await nextTick()
+      await nextTick()
+
+      const row = wrapper.find('.code-block-actions')
+      expect(row.find('.copy-code-btn').exists()).toBe(true)
+      expect(row.find('.paste-terminal-btn').exists()).toBe(true)
     })
   })
 })

@@ -111,6 +111,34 @@ test.describe('Scenario player (mocked backend)', () => {
     expect(mock.sessionStatus).toBe('completed');
   });
 
+  test('a step reached with Verify has usable Copy and Paste buttons on its code blocks', async ({ page }) => {
+    const steps: MockStep[] = [
+      { order: 1, title: 'First', type: 'terminal' },
+      {
+        order: 2,
+        title: 'Second',
+        type: 'terminal',
+        text: 'Run these:\n\n1. List\n\n   ```\n   ls -l\n   ```{{exec}}\n\n2. Where\n\n   ```\n   pwd\n   ```{{exec}}\n\n3. Done',
+      },
+    ];
+    const mock = new ScenarioMock(steps);
+    await mock.install(page);
+    await login(page, E2E_USER, E2E_PASS);
+    await launchIntoPlayer(page, mock);
+
+    await page.getByTestId('scenario-verify-btn').click();
+    await expect(page.getByTestId('scenario-step-title')).toContainText('Second', { timeout: 15_000 });
+
+    const blocks = page.locator('.step-content .code-block-wrapper');
+    await expect(blocks).toHaveCount(2);
+    await expect(page.locator('.step-content .step-text ol')).toHaveCount(1);
+
+    // A real click: Playwright refuses it if anything covers the button.
+    await blocks.first().hover();
+    await blocks.first().locator('.paste-terminal-btn').click({ timeout: 5_000 });
+    await blocks.first().locator('.copy-code-btn').click({ timeout: 5_000 });
+  });
+
   test('flag lockout after 20 failed attempts', async ({ page }) => {
     test.setTimeout(120_000);
     const mock = new ScenarioMock([

@@ -10,7 +10,7 @@
  * (returning the fetched step) to do revealed-hint loading + transient resets.
  */
 
-import { ref, computed, onBeforeUnmount, nextTick, useTemplateRef } from 'vue'
+import { ref, computed, onBeforeUnmount, nextTick, useTemplateRef, watch } from 'vue'
 import { useTranslations } from './useTranslations'
 import { useScrollFade } from './useScrollFade'
 import {
@@ -156,6 +156,11 @@ export function useScenarioSession(
       const code = pre.querySelector('code')
       const text = (code?.textContent || pre.textContent || '').trim()
 
+      // One row, Paste last: Copy grows to the left when it says "Copied", so
+      // Paste stays under the cursor.
+      const actions = document.createElement('div')
+      actions.className = 'code-block-actions'
+
       // Copy button
       const copyBtn = document.createElement('button')
       copyBtn.className = 'copy-code-btn'
@@ -174,6 +179,7 @@ export function useScenarioSession(
           console.warn('Clipboard API not available')
         }
       })
+      actions.appendChild(copyBtn)
 
       // Paste-to-terminal button (for single-line commands, or exec-block marked blocks)
       const isExecBlock = pre.classList.contains('exec-block')
@@ -187,12 +193,12 @@ export function useScenarioSession(
         pasteBtn.addEventListener('click', () => {
           emit.paste(text)
         })
-        wrapper.appendChild(pasteBtn)
+        actions.appendChild(pasteBtn)
       }
 
       pre.parentNode?.insertBefore(wrapper, pre)
       wrapper.appendChild(pre)
-      wrapper.appendChild(copyBtn)
+      wrapper.appendChild(actions)
     })
   }
 
@@ -210,6 +216,12 @@ export function useScenarioSession(
     // text for text resizes nothing the fade observes.
     checkStepFade()
   }
+
+  // The panel renders the step content only once its transition is over, after
+  // loadStepData has returned, so that refresh found nothing to work on.
+  watch(stepContentRef, (element) => {
+    if (element) refreshStepContent(displayedStep.value?.step_order)
+  }, { flush: 'post' })
 
   // Fetch the current step's DATA. Returns the fetched step (or null on error).
   // Does NOT touch hint/verify/flag/quiz transient state and does NOT load

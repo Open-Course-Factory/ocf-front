@@ -486,10 +486,17 @@
   position: relative;
 }
 
-.step-content :deep(.copy-code-btn) {
+.step-content :deep(.code-block-actions) {
   position: absolute;
   top: var(--spacing-xs);
   right: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  z-index: 1;
+}
+
+.step-content :deep(.copy-code-btn) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -502,7 +509,6 @@
   cursor: pointer;
   opacity: 0;
   transition: opacity var(--transition-fast), background var(--transition-fast);
-  z-index: 1;
 }
 
 .step-content :deep(.code-block-wrapper:hover .copy-code-btn) {
@@ -520,9 +526,6 @@
 }
 
 .step-content :deep(.paste-terminal-btn) {
-  position: absolute;
-  bottom: var(--spacing-xs);
-  right: var(--spacing-xs);
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -535,7 +538,6 @@
   cursor: pointer;
   opacity: 0;
   transition: opacity var(--transition-fast), background var(--transition-fast);
-  z-index: 1;
 }
 
 .step-content :deep(.code-block-wrapper:hover .paste-terminal-btn) {

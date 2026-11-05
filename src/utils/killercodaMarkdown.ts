@@ -11,11 +11,13 @@ marked.setOptions({
  * Preprocess KillerCoda markdown: fix ```{{exec}} / ```{{execute}} / ```{{copy}}
  * closing fences that are not valid CommonMark.
  * marked treats them as code block content, swallowing all subsequent markdown.
+ * The marker keeps the fence's indentation: at column 0 it would close a list the
+ * block is part of.
  */
 export function preprocessKillercodaMarkdown(markdown: string): string {
   return markdown
-    .replace(/```\{\{exec(ute)?\}\}/g, '```\n<!-- EXEC_BLOCK -->')
-    .replace(/```\{\{copy\}\}/g, '```\n<!-- COPY_BLOCK -->')
+    .replace(/(^[ \t]*)?```\{\{exec(ute)?\}\}/gm, '$1```\n$1<!-- EXEC_BLOCK -->')
+    .replace(/(^[ \t]*)?```\{\{copy\}\}/gm, '$1```\n$1<!-- COPY_BLOCK -->')
 }
 
 /**
