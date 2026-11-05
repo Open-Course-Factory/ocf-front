@@ -51,7 +51,7 @@ vi.mock('../../src/composables/useAdminViewMode', () => ({
 
 import OrganizationDetail from '../../src/components/Pages/OrganizationDetail.vue'
 
-const MANAGER_TABS = ['scenarios', 'student-sessions', 'settings']
+const MANAGER_TABS = ['scenarios', 'student-sessions', 'qualiopi', 'settings']
 
 function organizationPayload() {
   return {
@@ -103,6 +103,7 @@ async function mountOrganizationDetail(path = '/organizations/org-1') {
         OrganizationSettingsTab: true,
         OrganizationScenariosTab: true,
         OrganizationStudentSessionsTab: true,
+        OrganizationQualiopiTab: true,
         AdminBadge: true
       }
     }
@@ -165,7 +166,7 @@ describe('OrganizationDetail tab bar — WAI-ARIA tabs pattern', () => {
     expect(tablist.exists()).toBe(true)
     expect(tablist.attributes('aria-label')).toBeTruthy()
     expect(tabKeys(wrapper)).toEqual([
-      'overview', 'members', 'groups', 'scenarios', 'student-sessions', 'subscription', 'settings'
+      'overview', 'members', 'groups', 'scenarios', 'student-sessions', 'qualiopi', 'subscription', 'settings'
     ])
   })
 

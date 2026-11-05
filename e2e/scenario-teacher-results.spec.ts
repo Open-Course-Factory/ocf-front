@@ -240,6 +240,28 @@ test('the participation report records the run and prints without the applicatio
   expect(pdf.toString('latin1')).toMatch(/\/MediaBox \[ ?0 0 841\.\d+ 59\d/); // A4 landscape
 });
 
+test('the organization Qualiopi tab lists the class and opens its report', async ({ page }) => {
+  test.skip(!completed, 'no course day was saved, so the class has nothing to show');
+  test.setTimeout(120_000);
+
+  await loginFresh(page, TRAINER_EMAIL, PASSWORD);
+  await dismissVerificationBanner(page);
+  await navigateViaMenuCategory(page, 'organizations', '/organizations');
+  await page
+    .locator('.organization-card')
+    .filter({ hasText: orgDisplayName })
+    .first()
+    .locator('button:has(i.fa-cog)')
+    .click();
+  await page.getByRole('tab', { name: 'Qualiopi' }).click();
+
+  const reportLink = page.locator(`[data-test="qualiopi-class"] a[href*="${groupId}"]`);
+  await expect(reportLink, 'the class is listed').toBeVisible({ timeout: 20_000 });
+  await reportLink.click();
+  await expect(page).toHaveURL(/\/participation$/);
+  await expect(page.locator('[data-test="participation-generate"]')).toBeVisible();
+});
+
 test('the learner session detail replays the commands typed in the container', async ({ page }) => {
   test.skip(!completed, 'no run was completed, so there is nothing to replay');
   test.setTimeout(180_000);

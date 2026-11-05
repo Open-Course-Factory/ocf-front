@@ -143,6 +143,11 @@
             <OrganizationStudentSessionsTab :organization-id="organizationId" />
           </div>
 
+          <!-- Qualiopi Tab -->
+          <div v-if="activeTab === 'qualiopi' && canManage && canRunClassroomsHere" class="tab-panel" v-bind="panelProps('qualiopi')">
+            <OrganizationQualiopiTab :organization-id="organizationId" />
+          </div>
+
           <!-- Subscription Tab -->
           <div v-if="activeTab === 'subscription'" class="tab-panel" v-bind="panelProps('subscription')">
             <OrganizationSubscriptionManager
@@ -193,6 +198,7 @@ import {
 } from '../Organizations'
 import OrganizationScenariosTab from '../Organizations/OrganizationScenariosTab.vue'
 import OrganizationStudentSessionsTab from '../Organizations/OrganizationStudentSessionsTab.vue'
+import OrganizationQualiopiTab from '../Organizations/OrganizationQualiopiTab.vue'
 import AdminBadge from '../Common/AdminBadge.vue'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { usePermissionsStore } from '../../stores/permissions'
@@ -219,6 +225,7 @@ type OrganizationTab =
   | 'groups'
   | 'scenarios'
   | 'student-sessions'
+  | 'qualiopi'
   | 'subscription'
   | 'settings'
 const activeTab = ref<OrganizationTab>((route.query.tab as OrganizationTab) || 'overview')
@@ -243,6 +250,7 @@ const { t } = useTranslations({
       subscription: 'Subscription',
       scenarios: 'Scenarios',
       studentSessions: 'Learner Sessions',
+      qualiopi: 'Qualiopi',
       settings: 'Settings',
       notFound: 'Organization not found',
     }
@@ -263,6 +271,7 @@ const { t } = useTranslations({
       subscription: 'Abonnement',
       scenarios: 'Scénarios',
       studentSessions: 'Sessions des apprenants',
+      qualiopi: 'Qualiopi',
       settings: 'Paramètres',
       notFound: 'Organisation introuvable',
     }
@@ -294,6 +303,7 @@ const allTabs: { id: OrganizationTab; icon: string; labelKey: string; managerOnl
   { id: 'groups', icon: 'fas fa-layer-group', labelKey: 'organizations.groups', managerOnly: false, needsClassrooms: true },
   { id: 'scenarios', icon: 'fas fa-flask', labelKey: 'organizations.scenarios', managerOnly: false, authorOnly: true },
   { id: 'student-sessions', icon: 'fas fa-desktop', labelKey: 'organizations.studentSessions', managerOnly: true },
+  { id: 'qualiopi', icon: 'fas fa-clipboard-check', labelKey: 'organizations.qualiopi', managerOnly: true, needsClassrooms: true },
   { id: 'subscription', icon: 'fas fa-credit-card', labelKey: 'organizations.subscription', managerOnly: false },
   { id: 'settings', icon: 'fas fa-cog', labelKey: 'organizations.settings', managerOnly: true }
 ]
