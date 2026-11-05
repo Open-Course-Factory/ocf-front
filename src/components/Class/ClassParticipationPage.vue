@@ -494,7 +494,8 @@ function statusLabel(status: string): string {
     inset: 0 0 auto 0;
   }
 
-  .ocf-participation-report {
+  /* On body: the page property has no effect on the absolutely positioned report. */
+  body:has(.ocf-participation-report) {
     page: participation-report;
   }
 
