@@ -106,60 +106,60 @@
           />
         </div>
       </div>
-
-      <!-- Assign Confirmation -->
-      <div v-if="showAssignConfirm" class="confirm-assign">
-        <p class="confirm-text">
-          {{ currentSubscription ? t('adminOrgPlan.changeConfirmText') : t('adminOrgPlan.assignConfirmText') }}
-        </p>
-        <div class="confirm-summary">
-          <div class="confirm-summary-row">
-            <span class="confirm-label">{{ t('adminOrgPlan.confirmOrganization') }}:</span>
-            <span class="confirm-value">{{ organizationName }}</span>
-          </div>
-          <div class="confirm-summary-row">
-            <span class="confirm-label">{{ t('adminOrgPlan.confirmPlan') }}:</span>
-            <span class="confirm-value">{{ selectedPlanName }}</span>
-          </div>
-        </div>
-        <div class="confirm-actions">
-          <button class="btn btn-primary" :disabled="saving" @click="handleAssign">
-            <i :class="saving ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
-            {{ currentSubscription ? t('adminOrgPlan.changePlanConfirm') : t('adminOrgPlan.assignPlan') }}
-          </button>
-          <button class="btn btn-secondary" :disabled="saving" @click="showAssignConfirm = false">
-            {{ t('adminOrgPlan.goBack') }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Error message -->
-      <div v-if="error" class="error-message">
-        <i class="fas fa-exclamation-circle"></i>
-        {{ error }}
-      </div>
-
-      <!-- Success message -->
-      <div v-if="successMsg" class="success-message">
-        <i class="fas fa-check-circle"></i>
-        {{ successMsg }}
-      </div>
     </div>
 
     <template #footer>
-      <button class="btn btn-secondary" @click="$emit('close')">
-        <i class="fas fa-times"></i>
-        {{ t('adminOrgPlan.cancel') }}
-      </button>
-      <button
-        v-if="!showAssignConfirm"
-        class="btn btn-primary"
-        :disabled="saving || !canSave"
-        @click="onPrimaryClick"
-      >
-        <i class="fas fa-check"></i>
-        {{ currentSubscription ? t('adminOrgPlan.changePlanConfirm') : t('adminOrgPlan.assignPlan') }}
-      </button>
+      <!-- Everything answering a click on these buttons stays next to them: the
+           form above scrolls, so anything shown below it can be off-screen. -->
+      <div class="ocf-plan-footer">
+        <div v-if="showAssignConfirm" class="confirm-assign">
+          <p class="confirm-text">
+            {{ currentSubscription ? t('adminOrgPlan.changeConfirmText') : t('adminOrgPlan.assignConfirmText') }}
+          </p>
+          <div class="confirm-summary">
+            <div class="confirm-summary-row">
+              <span class="confirm-label">{{ t('adminOrgPlan.confirmOrganization') }}:</span>
+              <span class="confirm-value">{{ organizationName }}</span>
+            </div>
+            <div class="confirm-summary-row">
+              <span class="confirm-label">{{ t('adminOrgPlan.confirmPlan') }}:</span>
+              <span class="confirm-value">{{ selectedPlanName }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="error" class="error-message">
+          <i class="fas fa-exclamation-circle"></i>
+          {{ error }}
+        </div>
+
+        <div v-if="successMsg" class="success-message">
+          <i class="fas fa-check-circle"></i>
+          {{ successMsg }}
+        </div>
+
+        <div class="ocf-plan-footer-actions">
+          <template v-if="showAssignConfirm">
+            <button class="btn btn-secondary" :disabled="saving" @click="showAssignConfirm = false">
+              {{ t('adminOrgPlan.goBack') }}
+            </button>
+            <button class="btn btn-primary" :disabled="saving" @click="handleAssign">
+              <i :class="saving ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
+              {{ t('adminOrgPlan.confirmAssign') }}
+            </button>
+          </template>
+          <template v-else>
+            <button class="btn btn-secondary" @click="$emit('close')">
+              <i class="fas fa-times"></i>
+              {{ t('adminOrgPlan.cancel') }}
+            </button>
+            <button class="btn btn-primary" :disabled="saving || !canSave" @click="onPrimaryClick">
+              <i class="fas fa-check"></i>
+              {{ currentSubscription ? t('adminOrgPlan.changePlanConfirm') : t('adminOrgPlan.assignPlan') }}
+            </button>
+          </template>
+        </div>
+      </div>
     </template>
   </BaseModal>
 </template>
@@ -215,6 +215,7 @@ const { t } = useTranslations({
       confirmOrganization: 'Organization',
       confirmPlan: 'Plan',
       goBack: 'Go Back',
+      confirmAssign: 'Confirm',
       assignSuccess: 'Plan assigned successfully',
       changeSuccess: 'Plan changed successfully',
       cancelSuccess: 'Subscription canceled successfully',
@@ -256,6 +257,7 @@ const { t } = useTranslations({
       confirmOrganization: 'Organisation',
       confirmPlan: 'Plan',
       goBack: 'Retour',
+      confirmAssign: 'Confirmer',
       assignSuccess: 'Plan attribué avec succès',
       changeSuccess: 'Plan modifié avec succès',
       cancelSuccess: 'Abonnement annulé avec succès',
@@ -630,6 +632,19 @@ watch(() => props.visible, async (newVisible) => {
   background: var(--color-danger-bg);
   border: 1px solid var(--color-danger-border);
   border-radius: var(--border-radius-md);
+}
+
+.ocf-plan-footer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.ocf-plan-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
 }
 
 .confirm-assign {
