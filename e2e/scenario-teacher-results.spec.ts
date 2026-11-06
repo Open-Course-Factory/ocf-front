@@ -231,6 +231,8 @@ test('the participation report records the run and prints without the applicatio
   await regenerated;
   await expect(page.locator('[data-test="participation-day-column"]')).toHaveCount(1, { timeout: 30_000 });
   await page.locator('.class-nav a[href$="/members"]').click();
+  // Leave for real: a click on the way back would cancel a page still loading and keep this one.
+  await expect(page.locator('[data-test="participation-from"]')).toBeHidden();
   await page.locator('.class-nav a[href$="/participation"]').click();
   await expect(page.locator('[data-test="participation-from"]')).toHaveValue(courseDay);
   await page.locator('[data-test="participation-generate"]').click();
