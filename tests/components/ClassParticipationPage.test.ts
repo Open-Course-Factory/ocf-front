@@ -7,6 +7,11 @@ import type { ParticipationReport } from '../../src/services/domain/scenario/tea
 const getParticipationReport = vi.fn()
 const saveCourseDays = vi.fn()
 const reload = vi.fn()
+const downloadCsv = vi.fn()
+
+vi.mock('../../src/utils/download', () => ({
+  downloadCsv: (...args: unknown[]) => downloadCsv(...args)
+}))
 
 vi.mock('../../src/services/domain/scenario/teacherService', () => ({
   teacherService: {
@@ -243,5 +248,20 @@ describe('ClassParticipationPage', () => {
     await printButton.trigger('click')
 
     expect(print).toHaveBeenCalledOnce()
+  })
+
+  it('exports the generated report as CSV, only once there is one', async () => {
+    downloadCsv.mockClear()
+    const wrapper = mountPage()
+    const exportButton = wrapper.find('[data-test="participation-export-csv"]')
+    expect(exportButton.attributes('disabled')).toBeDefined()
+
+    await generate(wrapper)
+    await exportButton.trigger('click')
+
+    expect(downloadCsv).toHaveBeenCalledOnce()
+    const [csv, filename] = downloadCsv.mock.calls[0]
+    expect(csv).toContain('"Lea Learner","lea@example.org","no","2026-03-02"')
+    expect(filename).toBe('participation-2026-03-02-2026-03-06.csv')
   })
 })

@@ -27,6 +27,8 @@ import { useClassContext } from '../../composables/useClassContext'
 import { useTranslations } from '../../composables/useTranslations'
 import { teacherService, type LearnerParticipation, type ParticipationDay, type ParticipationReport } from '../../services/domain/scenario/teacherService'
 import { formatDate, formatDateTime } from '../../utils/formatters'
+import { downloadCsv } from '../../utils/download'
+import { buildParticipationCsv } from '../../utils/participationCsv'
 
 const { groupId, group, reload } = useClassContext()
 
@@ -39,6 +41,13 @@ const { t, te, locale } = useTranslations({
       to: 'To',
       generate: 'Generate',
       print: 'Print',
+      exportCsv: 'Export as CSV',
+      csvDate: 'Date',
+      csvEmail: 'Email',
+      csvFirstActivity: 'First activity',
+      csvLastActivity: 'Last activity',
+      csvYes: 'yes',
+      csvNo: 'no',
       loadError: 'The report could not be generated.',
       saveDaysError: 'The course days could not be saved.',
       courseDays: 'Course days',
@@ -86,6 +95,13 @@ const { t, te, locale } = useTranslations({
       to: 'Au',
       generate: 'Générer',
       print: 'Imprimer',
+      exportCsv: 'Exporter en CSV',
+      csvDate: 'Date',
+      csvEmail: 'E-mail',
+      csvFirstActivity: 'Première activité',
+      csvLastActivity: 'Dernière activité',
+      csvYes: 'oui',
+      csvNo: 'non',
       loadError: 'Le rapport n’a pas pu être généré.',
       saveDaysError: 'Les jours de formation n’ont pas pu être enregistrés.',
       courseDays: 'Jours de formation',
@@ -210,6 +226,21 @@ function printReport(): void {
   window.print()
 }
 
+function exportCsv(current: ParticipationReport): void {
+  const csv = buildParticipationCsv(current, {
+    learner: t('classParticipation.learner'),
+    email: t('classParticipation.csvEmail'),
+    hasLeft: t('classParticipation.hasLeft'),
+    date: t('classParticipation.csvDate'),
+    firstActivity: t('classParticipation.csvFirstActivity'),
+    lastActivity: t('classParticipation.csvLastActivity'),
+    commands: t('classParticipation.commands'),
+    yes: t('classParticipation.csvYes'),
+    no: t('classParticipation.csvNo')
+  })
+  downloadCsv(csv, `participation-${current.from}-${current.to}.csv`)
+}
+
 // The server sends days as plain dates: UTC keeps them on the same day everywhere.
 function formatReportDay(day: string): string {
   return formatDate(day, locale.value, '-', 'UTC')
@@ -262,6 +293,16 @@ function statusLabel(status: string): string {
         >
           <i class="fas fa-print" aria-hidden="true"></i>
           {{ t('classParticipation.print') }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          :disabled="!report"
+          data-test="participation-export-csv"
+          @click="report && exportCsv(report)"
+        >
+          <i class="fas fa-file-csv" aria-hidden="true"></i>
+          {{ t('classParticipation.exportCsv') }}
         </button>
       </form>
 

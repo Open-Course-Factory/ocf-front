@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { readFileSync } from 'fs';
 import { login, loginFresh, switchToOrg } from './helpers/auth';
 import { dismissVerificationBanner, navigateViaMenuCategory } from './helpers/ui';
 import {
@@ -234,6 +235,12 @@ test('the participation report records the run and prints without the applicatio
   await expect(page.locator('[data-test="participation-from"]')).toHaveValue(courseDay);
   await page.locator('[data-test="participation-generate"]').click();
   await expect(page.locator('[data-test="participation-day-column"]')).toHaveCount(1, { timeout: 30_000 });
+
+  const csvDownload = page.waitForEvent('download');
+  await page.locator('[data-test="participation-export-csv"]').click();
+  const csv = readFileSync(await (await csvDownload).path(), 'utf-8');
+  expect(csv).toContain(LEARNER_EMAIL);
+  expect(csv).toContain(courseDay);
 
   await page.emulateMedia({ media: 'print' });
   await expect(row).toBeVisible();
