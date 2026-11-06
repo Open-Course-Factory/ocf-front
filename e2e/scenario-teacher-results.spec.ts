@@ -223,7 +223,11 @@ test('the participation report records the run and prints without the applicatio
   const dayChoice = page.locator('[data-test="participation-day-choice"]').first();
   const courseDay = await dayChoice.inputValue();
   await dayChoice.check();
+  // Wait for the regenerated report: the table shows one column before the save lands too.
+  const regenerated = page.waitForResponse(response =>
+    response.url().includes('/participation-report') && response.url().includes(`days=${courseDay}`));
   await page.locator('[data-test="participation-save-days"]').click();
+  await regenerated;
   await expect(page.locator('[data-test="participation-day-column"]')).toHaveCount(1, { timeout: 30_000 });
   await page.locator('.class-nav a[href$="/members"]').click();
   await page.locator('.class-nav a[href$="/participation"]').click();
