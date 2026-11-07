@@ -98,9 +98,15 @@
               </div>
 
               <!-- Grade (if completed) -->
-              <div v-if="session.status === 'completed' && session.grade != null" class="grade-row">
+              <div
+                v-if="session.status === 'completed' && (session.grade != null || session.grade_withheld)"
+                class="grade-row"
+              >
                 <span class="grade-label">{{ t('myScenarios.grade') }}</span>
-                <span class="grade-value" :class="gradeClass(session.grade)">
+                <span v-if="session.grade_withheld" class="ocf-grade-withheld" data-testid="grade-withheld">
+                  {{ t('myScenarios.gradeWithheld') }}
+                </span>
+                <span v-else-if="session.grade != null" class="grade-value" :class="gradeClass(session.grade)">
                   {{ Math.round(session.grade) }}%
                 </span>
               </div>
@@ -208,6 +214,7 @@ const { t } = useTranslations({
       duration: 'Duration',
       attempts: 'attempt | attempts',
       bestGrade: 'Best grade',
+      gradeWithheld: 'Results not published yet',
       resume: 'Resume',
       rebuild: 'Rebuild and resume',
       startOver: 'Start over',
@@ -235,6 +242,7 @@ const { t } = useTranslations({
       duration: 'Dur\u00e9e',
       attempts: 'tentative | tentatives',
       bestGrade: 'Meilleure note',
+      gradeWithheld: 'Résultats pas encore publiés',
       resume: 'Reprendre',
       rebuild: 'Reconstruire et reprendre',
       startOver: 'Recommencer',
@@ -366,7 +374,7 @@ const groupedScenarios = computed<ScenarioGroup[]>(() => {
   }
   return Array.from(groups.entries()).map(([title, sessions]) => {
     const bestGrade = sessions.reduce((best, s) => {
-      if (s.grade != null && (best === null || s.grade > best)) return s.grade
+      if (!s.grade_withheld && s.grade != null && (best === null || s.grade > best)) return s.grade
       return best
     }, null as number | null)
     return {
@@ -728,6 +736,12 @@ onMounted(() => {
 .grade-label {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+.ocf-grade-withheld {
+  font-size: var(--font-size-sm);
+  font-style: italic;
+  color: var(--color-text-secondary);
 }
 
 .grade-value {

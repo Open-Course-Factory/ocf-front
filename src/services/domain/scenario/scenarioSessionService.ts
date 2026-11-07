@@ -184,7 +184,10 @@ export interface MyScenarioSession {
   current_step: number
   total_steps: number
   completed_steps: number
-  grade?: number
+  grade?: number | null
+  // True while the teacher has not published the class's results: grade is
+  // then null and must read as "not published", never as "not graded".
+  grade_withheld?: boolean
   started_at: string
   completed_at?: string
   terminal_session_id?: string
