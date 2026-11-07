@@ -396,6 +396,37 @@
               <span>{{ t('quizEdit.showImmediateFeedback') }}</span>
             </label>
             <p class="form-hint">{{ t('quizEdit.showImmediateFeedbackHint') }}</p>
+
+            <div class="ocf-quiz-scoring">
+              <div class="form-group">
+                <label for="quiz-scoring-mode">{{ t('quizEdit.scoringMode') }}</label>
+                <select
+                  id="quiz-scoring-mode"
+                  v-model="formData.quiz_scoring_mode"
+                  class="form-control"
+                  data-testid="quiz-scoring-mode"
+                >
+                  <option value="all_or_nothing">{{ t('quizEdit.scoringAllOrNothing') }}</option>
+                  <option value="partial">{{ t('quizEdit.scoringPartial') }}</option>
+                </select>
+              </div>
+              <div v-if="formData.quiz_scoring_mode === 'partial'" class="form-group">
+                <label for="quiz-wrong-penalty">{{ t('quizEdit.wrongPenalty') }}</label>
+                <input
+                  id="quiz-wrong-penalty"
+                  v-model.number="formData.quiz_wrong_penalty"
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="0.25"
+                  class="form-control"
+                  data-testid="quiz-wrong-penalty"
+                />
+              </div>
+            </div>
+            <p class="form-hint">
+              {{ formData.quiz_scoring_mode === 'partial' ? t('quizEdit.scoringPartialHint') : t('quizEdit.scoringAllOrNothingHint') }}
+            </p>
           </div>
 
           <!-- Empty state -->
@@ -751,6 +782,7 @@ import TranslationPane from './TranslationPane.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { BANNER_EFFECTS } from '../../utils/scenarioAiPrompt'
 import StepLearnerPreview from './StepLearnerPreview.vue'
+import type { QuizScoringMode } from '../../services/domain/scenario'
 import { TYPE_ICONS, resolveStepType, type StepType } from '../../utils/scenarioOutline'
 import { VERIFY_TEMPLATES, insertSnippet, templateLocale, type VerifyTemplate } from '../../utils/verifyTemplates'
 
@@ -863,7 +895,13 @@ const { t, locale: i18nLocale } = useTranslations({
       confirmTypeChangeConfirm: 'Yes, change type',
       cancel: 'Cancel',
       showImmediateFeedback: 'Show feedback after submission',
-      showImmediateFeedbackHint: 'Off (default) = exam mode: learners see only their score. On = learning mode: learners see the correct answers and explanations.'
+      showImmediateFeedbackHint: 'Off (default) = exam mode: learners only see that their answers were recorded; you see the grades in the results. On = learning mode: learners see their score, the correct answers and the explanations.',
+      scoringMode: 'Scoring',
+      scoringAllOrNothing: 'All or nothing',
+      scoringPartial: 'Partial credit',
+      wrongPenalty: 'Penalty per wrong answer ticked',
+      scoringAllOrNothingHint: 'A question scores its points only when the answer is exactly right.',
+      scoringPartialHint: 'Each correct statement ticked earns its share of the points; each wrong statement ticked takes away penalty × that share. An unanswered question scores 0. A question never scores below 0.'
     }
   },
   fr: {
@@ -974,7 +1012,13 @@ const { t, locale: i18nLocale } = useTranslations({
       confirmTypeChangeConfirm: 'Oui, changer le type',
       cancel: 'Annuler',
       showImmediateFeedback: 'Afficher le retour après soumission',
-      showImmediateFeedbackHint: 'Désactivé (défaut) = mode examen : les apprenants ne voient que leur score. Activé = mode apprentissage : les apprenants voient les bonnes réponses et explications.'
+      showImmediateFeedbackHint: 'Désactivé (défaut) = mode examen : les apprenants voient seulement que leurs réponses sont enregistrées ; vous consultez les notes dans les résultats. Activé = mode apprentissage : les apprenants voient leur score, les bonnes réponses et les explications.',
+      scoringMode: 'Notation',
+      scoringAllOrNothing: 'Tout ou rien',
+      scoringPartial: 'Points partiels',
+      wrongPenalty: 'Pénalité par mauvaise réponse cochée',
+      scoringAllOrNothingHint: 'Une question rapporte ses points seulement si la réponse est entièrement juste.',
+      scoringPartialHint: 'Chaque affirmation juste cochée rapporte sa part des points ; chaque affirmation fausse cochée retire pénalité × cette part. Une question sans réponse vaut 0. La note ne descend pas sous 0.'
     }
   }
 })
@@ -1222,6 +1266,8 @@ interface StepFormData {
   flag_path: string
   flag_level: number
   show_immediate_feedback: boolean
+  quiz_scoring_mode: QuizScoringMode
+  quiz_wrong_penalty: number
   intro_effect: string
   intro_text: string
   outro_effect: string
@@ -1240,6 +1286,8 @@ const formData = ref<StepFormData>({
   flag_path: '',
   flag_level: 0,
   show_immediate_feedback: false,
+  quiz_scoring_mode: 'all_or_nothing',
+  quiz_wrong_penalty: 1,
   intro_effect: '',
   intro_text: '',
   outro_effect: '',
@@ -1338,6 +1386,9 @@ function resetForm() {
       flag_path: props.stepData.flag_path || '',
       flag_level: props.stepData.flag_level || 0,
       show_immediate_feedback: props.stepData.show_immediate_feedback ?? false,
+      // Empty on the backend means all_or_nothing.
+      quiz_scoring_mode: props.stepData.quiz_scoring_mode === 'partial' ? 'partial' : 'all_or_nothing',
+      quiz_wrong_penalty: props.stepData.quiz_wrong_penalty ?? 1,
       intro_effect: props.stepData.intro_effect || '',
       intro_text: props.stepData.intro_text || '',
       outro_effect: props.stepData.outro_effect || '',
@@ -1364,6 +1415,8 @@ function resetForm() {
       flag_path: '',
       flag_level: 0,
       show_immediate_feedback: false,
+      quiz_scoring_mode: 'all_or_nothing',
+      quiz_wrong_penalty: 1,
       intro_effect: '',
       intro_text: '',
       outro_effect: '',
@@ -1574,6 +1627,8 @@ const pendingTypeToLabel = computed(() =>
 const handleSave = () => {
   const cleaned = {
     ...formData.value,
+    // A cleared number input yields '' through v-model.number.
+    quiz_wrong_penalty: typeof formData.value.quiz_wrong_penalty === 'number' ? formData.value.quiz_wrong_penalty : 1,
     questions: formData.value.questions.map((q) => {
       let ca: string
       if (q.question_type === 'multiple_choice') {
@@ -2112,6 +2167,18 @@ const handleSaveTranslation = () => {
 }
 
 .quiz-settings .form-hint {
+  margin: 0;
+}
+
+.ocf-quiz-scoring {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-sm);
+}
+
+.ocf-quiz-scoring .form-group {
+  flex: 1 1 12rem;
   margin: 0;
 }
 
