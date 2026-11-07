@@ -2,6 +2,7 @@
  * Scenario history: while the teacher has not published a class's results,
  * GET /scenario-sessions/my sends `grade: null` + `grade_withheld: true`. The
  * card says so in the grade row, and the run never counts as a best grade.
+ * A handed-in exam (exam_locked) offers no Start over.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
@@ -134,5 +135,29 @@ describe('MyScenarios — grade withheld until the teacher publishes', () => {
 
     expect(wrapper.find('.grade-value').text()).toBe('80%')
     expect(wrapper.find('[data-testid="grade-withheld"]').exists()).toBe(false)
+  })
+})
+
+describe('MyScenarios — exam already submitted', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('shows the locked note instead of Start over on a paused exam run', async () => {
+    getMySessionsMock.mockResolvedValue([{ ...BASE_RUN, resumable: true, resume_mode: 'paused', exam_locked: true }])
+    const wrapper = mountPage()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="scenario-start-over-btn"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="exam-locked-note"]').text()).toBe('Exam already submitted')
+  })
+
+  it('keeps Start over when the exam is not locked', async () => {
+    getMySessionsMock.mockResolvedValue([{ ...BASE_RUN, resumable: true, resume_mode: 'paused' }])
+    const wrapper = mountPage()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="scenario-start-over-btn"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="exam-locked-note"]').exists()).toBe(false)
   })
 })

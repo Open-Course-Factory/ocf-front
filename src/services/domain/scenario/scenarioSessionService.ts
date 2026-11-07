@@ -188,6 +188,8 @@ export interface MyScenarioSession {
   // True while the teacher has not published the class's results: grade is
   // then null and must read as "not published", never as "not graded".
   grade_withheld?: boolean
+  // Same verdict as AvailableScenario.exam_locked, for this run's scenario.
+  exam_locked?: boolean
   started_at: string
   completed_at?: string
   terminal_session_id?: string

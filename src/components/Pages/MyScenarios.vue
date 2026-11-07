@@ -149,8 +149,18 @@
                 <i class="fas fa-play-circle"></i>
                 {{ t('myScenarios.resume') }}
               </router-link>
+              <!-- A handed-in exam takes no new attempt; the note keeps the slot. -->
+              <span
+                v-if="(isPausedRun(session) || isRebuildRun(session)) && session.exam_locked"
+                class="btn btn-sm btn-secondary disabled"
+                aria-disabled="true"
+                data-testid="exam-locked-note"
+              >
+                <i class="fas fa-lock"></i>
+                {{ t('myScenarios.examLocked') }}
+              </span>
               <button
-                v-if="isPausedRun(session) || isRebuildRun(session)"
+                v-else-if="isPausedRun(session) || isRebuildRun(session)"
                 class="btn btn-sm btn-secondary"
                 data-testid="scenario-start-over-btn"
                 :disabled="!!recoveringRunId"
@@ -215,6 +225,7 @@ const { t } = useTranslations({
       attempts: 'attempt | attempts',
       bestGrade: 'Best grade',
       gradeWithheld: 'Results not published yet',
+      examLocked: 'Exam already submitted',
       resume: 'Resume',
       rebuild: 'Rebuild and resume',
       startOver: 'Start over',
@@ -243,6 +254,7 @@ const { t } = useTranslations({
       attempts: 'tentative | tentatives',
       bestGrade: 'Meilleure note',
       gradeWithheld: 'Résultats pas encore publiés',
+      examLocked: 'Examen déjà rendu',
       resume: 'Reprendre',
       rebuild: 'Reconstruire et reprendre',
       startOver: 'Recommencer',
