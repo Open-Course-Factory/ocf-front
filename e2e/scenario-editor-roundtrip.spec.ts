@@ -194,11 +194,13 @@ test('the learner plays the authored scenario through to completion', async ({ p
       async () => {
         const sessions = await getMyScenarioSessions(learner);
         const session = sessions.find((s: any) => s.scenario_id === scenarioId);
-        return session && { status: session.status, grade: session.grade };
+        return session && { status: session.status, grade: session.grade, withheld: session.grade_withheld };
       },
       { timeout: 30_000 }
     )
-    .toEqual({ status: 'completed', grade: 100 });
+    // An exam grade stays withheld from the learner until the teacher
+    // publishes the results.
+    .toEqual({ status: 'completed', grade: undefined, withheld: true });
 });
 
 test('the author tests the scenario from its second step and lands on it', async ({ page }) => {
