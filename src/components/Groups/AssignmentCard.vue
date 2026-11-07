@@ -57,7 +57,7 @@
         </span>
         <span
           class="badge"
-          :class="isPublished ? 'badge-success' : 'badge-secondary'"
+          :class="[isPublished ? 'badge-success' : 'badge-secondary', { 'ocf-slot-reserved': !showsPublication }]"
           data-testid="results-published-badge"
         >
           <i :class="isPublished ? 'fas fa-bullhorn' : 'fas fa-lock'"></i>
@@ -101,11 +101,14 @@
         {{ assignment.is_active ? t('groupScenarios.hideFromLearners') : t('groupScenarios.showToLearners') }}
       </button>
 
-      <!-- One button whose label flips, so publishing moves nothing. -->
+      <!-- One button whose label flips, so publishing moves nothing. Hidden,
+           not removed, where grades are never withheld: progress (which says
+           so) arrives after the card, and the row must not jump then. -->
       <button
         v-if="isPublished"
         class="btn btn-secondary btn-sm"
         data-testid="results-unpublish"
+        :class="{ 'ocf-slot-reserved': !showsPublication }"
         :disabled="publishingResults"
         @click="$emit('unpublish-results')"
       >
@@ -116,6 +119,7 @@
         v-else
         class="btn btn-secondary btn-sm"
         data-testid="results-publish"
+        :class="{ 'ocf-slot-reserved': !showsPublication }"
         :disabled="publishingResults"
         @click="$emit('publish-results')"
       >
@@ -270,6 +274,9 @@ const { t } = useTranslations({
 })
 
 const isPublished = computed(() => !!props.assignment.results_published_at)
+// Publication only matters for a scenario with an exam quiz; a published one
+// stays shown so the teacher can still hide its results.
+const showsPublication = computed(() => isPublished.value || props.progress?.has_exam_quiz === true)
 const isOrgScenario = computed(() => props.assignment.scenario?.organization_id != null)
 const hasProgress = computed(() => !!props.progress && props.progress.total_count > 0)
 
@@ -458,5 +465,8 @@ function translateDifficulty(difficulty: string): string {
     width: 100%;
     justify-content: flex-end;
   }
+}
+.ocf-slot-reserved {
+  visibility: hidden;
 }
 </style>

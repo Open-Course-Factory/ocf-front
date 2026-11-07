@@ -54,6 +54,9 @@ export interface AssignmentProgress {
   total_count: number
   completed_count: number
   avg_grade: number | null
+  // Whether the scenario has an exam-mode quiz, i.e. learners' grades wait
+  // for the teacher to publish them.
+  has_exam_quiz?: boolean
 }
 
 export interface ScenarioResultItem {

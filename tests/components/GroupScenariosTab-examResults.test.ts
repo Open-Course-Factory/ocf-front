@@ -20,7 +20,9 @@ const allowRetake = vi.fn()
 vi.mock('../../src/services/domain/scenario', () => ({
   teacherService: {
     getGroupAssignments: (...a: any[]) => getGroupAssignments(...a),
-    getAssignmentsProgress: vi.fn().mockResolvedValue([]),
+    getAssignmentsProgress: vi.fn().mockResolvedValue([
+      { scenario_id: 'scn-1', total_count: 1, completed_count: 1, avg_grade: 40, has_exam_quiz: true },
+    ]),
     listGroupAvailableScenarios: vi.fn().mockResolvedValue([]),
     publishResults: (...a: any[]) => publishResults(...a),
     unpublishResults: (...a: any[]) => unpublishResults(...a),
@@ -85,6 +87,7 @@ describe('GroupScenariosTab — publish results', () => {
     const wrapper = await mountTab()
 
     expect(wrapper.find('[data-testid="results-published-badge"]').text()).toBe('Results not published')
+    expect(wrapper.find('[data-testid="results-publish"]').classes()).not.toContain('ocf-slot-reserved')
     await wrapper.find('[data-testid="results-publish"]').trigger('click')
     expect(publishResults).not.toHaveBeenCalled()
     expect(wrapper.find('[data-testid="results-publish-confirm"]').text()).toBe('Learners will see their grade.')
@@ -97,6 +100,14 @@ describe('GroupScenariosTab — publish results', () => {
     expect(wrapper.find('[data-testid="results-published-badge"]').text()).toContain('Results published')
     expect(wrapper.find('[data-testid="results-unpublish"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="results-publish"]').exists()).toBe(false)
+  })
+
+  it('publishes only where grades wait for it: hidden (slot kept) without an exam quiz', async () => {
+    getGroupAssignments.mockResolvedValue([{ ...ASSIGNMENT, scenario_id: 'scn-2' }])
+    const wrapper = await mountTab()
+
+    expect(wrapper.find('[data-testid="results-publish"]').classes()).toContain('ocf-slot-reserved')
+    expect(wrapper.find('[data-testid="results-published-badge"]').classes()).toContain('ocf-slot-reserved')
   })
 
   it('cancelling the confirmation publishes nothing', async () => {
