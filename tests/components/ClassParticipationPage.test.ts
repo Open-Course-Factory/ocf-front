@@ -8,6 +8,7 @@ const getParticipationReport = vi.fn()
 const saveCourseDays = vi.fn()
 const reload = vi.fn()
 const downloadCsv = vi.fn()
+const saveConventionReference = vi.fn()
 
 vi.mock('../../src/utils/download', () => ({
   downloadCsv: (...args: unknown[]) => downloadCsv(...args)
@@ -16,7 +17,8 @@ vi.mock('../../src/utils/download', () => ({
 vi.mock('../../src/services/domain/scenario/teacherService', () => ({
   teacherService: {
     getParticipationReport: (...args: unknown[]) => getParticipationReport(...args),
-    saveCourseDays: (...args: unknown[]) => saveCourseDays(...args)
+    saveCourseDays: (...args: unknown[]) => saveCourseDays(...args),
+    saveConventionReference: (...args: unknown[]) => saveConventionReference(...args)
   }
 }))
 
@@ -46,6 +48,9 @@ function reportWith(overrides: Partial<ParticipationReport> = {}): Participation
   return {
     title: 'DevOps week',
     organization_name: 'Acme',
+    organization_siret: '',
+    organization_declaration_number: '',
+    convention_reference: '',
     from: '2026-03-02',
     to: '2026-03-06',
     timezone: 'Europe/Paris',
@@ -130,6 +135,56 @@ describe('ClassParticipationPage', () => {
     expect(row.find('[data-test="participation-day"]').text()).toBe('none')
     expect(row.find('[data-test="participation-days-active"]').text()).toBe('0/2')
     expect(row.find('[data-test="participation-commands"]').text()).toBe('None recorded')
+  })
+
+  it('identifies the organisation and the convention once filled in', async () => {
+    getParticipationReport.mockResolvedValue(reportWith({
+      organization_siret: '10299352400010',
+      organization_declaration_number: '11755555575',
+      convention_reference: 'CONV-14'
+    }))
+    const wrapper = mountPage()
+
+    await generate(wrapper)
+
+    expect(wrapper.find('[data-test="participation-siret"]').text()).toBe('10299352400010')
+    expect(wrapper.find('[data-test="participation-declaration-number"]').text()).toBe('11755555575')
+    expect(wrapper.find('[data-test="participation-convention-reference"]').text()).toBe('CONV-14')
+  })
+
+  it('leaves out the details nobody filled in', async () => {
+    const wrapper = mountPage()
+
+    await generate(wrapper)
+
+    expect(wrapper.find('[data-test="participation-siret"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="participation-convention-reference"]').exists()).toBe(false)
+  })
+
+  it('saves the convention reference on the class, then reports it', async () => {
+    saveConventionReference.mockResolvedValue(undefined)
+    const wrapper = mountPage()
+    await generate(wrapper)
+    getParticipationReport.mockClear()
+
+    await wrapper.find('[data-test="participation-convention"]').setValue('  CONV-14 ')
+    await wrapper.find('[data-test="participation-save-convention"]').trigger('click')
+    await flushPromises()
+
+    expect(saveConventionReference).toHaveBeenCalledWith('g-1', 'CONV-14')
+    expect(reload).toHaveBeenCalled()
+    expect(getParticipationReport).toHaveBeenCalled()
+  })
+
+  it('says so when the convention reference cannot be saved', async () => {
+    saveConventionReference.mockRejectedValue(new Error('refused'))
+    const wrapper = mountPage()
+    await generate(wrapper)
+
+    await wrapper.find('[data-test="participation-save-convention"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Could not save the convention reference.')
   })
 
   it('marks a learner who left the class', async () => {

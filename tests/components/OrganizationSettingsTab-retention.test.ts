@@ -9,6 +9,7 @@ import { createI18n } from 'vue-i18n'
 import { ref } from 'vue'
 
 const updateRetentionDays = vi.fn()
+const updateTrainingIdentity = vi.fn()
 const toastSuccess = vi.fn()
 const toastError = vi.fn()
 
@@ -29,6 +30,7 @@ vi.mock('axios', () => ({
 vi.mock('../../src/stores/organizations', () => ({
   useOrganizationsStore: () => ({
     updateRetentionDays: (...args: any[]) => updateRetentionDays(...args),
+    updateTrainingIdentity: (...args: any[]) => updateTrainingIdentity(...args),
     convertToTeamOrganization: vi.fn(),
     deleteOrganization: vi.fn()
   })
@@ -142,5 +144,42 @@ describe('OrganizationSettingsTab retention delay', () => {
 
     expect(toastError).toHaveBeenCalledWith('only the owner may change retention_days')
     expect(wrapper.emitted('updated')).toBeUndefined()
+  })
+})
+
+describe('OrganizationSettingsTab training organisation details', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getMock.mockResolvedValue({ data: { enabled: false, endpoint: '', model: '', has_api_key: false } })
+  })
+
+  it('shows the saved details', () => {
+    const wrapper = mountTab({ organization: { ...organization, siret: '10299352400010', training_declaration_number: '11755555575' } })
+
+    expect((wrapper.find('[data-test="organization-siret"]').element as HTMLInputElement).value).toBe('10299352400010')
+    expect((wrapper.find('[data-test="organization-declaration-number"]').element as HTMLInputElement).value).toBe('11755555575')
+  })
+
+  it('lets a manager save them', async () => {
+    updateTrainingIdentity.mockResolvedValue({})
+    const wrapper = mountTab({ isOwner: false, canDelete: false })
+
+    await wrapper.find('[data-test="organization-siret"]').setValue(' 10299352400010 ')
+    await wrapper.find('[data-test="training-identity-save"]').trigger('click')
+    await flushPromises()
+
+    expect(updateTrainingIdentity).toHaveBeenCalledWith('org-1', { siret: '10299352400010', training_declaration_number: '' })
+    expect(toastSuccess).toHaveBeenCalledWith('Details saved')
+    expect(wrapper.emitted('updated')).toBeTruthy()
+  })
+
+  it('reports a refused save', async () => {
+    updateTrainingIdentity.mockRejectedValue(new Error('refused'))
+    const wrapper = mountTab()
+
+    await wrapper.find('[data-test="training-identity-save"]').trigger('click')
+    await flushPromises()
+
+    expect(toastError).toHaveBeenCalledWith('refused')
   })
 })

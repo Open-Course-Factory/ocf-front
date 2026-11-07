@@ -51,13 +51,13 @@
 
     <!-- Retention: readable by every manager, editable by the owner. The
          backend refuses a manager's PATCH; the disabled field mirrors it. -->
-    <div class="ocf-retention-section">
+    <div class="ocf-settings-section">
       <h4>
         <i class="fas fa-hourglass-half"></i>
         {{ t('settings.retentionTitle') }}
       </h4>
       <p>{{ t('settings.retentionDescription') }}</p>
-      <div class="ocf-retention-row">
+      <div class="ocf-settings-row">
         <label for="retention-days" class="form-label">{{ t('settings.retentionLabel') }}</label>
         <input
           id="retention-days"
@@ -89,6 +89,26 @@
         <i class="fas fa-info-circle"></i>
         {{ t('settings.retentionHelp') }}
       </p>
+    </div>
+
+    <div class="ocf-settings-section">
+      <h4>
+        <i class="fas fa-id-card"></i>
+        {{ t('settings.trainingIdentityTitle') }}
+      </h4>
+      <p>{{ t('settings.trainingIdentityDescription') }}</p>
+      <div class="ocf-settings-row">
+        <label for="organization-siret" class="form-label">{{ t('settings.siretLabel') }}</label>
+        <input id="organization-siret" v-model="siretInput" type="text" maxlength="32" class="form-input" data-test="organization-siret" />
+      </div>
+      <div class="ocf-settings-row">
+        <label for="organization-declaration-number" class="form-label">{{ t('settings.declarationNumberLabel') }}</label>
+        <input id="organization-declaration-number" v-model="declarationNumberInput" type="text" maxlength="32" class="form-input" data-test="organization-declaration-number" />
+      </div>
+      <button class="btn btn-primary" data-test="training-identity-save" :disabled="isSavingTrainingIdentity" @click="saveTrainingIdentity">
+        <i :class="isSavingTrainingIdentity ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
+        {{ t('settings.trainingIdentitySave') }}
+      </button>
     </div>
 
     <!-- AI assistant: the organization's own bring-your-own-key config,
@@ -412,6 +432,15 @@ async function saveAiConfig() {
   }
 }
 
+const siretInput = ref('')
+const declarationNumberInput = ref('')
+const isSavingTrainingIdentity = ref(false)
+
+watch(() => props.organization, (org) => {
+  siretInput.value = org?.siret ?? ''
+  declarationNumberInput.value = org?.training_declaration_number ?? ''
+}, { immediate: true })
+
 const storedRetentionAsText = (org: Organization | undefined) =>
   org?.retention_days == null ? '' : String(org.retention_days)
 
@@ -464,6 +493,13 @@ const { t } = useTranslations({
       deleteOwnerOnly: 'Only organization owners can delete the organization.',
       confirmDeleteBtn: 'Delete permanently',
       deleting: 'Deleting organization...',
+      trainingIdentityTitle: 'Training organisation details',
+      trainingIdentityDescription: 'Printed on participation reports, so an auditor can see who delivered the training.',
+      siretLabel: 'SIRET',
+      declarationNumberLabel: 'Training declaration number (NDA)',
+      trainingIdentitySave: 'Save the details',
+      trainingIdentitySaved: 'Details saved',
+      trainingIdentityError: 'Could not save the details',
       retentionTitle: 'Data retention',
       retentionDescription: 'When a member is offboarded, their account is kept for this many days, then erased.',
       retentionLabel: 'Retention delay (days)',
@@ -522,6 +558,13 @@ const { t } = useTranslations({
       deleteOwnerOnly: 'Seuls les propriétaires de l\'organisation peuvent la supprimer.',
       confirmDeleteBtn: 'Supprimer définitivement',
       deleting: 'Suppression de l\'organisation...',
+      trainingIdentityTitle: 'Informations de l\'organisme de formation',
+      trainingIdentityDescription: 'Imprimées sur les rapports de participation, pour qu\'un auditeur voie qui a dispensé la formation.',
+      siretLabel: 'SIRET',
+      declarationNumberLabel: 'Numéro de déclaration d\'activité (NDA)',
+      trainingIdentitySave: 'Enregistrer les informations',
+      trainingIdentitySaved: 'Informations enregistrées',
+      trainingIdentityError: 'Impossible d\'enregistrer les informations',
       retentionTitle: 'Conservation des données',
       retentionDescription: 'Quand un membre est désinscrit, son compte est conservé pendant ce nombre de jours, puis effacé.',
       retentionLabel: 'Délai de conservation (jours)',
@@ -564,6 +607,22 @@ const saveRetention = async () => {
     toast.error(err.response?.data?.error_message || err.message || t('settings.retentionError'))
   } finally {
     isSavingRetention.value = false
+  }
+}
+
+const saveTrainingIdentity = async () => {
+  isSavingTrainingIdentity.value = true
+  try {
+    await organizationsStore.updateTrainingIdentity(props.organizationId, {
+      siret: siretInput.value.trim(),
+      training_declaration_number: declarationNumberInput.value.trim()
+    })
+    toast.success(t('settings.trainingIdentitySaved'))
+    emit('updated')
+  } catch (err: any) {
+    toast.error(err.response?.data?.error_message || err.message || t('settings.trainingIdentityError'))
+  } finally {
+    isSavingTrainingIdentity.value = false
   }
 }
 
@@ -771,14 +830,14 @@ const deleteOrganization = async () => {
   font-weight: 600;
 }
 
-.ocf-retention-section {
+.ocf-settings-section {
   padding: 1.5rem;
   border: 1.5px solid var(--color-border);
   border-radius: 10px;
   margin-bottom: 2rem;
 }
 
-.ocf-retention-section h4 {
+.ocf-settings-section h4 {
   margin: 0 0 0.75rem 0;
   font-size: 1.125rem;
   font-weight: 600;
@@ -788,18 +847,18 @@ const deleteOrganization = async () => {
   gap: 0.5rem;
 }
 
-.ocf-retention-section h4 i {
+.ocf-settings-section h4 i {
   color: var(--color-primary);
 }
 
-.ocf-retention-section > p {
+.ocf-settings-section > p {
   margin: 0 0 1rem 0;
   color: var(--color-text-secondary);
   font-size: 0.9375rem;
   line-height: 1.5;
 }
 
-.ocf-retention-row {
+.ocf-settings-row {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -807,7 +866,7 @@ const deleteOrganization = async () => {
   margin-bottom: 0.75rem;
 }
 
-.ocf-retention-row .form-label {
+.ocf-settings-row .form-label {
   margin: 0;
 }
 

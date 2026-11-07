@@ -31,6 +31,9 @@ export interface Organization extends BaseEntity {
    * platform default; only the owner may change it (ocf-core#492).
    */
   retention_days?: number | null
+  /** Printed on participation reports. */
+  siret?: string
+  training_declaration_number?: string
 
   // Counts (if preloaded)
   group_count?: number
@@ -144,6 +147,8 @@ export interface UpdateOrganizationRequest {
   metadata?: Record<string, any>
   /** Owner-only on the backend; null restores the platform default. */
   retention_days?: number | null
+  siret?: string
+  training_declaration_number?: string
 }
 
 /**
