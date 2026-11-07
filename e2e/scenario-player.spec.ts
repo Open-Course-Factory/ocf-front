@@ -220,7 +220,6 @@ test.describe('Scenario player (mocked backend)', () => {
         quiz_scoring_mode: 'partial',
         questions: [mcq('q1', 1), mcq('q2', 2), mcq('q3', 3)],
       },
-      { order: 2, title: 'After the exam', type: 'info' },
     ];
     const mock = new ScenarioMock(steps);
     await mock.install(page);
@@ -252,13 +251,13 @@ test.describe('Scenario player (mocked backend)', () => {
     await expect(page.getByTestId('quiz-confirm-goto')).toHaveText(['2']);
     await page.getByTestId('quiz-confirm-submit').click();
 
-    // Recorded, never graded, then the run moves on by itself.
+    // A final exam step: recorded, never graded, then the run completes by
+    // itself. (Mid-scenario, the player's neutral "step validated" transition
+    // takes over at once instead.)
     await expect(page.getByTestId('quiz-recorded')).toBeVisible();
     await expect(page.getByTestId('quiz-results-score')).toHaveCount(0);
     await expect(page.getByTestId('quiz-breakdown-item')).toHaveCount(0);
-    await expect(page.getByTestId('scenario-step-title')).toHaveText('After the exam', {
-      timeout: 15_000,
-    });
+    await expect(page.getByTestId('scenario-completed')).toBeVisible({ timeout: 15_000 });
   });
 
   // A failed check used to open the first hint by itself. Revealing a hint is
