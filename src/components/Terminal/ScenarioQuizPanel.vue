@@ -149,57 +149,61 @@
         </div>
       </div>
 
-      <BaseModal
-        :visible="showConfirm"
-        :title="isExam ? t('scenarioPanel.confirmTitleExam') : t('scenarioPanel.confirmTitle')"
-        size="small"
-        @close="showConfirm = false"
-      >
-        <div class="ocf-quiz-confirm" data-testid="quiz-confirm">
-          <p v-if="unansweredIndexes.length === 0">{{ t('scenarioPanel.confirmAllAnswered') }}</p>
-          <template v-else>
-            <p data-testid="quiz-confirm-unanswered">
-              {{ t('scenarioPanel.confirmUnanswered', { n: unansweredIndexes.length, total: quizQuestions.length }) }}
+      <!-- Teleported: the side panel is a containing block for position:fixed,
+           which clipped the modal to the panel. -->
+      <Teleport to="body">
+        <BaseModal
+          :visible="showConfirm"
+          :title="isExam ? t('scenarioPanel.confirmTitleExam') : t('scenarioPanel.confirmTitle')"
+          size="small"
+          @close="showConfirm = false"
+        >
+          <div class="ocf-quiz-confirm" data-testid="quiz-confirm">
+            <p v-if="unansweredIndexes.length === 0">{{ t('scenarioPanel.confirmAllAnswered') }}</p>
+            <template v-else>
+              <p data-testid="quiz-confirm-unanswered">
+                {{ t('scenarioPanel.confirmUnanswered', { n: unansweredIndexes.length, total: quizQuestions.length }) }}
+              </p>
+              <div class="ocf-quiz-confirm-list">
+                <button
+                  v-for="idx in unansweredIndexes"
+                  :key="idx"
+                  type="button"
+                  class="ocf-quiz-nav-item"
+                  data-testid="quiz-confirm-goto"
+                  :aria-label="t('scenarioPanel.goToUnanswered', { n: idx + 1 })"
+                  @click="goBackTo(idx)"
+                >
+                  {{ idx + 1 }}
+                </button>
+              </div>
+            </template>
+            <p
+              class="ocf-quiz-confirm-warning"
+              :class="{ 'ocf-quiz-confirm-warning--exam': isExam }"
+              data-testid="quiz-confirm-warning"
+            >
+              <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+              {{ isExam ? t('scenarioPanel.confirmFinalExam') : t('scenarioPanel.confirmFinal') }}
             </p>
-            <div class="ocf-quiz-confirm-list">
-              <button
-                v-for="idx in unansweredIndexes"
-                :key="idx"
-                type="button"
-                class="ocf-quiz-nav-item"
-                data-testid="quiz-confirm-goto"
-                :aria-label="t('scenarioPanel.goToUnanswered', { n: idx + 1 })"
-                @click="goBackTo(idx)"
-              >
-                {{ idx + 1 }}
-              </button>
-            </div>
+          </div>
+          <template #footer>
+            <button type="button" class="btn btn-secondary" @click="showConfirm = false">
+              {{ t('scenarioPanel.keepAnswering') }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              data-testid="quiz-confirm-submit"
+              :disabled="isSubmitting"
+              @click="confirmSubmit"
+            >
+              <i class="fas fa-check"></i>
+              {{ isExam ? t('scenarioPanel.confirmSubmitExam') : t('scenarioPanel.confirmSubmit') }}
+            </button>
           </template>
-          <p
-            class="ocf-quiz-confirm-warning"
-            :class="{ 'ocf-quiz-confirm-warning--exam': isExam }"
-            data-testid="quiz-confirm-warning"
-          >
-            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-            {{ isExam ? t('scenarioPanel.confirmFinalExam') : t('scenarioPanel.confirmFinal') }}
-          </p>
-        </div>
-        <template #footer>
-          <button type="button" class="btn btn-secondary" @click="showConfirm = false">
-            {{ t('scenarioPanel.keepAnswering') }}
-          </button>
-          <button
-            type="button"
-            class="btn btn-primary"
-            data-testid="quiz-confirm-submit"
-            :disabled="isSubmitting"
-            @click="confirmSubmit"
-          >
-            <i class="fas fa-check"></i>
-            {{ isExam ? t('scenarioPanel.confirmSubmitExam') : t('scenarioPanel.confirmSubmit') }}
-          </button>
-        </template>
-      </BaseModal>
+        </BaseModal>
+      </Teleport>
     </template>
 
     <!-- Quiz results -->

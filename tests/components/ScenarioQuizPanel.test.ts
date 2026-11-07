@@ -118,6 +118,8 @@ function mountQuiz(props: MountProps, locale: 'en' | 'fr' = 'en') {
     },
     global: {
       plugins: [createTestI18n(locale)],
+      // Render the teleported confirmation in place so the wrapper can find it.
+      stubs: { teleport: true },
     },
   })
 }
