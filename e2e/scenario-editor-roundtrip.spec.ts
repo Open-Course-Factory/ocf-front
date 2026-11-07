@@ -182,10 +182,11 @@ test('the learner plays the authored scenario through to completion', async ({ p
   await page.getByTestId('quiz-option').filter({ hasText: RIGHT_ANSWER }).first().click();
   await page.getByTestId('quiz-validate').click();
   await page.getByTestId('quiz-confirm-submit').click();
-  await expect(page.getByTestId('quiz-results-score')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId('quiz-recorded')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId('quiz-results-score')).toHaveCount(0);
 
-  // Exam mode: the author left "show immediate feedback" off, so the panel
-  // shows the score and moves on by itself — there is no Finish button to press.
+  // Exam mode: the author left "show immediate feedback" off, so the learner
+  // gets no grade back and the panel moves on by itself — no Finish button.
   // (The recipe spec covers the learning-mode counterpart.)
   await expect(page.getByTestId('scenario-completed')).toBeVisible({ timeout: 30_000 });
   await expect
