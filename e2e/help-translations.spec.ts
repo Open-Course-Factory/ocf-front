@@ -21,30 +21,28 @@ test.describe('Help page translations on direct load', () => {
   test('terminals/getting-started renders translated content, not raw keys', async ({ page }) => {
     // Hard navigation — no prior SPA routing, triggers the bug
     await page.goto('/help-public/terminals/getting-started');
-    await page.waitForLoadState('networkidle');
+
+    // A network pause does not mean the page has rendered, so wait for its title.
+    await expect(page.locator('body')).toContainText('Premiers pas avec les terminaux');
 
     const bodyText = await page.locator('body').innerText();
 
     // Must NOT contain raw translation keys
     expect(bodyText).not.toMatch(/help\.terminals\./);
     expect(bodyText).not.toContain('help.terminals.gettingStarted.title');
-
-    // Must show the French title (fr is the default locale per src/i18n.ts)
-    expect(bodyText).toContain('Premiers pas avec les terminaux');
   });
 
   test('terminals/troubleshooting renders translated content, not raw keys', async ({ page }) => {
     // Hard navigation to a second help page — confirms the bug is not page-specific
     await page.goto('/help-public/terminals/troubleshooting');
-    await page.waitForLoadState('networkidle');
+
+    // A network pause does not mean the page has rendered, so wait for its title.
+    await expect(page.locator('body')).toContainText('Dépannage des terminaux');
 
     const bodyText = await page.locator('body').innerText();
 
     // Must NOT contain raw translation keys
     expect(bodyText).not.toMatch(/help\.terminals\./);
     expect(bodyText).not.toContain('help.terminals.troubleshooting.title');
-
-    // Must show the French title for this page
-    expect(bodyText).toContain('Dépannage des terminaux');
   });
 });
