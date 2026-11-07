@@ -422,6 +422,18 @@ export const teacherService = {
     return response.data
   },
 
+  // Publishing lets the class's learners see their grade on this scenario;
+  // unpublishing withholds it again. Returns the new results_published_at.
+  async publishResults(groupId: string, scenarioId: string): Promise<string | null> {
+    const response = await axios.post(`/teacher/groups/${groupId}/scenarios/${scenarioId}/results/publish`)
+    return response.data?.results_published_at ?? null
+  },
+
+  async unpublishResults(groupId: string, scenarioId: string): Promise<string | null> {
+    const response = await axios.delete(`/teacher/groups/${groupId}/scenarios/${scenarioId}/results/publish`)
+    return response.data?.results_published_at ?? null
+  },
+
   async removeAssignment(assignmentId: string): Promise<void> {
     await axios.delete(`/scenario-assignments/${assignmentId}`)
   },

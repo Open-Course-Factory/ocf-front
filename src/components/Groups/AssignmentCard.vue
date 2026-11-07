@@ -55,6 +55,16 @@
           <i :class="assignment.is_active ? 'fas fa-eye' : 'fas fa-eye-slash'"></i>
           {{ assignment.is_active ? t('groupScenarios.visible') : t('groupScenarios.hidden') }}
         </span>
+        <span
+          class="badge"
+          :class="isPublished ? 'badge-success' : 'badge-secondary'"
+          data-testid="results-published-badge"
+        >
+          <i :class="isPublished ? 'fas fa-bullhorn' : 'fas fa-lock'"></i>
+          {{ isPublished
+            ? t('groupScenarios.resultsPublishedOn', { date: formatDate(assignment.results_published_at!) })
+            : t('groupScenarios.resultsNotPublished') }}
+        </span>
       </div>
 
       <!-- Progress -->
@@ -89,6 +99,28 @@
             : (assignment.is_active ? 'fas fa-eye-slash' : 'fas fa-eye')"
         ></i>
         {{ assignment.is_active ? t('groupScenarios.hideFromLearners') : t('groupScenarios.showToLearners') }}
+      </button>
+
+      <!-- One button whose label flips, so publishing moves nothing. -->
+      <button
+        v-if="isPublished"
+        class="btn btn-secondary btn-sm"
+        data-testid="results-unpublish"
+        :disabled="publishingResults"
+        @click="$emit('unpublish-results')"
+      >
+        <i :class="publishingResults ? 'fas fa-spinner fa-spin' : 'fas fa-eye-slash'"></i>
+        {{ t('groupScenarios.unpublishResults') }}
+      </button>
+      <button
+        v-else
+        class="btn btn-secondary btn-sm"
+        data-testid="results-publish"
+        :disabled="publishingResults"
+        @click="$emit('publish-results')"
+      >
+        <i :class="publishingResults ? 'fas fa-spinner fa-spin' : 'fas fa-bullhorn'"></i>
+        {{ t('groupScenarios.publishResults') }}
       </button>
 
       <button class="btn btn-primary btn-sm btn-view-results" @click="$emit('view-results')">
@@ -159,6 +191,7 @@ const props = defineProps<{
   canEditGroup: boolean
   bulkStarting: boolean
   togglingVisibility?: boolean
+  publishingResults?: boolean
 }>()
 
 defineEmits<{
@@ -169,6 +202,8 @@ defineEmits<{
   'export-json': []
   'export-archive': []
   'toggle-visibility': []
+  'publish-results': []
+  'unpublish-results': []
 }>()
 
 const { t } = useTranslations({
@@ -195,7 +230,11 @@ const { t } = useTranslations({
       difficultyAdvanced: 'Advanced',
       progressDone: 'done',
       progressAvg: 'avg',
-      noAttempts: 'No attempts yet'
+      noAttempts: 'No attempts yet',
+      publishResults: 'Publish results',
+      unpublishResults: 'Hide results',
+      resultsPublishedOn: 'Results published {date}',
+      resultsNotPublished: 'Results not published'
     }
   },
   fr: {
@@ -221,11 +260,16 @@ const { t } = useTranslations({
       difficultyAdvanced: 'Avancé',
       progressDone: 'terminés',
       progressAvg: 'moy.',
-      noAttempts: 'Aucune tentative'
+      noAttempts: 'Aucune tentative',
+      publishResults: 'Publier les résultats',
+      unpublishResults: 'Masquer les résultats',
+      resultsPublishedOn: 'Résultats publiés le {date}',
+      resultsNotPublished: 'Résultats non publiés'
     }
   }
 })
 
+const isPublished = computed(() => !!props.assignment.results_published_at)
 const isOrgScenario = computed(() => props.assignment.scenario?.organization_id != null)
 const hasProgress = computed(() => !!props.progress && props.progress.total_count > 0)
 

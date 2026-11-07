@@ -57,6 +57,11 @@ const { t } = useTranslations({
       noAssignments: 'No scenarios assigned to this group yet.',
       bulkStartResult: 'Started {started} sessions, skipped {skipped}',
       loadError: 'Failed to load scenario assignments',
+      publishResultsTitle: 'Publish the results?',
+      publishResultsBody: 'Learners will see their grade.',
+      publishResultsConfirm: 'Publish',
+      publishResultsError: 'Failed to update the results publication',
+      cancel: 'Cancel',
       assignError: 'Failed to assign scenario',
       removeError: 'Failed to remove assignment',
       bulkStartError: 'Failed to start sessions',
@@ -100,6 +105,11 @@ const { t } = useTranslations({
       noAssignments: 'Aucun scénario assigné à ce groupe.',
       bulkStartResult: '{started} sessions démarrées, {skipped} ignorées',
       loadError: 'Échec du chargement des assignations',
+      publishResultsTitle: 'Publier les résultats ?',
+      publishResultsBody: 'Les apprenants verront leur note.',
+      publishResultsConfirm: 'Publier',
+      publishResultsError: 'Échec de la mise à jour de la publication des résultats',
+      cancel: 'Annuler',
       assignError: 'Échec de l\'assignation du scénario',
       removeError: 'Échec de la suppression de l\'assignation',
       bulkStartError: 'Échec du démarrage des sessions',
@@ -312,6 +322,34 @@ async function handleToggleVisibility(assignment: ScenarioAssignment) {
   }
 }
 
+// Publishing asks first (learners then see their grade); hiding the results
+// again is instant, like the visibility toggle.
+const assignmentToPublish = ref<ScenarioAssignment | null>(null)
+const publishingResultsId = ref<string | null>(null)
+
+function publishResults(assignment: ScenarioAssignment) {
+  assignmentToPublish.value = null
+  return updateResultsPublication(assignment, teacherService.publishResults)
+}
+
+function hideResults(assignment: ScenarioAssignment) {
+  return updateResultsPublication(assignment, teacherService.unpublishResults)
+}
+
+async function updateResultsPublication(
+  assignment: ScenarioAssignment,
+  request: (groupId: string, scenarioId: string) => Promise<string | null>
+) {
+  publishingResultsId.value = assignment.id
+  try {
+    assignment.results_published_at = await request(props.groupId, assignment.scenario_id)
+  } catch (err: any) {
+    notifyError(err.response?.data?.error_message || t('groupScenarios.publishResultsError'))
+  } finally {
+    publishingResultsId.value = null
+  }
+}
+
 // Reset sessions
 function handleReset(assignment: ScenarioAssignment) {
   assignmentToReset.value = assignment
@@ -499,6 +537,9 @@ onMounted(() => {
         :can-edit-group="canEditGroup"
         :bulk-starting="bulkStartingId === assignment.id"
         :toggling-visibility="togglingVisibilityId === assignment.id"
+        :publishing-results="publishingResultsId === assignment.id"
+        @publish-results="assignmentToPublish = assignment"
+        @unpublish-results="hideResults(assignment)"
         @view-results="handleViewResults(assignment)"
         @toggle-visibility="handleToggleVisibility(assignment)"
         @bulk-start="handleBulkStart(assignment)"
@@ -531,6 +572,20 @@ onMounted(() => {
         @toggle-result="toggleResult"
         @toggle-select-all="toggleSelectAll"
       />
+    </BaseModal>
+
+    <!-- Confirm Publish Results Modal -->
+    <BaseModal
+      :visible="!!assignmentToPublish"
+      :title="t('groupScenarios.publishResultsTitle')"
+      size="small"
+      show-default-footer
+      :confirm-text="t('groupScenarios.publishResultsConfirm')"
+      :cancel-text="t('groupScenarios.cancel')"
+      @confirm="publishResults(assignmentToPublish!)"
+      @close="assignmentToPublish = null"
+    >
+      <p data-testid="results-publish-confirm">{{ t('groupScenarios.publishResultsBody') }}</p>
     </BaseModal>
 
     <!-- Session Detail Modal -->
