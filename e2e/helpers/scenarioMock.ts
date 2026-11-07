@@ -42,6 +42,7 @@ export interface MockStep {
   hints?: string[];
   questions?: MockQuestion[];
   show_immediate_feedback?: boolean;
+  quiz_scoring_mode?: 'all_or_nothing' | 'partial';
   /** When set, validating this step leaves the NEXT step provisioning
    *  asynchronously: the success response carries next_step_provisioning and
    *  the session stays 'provisioning' for that many info polls. */
@@ -175,6 +176,7 @@ export class ScenarioMock {
       text: step.text || `Content of ${step.title}`,
       step_type: step.type,
       show_immediate_feedback: step.show_immediate_feedback ?? true,
+      quiz_scoring_mode: step.quiz_scoring_mode ?? '',
       questions: step.questions?.map((q) => ({
         id: q.id,
         order: q.order,
@@ -391,13 +393,13 @@ export class ScenarioMock {
       const correctCount = perQuestion.filter((r) => r.correct).length;
       const score = step.questions.length ? correctCount / step.questions.length : 0;
       const next = this.advance(step.order, score);
+      // Mirrors ocf-core: a learner's exam run (feedback off) gets no grade back.
+      const graded = step.show_immediate_feedback ?? true;
       return route.fulfill(
         json({
-          score,
-          correct_count: correctCount,
           total: step.questions.length,
-          per_question_results: perQuestion,
           next_step: next,
+          ...(graded ? { score, correct_count: correctCount, per_question_results: perQuestion } : {}),
         })
       );
     });

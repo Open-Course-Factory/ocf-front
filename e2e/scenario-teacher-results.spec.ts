@@ -186,7 +186,8 @@ test('the learner works through the whole scenario in the real container', async
 
   await expect(stepTitle).toHaveText('Final quiz', { timeout: 30_000 });
   await page.getByTestId('quiz-option').filter({ hasText: /vrai|true/i }).first().click();
-  await page.getByTestId('quiz-submit').click();
+  await page.getByTestId('quiz-validate').click();
+  await page.getByTestId('quiz-confirm-submit').click();
   await expect(page.getByTestId('quiz-results-score')).toBeVisible({ timeout: 15_000 });
   await page.getByTestId('quiz-finish').click();
 

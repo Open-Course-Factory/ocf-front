@@ -180,7 +180,8 @@ test('the learner plays the authored scenario through to completion', async ({ p
 
   await expect(page.getByTestId('scenario-step-title')).toHaveText(QUIZ_STEP, { timeout: 30_000 });
   await page.getByTestId('quiz-option').filter({ hasText: RIGHT_ANSWER }).first().click();
-  await page.getByTestId('quiz-submit').click();
+  await page.getByTestId('quiz-validate').click();
+  await page.getByTestId('quiz-confirm-submit').click();
   await expect(page.getByTestId('quiz-results-score')).toBeVisible({ timeout: 15_000 });
 
   // Exam mode: the author left "show immediate feedback" off, so the panel

@@ -169,7 +169,8 @@ test('learner launches, follows and completes a real scenario', async ({ page })
 
   // Step 4 — quiz: answer "true", submit, finish
   await page.getByTestId('quiz-option').filter({ hasText: /vrai|true/i }).first().click();
-  await page.getByTestId('quiz-submit').click();
+  await page.getByTestId('quiz-validate').click();
+  await page.getByTestId('quiz-confirm-submit').click();
   await expect(page.getByTestId('quiz-results-score')).toBeVisible({ timeout: 15_000 });
   await page.getByTestId('quiz-finish').click();
 

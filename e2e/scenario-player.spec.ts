@@ -73,7 +73,8 @@ test.describe('Scenario player (mocked backend)', () => {
     await page.getByTestId('quiz-option').nth(1).click(); // "ls"
     await page.getByTestId('quiz-next').click();
     await page.getByTestId('quiz-option').filter({ hasText: /vrai|true/i }).first().click();
-    await page.getByTestId('quiz-submit').click();
+    await page.getByTestId('quiz-validate').click();
+    await page.getByTestId('quiz-confirm-submit').click();
     await expect(page.getByTestId('quiz-results-score')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByTestId('quiz-breakdown-item')).toHaveCount(2);
     await expect(page.getByTestId('quiz-breakdown-item').first()).toHaveClass(/is-correct/);
@@ -188,7 +189,8 @@ test.describe('Scenario player (mocked backend)', () => {
     await launchIntoPlayer(page, mock);
 
     await page.getByTestId('quiz-free-input').fill('completely wrong');
-    await page.getByTestId('quiz-submit').click();
+    await page.getByTestId('quiz-validate').click();
+    await page.getByTestId('quiz-confirm-submit').click();
     await expect(page.getByTestId('quiz-results-score')).toBeVisible();
     await expect(page.getByTestId('quiz-breakdown-item').first()).toHaveClass(/is-incorrect/);
 
@@ -196,6 +198,65 @@ test.describe('Scenario player (mocked backend)', () => {
     // spec pins on purpose (see plan §7).
     await page.getByTestId('quiz-advance').click();
     await expect(page.getByTestId('scenario-step-title')).toHaveText('After the quiz', {
+      timeout: 15_000,
+    });
+  });
+
+  test('exam quiz: free navigation, confirmation lists unanswered, no grade shown', async ({ page }) => {
+    const mcq = (id: string, order: number) => ({
+      id,
+      order,
+      question_text: `Exam question ${order}`,
+      question_type: 'multi_answer' as const,
+      options: ['alpha', 'beta', 'gamma'],
+      correct: '[0]',
+    });
+    const steps: MockStep[] = [
+      {
+        order: 1,
+        title: 'Exam quiz',
+        type: 'quiz',
+        show_immediate_feedback: false,
+        quiz_scoring_mode: 'partial',
+        questions: [mcq('q1', 1), mcq('q2', 2), mcq('q3', 3)],
+      },
+      { order: 2, title: 'After the exam', type: 'info' },
+    ];
+    const mock = new ScenarioMock(steps);
+    await mock.install(page);
+    await login(page, E2E_USER, E2E_PASS);
+    await launchIntoPlayer(page, mock);
+
+    await expect(page.getByTestId('quiz-scoring-rule')).toBeVisible();
+    const navItems = page.getByTestId('quiz-nav-item');
+    await expect(navItems).toHaveCount(3);
+
+    // Jump straight to the last question and answer it, skipping 1 and 2.
+    await navItems.nth(2).click();
+    await expect(page.getByText('Exam question 3')).toBeVisible();
+    await page.getByTestId('quiz-option').filter({ hasText: 'alpha' }).click();
+    await expect(navItems.nth(2)).toHaveClass(/answered/);
+
+    // Validating asks first and names the unanswered questions.
+    await page.getByTestId('quiz-validate').click();
+    const gotos = page.getByTestId('quiz-confirm-goto');
+    await expect(gotos).toHaveText(['1', '2']);
+
+    // Going back to question 1 from the confirmation.
+    await gotos.first().click();
+    await expect(page.getByTestId('quiz-confirm')).toBeHidden();
+    await expect(page.getByText('Exam question 1')).toBeVisible();
+    await page.getByTestId('quiz-option').filter({ hasText: 'alpha' }).click();
+
+    await page.getByTestId('quiz-validate').click();
+    await expect(page.getByTestId('quiz-confirm-goto')).toHaveText(['2']);
+    await page.getByTestId('quiz-confirm-submit').click();
+
+    // Recorded, never graded, then the run moves on by itself.
+    await expect(page.getByTestId('quiz-recorded')).toBeVisible();
+    await expect(page.getByTestId('quiz-results-score')).toHaveCount(0);
+    await expect(page.getByTestId('quiz-breakdown-item')).toHaveCount(0);
+    await expect(page.getByTestId('scenario-step-title')).toHaveText('After the exam', {
       timeout: 15_000,
     });
   });

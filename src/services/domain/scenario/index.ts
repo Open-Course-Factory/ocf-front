@@ -1,4 +1,4 @@
-export { scenarioSessionService, pollProvisioningStatus } from './scenarioSessionService'
+export { scenarioSessionService, pollProvisioningStatus, quizResultAwaitsReview } from './scenarioSessionService'
 export type {
   CurrentStepResponse,
   CurrentStepQuestion,
@@ -6,6 +6,7 @@ export type {
   SubmitFlagResponse,
   SubmitQuizResponse,
   QuizQuestionResult,
+  QuizScoringMode,
   RevealHintResponse,
   ScenarioSessionInfo,
   ScenarioInfo,

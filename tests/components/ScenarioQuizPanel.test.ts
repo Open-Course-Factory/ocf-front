@@ -17,7 +17,8 @@
  *   Props: step:CurrentStepResponse, scenarioSessionId:string, isActive:boolean,
  *          isSubmitting:boolean, result:SubmitQuizResponse|null (default null),
  *          submitError:string (default '').
- *   Emits: submit (Record<string,string> payload), advance [], finish [], retry [].
+ *   Emits: submit (Record<string,string> payload, sent only from the
+ *          confirmation), advance [], finish [], retry [].
  *   Internal state: current index, per-question answers, multi-answer
  *     selections. Resets + reloads from localStorage when
  *     [scenarioSessionId, step.step_order] changes. Persists to
@@ -126,54 +127,53 @@ describe('ScenarioQuizPanel', () => {
     localStorage.clear()
   })
 
-  it('renders the first question and disables submit until all questions are answered', () => {
+  it('renders a navigator with one button per question; Previous/Next only disabled at the bounds', async () => {
     const step = makeStep([
       mcQuestion('q1', 0, ['Alpha', 'Beta', 'Gamma']),
       tfQuestion('q2', 1),
     ])
     const wrapper = mountQuiz({ step })
 
-    // Position chip present, first question text rendered.
-    expect(wrapper.find('.quiz-position').exists()).toBe(true)
     expect(wrapper.find('.quiz-question-text').text()).toContain('MC q1?')
+    expect(wrapper.findAll('[data-testid="quiz-nav-item"]').length).toBe(2)
 
-    // First question's options rendered as radios.
-    const radios = wrapper.findAll('.quiz-options .quiz-option input[type="radio"]')
-    expect(radios.length).toBe(3)
+    const prev = () => wrapper.find('[data-testid="quiz-previous"]')
+    const next = () => wrapper.find('[data-testid="quiz-next"]')
+    // Nothing answered: Next is still enabled — unanswered questions are allowed.
+    expect(prev().attributes('disabled')).toBeDefined()
+    expect(next().attributes('disabled')).toBeUndefined()
+    // Submit is reachable from the first question.
+    expect(wrapper.find('[data-testid="quiz-validate"]').attributes('disabled')).toBeUndefined()
 
-    // Two questions → first is not the last → a Next button, no Submit yet.
-    expect(wrapper.find('.verify-btn.quiz-submit').exists()).toBe(false)
-    expect(wrapper.find('.quiz-nav .verify-btn').exists()).toBe(true)
-  })
-
-  it('multiple_choice: selecting an option enables Next; navigating preserves the selection', async () => {
-    const step = makeStep([
-      mcQuestion('q1', 0, ['Alpha', 'Beta', 'Gamma']),
-      tfQuestion('q2', 1),
-    ])
-    const wrapper = mountQuiz({ step })
-
-    const nextBtn = () => wrapper.find('.quiz-nav .verify-btn')
-    // Next disabled until current answered.
-    expect(nextBtn().attributes('disabled')).toBeDefined()
-
-    // Select option index 1 ("Beta").
-    const radios = wrapper.findAll('.quiz-options .quiz-option input[type="radio"]')
-    await radios[1].setValue()
-    expect(nextBtn().attributes('disabled')).toBeUndefined()
-
-    // Go to question 2, then back — selection on q1 must persist.
-    await nextBtn().trigger('click')
+    await next().trigger('click')
     expect(wrapper.find('.quiz-question-text').text()).toContain('TF q2?')
-
-    await wrapper.find('.quiz-nav .btn-secondary').trigger('click') // Previous
-    expect(wrapper.find('.quiz-question-text').text()).toContain('MC q1?')
-
-    const radiosAfter = wrapper.findAll('.quiz-options .quiz-option input[type="radio"]')
-    expect((radiosAfter[1].element as HTMLInputElement).checked).toBe(true)
+    expect(next().attributes('disabled')).toBeDefined()
+    expect(prev().attributes('disabled')).toBeUndefined()
   })
 
-  it('submitting a fully answered quiz emits submit once with the assembled payload', async () => {
+  it('navigator jumps to any question and marks answered ones; selections survive navigation', async () => {
+    const step = makeStep([
+      mcQuestion('q1', 0, ['Alpha', 'Beta', 'Gamma']),
+      tfQuestion('q2', 1),
+      tfQuestion('q3', 2),
+    ])
+    const wrapper = mountQuiz({ step })
+    const items = () => wrapper.findAll('[data-testid="quiz-nav-item"]')
+
+    await wrapper.findAll('.quiz-options input[type="radio"]')[1].setValue()
+    expect(items()[0].classes()).toContain('ocf-quiz-nav-item--answered')
+    expect(items()[2].classes()).not.toContain('ocf-quiz-nav-item--answered')
+
+    await items()[2].trigger('click')
+    expect(wrapper.find('.quiz-question-text').text()).toContain('TF q3?')
+    expect(items()[2].attributes('aria-current')).toBe('step')
+
+    await items()[0].trigger('click')
+    const radios = wrapper.findAll('.quiz-options input[type="radio"]')
+    expect((radios[1].element as HTMLInputElement).checked).toBe(true)
+  })
+
+  it('validate opens a confirmation listing unanswered questions; only confirm submits', async () => {
     const step = makeStep([
       mcQuestion('q1', 0, ['Alpha', 'Beta', 'Gamma']),
       tfQuestion('q2', 1),
@@ -181,35 +181,71 @@ describe('ScenarioQuizPanel', () => {
     ])
     const wrapper = mountQuiz({ step })
 
-    // q1: pick index 1.
     await wrapper.findAll('.quiz-options input[type="radio"]')[1].setValue()
-    await wrapper.find('.quiz-nav .verify-btn').trigger('click')
+    await wrapper.find('[data-testid="quiz-validate"]').trigger('click')
 
-    // q2 (true_false): pick "true" (value 'true').
-    const tfRadios = wrapper.findAll('.quiz-options input[type="radio"]')
-    await tfRadios[0].setValue() // value="true"
-    await wrapper.find('.quiz-nav .verify-btn').trigger('click')
+    expect(wrapper.find('[data-testid="quiz-confirm"]').exists()).toBe(true)
+    expect(wrapper.emitted('submit')).toBeFalsy()
+    const gotos = wrapper.findAll('[data-testid="quiz-confirm-goto"]')
+    expect(gotos.map(g => g.text())).toEqual(['2', '3'])
 
-    // q3 (multi_answer): check indices 0 and 2.
+    // Going back closes the confirmation on that question.
+    await gotos[1].trigger('click')
+    expect(wrapper.find('[data-testid="quiz-confirm"]').exists()).toBe(false)
+    expect(wrapper.find('.quiz-question-text').text()).toContain('MA q3?')
     const boxes = wrapper.findAll('.quiz-options input[type="checkbox"]')
     await boxes[0].setValue(true)
     await boxes[2].setValue(true)
 
-    // Now on the last question → Submit button present and enabled.
-    const submit = wrapper.find('.verify-btn.quiz-submit')
-    expect(submit.exists()).toBe(true)
-    expect(submit.attributes('disabled')).toBeUndefined()
-
-    await submit.trigger('click')
+    await wrapper.find('[data-testid="quiz-validate"]').trigger('click')
+    expect(wrapper.findAll('[data-testid="quiz-confirm-goto"]').map(g => g.text())).toEqual(['2'])
+    await wrapper.find('[data-testid="quiz-confirm-submit"]').trigger('click')
 
     const emitted = wrapper.emitted('submit')
     expect(emitted).toBeTruthy()
     expect(emitted!.length).toBe(1)
     expect(emitted![0][0]).toEqual({
       q1: '1',
-      q2: 'true',
+      q2: '',
       q3: JSON.stringify([0, 2]),
     })
+  })
+
+  it('shows the partial-scoring rule only when the step scores partially', () => {
+    const qs = [maQuestion('q1', 0, ['One', 'Two'])]
+    expect(mountQuiz({ step: makeStep(qs) }).find('[data-testid="quiz-scoring-rule"]').exists()).toBe(false)
+    expect(
+      mountQuiz({ step: makeStep(qs, { quiz_scoring_mode: 'partial' }) })
+        .find('[data-testid="quiz-scoring-rule"]').exists()
+    ).toBe(true)
+  })
+
+  it('exam result without a score: shows "recorded", no score, no breakdown, no actions', () => {
+    const step = makeStep([mcQuestion('q1', 0, ['Alpha', 'Beta'])], { show_immediate_feedback: false })
+    const wrapper = mountQuiz({ step, result: { total: 1, next_step: 1 } })
+
+    expect(wrapper.find('[data-testid="quiz-recorded"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="quiz-results-score"]').exists()).toBe(false)
+    expect(wrapper.find('.quiz-breakdown').exists()).toBe(false)
+    expect(wrapper.find('.quiz-results-actions').exists()).toBe(false)
+  })
+
+  it('exam result with a breakdown (teacher preview): shows score + breakdown and a manual advance, no retry', () => {
+    const step = makeStep([mcQuestion('q1', 0, ['Alpha', 'Beta'])], { show_immediate_feedback: false })
+    const result: SubmitQuizResponse = {
+      score: 0,
+      correct_count: 0,
+      total: 1,
+      next_step: 1,
+      per_question_results: [{ question_id: 'q1', correct: false, correct_answer: '1' }],
+    }
+    const wrapper = mountQuiz({ step, result })
+
+    expect(wrapper.find('[data-testid="quiz-results-score"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="quiz-recorded"]').exists()).toBe(false)
+    expect(wrapper.find('.qb-correct').text()).toContain('Beta')
+    expect(wrapper.find('[data-testid="quiz-advance"]').exists()).toBe(true)
+    expect(wrapper.find('.quiz-results-actions .btn-secondary').exists()).toBe(false)
   })
 
   it('persists answers to localStorage and restores them on remount of the same step', async () => {

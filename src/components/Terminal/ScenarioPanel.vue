@@ -342,7 +342,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, type Ref } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { useScenarioSession } from '../../composables/useScenarioSession'
-import { scenarioSessionService } from '../../services/domain/scenario'
+import { scenarioSessionService, quizResultAwaitsReview } from '../../services/domain/scenario'
 import ScenarioElapsedTimer from './ScenarioElapsedTimer.vue'
 import ScenarioVerifyResult from './ScenarioVerifyResult.vue'
 import ScenarioFlagSubmit from './ScenarioFlagSubmit.vue'
@@ -1127,10 +1127,10 @@ async function handleSubmitQuiz(payload: Record<string, string>) {
     const result = await scenarioSessionService.submitQuiz(props.scenarioSessionId, payload)
     quizResult.value = result
 
-    // Auto-advance only in exam mode (show_immediate_feedback=false).
-    // In learning mode the student stays on the results screen and clicks
-    // "Next step" or "Finish" themselves so they can read the breakdown.
-    if (currentStep.value?.show_immediate_feedback) {
+    // A learner's exam run gets no grade back and advances on its own. When
+    // there is a breakdown to read (learning mode, teacher preview) the
+    // learner stays on the results and moves on with Next step / Finish.
+    if (quizResultAwaitsReview(currentStep.value, result)) {
       return
     }
 
@@ -1138,7 +1138,7 @@ async function handleSubmitQuiz(payload: Record<string, string>) {
       advanceAfterSuccess(result)
     } else {
       // Last step submitted in exam mode — show completion after a brief
-      // pause so the student can read their score.
+      // pause so the student can read that their answers were recorded.
       setTimeout(() => {
         isSessionCompleted.value = true
         emit('session-completed')

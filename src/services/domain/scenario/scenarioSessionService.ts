@@ -20,6 +20,7 @@ export interface CurrentStepResponse {
   text_content?: string
   step_type?: string // 'terminal' | 'flag' | 'info' | 'quiz' (defaults to 'terminal' when empty)
   show_immediate_feedback?: boolean // quiz only
+  quiz_scoring_mode?: QuizScoringMode | '' // quiz only; empty = all_or_nothing
   questions?: CurrentStepQuestion[] // quiz only
   hint?: string
   status: string // 'locked' | 'active' | 'completed' | 'skipped'
@@ -43,15 +44,34 @@ export interface QuizQuestionResult {
   explanation?: string
 }
 
+export type QuizScoringMode = 'all_or_nothing' | 'partial'
+
+// In exam mode (show_immediate_feedback=false) a learner's own run gets no
+// grade back: score, correct_count and per_question_results are omitted.
+// Teacher previews (any mode) and learning mode carry them. Render from what
+// the response holds, never from the step's mode — the backend decides.
 export interface SubmitQuizResponse {
-  score: number // 0.0 - 1.0
-  correct_count: number
+  score?: number // 0.0 - 1.0
+  correct_count?: number
   total: number
-  per_question_results: QuizQuestionResult[]
+  per_question_results?: QuizQuestionResult[]
   next_step?: number
   next_step_provisioning?: boolean
   provisioning_timeout_seconds?: number
   next_step_provisioning_failed?: boolean
+}
+
+/**
+ * Whether the learner stays on the quiz results until they move on by hand:
+ * in learning mode, and whenever the response carries a breakdown to read
+ * (a teacher previewing an exam). Otherwise — a learner's exam run — the
+ * player advances on its own. ScenarioPanel and ScenarioQuizPanel both use it.
+ */
+export function quizResultAwaitsReview(
+  step: Pick<CurrentStepResponse, 'show_immediate_feedback'> | null | undefined,
+  result: Pick<SubmitQuizResponse, 'per_question_results'>
+): boolean {
+  return !!step?.show_immediate_feedback || !!result.per_question_results?.length
 }
 
 export interface RevealHintResponse {

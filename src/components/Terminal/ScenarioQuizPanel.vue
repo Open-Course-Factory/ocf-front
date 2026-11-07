@@ -2,6 +2,32 @@
   <div class="quiz-step">
     <!-- Question entry view (shown until we have a result) -->
     <template v-if="!result && currentQuestion">
+      <p v-if="isPartialScoring" class="ocf-quiz-rule" data-testid="quiz-scoring-rule">
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
+        {{ t('scenarioPanel.partialScoringRule') }}
+      </p>
+
+      <!-- Fixed set of fixed-size buttons that wrap: state changes restyle
+           them, never add or remove one, so nothing below moves. -->
+      <nav class="ocf-quiz-navigator" :aria-label="t('scenarioPanel.questionNavigator')">
+        <button
+          v-for="(q, idx) in quizQuestions"
+          :key="q.id"
+          type="button"
+          class="ocf-quiz-nav-item"
+          data-testid="quiz-nav-item"
+          :class="{
+            'ocf-quiz-nav-item--current': idx === quizCurrentIndex,
+            'ocf-quiz-nav-item--answered': isAnswered(q)
+          }"
+          :aria-current="idx === quizCurrentIndex ? 'step' : undefined"
+          :aria-label="t(isAnswered(q) ? 'scenarioPanel.goToAnswered' : 'scenarioPanel.goToUnanswered', { n: idx + 1 })"
+          @click="quizCurrentIndex = idx"
+        >
+          {{ idx + 1 }}
+        </button>
+      </nav>
+
       <div class="quiz-position">
         {{ t('scenarioPanel.quizPosition', { n: quizCurrentIndex + 1, total: quizQuestions.length }) }}
       </div>
@@ -87,50 +113,110 @@
           />
         </div>
 
+        <!-- Every button always rendered (disabled at the bounds) so the
+             row never reflows while the learner moves around. -->
         <div class="quiz-nav">
           <button
-            v-if="quizCurrentIndex > 0"
+            type="button"
             class="btn-secondary"
+            data-testid="quiz-previous"
+            :disabled="quizCurrentIndex === 0"
             @click="quizCurrentIndex--"
           >
             <i class="fas fa-arrow-left"></i>
             {{ t('scenarioPanel.previous') }}
           </button>
           <button
-            v-if="quizCurrentIndex < quizQuestions.length - 1"
-            class="verify-btn"
+            type="button"
+            class="btn-secondary"
             data-testid="quiz-next"
-            :disabled="!hasAnsweredCurrent"
+            :disabled="quizCurrentIndex >= quizQuestions.length - 1"
             @click="quizCurrentIndex++"
           >
             {{ t('scenarioPanel.next') }}
             <i class="fas fa-arrow-right"></i>
           </button>
           <button
-            v-else
+            type="button"
             class="verify-btn quiz-submit"
-            data-testid="quiz-submit"
-            :disabled="!allAnswered || isSubmitting"
-            @click="submitQuiz"
+            data-testid="quiz-validate"
+            :disabled="isSubmitting || !isActive"
+            @click="showConfirm = true"
           >
             <i :class="isSubmitting ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
             {{ isSubmitting ? t('scenarioPanel.submitting') : t('scenarioPanel.submitQuiz') }}
           </button>
         </div>
       </div>
+
+      <BaseModal
+        :visible="showConfirm"
+        :title="t('scenarioPanel.confirmTitle')"
+        size="small"
+        @close="showConfirm = false"
+      >
+        <div class="ocf-quiz-confirm" data-testid="quiz-confirm">
+          <p v-if="unansweredIndexes.length === 0">{{ t('scenarioPanel.confirmAllAnswered') }}</p>
+          <template v-else>
+            <p data-testid="quiz-confirm-unanswered">
+              {{ t('scenarioPanel.confirmUnanswered', { n: unansweredIndexes.length, total: quizQuestions.length }) }}
+            </p>
+            <div class="ocf-quiz-confirm-list">
+              <button
+                v-for="idx in unansweredIndexes"
+                :key="idx"
+                type="button"
+                class="ocf-quiz-nav-item"
+                data-testid="quiz-confirm-goto"
+                :aria-label="t('scenarioPanel.goToUnanswered', { n: idx + 1 })"
+                @click="goBackTo(idx)"
+              >
+                {{ idx + 1 }}
+              </button>
+            </div>
+          </template>
+          <p class="ocf-quiz-confirm-warning">
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+            {{ t('scenarioPanel.confirmFinal') }}
+          </p>
+        </div>
+        <template #footer>
+          <button type="button" class="btn btn-secondary" @click="showConfirm = false">
+            {{ t('scenarioPanel.keepAnswering') }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            data-testid="quiz-confirm-submit"
+            :disabled="isSubmitting"
+            @click="confirmSubmit"
+          >
+            <i class="fas fa-check"></i>
+            {{ t('scenarioPanel.confirmSubmit') }}
+          </button>
+        </template>
+      </BaseModal>
     </template>
 
     <!-- Quiz results -->
     <div v-else-if="result" class="quiz-results">
-      <h4 class="quiz-results-score" data-testid="quiz-results-score">
+      <h4
+        v-if="result.score !== undefined && result.score !== null"
+        class="quiz-results-score"
+        data-testid="quiz-results-score"
+      >
         {{ t('scenarioPanel.quizScore', {
           score: Math.round(result.score * 100),
-          correct: result.correct_count,
+          correct: result.correct_count ?? 0,
           total: result.total
         }) }}
       </h4>
+      <p v-else class="ocf-quiz-recorded" data-testid="quiz-recorded" role="status">
+        <i class="fas fa-check-circle" aria-hidden="true"></i>
+        {{ t('scenarioPanel.answersRecorded') }}
+      </p>
 
-      <ul v-if="step.show_immediate_feedback && result.per_question_results?.length" class="quiz-breakdown">
+      <ul v-if="result.per_question_results?.length" class="quiz-breakdown">
         <li
           v-for="r in result.per_question_results"
           :key="r.question_id"
@@ -151,16 +237,14 @@
       </ul>
 
       <!--
-        Learning mode (show_immediate_feedback=true): no auto-advance.
-        The student reads the breakdown, then clicks Next / Finish.
-        Optional "Try again" lets them retake before moving on.
-
-        Exam mode (show_immediate_feedback=false): auto-advance fires
-        in the parent; no buttons shown here (student saw their score
-        during the 2s pause and the panel transitions).
+        The learner moves on by hand whenever there is a breakdown to read:
+        learning mode, or a teacher preview of an exam (the backend sends the
+        breakdown there). A learner's exam run gets no breakdown; the parent
+        then advances on its own. Same predicate on both sides:
+        quizResultAwaitsReview.
       -->
-      <div v-if="step.show_immediate_feedback" class="quiz-results-actions">
-        <button class="btn-secondary" @click="onTryAgain">
+      <div v-if="awaitsReview" class="quiz-results-actions">
+        <button v-if="step.show_immediate_feedback" class="btn-secondary" @click="onTryAgain">
           <i class="fas fa-redo"></i>
           {{ t('scenarioPanel.tryQuizAgain') }}
         </button>
@@ -197,6 +281,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
+import BaseModal from '../Modals/BaseModal.vue'
+import { quizResultAwaitsReview } from '../../services/domain/scenario'
 import type {
   CurrentStepResponse,
   CurrentStepQuestion,
@@ -227,7 +313,18 @@ const { t } = useTranslations({
   en: {
     scenarioPanel: {
       quizPosition: 'Question {n} of {total}',
-      submitQuiz: 'Submit answers',
+      submitQuiz: 'Submit my answers',
+      questionNavigator: 'Questions',
+      goToAnswered: 'Question {n}, answered',
+      goToUnanswered: 'Question {n}, not answered',
+      partialScoringRule: 'Wrong answers you tick cost points.',
+      confirmTitle: 'Submit your answers?',
+      confirmAllAnswered: 'You have answered every question.',
+      confirmUnanswered: '{n} of {total} questions have no answer and will score 0:',
+      confirmFinal: 'Once submitted, your answers can no longer be changed.',
+      keepAnswering: 'Keep answering',
+      confirmSubmit: 'Submit',
+      answersRecorded: 'Your answers have been recorded.',
       tryQuizAgain: 'Try the quiz again',
       nextStepBtn: 'Next step',
       finishScenario: 'Finish scenario',
@@ -245,7 +342,18 @@ const { t } = useTranslations({
   fr: {
     scenarioPanel: {
       quizPosition: 'Question {n} sur {total}',
-      submitQuiz: 'Soumettre les réponses',
+      submitQuiz: 'Valider mes réponses',
+      questionNavigator: 'Questions',
+      goToAnswered: 'Question {n}, répondue',
+      goToUnanswered: 'Question {n}, sans réponse',
+      partialScoringRule: 'Les mauvaises réponses cochées sont pénalisées.',
+      confirmTitle: 'Valider vos réponses ?',
+      confirmAllAnswered: 'Vous avez répondu à toutes les questions.',
+      confirmUnanswered: '{n} questions sur {total} restent sans réponse et vaudront 0 :',
+      confirmFinal: 'Une fois validées, vos réponses ne pourront plus être modifiées.',
+      keepAnswering: 'Continuer à répondre',
+      confirmSubmit: 'Valider',
+      answersRecorded: 'Vos réponses ont été enregistrées.',
       tryQuizAgain: 'Refaire le quiz',
       nextStepBtn: 'Étape suivante',
       finishScenario: 'Terminer le scénario',
@@ -303,23 +411,28 @@ function toggleMultiAnswer(questionId: string, idx: number) {
   }
 }
 
-const hasAnsweredCurrent = computed(() => {
-  const q = currentQuestion.value
-  if (!q) return false
+function isAnswered(q: CurrentStepQuestion): boolean {
   if (q.question_type === 'multi_answer') {
     return (multiAnswerSelections.value[q.id]?.length ?? 0) > 0
   }
   return ((quizAnswers.value[q.id] || '') as string).toString().trim().length > 0
-})
+}
 
-const allAnswered = computed(() => {
-  return quizQuestions.value.every(q => {
-    if (q.question_type === 'multi_answer') {
-      return (multiAnswerSelections.value[q.id]?.length ?? 0) > 0
-    }
-    return ((quizAnswers.value[q.id] || '') as string).toString().trim().length > 0
-  })
-})
+const unansweredIndexes = computed(() =>
+  quizQuestions.value.flatMap((q, idx) => (isAnswered(q) ? [] : [idx]))
+)
+
+// Empty mode means all_or_nothing (backend default).
+const isPartialScoring = computed(() => props.step.quiz_scoring_mode === 'partial')
+
+const awaitsReview = computed(() => !!props.result && quizResultAwaitsReview(props.step, props.result))
+
+const showConfirm = ref(false)
+
+function goBackTo(idx: number) {
+  quizCurrentIndex.value = idx
+  showConfirm.value = false
+}
 
 function findQuestionText(questionId: string): string {
   const q = quizQuestions.value.find(x => x.id === questionId)
@@ -380,7 +493,7 @@ function loadQuizFromStorage() {
       quizAnswers.value = parsed.answers && typeof parsed.answers === 'object' ? parsed.answers : {}
       multiAnswerSelections.value = parsed.multi && typeof parsed.multi === 'object' ? parsed.multi : {}
       const idx = Number(parsed.idx)
-      if (!Number.isNaN(idx) && idx >= 0) {
+      if (!Number.isNaN(idx) && idx >= 0 && idx < quizQuestions.value.length) {
         quizCurrentIndex.value = idx
       }
     }
@@ -412,6 +525,7 @@ function clearQuizStorage() {
 }
 
 function resetQuizState() {
+  showConfirm.value = false
   quizCurrentIndex.value = 0
   quizAnswers.value = {}
   multiAnswerSelections.value = {}
@@ -446,8 +560,10 @@ watch(
   { deep: true }
 )
 
-function submitQuiz() {
-  if (!allAnswered.value || props.isSubmitting || !props.isActive) return
+// Unanswered questions go out as "" (multi-answer: "[]") and score 0.
+function confirmSubmit() {
+  showConfirm.value = false
+  if (props.isSubmitting || !props.isActive) return
   const payload: Record<string, string> = {}
   for (const q of quizQuestions.value) {
     if (q.question_type === 'multi_answer') {
@@ -563,8 +679,101 @@ function onTryAgain() {
 
 .quiz-nav {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--spacing-sm);
   margin-top: var(--spacing-sm);
+}
+
+.quiz-nav .quiz-submit {
+  margin-left: auto;
+}
+
+.ocf-quiz-rule {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.ocf-quiz-navigator,
+.ocf-quiz-confirm-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+/* Fixed box: the border is always there (only its colour changes) so the
+   current/answered states never resize a button. */
+.ocf-quiz-nav-item {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-primary);
+  border: 2px dashed var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.ocf-quiz-nav-item:hover {
+  border-color: var(--scenario-node-quiz);
+}
+
+.ocf-quiz-nav-item--answered {
+  border-style: solid;
+  border-color: var(--scenario-node-quiz);
+  background: var(--scenario-node-quiz-bg);
+  color: var(--scenario-node-quiz);
+}
+
+.ocf-quiz-nav-item--current {
+  outline: 2px solid var(--scenario-node-quiz);
+  outline-offset: 2px;
+}
+
+.ocf-quiz-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  color: var(--color-text-primary);
+}
+
+.ocf-quiz-confirm p {
+  margin: 0;
+}
+
+.ocf-quiz-confirm-warning {
+  display: flex;
+  gap: var(--spacing-xs);
+  align-items: baseline;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning);
+}
+
+.ocf-quiz-recorded {
+  margin: 0;
+  padding: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  background: var(--color-success-bg);
+  border: var(--border-width-thin) solid var(--color-success-border);
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.ocf-quiz-recorded i {
+  color: var(--color-success);
 }
 
 .quiz-submit {
