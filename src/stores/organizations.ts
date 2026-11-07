@@ -248,6 +248,11 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     return await base.updateEntity(apiEndpoint, id, { retention_days: days })
   }
 
+  // Printed on participation reports (ocf-core#558).
+  const updateTrainingIdentity = async (id: string, identity: { siret: string, training_declaration_number: string }) => {
+    return await base.updateEntity(apiEndpoint, id, identity)
+  }
+
   // Delete organization
   const deleteOrganization = async (id: string) => {
     return await base.deleteEntity(apiEndpoint, id)
@@ -394,6 +399,7 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     isOwner,
     convertToTeamOrganization,
     updateRetentionDays,
+    updateTrainingIdentity,
     getOrganizationBackendConfig,
     updateOrganizationBackendConfig,
     setCurrentOrganization,

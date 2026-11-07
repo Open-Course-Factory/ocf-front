@@ -58,7 +58,12 @@ const { t, te, locale } = useTranslations({
       otherDays: 'Other days of activity in this period, not shown in this report: {count}.',
       organization: 'Organization',
       period: 'Period',
-      trainers: 'Trainers',
+      trainers: 'Class owners and managers',
+      siret: 'SIRET',
+      declarationNumber: 'Training declaration number (NDA)',
+      conventionReference: 'Convention reference',
+      saveConvention: 'Save the reference',
+      saveConventionError: 'Could not save the convention reference.',
       generatedAt: 'Generated on',
       timezone: 'Times are shown in the {timezone} timezone.',
       disclaimer:
@@ -112,7 +117,12 @@ const { t, te, locale } = useTranslations({
       otherDays: 'Autres jours d’activité sur la période, absents de ce rapport : {count}.',
       organization: 'Organisation',
       period: 'Période',
-      trainers: 'Formateurs',
+      trainers: 'Responsables de la classe',
+      siret: 'SIRET',
+      declarationNumber: 'Numéro de déclaration d\'activité (NDA)',
+      conventionReference: 'Référence de la convention',
+      saveConvention: 'Enregistrer la référence',
+      saveConventionError: 'Impossible d\'enregistrer la référence de la convention.',
       generatedAt: 'Généré le',
       timezone: 'Les heures sont indiquées dans le fuseau {timezone}.',
       disclaimer:
@@ -160,6 +170,7 @@ const savedCourseDays = group.value?.course_days ?? []
 const from = ref(savedCourseDays[0] ?? calendarDay(daysAgo(DEFAULT_PERIOD_DAYS - 1)))
 const to = ref(savedCourseDays[savedCourseDays.length - 1] ?? calendarDay(new Date()))
 const selectedDays = ref([...savedCourseDays])
+const conventionReference = ref(group.value?.convention_reference ?? '')
 const showAllDays = ref(false)
 const dayToAdd = ref('')
 const report = ref<ParticipationReport | null>(null)
@@ -215,6 +226,18 @@ async function saveCourseDays(): Promise<void> {
     return
   }
   showAllDays.value = false
+  await generateReport()
+}
+
+async function saveConventionReference(): Promise<void> {
+  error.value = ''
+  try {
+    await teacherService.saveConventionReference(groupId.value, conventionReference.value.trim())
+    await reload()
+  } catch {
+    error.value = t('classParticipation.saveConventionError')
+    return
+  }
   await generateReport()
 }
 
@@ -308,6 +331,16 @@ function statusLabel(status: string): string {
 
       <div v-if="error" class="alert alert-danger" role="alert">{{ error }}</div>
 
+      <div v-if="report" class="ocf-participation-form">
+        <label>
+          {{ t('classParticipation.conventionReference') }}
+          <input v-model="conventionReference" type="text" maxlength="255" class="form-control" data-test="participation-convention" />
+        </label>
+        <button type="button" class="btn btn-primary" :disabled="isLoading" data-test="participation-save-convention" @click="saveConventionReference">
+          {{ t('classParticipation.saveConvention') }}
+        </button>
+      </div>
+
       <section v-if="report" class="ocf-participation-days" data-test="participation-course-days">
         <h3>{{ t('classParticipation.courseDays') }}</h3>
         <p class="ocf-participation-help">{{ t('classParticipation.courseDaysHelp') }}</p>
@@ -340,6 +373,18 @@ function statusLabel(status: string): string {
         <template v-if="report.organization_name">
           <dt>{{ t('classParticipation.organization') }}</dt>
           <dd>{{ report.organization_name }}</dd>
+        </template>
+        <template v-if="report.organization_siret">
+          <dt>{{ t('classParticipation.siret') }}</dt>
+          <dd data-test="participation-siret">{{ report.organization_siret }}</dd>
+        </template>
+        <template v-if="report.organization_declaration_number">
+          <dt>{{ t('classParticipation.declarationNumber') }}</dt>
+          <dd data-test="participation-declaration-number">{{ report.organization_declaration_number }}</dd>
+        </template>
+        <template v-if="report.convention_reference">
+          <dt>{{ t('classParticipation.conventionReference') }}</dt>
+          <dd data-test="participation-convention-reference">{{ report.convention_reference }}</dd>
         </template>
         <dt>{{ t('classParticipation.period') }}</dt>
         <dd>{{ formatReportDay(report.from) }} – {{ formatReportDay(report.to) }}</dd>
@@ -522,6 +567,11 @@ function statusLabel(status: string): string {
 /* A named page: a bare @page would turn every other page of the app landscape too. */
 @page participation-report {
   size: A4 landscape;
+  margin: 15mm; /* the page number prints in the margin, so it needs one */
+
+  @bottom-right {
+    content: counter(page) " / " counter(pages);
+  }
 }
 
 @media print {

@@ -19,6 +19,7 @@ export interface ClassGroup extends BaseEntity {
   member_count: number
   expires_at?: string
   course_days?: string[] // YYYY-MM-DD, the days of the training
+  convention_reference?: string
   members?: GroupMember[] // Populated when ?includes=Members
   casdoor_group_name?: string
   /**

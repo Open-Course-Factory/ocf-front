@@ -238,6 +238,10 @@ test('the participation report records the run and prints without the applicatio
   await page.locator('[data-test="participation-generate"]').click();
   await expect(page.locator('[data-test="participation-day-column"]')).toHaveCount(1, { timeout: 30_000 });
 
+  await page.locator('[data-test="participation-convention"]').fill('CONV-E2E');
+  await page.locator('[data-test="participation-save-convention"]').click();
+  await expect(page.locator('[data-test="participation-convention-reference"]')).toHaveText('CONV-E2E', { timeout: 30_000 });
+
   const csvDownload = page.waitForEvent('download');
   await page.locator('[data-test="participation-export-csv"]').click();
   const csv = readFileSync(await (await csvDownload).path(), 'utf-8');

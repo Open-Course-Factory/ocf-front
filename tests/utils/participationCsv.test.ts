@@ -10,7 +10,7 @@ const header = '"Learner","Email","Left","Date","First","Last","Commands"'
 
 function report(overrides: Partial<ParticipationReport> = {}): ParticipationReport {
   return {
-    title: 'DevOps week', organization_name: 'Acme', from: '2026-03-02', to: '2026-03-03',
+    title: 'DevOps week', organization_name: 'Acme', organization_siret: '', organization_declaration_number: '', convention_reference: '', from: '2026-03-02', to: '2026-03-03',
     timezone: 'Europe/Paris', generated_at: '2026-03-07T10:00:00Z', trainers: [],
     days: ['2026-03-02', '2026-03-03'], activity_days: [], other_activity_days: 0, commands_available: true,
     learners: [{

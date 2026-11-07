@@ -344,6 +344,9 @@ export interface ActivityDay {
 export interface ParticipationReport {
   title: string
   organization_name: string
+  organization_siret: string
+  organization_declaration_number: string
+  convention_reference: string
   from: string
   to: string // last day, inclusive
   timezone: string
@@ -387,6 +390,10 @@ export const teacherService = {
 
   async saveCourseDays(groupId: string, courseDays: string[]): Promise<void> {
     await axios.patch(`/class-groups/${groupId}`, { course_days: courseDays })
+  },
+
+  async saveConventionReference(groupId: string, conventionReference: string): Promise<void> {
+    await axios.patch(`/class-groups/${groupId}`, { convention_reference: conventionReference })
   },
 
   // --- Group scenario assignment operations ---
