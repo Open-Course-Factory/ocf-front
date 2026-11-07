@@ -151,7 +151,7 @@
 
       <BaseModal
         :visible="showConfirm"
-        :title="t('scenarioPanel.confirmTitle')"
+        :title="isExam ? t('scenarioPanel.confirmTitleExam') : t('scenarioPanel.confirmTitle')"
         size="small"
         @close="showConfirm = false"
       >
@@ -175,9 +175,13 @@
               </button>
             </div>
           </template>
-          <p class="ocf-quiz-confirm-warning">
+          <p
+            class="ocf-quiz-confirm-warning"
+            :class="{ 'ocf-quiz-confirm-warning--exam': isExam }"
+            data-testid="quiz-confirm-warning"
+          >
             <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-            {{ t('scenarioPanel.confirmFinal') }}
+            {{ isExam ? t('scenarioPanel.confirmFinalExam') : t('scenarioPanel.confirmFinal') }}
           </p>
         </div>
         <template #footer>
@@ -192,7 +196,7 @@
             @click="confirmSubmit"
           >
             <i class="fas fa-check"></i>
-            {{ t('scenarioPanel.confirmSubmit') }}
+            {{ isExam ? t('scenarioPanel.confirmSubmitExam') : t('scenarioPanel.confirmSubmit') }}
           </button>
         </template>
       </BaseModal>
@@ -324,6 +328,9 @@ const { t } = useTranslations({
       confirmFinal: 'Once submitted, your answers can no longer be changed.',
       keepAnswering: 'Keep answering',
       confirmSubmit: 'Submit',
+      confirmTitleExam: 'Submit your answers for good?',
+      confirmFinalExam: "This is final: you won't be able to change your answers.",
+      confirmSubmitExam: 'Submit for good',
       answersRecorded: 'Your answers have been recorded.',
       tryQuizAgain: 'Try the quiz again',
       nextStepBtn: 'Next step',
@@ -353,6 +360,9 @@ const { t } = useTranslations({
       confirmFinal: 'Une fois validées, vos réponses ne pourront plus être modifiées.',
       keepAnswering: 'Continuer à répondre',
       confirmSubmit: 'Valider',
+      confirmTitleExam: 'Valider définitivement vos réponses ?',
+      confirmFinalExam: 'Cette validation est définitive : vous ne pourrez plus modifier vos réponses.',
+      confirmSubmitExam: 'Valider définitivement',
       answersRecorded: 'Vos réponses ont été enregistrées.',
       tryQuizAgain: 'Refaire le quiz',
       nextStepBtn: 'Étape suivante',
@@ -421,6 +431,9 @@ function isAnswered(q: CurrentStepQuestion): boolean {
 const unansweredIndexes = computed(() =>
   quizQuestions.value.flatMap((q, idx) => (isAnswered(q) ? [] : [idx]))
 )
+
+// Exam mode has no "Try again", so its confirmation must read as final.
+const isExam = computed(() => !props.step.show_immediate_feedback)
 
 // Empty mode means all_or_nothing (backend default).
 const isPartialScoring = computed(() => props.step.quiz_scoring_mode === 'partial')
@@ -756,6 +769,14 @@ function onTryAgain() {
   align-items: baseline;
   font-weight: var(--font-weight-semibold);
   color: var(--color-warning);
+}
+
+.ocf-quiz-confirm-warning--exam {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-danger-bg);
+  border: var(--border-width-thin) solid var(--color-danger-border);
+  border-radius: var(--border-radius-md);
+  color: var(--color-danger);
 }
 
 .ocf-quiz-recorded {

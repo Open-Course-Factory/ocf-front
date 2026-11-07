@@ -211,6 +211,29 @@ describe('ScenarioQuizPanel', () => {
     })
   })
 
+  it('exam mode: the confirmation reads as final; learning mode keeps the softer text', async () => {
+    const qs = [tfQuestion('q1', 0)]
+    const exam = mountQuiz({ step: makeStep(qs, { show_immediate_feedback: false }) })
+    await exam.find('[data-testid="quiz-validate"]').trigger('click')
+    expect(exam.find('.base-modal-title').text()).toBe('Submit your answers for good?')
+    expect(exam.find('[data-testid="quiz-confirm-warning"]').text()).toBe("This is final: you won't be able to change your answers.")
+    expect(exam.find('[data-testid="quiz-confirm-warning"]').classes()).toContain('ocf-quiz-confirm-warning--exam')
+    expect(exam.find('[data-testid="quiz-confirm-submit"]').text()).toBe('Submit for good')
+
+    const learning = mountQuiz({ step: makeStep(qs, { show_immediate_feedback: true }) })
+    await learning.find('[data-testid="quiz-validate"]').trigger('click')
+    expect(learning.find('.base-modal-title').text()).toBe('Submit your answers?')
+    expect(learning.find('[data-testid="quiz-confirm-warning"]').classes()).not.toContain('ocf-quiz-confirm-warning--exam')
+    expect(learning.find('[data-testid="quiz-confirm-submit"]').text()).toBe('Submit')
+  })
+
+  it('exam mode confirmation in French', async () => {
+    const exam = mountQuiz({ step: makeStep([tfQuestion('q1', 0)], { show_immediate_feedback: false }) }, 'fr')
+    await exam.find('[data-testid="quiz-validate"]').trigger('click')
+    expect(exam.find('.base-modal-title').text()).toBe('Valider définitivement vos réponses ?')
+    expect(exam.find('[data-testid="quiz-confirm-submit"]').text()).toBe('Valider définitivement')
+  })
+
   it('shows the partial-scoring rule only when the step scores partially', () => {
     const qs = [maQuestion('q1', 0, ['One', 'Two'])]
     expect(mountQuiz({ step: makeStep(qs) }).find('[data-testid="quiz-scoring-rule"]').exists()).toBe(false)
