@@ -2,6 +2,9 @@
  * Learners' grades stay withheld until the teacher publishes a class's
  * results. Publishing asks first (learners then see their grade); hiding them
  * again is immediate. The card shows the state either way, in the same slot.
+ *
+ * An exam takes one attempt; from a learner's result row the teacher can allow
+ * another one, after a confirmation.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -12,6 +15,8 @@ import { createPinia, setActivePinia } from 'pinia'
 const publishResults = vi.fn()
 const unpublishResults = vi.fn()
 const getGroupAssignments = vi.fn()
+const getScenarioResults = vi.fn()
+const allowRetake = vi.fn()
 vi.mock('../../src/services/domain/scenario', () => ({
   teacherService: {
     getGroupAssignments: (...a: any[]) => getGroupAssignments(...a),
@@ -19,6 +24,8 @@ vi.mock('../../src/services/domain/scenario', () => ({
     listGroupAvailableScenarios: vi.fn().mockResolvedValue([]),
     publishResults: (...a: any[]) => publishResults(...a),
     unpublishResults: (...a: any[]) => unpublishResults(...a),
+    getScenarioResults: (...a: any[]) => getScenarioResults(...a),
+    allowRetake: (...a: any[]) => allowRetake(...a),
   },
 }))
 
@@ -59,7 +66,6 @@ async function mountTab() {
         RemoveAssignmentConfirmModal: true,
         ResetAssignmentModal: true,
         SessionDetailModal: true,
-        AssignmentResultsView: true,
       },
     },
   })
@@ -128,5 +134,73 @@ describe('GroupScenariosTab — publish results', () => {
 
     expect(notifyError).toHaveBeenCalledWith('Forbidden')
     expect(wrapper.find('[data-testid="results-published-badge"]').text()).toBe('Results not published')
+  })
+})
+
+const LOCKED_ROW = {
+  session_id: 'sess-9',
+  user_id: 'u9',
+  user_name: 'Karim',
+  status: 'completed',
+  grade: 40,
+  current_step: 1,
+  total_steps: 1,
+  completed_steps: 1,
+  total_hints_used: 0,
+  started_at: '2026-11-07T09:00:00Z',
+  exam_locked: true,
+  retake_allowed_at: null,
+}
+
+async function openResults(row: Record<string, unknown>) {
+  getGroupAssignments.mockResolvedValue([{ ...ASSIGNMENT }])
+  getScenarioResults.mockResolvedValue([{ ...row }])
+  const wrapper = await mountTab()
+  await wrapper.find('.btn-view-results').trigger('click')
+  await flushPromises()
+  return wrapper
+}
+
+describe('GroupScenariosTab — allow another exam attempt', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('allows a retake only after the confirmation, then says when', async () => {
+    allowRetake.mockResolvedValue('2026-11-07T11:00:00Z')
+    const wrapper = await openResults(LOCKED_ROW)
+
+    await wrapper.find('[data-testid="retake-allow"]').trigger('click')
+    expect(allowRetake).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="retake-confirm"]').text()).toBe(
+      'The learner will be able to take the exam again. Their current attempt stays in the history.'
+    )
+
+    const confirmButton = wrapper.findAll('.base-modal-footer .btn-primary').at(-1)!
+    await confirmButton.trigger('click')
+    await flushPromises()
+
+    expect(allowRetake).toHaveBeenCalledWith('g1', 'sess-9')
+    expect(wrapper.find('[data-testid="retake-allow"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="retake-allowed-note"]').text()).toContain('Another attempt allowed on')
+  })
+
+  it('offers no retake on a row whose exam is not locked', async () => {
+    const wrapper = await openResults({ ...LOCKED_ROW, exam_locked: false })
+    expect(wrapper.find('[data-testid="retake-allow"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="retake-allowed-note"]').exists()).toBe(false)
+  })
+
+  it('keeps the button and reports the error when the retake is refused', async () => {
+    allowRetake.mockRejectedValue({ response: { data: { error_message: 'Not locked' } } })
+    const wrapper = await openResults(LOCKED_ROW)
+
+    await wrapper.find('[data-testid="retake-allow"]').trigger('click')
+    await wrapper.findAll('.base-modal-footer .btn-primary').at(-1)!.trigger('click')
+    await flushPromises()
+
+    expect(notifyError).toHaveBeenCalledWith('Not locked')
+    expect(wrapper.find('[data-testid="retake-allow"]').exists()).toBe(true)
   })
 })

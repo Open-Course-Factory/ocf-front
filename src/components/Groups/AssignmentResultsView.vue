@@ -101,6 +101,19 @@
                 <button @click="$emit('export-single', result)" class="btn btn-sm btn-outline" :title="t('groupScenarios.exportStudent')">
                   <i class="fas fa-download"></i>
                 </button>
+                <!-- A locked exam offers a retake; once allowed (and until the
+                     learner hands it in again) the same slot says so. -->
+                <button
+                  v-if="result.exam_locked"
+                  class="btn btn-sm btn-outline"
+                  data-testid="retake-allow"
+                  @click="$emit('allow-retake', result)"
+                >
+                  <i class="fas fa-redo"></i> {{ t('groupScenarios.allowRetake') }}
+                </button>
+                <span v-else-if="result.retake_allowed_at" class="ocf-retake-allowed" data-testid="retake-allowed-note">
+                  {{ t('groupScenarios.retakeAllowedOn', { date: formatDate(result.retake_allowed_at) }) }}
+                </span>
               </div>
             </td>
           </tr>
@@ -129,6 +142,7 @@ defineEmits<{
   'view-detail': [result: ScenarioResultItem]
   'export-all': []
   'export-single': [result: ScenarioResultItem]
+  'allow-retake': [result: ScenarioResultItem]
   'export-selected': []
   'toggle-result': [sessionId: string]
   'toggle-select-all': []
@@ -157,6 +171,8 @@ const { t } = useTranslations({
       correctCount: '{correct}/{total} correct',
       viewDetails: 'Details',
       exportStudent: 'Export this learner',
+      allowRetake: 'Allow another attempt',
+      retakeAllowedOn: 'Another attempt allowed on {date}',
       completed: 'completed',
       activeStatus: 'active',
       in_progress: 'in progress',
@@ -186,6 +202,8 @@ const { t } = useTranslations({
       correctCount: '{correct}/{total} correctes',
       viewDetails: 'Détails',
       exportStudent: 'Exporter cet apprenant',
+      allowRetake: 'Autoriser une nouvelle tentative',
+      retakeAllowedOn: 'Nouvelle tentative autorisée le {date}',
       completed: 'terminé',
       activeStatus: 'actif',
       in_progress: 'en cours',
@@ -395,5 +413,10 @@ function translateStatus(status: string): string {
 .btn-outline:hover {
   background: var(--color-bg-tertiary);
   border-color: var(--color-border-dark);
+}
+.ocf-retake-allowed {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 </style>

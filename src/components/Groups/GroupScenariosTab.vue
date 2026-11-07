@@ -62,6 +62,10 @@ const { t } = useTranslations({
       publishResultsConfirm: 'Publish',
       publishResultsError: 'Failed to update the results publication',
       cancel: 'Cancel',
+      allowRetakeTitle: 'Allow another attempt?',
+      allowRetakeBody: 'The learner will be able to take the exam again. Their current attempt stays in the history.',
+      allowRetakeConfirm: 'Allow',
+      allowRetakeError: 'Failed to allow another attempt',
       assignError: 'Failed to assign scenario',
       removeError: 'Failed to remove assignment',
       bulkStartError: 'Failed to start sessions',
@@ -110,6 +114,10 @@ const { t } = useTranslations({
       publishResultsConfirm: 'Publier',
       publishResultsError: 'Échec de la mise à jour de la publication des résultats',
       cancel: 'Annuler',
+      allowRetakeTitle: 'Autoriser une nouvelle tentative ?',
+      allowRetakeBody: "L'apprenant pourra repasser l'examen. Sa tentative actuelle reste dans l'historique.",
+      allowRetakeConfirm: 'Autoriser',
+      allowRetakeError: "Échec de l'autorisation d'une nouvelle tentative",
       assignError: 'Échec de l\'assignation du scénario',
       removeError: 'Échec de la suppression de l\'assignation',
       bulkStartError: 'Échec du démarrage des sessions',
@@ -350,6 +358,18 @@ async function updateResultsPublication(
   }
 }
 
+const resultToRetake = ref<ScenarioResultItem | null>(null)
+
+async function allowRetake(result: ScenarioResultItem) {
+  resultToRetake.value = null
+  try {
+    result.retake_allowed_at = await teacherService.allowRetake(props.groupId, result.session_id)
+    result.exam_locked = false
+  } catch (err: any) {
+    notifyError(err.response?.data?.error_message || t('groupScenarios.allowRetakeError'))
+  }
+}
+
 // Reset sessions
 function handleReset(assignment: ScenarioAssignment) {
   assignmentToReset.value = assignment
@@ -566,6 +586,7 @@ onMounted(() => {
         :selected-results="selectedResults"
         @close="closeResults"
         @view-detail="handleViewDetail"
+        @allow-retake="resultToRetake = $event"
         @export-all="exportResultsCsv"
         @export-single="exportSingleResult"
         @export-selected="exportSelectedResults"
@@ -586,6 +607,20 @@ onMounted(() => {
       @close="assignmentToPublish = null"
     >
       <p data-testid="results-publish-confirm">{{ t('groupScenarios.publishResultsBody') }}</p>
+    </BaseModal>
+
+    <!-- Confirm Allow Retake Modal (above the results modal) -->
+    <BaseModal
+      :visible="!!resultToRetake"
+      :title="t('groupScenarios.allowRetakeTitle')"
+      size="small"
+      show-default-footer
+      :confirm-text="t('groupScenarios.allowRetakeConfirm')"
+      :cancel-text="t('groupScenarios.cancel')"
+      @confirm="allowRetake(resultToRetake!)"
+      @close="resultToRetake = null"
+    >
+      <p data-testid="retake-confirm">{{ t('groupScenarios.allowRetakeBody') }}</p>
     </BaseModal>
 
     <!-- Session Detail Modal -->

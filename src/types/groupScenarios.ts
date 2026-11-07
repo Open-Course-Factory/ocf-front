@@ -73,4 +73,8 @@ export interface ScenarioResultItem {
   total_hints_used: number
   started_at: string
   completed_at?: string
+  // The learner handed in this scenario's exam and may not start it again
+  // until the teacher allows a retake (which sets retake_allowed_at).
+  exam_locked?: boolean
+  retake_allowed_at?: string | null
 }

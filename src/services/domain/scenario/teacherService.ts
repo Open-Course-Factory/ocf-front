@@ -434,6 +434,13 @@ export const teacherService = {
     return response.data?.results_published_at ?? null
   },
 
+  // Lets a learner who handed in the exam take it again; their current run
+  // stays in the history. Returns the new retake_allowed_at.
+  async allowRetake(groupId: string, sessionId: string): Promise<string | null> {
+    const response = await axios.post(`/teacher/groups/${groupId}/sessions/${sessionId}/allow-retake`)
+    return response.data?.retake_allowed_at ?? null
+  },
+
   async removeAssignment(assignmentId: string): Promise<void> {
     await axios.delete(`/scenario-assignments/${assignmentId}`)
   },
