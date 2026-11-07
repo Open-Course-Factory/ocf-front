@@ -226,6 +226,10 @@ export interface AvailableScenario extends ScenarioInfo {
   // CanRunScenario for the caller: may play it and export it. Absent from an
   // ocf-core that predates it.
   can_run?: boolean
+  // The learner submitted this scenario's exam and no retake was allowed:
+  // launching, relaunching or starting over is refused with 409
+  // reason 'exam_already_submitted'.
+  exam_locked?: boolean
   [key: string]: any
 }
 

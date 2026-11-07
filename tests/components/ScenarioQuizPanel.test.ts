@@ -216,7 +216,7 @@ describe('ScenarioQuizPanel', () => {
     const exam = mountQuiz({ step: makeStep(qs, { show_immediate_feedback: false }) })
     await exam.find('[data-testid="quiz-validate"]').trigger('click')
     expect(exam.find('.base-modal-title').text()).toBe('Submit your answers for good?')
-    expect(exam.find('[data-testid="quiz-confirm-warning"]').text()).toBe("This is final: you won't be able to change your answers.")
+    expect(exam.find('[data-testid="quiz-confirm-warning"]').text()).toBe("This is final: you won't be able to change your answers or take this quiz again.")
     expect(exam.find('[data-testid="quiz-confirm-warning"]').classes()).toContain('ocf-quiz-confirm-warning--exam')
     expect(exam.find('[data-testid="quiz-confirm-submit"]').text()).toBe('Submit for good')
 
@@ -231,6 +231,8 @@ describe('ScenarioQuizPanel', () => {
     const exam = mountQuiz({ step: makeStep([tfQuestion('q1', 0)], { show_immediate_feedback: false }) }, 'fr')
     await exam.find('[data-testid="quiz-validate"]').trigger('click')
     expect(exam.find('.base-modal-title').text()).toBe('Valider définitivement vos réponses ?')
+    expect(exam.find('[data-testid="quiz-confirm-warning"]').text())
+      .toBe('Cette validation est définitive : vous ne pourrez plus modifier vos réponses ni repasser ce QCM.')
     expect(exam.find('[data-testid="quiz-confirm-submit"]').text()).toBe('Valider définitivement')
   })
 

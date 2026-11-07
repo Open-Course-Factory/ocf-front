@@ -34,6 +34,7 @@ export function useScenarioRunRecovery() {
         budgetLaunch: 'Your plan\'s machines are all in use right now. Stop another terminal or try again in a moment.',
         progressKept: 'Your progress is kept.',
         alreadyRunning: 'You are already running this scenario. Resume it from its card.',
+        examAlreadySubmitted: 'Exam already submitted',
         setupFailed: 'Scenario setup failed. The environment could not be prepared.',
         setupTimeout: 'Scenario setup timed out. Please try again.',
         launchError: 'The scenario could not be launched. Please try again.',
@@ -52,6 +53,7 @@ export function useScenarioRunRecovery() {
         budgetLaunch: 'Les machines de votre offre sont toutes utilisées pour le moment. Arrêtez un autre terminal ou réessayez dans un instant.',
         progressKept: 'Votre progression est conservée.',
         alreadyRunning: 'Vous avez déjà un scénario en cours. Reprenez-le depuis sa carte.',
+        examAlreadySubmitted: 'Examen déjà rendu',
         setupFailed: 'La préparation du scénario a échoué. L\'environnement n\'a pas pu être configuré.',
         setupTimeout: 'La préparation du scénario a expiré. Veuillez réessayer.',
         launchError: 'Le scénario n\'a pas pu être lancé. Veuillez réessayer.',
@@ -70,6 +72,7 @@ export function useScenarioRunRecovery() {
     // The org budget is shared by the class: a miss is transient.
     if (isBudgetRejection(err)) return t('runRecovery.budgetLaunch')
     if (data.reason === 'not_in_plan') return t('runRecovery.notInPlan')
+    if (data.reason === 'exam_already_submitted') return t('runRecovery.examAlreadySubmitted')
     if (action === 'launch') {
       if (data.reason === 'session_exists') return t('runRecovery.alreadyRunning')
       if (err?.message === 'SETUP_FAILED') return t('runRecovery.setupFailed')

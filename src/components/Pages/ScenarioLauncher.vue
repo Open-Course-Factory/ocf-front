@@ -188,8 +188,19 @@
               <i class="fas fa-play"></i>
               {{ t('launcher.resume') }}
             </router-link>
+            <!-- A submitted exam takes no new attempt: the note holds the
+                 Start over slot so the row keeps its shape. -->
+            <span
+              v-if="(isPaused(scenario) || isRebuild(scenario)) && isExamLocked(scenario)"
+              class="launch-btn launch-btn-disabled"
+              data-testid="exam-locked-note"
+              :title="t('launcher.examLockedHint')"
+            >
+              <i class="fas fa-lock"></i>
+              {{ t('launcher.examLocked') }}
+            </span>
             <button
-              v-if="isPaused(scenario) || isRebuild(scenario)"
+              v-else-if="isPaused(scenario) || isRebuild(scenario)"
               class="btn btn-secondary launch-btn"
               data-testid="scenario-start-over-btn"
               :disabled="isLaunching"
@@ -213,7 +224,17 @@
               <i class="fas fa-eye"></i>
               {{ t('launcher.review') }}
             </router-link>
+            <span
+              v-if="isExamLocked(scenario)"
+              class="launch-btn launch-btn-disabled"
+              data-testid="exam-locked-note"
+              :title="t('launcher.examLockedHint')"
+            >
+              <i class="fas fa-lock"></i>
+              {{ t('launcher.examLocked') }}
+            </span>
             <button
+              v-else
               class="btn btn-primary launch-btn"
               data-testid="scenario-relaunch-btn"
               :disabled="isLaunching || !scenario.launchable"
@@ -223,6 +244,16 @@
               <i :class="isLaunching && launchingScenarioId === scenario.id ? 'fas fa-spinner fa-spin' : 'fas fa-redo'"></i>
               {{ t('launcher.relaunch') }}
             </button>
+          </div>
+          <!-- No run listed (history filtered out) but the exam is handed in. -->
+          <div
+            v-else-if="isExamLocked(scenario)"
+            class="launch-btn-disabled"
+            data-testid="exam-locked-note"
+            :title="t('launcher.examLockedHint')"
+          >
+            <i class="fas fa-lock"></i>
+            {{ t('launcher.examLocked') }}
           </div>
           <!-- No session + launchable -->
           <button
@@ -311,6 +342,8 @@ const { t } = useTranslations({
       startOver: 'Start over',
       review: 'Review',
       relaunch: 'Relaunch',
+      examLocked: 'Exam already submitted',
+      examLockedHint: 'You have handed in this exam. Your trainer can allow another attempt.',
       unavailable: 'Unavailable',
       language: 'Language',
       languageHint: 'The scenario runs in this language. It cannot be changed once started.',
@@ -356,6 +389,8 @@ const { t } = useTranslations({
       startOver: 'Recommencer',
       review: 'Revoir',
       relaunch: 'Relancer',
+      examLocked: 'Examen déjà rendu',
+      examLockedHint: 'Vous avez rendu cet examen. Votre formateur peut autoriser une nouvelle tentative.',
       unavailable: 'Indisponible',
       language: 'Langue',
       languageHint: 'Le scénario se déroule dans cette langue. Elle ne peut plus être changée une fois lancé.',
@@ -591,6 +626,12 @@ function canResume(scenario: any): boolean {
 // mute its badges, or raise the unavailability notice.
 function isBlocked(scenario: any): boolean {
   return !scenario.launchable && scenario.block_reason !== 'session_exists'
+}
+
+// The backend's verdict: this learner handed the exam in and no retake was
+// allowed, so it refuses a new run (409 exam_already_submitted).
+function isExamLocked(scenario: AvailableScenario): boolean {
+  return scenario.exam_locked === true
 }
 
 function isPaused(scenario: AvailableScenario): boolean {
