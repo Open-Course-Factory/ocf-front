@@ -160,4 +160,17 @@ describe('MyScenarios — exam already submitted', () => {
     expect(wrapper.find('[data-testid="scenario-start-over-btn"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="exam-locked-note"]').exists()).toBe(false)
   })
+
+  it('Start over on a submitted exam: the refused abandon reads "Exam already submitted", nothing relaunches', async () => {
+    getMySessionsMock.mockResolvedValue([{ ...BASE_RUN, resumable: true, resume_mode: 'paused' }])
+    abandonSessionMock.mockRejectedValueOnce({ response: { status: 409, data: { reason: 'exam_already_submitted' } } })
+    const wrapper = mountPage()
+    await flushPromises()
+
+    await wrapper.find('[data-testid="scenario-start-over-btn"]').trigger('click')
+    await flushPromises()
+
+    expect(showErrorMock).toHaveBeenCalledWith('Exam already submitted')
+    expect(launchScenarioMock).not.toHaveBeenCalled()
+  })
 })

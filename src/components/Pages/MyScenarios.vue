@@ -205,7 +205,7 @@ import { scenarioSessionService } from '../../services/domain/scenario'
 import type { MyScenarioSession } from '../../services/domain/scenario'
 import ProgressBar from '../Common/ProgressBar.vue'
 import { useScenarioRunLabel, isPausedRun, isEndedRun, isRebuildRun } from '../../composables/useScenarioRunLabel'
-import { useScenarioRunRecovery } from '../../composables/useScenarioRunRecovery'
+import { useScenarioRunRecovery, isExamAlreadySubmitted } from '../../composables/useScenarioRunRecovery'
 
 const router = useRouter()
 const runLabel = useScenarioRunLabel()
@@ -461,8 +461,8 @@ async function handleAbandon(session: MyScenarioSession) {
   try {
     await scenarioSessionService.abandonSession(session.id)
     await loadSessions()
-  } catch {
-    alert(t('myScenarios.abandonError'))
+  } catch (err: any) {
+    alert(isExamAlreadySubmitted(err) ? t('myScenarios.examLocked') : t('myScenarios.abandonError'))
   }
 }
 

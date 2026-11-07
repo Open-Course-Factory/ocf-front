@@ -18,6 +18,12 @@ import { useDunningRejection } from './useDunningRejection'
 import { isBudgetRejection, isQuotaFullRejection, useBudgetRejection } from './useBudgetRejection'
 import { scenarioSessionService } from '../services/domain/scenario'
 
+// The backend's 409 on launching, relaunching or abandoning a run of an exam
+// the learner already handed in.
+export function isExamAlreadySubmitted(err: any): boolean {
+  return err?.response?.data?.reason === 'exam_already_submitted'
+}
+
 export function useScenarioRunRecovery() {
   const router = useRouter()
   const { showError, showConfirm } = useNotification()
@@ -72,7 +78,7 @@ export function useScenarioRunRecovery() {
     // The org budget is shared by the class: a miss is transient.
     if (isBudgetRejection(err)) return t('runRecovery.budgetLaunch')
     if (data.reason === 'not_in_plan') return t('runRecovery.notInPlan')
-    if (data.reason === 'exam_already_submitted') return t('runRecovery.examAlreadySubmitted')
+    if (isExamAlreadySubmitted(err)) return t('runRecovery.examAlreadySubmitted')
     if (action === 'launch') {
       if (data.reason === 'session_exists') return t('runRecovery.alreadyRunning')
       if (err?.message === 'SETUP_FAILED') return t('runRecovery.setupFailed')
@@ -141,8 +147,9 @@ export function useScenarioRunRecovery() {
     if (!await showConfirm(t('runRecovery.startOverConfirm'), t('runRecovery.startOverTitle'))) return
     try {
       await scenarioSessionService.abandonSession(runId)
-    } catch {
-      showError(t('runRecovery.abandonFailed'))
+    } catch (err: any) {
+      // A submitted exam's run is kept: the backend refuses the abandon.
+      showError(isExamAlreadySubmitted(err) ? t('runRecovery.examAlreadySubmitted') : t('runRecovery.abandonFailed'))
       return
     }
     await relaunch()
