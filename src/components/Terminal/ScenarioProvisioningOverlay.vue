@@ -23,31 +23,11 @@
         <slot name="ready-action"></slot>
       </template>
 
-      <template v-else-if="phase">
-        <div class="provisioning-icon">
-          <i class="fas fa-cog fa-spin"></i>
-        </div>
+      <!-- No phase reported yet is the terminal being created: the first one. -->
+      <template v-else>
         <h3>{{ t(phase === 'replay' ? 'provisioning.rebuildTitle' : 'provisioning.title') }}</h3>
         <p class="provisioning-detail">{{ t(phase === 'replay' ? 'provisioning.rebuildDetail' : 'provisioning.detail') }}</p>
         <ProvisioningPhaseList :phase="phase" :phases="phase === 'replay' ? REBUILD_PHASES : undefined" />
-        <button
-          v-if="cancellable"
-          class="btn btn-cancel"
-          data-testid="provisioning-cancel"
-          :disabled="isCancelling"
-          @click="handleCancel"
-        >
-          <i :class="isCancelling ? 'fas fa-spinner fa-spin' : 'fas fa-times'"></i>
-          {{ isCancelling ? t('provisioning.cancelling') : t('provisioning.cancel') }}
-        </button>
-      </template>
-
-      <template v-else>
-        <div class="provisioning-icon">
-          <i class="fas fa-cog fa-spin"></i>
-        </div>
-        <h3>{{ t('provisioning.title') }}</h3>
-        <p class="provisioning-detail">{{ t('provisioning.detail') }}</p>
         <button
           v-if="cancellable"
           class="btn btn-cancel"
@@ -155,7 +135,7 @@ const { t } = useTranslations({
   padding: var(--spacing-2xl);
   text-align: center;
   width: 100%;
-  max-width: 400px;
+  max-width: 440px;
   box-shadow: var(--shadow-lg);
 }
 
