@@ -1192,8 +1192,12 @@ onBeforeUnmount(() => {
   stopStepProvisioningPoll()
 })
 
-// A quiz step takes the main area of the page; the console steps aside.
-const isQuizStep = computed(() => panelState.value === 'step' && resolvedStepType.value === 'quiz')
+// A quiz being answered takes the main area of the page; the console steps
+// aside. Not in review mode: the quiz is not shown there, and the console
+// carries the end-of-run controls.
+const isQuizStep = computed(() =>
+  panelState.value === 'step' && resolvedStepType.value === 'quiz' && !isReviewMode.value
+)
 
 defineExpose({
   toggleCollapse,
