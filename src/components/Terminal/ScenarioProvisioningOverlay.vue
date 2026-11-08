@@ -14,6 +14,22 @@
     :class="{ 'provisioning-overlay--fullscreen': fullscreen }"
     data-testid="scenario-provisioning-overlay"
   >
+    <!-- Over the console, the console's own shape stands in for it while it
+         is built: same frame and header as the live one, so the page keeps
+         one kind of frame and the card reads as a stage of that console. -->
+    <div v-if="!fullscreen" class="ocf-console-skeleton" aria-hidden="true">
+      <div class="ocf-console-skeleton__header">
+        <span class="ocf-console-skeleton__pill ocf-console-skeleton__pill--title"></span>
+        <span class="ocf-console-skeleton__pill"></span>
+        <span class="ocf-console-skeleton__pill"></span>
+      </div>
+      <div class="ocf-console-skeleton__body">
+        <div class="ocf-console-skeleton__screen">
+          <span v-for="w in SKELETON_LINES" :key="w" class="ocf-console-skeleton__line" :style="{ width: w }"></span>
+        </div>
+      </div>
+    </div>
+
     <div class="provisioning-content">
       <template v-if="ready">
         <div class="provisioning-icon">
@@ -73,6 +89,8 @@ const emit = defineEmits<Emits>()
 // A run rebuilt on a new terminal replays its setup up to the learner's step
 // instead of the launch's setup_script / step_setup sequence.
 const REBUILD_PHASES = ['terminal_creation', 'replay']
+// Prompt-like line lengths for the console skeleton (unique: they key the loop).
+const SKELETON_LINES = ['34%', '58%', '22%', '46%', '28%']
 const isCancelling = ref(false)
 
 function handleCancel() {
@@ -117,8 +135,6 @@ const { t } = useTranslations({
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-bg-primary);
-  border-radius: var(--border-radius-lg);
 }
 
 .provisioning-overlay--fullscreen {
@@ -129,13 +145,87 @@ const { t } = useTranslations({
   border-radius: 0;
 }
 
+.ocf-console-skeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-primary);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+}
+
+.ocf-console-skeleton__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  min-height: 2.75rem;
+  background: var(--color-bg-secondary);
+  border-bottom: var(--border-width-thin) solid var(--color-border-medium);
+}
+
+.ocf-console-skeleton__pill {
+  width: 3.5rem;
+  height: 0.75rem;
+  border-radius: 999px;
+  background: var(--color-border-light);
+}
+
+.ocf-console-skeleton__pill--title {
+  width: 9rem;
+  margin-right: auto;
+}
+
+.ocf-console-skeleton__body {
+  flex: 1;
+  min-height: 0;
+  padding: var(--spacing-sm);
+}
+
+.ocf-console-skeleton__screen {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  background: var(--terminal-bg);
+}
+
+/* Faint prompt lines, with one slow sweep of light across them. */
+.ocf-console-skeleton__line {
+  height: 0.6rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--terminal-fg) 10%, transparent) 0%,
+    color-mix(in srgb, var(--terminal-fg) 20%, transparent) 50%,
+    color-mix(in srgb, var(--terminal-fg) 10%, transparent) 100%);
+  background-size: 200% 100%;
+  animation: ocf-console-sweep 2.4s ease-in-out infinite;
+}
+
+@keyframes ocf-console-sweep {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ocf-console-skeleton__line {
+    animation: none;
+  }
+}
+
 .provisioning-content {
+  position: relative;
   background: var(--color-bg-primary);
   border-radius: var(--border-radius-lg);
   padding: var(--spacing-2xl);
   text-align: center;
   width: 100%;
   max-width: 440px;
+  border: var(--border-width-thin) solid var(--color-border-light);
   box-shadow: var(--shadow-lg);
 }
 
