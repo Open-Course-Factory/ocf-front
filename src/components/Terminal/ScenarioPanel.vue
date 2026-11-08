@@ -1186,6 +1186,16 @@ function finishFromQuiz() {
   emit('session-completed')
 }
 
+// Opened while the environment was still being set up, the panel read
+// ocf-core's "Setting up environment..." placeholder in place of a step. The
+// page notices when the setup ends; read the real step then, or the panel stays
+// on the placeholder until a manual reload.
+watch(() => props.sessionStatus, (status) => {
+  if (status !== 'provisioning' && currentStep.value?.status === 'provisioning') {
+    loadCurrentStep()
+  }
+})
+
 // Watch for session ID changes to reload
 watch(() => props.scenarioSessionId, () => {
   if (props.scenarioSessionId) {
