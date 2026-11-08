@@ -82,7 +82,7 @@
         >
           <p v-if="scenarioBriefing?.estimated_time_minutes" class="briefing-duration">
             <i class="far fa-clock" aria-hidden="true"></i>
-            {{ t('sessionView.briefingDuration').replace('{n}', String(scenarioBriefing.estimated_time_minutes)) }}
+            {{ t('sessionView.briefingDuration', { n: scenarioBriefing.estimated_time_minutes }) }}
           </p>
           <div ref="briefingContentRef" data-testid="scenario-briefing" class="briefing-content markdown-content" v-html="renderedBriefingText" @click="handleBriefingExecClick"></div>
           <template #footer>
