@@ -4,7 +4,7 @@
     <template v-if="!result && currentQuestion">
       <p v-if="isPartialScoring" class="ocf-quiz-rule" data-testid="quiz-scoring-rule">
         <i class="fas fa-info-circle" aria-hidden="true"></i>
-        {{ t('scenarioPanel.partialScoringRule') }}
+        {{ scoringRule }}
       </p>
 
       <!-- Fixed set of fixed-size buttons that wrap: state changes restyle
@@ -298,7 +298,7 @@
 import { ref, computed, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import BaseModal from '../Modals/BaseModal.vue'
-import { quizResultAwaitsReview } from '../../services/domain/scenario'
+import { quizResultAwaitsReview, isPartialScoringMode } from '../../services/domain/scenario'
 import type {
   CurrentStepResponse,
   CurrentStepQuestion,
@@ -337,6 +337,7 @@ const { t } = useTranslations({
       goToAnswered: 'Question {n}, answered',
       goToUnanswered: 'Question {n}, not answered',
       partialScoringRule: 'Wrong answers you tick cost points.',
+      partialQuestionFloorRule: 'Wrong answers you tick cost points, but a question never scores below 0.',
       confirmTitle: 'Submit your answers?',
       confirmAllAnswered: 'You have answered every question.',
       confirmUnanswered: '{n} of {total} questions have no answer and will score 0:',
@@ -371,6 +372,7 @@ const { t } = useTranslations({
       goToAnswered: 'Question {n}, répondue',
       goToUnanswered: 'Question {n}, sans réponse',
       partialScoringRule: 'Les mauvaises réponses cochées sont pénalisées.',
+      partialQuestionFloorRule: 'Les mauvaises réponses cochées sont pénalisées, mais une question ne descend jamais sous 0.',
       confirmTitle: 'Valider vos réponses ?',
       confirmAllAnswered: 'Vous avez répondu à toutes les questions.',
       confirmUnanswered: '{n} questions sur {total} restent sans réponse et vaudront 0 :',
@@ -456,8 +458,10 @@ const allAnswered = computed(() => unansweredIndexes.value.length === 0)
 // Exam mode has no "Try again", so its confirmation must read as final.
 const isExam = computed(() => !props.step.show_immediate_feedback)
 
-// Empty mode means all_or_nothing (backend default).
-const isPartialScoring = computed(() => props.step.quiz_scoring_mode === 'partial')
+const isPartialScoring = computed(() => isPartialScoringMode(props.step.quiz_scoring_mode))
+const scoringRule = computed(() => props.step.quiz_scoring_mode === 'partial_question_floor'
+  ? t('scenarioPanel.partialQuestionFloorRule')
+  : t('scenarioPanel.partialScoringRule'))
 
 const awaitsReview = computed(() => !!props.result && quizResultAwaitsReview(props.step, props.result))
 

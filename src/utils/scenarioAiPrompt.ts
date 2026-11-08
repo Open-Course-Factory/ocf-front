@@ -139,8 +139,8 @@ Step fields:
 - "foreground_script": leave out. It is typed into the learner's live shell.
 ${effects ? `- "intro_effect", "outro_effect": leave out unless asked; otherwise one of ${BANNER_EFFECTS.join(', ')}. "intro_text", "outro_text": the banner's words (max 500 characters).
 ` : ''}- "show_immediate_feedback" (boolean): quiz steps — true shows right/wrong after each answer and lets the learner retry (a learning quiz); false is exam mode: one attempt, no correction, only the score.
-- "quiz_scoring_mode": quiz steps — "all_or_nothing" (the default) counts a question only when it is exactly right; "partial" gives each right option ticked its share of the points and takes back "quiz_wrong_penalty" times that share for each wrong one, and the quiz total never goes below 0.
-- "quiz_wrong_penalty" (number, 0 to 10, default 1): "partial" mode only. 0.25 is a usual exam penalty.
+- "quiz_scoring_mode": quiz steps — "all_or_nothing" (the default) counts a question only when it is exactly right; "partial" gives each right option ticked its share of the points and takes back "quiz_wrong_penalty" times that share for each wrong one, and the quiz total never goes below 0; "partial_question_floor" is the same except that no question scores below 0, so a wrong guess cannot pull the grade down.
+- "quiz_wrong_penalty" (number, 0 to 10, default 1): "partial" and "partial_question_floor" modes only. 0.25 is a usual exam penalty.
 - "flag_path" (string): flag steps only. See the flag rules below.
 - "questions" (array): quiz steps only, at least one. See the quiz rules below.
 - "translations" (array): this step's text in other languages: [{"locale", "title", "text_content", "hint_content"${effects ? ', "intro_text", "outro_text"' : ''}}]. At most one entry per locale. Scripts are never translated.
@@ -267,8 +267,8 @@ Champs d'une étape :
 - "foreground_script" : à omettre. Il est tapé dans le shell de l'apprenant.
 ${effects ? `- "intro_effect", "outro_effect" : à omettre sauf demande ; sinon l'une des valeurs ${BANNER_EFFECTS.join(', ')}. "intro_text", "outro_text" : le texte de la bannière (500 caractères au plus).
 ` : ''}- "show_immediate_feedback" (booléen) : étapes quiz — true indique juste/faux après chaque réponse et permet de recommencer (un quiz d'apprentissage) ; false, c'est le mode examen : une seule tentative, pas de correction, seulement le score.
-- "quiz_scoring_mode" : étapes quiz — "all_or_nothing" (par défaut) ne compte une question que si elle est exactement juste ; "partial" donne à chaque bonne option cochée sa part des points, et retire "quiz_wrong_penalty" fois cette part pour chaque mauvaise, sans que le total du quiz descende sous 0.
-- "quiz_wrong_penalty" (nombre, de 0 à 10, 1 par défaut) : mode "partial" seulement. 0.25 est une pénalité d'examen courante.
+- "quiz_scoring_mode" : étapes quiz — "all_or_nothing" (par défaut) ne compte une question que si elle est exactement juste ; "partial" donne à chaque bonne option cochée sa part des points, et retire "quiz_wrong_penalty" fois cette part pour chaque mauvaise, sans que le total du quiz descende sous 0 ; "partial_question_floor" fait de même, mais aucune question ne descend sous 0, une réponse au hasard ne fait donc pas baisser la note.
+- "quiz_wrong_penalty" (nombre, de 0 à 10, 1 par défaut) : modes "partial" et "partial_question_floor" seulement. 0.25 est une pénalité d'examen courante.
 - "flag_path" (chaîne) : étapes à drapeau uniquement. Voir les règles des drapeaux ci-dessous.
 - "questions" (tableau) : étapes quiz uniquement, au moins une. Voir les règles des quiz ci-dessous.
 - "translations" (tableau) : les textes de l'étape dans d'autres langues : [{"locale", "title", "text_content", "hint_content"${effects ? ', "intro_text", "outro_text"' : ''}}]. Une entrée au plus par langue. Les scripts ne se traduisent jamais.

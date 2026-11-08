@@ -245,6 +245,10 @@ describe('ScenarioQuizPanel', () => {
       mountQuiz({ step: makeStep(qs, { quiz_scoring_mode: 'partial' }) })
         .find('[data-testid="quiz-scoring-rule"]').exists()
     ).toBe(true)
+    expect(
+      mountQuiz({ step: makeStep(qs, { quiz_scoring_mode: 'partial_question_floor' }) })
+        .find('[data-testid="quiz-scoring-rule"]').exists()
+    ).toBe(true)
   })
 
   it('exam result without a score: shows "recorded", no score, no breakdown, no actions', () => {

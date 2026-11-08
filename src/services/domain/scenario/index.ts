@@ -1,4 +1,4 @@
-export { scenarioSessionService, pollProvisioningStatus, quizResultAwaitsReview } from './scenarioSessionService'
+export { scenarioSessionService, pollProvisioningStatus, quizResultAwaitsReview, isPartialScoringMode } from './scenarioSessionService'
 export type {
   CurrentStepResponse,
   CurrentStepQuestion,

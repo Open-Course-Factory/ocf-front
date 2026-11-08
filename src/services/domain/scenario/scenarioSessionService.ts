@@ -48,7 +48,13 @@ export interface QuizQuestionResult {
   explanation?: string
 }
 
-export type QuizScoringMode = 'all_or_nothing' | 'partial'
+export type QuizScoringMode = 'all_or_nothing' | 'partial' | 'partial_question_floor'
+
+// Both partial modes credit each right tick and charge the penalty; the floor
+// variant only stops a question going below 0. Empty means all_or_nothing.
+export function isPartialScoringMode(mode: string | undefined): boolean {
+  return mode === 'partial' || mode === 'partial_question_floor'
+}
 
 // In exam mode (show_immediate_feedback=false) a learner's own run gets no
 // grade back: score, correct_count and per_question_results are omitted.

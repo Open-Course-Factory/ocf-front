@@ -58,6 +58,17 @@ describe('ScenarioStepEditor — quiz scoring mode', () => {
     expect(saved(wrapper).quiz_wrong_penalty).toBe(0.5)
   })
 
+  it('keeps the per-question floor mode and its penalty when editing', async () => {
+    const wrapper = await mountQuiz({ quiz_scoring_mode: 'partial_question_floor', quiz_wrong_penalty: 0.25 })
+    const select = wrapper.find('[data-testid="quiz-scoring-mode"]')
+    expect((select.element as HTMLSelectElement).value).toBe('partial_question_floor')
+    await wrapper.find('[data-testid="quiz-wrong-penalty"]').setValue('0.5')
+
+    await wrapper.find('[data-testid="step-edit-save"]').trigger('click')
+    expect(saved(wrapper).quiz_scoring_mode).toBe('partial_question_floor')
+    expect(saved(wrapper).quiz_wrong_penalty).toBe(0.5)
+  })
+
   it('falls back to a penalty of 1 when the field is cleared', async () => {
     const wrapper = await mountQuiz({ quiz_scoring_mode: 'partial', quiz_wrong_penalty: 2 })
     await wrapper.find('[data-testid="quiz-wrong-penalty"]').setValue('')

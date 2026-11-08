@@ -408,9 +408,10 @@
                 >
                   <option value="all_or_nothing">{{ t('quizEdit.scoringAllOrNothing') }}</option>
                   <option value="partial">{{ t('quizEdit.scoringPartial') }}</option>
+                  <option value="partial_question_floor">{{ t('quizEdit.scoringPartialQuestionFloor') }}</option>
                 </select>
               </div>
-              <div v-if="formData.quiz_scoring_mode === 'partial'" class="form-group">
+              <div v-if="isPartialScoringMode(formData.quiz_scoring_mode)" class="form-group">
                 <label for="quiz-wrong-penalty">{{ t('quizEdit.wrongPenalty') }}</label>
                 <input
                   id="quiz-wrong-penalty"
@@ -425,7 +426,7 @@
               </div>
             </div>
             <p class="form-hint">
-              {{ formData.quiz_scoring_mode === 'partial' ? t('quizEdit.scoringPartialHint') : t('quizEdit.scoringAllOrNothingHint') }}
+              {{ t(SCORING_HINTS[formData.quiz_scoring_mode]) }}
             </p>
           </div>
 
@@ -782,7 +783,7 @@ import TranslationPane from './TranslationPane.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { BANNER_EFFECTS } from '../../utils/scenarioAiPrompt'
 import StepLearnerPreview from './StepLearnerPreview.vue'
-import type { QuizScoringMode } from '../../services/domain/scenario'
+import { isPartialScoringMode, type QuizScoringMode } from '../../services/domain/scenario'
 import { TYPE_ICONS, resolveStepType, type StepType } from '../../utils/scenarioOutline'
 import { VERIFY_TEMPLATES, insertSnippet, templateLocale, type VerifyTemplate } from '../../utils/verifyTemplates'
 
@@ -899,9 +900,11 @@ const { t, locale: i18nLocale } = useTranslations({
       scoringMode: 'Scoring',
       scoringAllOrNothing: 'All or nothing',
       scoringPartial: 'Partial credit',
+      scoringPartialQuestionFloor: 'Partial credit, no question below 0',
       wrongPenalty: 'Penalty per wrong answer ticked',
       scoringAllOrNothingHint: 'A question scores its points only when the answer is exactly right.',
-      scoringPartialHint: 'Each correct statement ticked earns its share of the points; each wrong statement ticked takes away penalty × that share. An unanswered question scores 0. A question never scores below 0.'
+      scoringPartialHint: 'Each correct statement ticked earns its share of the points; each wrong statement ticked takes away penalty × that share. An unanswered question scores 0. A question can score below 0, the quiz total never does.',
+      scoringPartialQuestionFloorHint: 'Like partial credit, but a question never scores below 0: wrong statements ticked only cancel that question\'s own points, so a guess cannot pull the grade down.'
     }
   },
   fr: {
@@ -1016,9 +1019,11 @@ const { t, locale: i18nLocale } = useTranslations({
       scoringMode: 'Notation',
       scoringAllOrNothing: 'Tout ou rien',
       scoringPartial: 'Points partiels',
+      scoringPartialQuestionFloor: 'Points partiels, aucune question sous 0',
       wrongPenalty: 'Pénalité par mauvaise réponse cochée',
       scoringAllOrNothingHint: 'Une question rapporte ses points seulement si la réponse est entièrement juste.',
-      scoringPartialHint: 'Chaque affirmation juste cochée rapporte sa part des points ; chaque affirmation fausse cochée retire pénalité × cette part. Une question sans réponse vaut 0. La note ne descend pas sous 0.'
+      scoringPartialHint: 'Chaque affirmation juste cochée rapporte sa part des points ; chaque affirmation fausse cochée retire pénalité × cette part. Une question sans réponse vaut 0. Une question peut descendre sous 0, la note totale jamais.',
+      scoringPartialQuestionFloorHint: 'Comme les points partiels, mais une question ne descend jamais sous 0 : les affirmations fausses cochées n\'annulent que les points de cette question, une réponse au hasard ne fait donc pas baisser la note.'
     }
   }
 })
@@ -1057,6 +1062,12 @@ interface Props {
   scenarioId?: string
   /** A preview the page started for "Test this check", without leaving the editor. */
   startedCheckPreviewId?: string | null
+}
+
+const SCORING_HINTS: Record<QuizScoringMode, string> = {
+  all_or_nothing: 'quizEdit.scoringAllOrNothingHint',
+  partial: 'quizEdit.scoringPartialHint',
+  partial_question_floor: 'quizEdit.scoringPartialQuestionFloorHint',
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -1386,8 +1397,8 @@ function resetForm() {
       flag_path: props.stepData.flag_path || '',
       flag_level: props.stepData.flag_level || 0,
       show_immediate_feedback: props.stepData.show_immediate_feedback ?? false,
-      // Empty on the backend means all_or_nothing.
-      quiz_scoring_mode: props.stepData.quiz_scoring_mode === 'partial' ? 'partial' : 'all_or_nothing',
+      // Empty (or unknown) on the backend means all_or_nothing.
+      quiz_scoring_mode: Object.prototype.hasOwnProperty.call(SCORING_HINTS, props.stepData.quiz_scoring_mode ?? '') ? props.stepData.quiz_scoring_mode : 'all_or_nothing',
       quiz_wrong_penalty: props.stepData.quiz_wrong_penalty ?? 1,
       intro_effect: props.stepData.intro_effect || '',
       intro_text: props.stepData.intro_text || '',
