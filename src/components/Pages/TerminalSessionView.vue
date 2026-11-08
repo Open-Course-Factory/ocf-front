@@ -1732,6 +1732,19 @@ onBeforeUnmount(() => {
   background: var(--color-bg-primary);
 }
 
+/* The pane is the frame here: the console's own card border would double it. */
+.quiz-wide > .terminal-main-area :deep(.card) {
+  border: none;
+  border-radius: 0;
+}
+
+/* The panels below the console keep only a rule to separate them from it. */
+.quiz-wide > .terminal-main-area :deep(.command-history),
+.quiz-wide > .terminal-main-area :deep(.validated-flags) {
+  border-width: var(--border-width-thin) 0 0;
+  border-radius: 0;
+}
+
 .quiz-terminal-closed > .terminal-main-area {
   width: 44px;
 }
