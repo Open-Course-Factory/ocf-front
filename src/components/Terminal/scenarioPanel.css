@@ -806,3 +806,10 @@
   line-height: 1.2;
   color: var(--color-text-muted);
 }
+
+/* A quiz step has the main area to itself: keep its questions to a readable
+   column instead of stretching them across the screen. */
+.scenario-panel.quiz-step .step-content > * {
+  max-width: 760px;
+  margin-inline: auto;
+}

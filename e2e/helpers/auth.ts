@@ -18,6 +18,12 @@ export async function login(
   const query = options.redirect ? `?redirect=${encodeURIComponent(options.redirect)}` : '';
   await page.goto(`/login${query}`, { waitUntil: 'networkidle' });
 
+  // A scenario run opens on its briefing modal. Whenever it stands in the way
+  // of a step, close it the way a learner would.
+  await page.addLocatorHandler(page.getByTestId('briefing-modal'), async () => {
+    await page.getByTestId('briefing-close').click();
+  });
+
   // Wait for the login form to be rendered
   const emailInput = page.locator('#email');
   await emailInput.waitFor({ state: 'visible', timeout: 15_000 });

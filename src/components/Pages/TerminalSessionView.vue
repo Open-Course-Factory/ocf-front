@@ -69,34 +69,73 @@
       </div>
 
 
-      <!-- Scenario briefing card (full width, dismissible). Closed, it is gone
-           from the layout rather than collapsed to a header bar — that bar cost
-           ~56px of a page whose whole job is to show a console. The way back in
-           is the Briefing toggle in the nav row, which is on screen either way. -->
-      <div v-if="scenarioBriefing && scenarioBriefingText && showBriefing" class="scenario-briefing">
-        <div class="briefing-header" @click="toggleBriefing" style="cursor: pointer;">
-          <div class="briefing-title">
-            <i class="fas fa-book-open"></i>
-            <span>{{ t('sessionView.scenarioBriefing') }}</span>
-          </div>
-          <!-- `.stop` or the click toggles twice: once here, once again on the
-               header it bubbles into — leaving the chevron the one part of the
-               bar that appears to do nothing. -->
-          <button class="briefing-toggle" @click.stop="toggleBriefing" :aria-expanded="true">
-            <i class="fas fa-chevron-up"></i>
-          </button>
-        </div>
-        <div ref="briefingContentRef" data-testid="scenario-briefing" class="briefing-content markdown-content ocf-scroll-fade" :class="{ 'has-overflow': briefingHasOverflow }" v-html="renderedBriefingText" @click="handleBriefingExecClick" @scroll="checkBriefingFade"></div>
-        <div class="briefing-footer">
-          <button class="briefing-collapse-btn" @click="toggleBriefing">
-            <i class="fas fa-chevron-up"></i> {{ t('sessionView.collapseBriefing') }}
-          </button>
-        </div>
-      </div>
+      <!-- Scenario briefing: a modal read once at the start of a run, then out
+           of the way. The Briefing button in the nav row reopens it. -->
+      <Teleport to="body">
+        <BaseModal
+          :visible="!!(scenarioBriefing && scenarioBriefingText && showBriefing)"
+          size="large"
+          :title="scenarioBriefing?.title"
+          :close-label="t('sessionView.collapseBriefing')"
+          data-testid="briefing-modal"
+          @close="toggleBriefing"
+        >
+          <p v-if="scenarioBriefing?.estimated_time_minutes" class="briefing-duration">
+            <i class="far fa-clock" aria-hidden="true"></i>
+            {{ t('sessionView.briefingDuration').replace('{n}', String(scenarioBriefing.estimated_time_minutes)) }}
+          </p>
+          <div ref="briefingContentRef" data-testid="scenario-briefing" class="briefing-content markdown-content" v-html="renderedBriefingText" @click="handleBriefingExecClick"></div>
+          <template #footer>
+            <button class="btn btn-primary" data-testid="briefing-close" @click="toggleBriefing">
+              {{ briefingSeen ? t('sessionView.collapseBriefing') : t('sessionView.startBriefing') }}
+            </button>
+          </template>
+        </BaseModal>
+      </Teleport>
 
       <!-- Terminal + Scenario Panel layout (active session with scenario, or review mode) -->
-      <div v-if="scenarioSessionId" class="terminal-session-layout" :class="{ resizing: isPanelResizing }">
-        <div class="terminal-main-area" style="position: relative;">
+      <div
+        v-if="scenarioSessionId"
+        class="terminal-session-layout"
+        :class="[{ resizing: isPanelResizing, 'quiz-wide': quizWide }, quizWide && `quiz-terminal-${quizTerminal}`]"
+      >
+        <!-- On a quiz step the console steps aside: closed to a strip, docked
+             beside the quiz, or floating over it. Only CSS moves it, so the
+             shell stays connected whichever the learner picks. -->
+        <div class="terminal-main-area" :style="quizWide && quizTerminal === 'popup' ? popupStyle : undefined">
+          <div v-if="quizWide" class="quiz-terminal-bar" data-testid="quiz-terminal-bar" @pointerdown="startPopupDrag">
+            <button
+              v-if="quizTerminal === 'closed'"
+              class="quiz-terminal-open"
+              data-testid="quiz-terminal-open"
+              :title="t('sessionView.openTerminal')"
+              @click="quizTerminal = 'docked'"
+            >
+              <i class="fas fa-terminal" aria-hidden="true"></i>
+              <span>{{ t('sessionView.openTerminal') }}</span>
+            </button>
+            <template v-else>
+              <span class="quiz-terminal-title"><i class="fas fa-terminal" aria-hidden="true"></i> Terminal</span>
+              <button
+                class="quiz-terminal-btn"
+                data-testid="quiz-terminal-mode"
+                :title="quizTerminal === 'docked' ? t('sessionView.floatTerminal') : t('sessionView.dockTerminal')"
+                :aria-label="quizTerminal === 'docked' ? t('sessionView.floatTerminal') : t('sessionView.dockTerminal')"
+                @click="quizTerminal === 'docked' ? floatTerminal() : (quizTerminal = 'docked')"
+              >
+                <i :class="quizTerminal === 'docked' ? 'far fa-window-restore' : 'fas fa-columns'" aria-hidden="true"></i>
+              </button>
+              <button
+                class="quiz-terminal-btn"
+                data-testid="quiz-terminal-close"
+                :title="t('sessionView.hideTerminal')"
+                :aria-label="t('sessionView.hideTerminal')"
+                @click="quizTerminal = 'closed'"
+              >
+                <i class="fas fa-times" aria-hidden="true"></i>
+              </button>
+            </template>
+          </div>
           <TerminalSessionPanel
             ref="scenarioTerminalRef"
             :session-info="sessionInfo"
@@ -152,7 +191,7 @@
             </template>
           </TerminalSessionPanel>
         </div>
-        <div v-show="!scenarioPanelCollapsed" class="panel-resize-handle" @mousedown.prevent="startPanelResize">
+        <div v-show="!scenarioPanelCollapsed && !quizWide" class="panel-resize-handle" @mousedown.prevent="startPanelResize">
           <div class="resize-handle-bar"></div>
         </div>
         <ScenarioPanel
@@ -160,7 +199,7 @@
           :scenario-session-id="scenarioSessionId"
           :is-active="isSessionActive"
           :session-status="scenarioSessionStatus"
-          :style="scenarioPanelCollapsed ? undefined : scenarioPanelStyle"
+          :style="scenarioPanelCollapsed || quizWide ? undefined : scenarioPanelStyle"
           @session-completed="handleScenarioCompleted"
           @session-abandoned="handleScenarioAbandoned"
           @session-abandon-failed="handleScenarioAbandonFailed"
@@ -281,7 +320,6 @@ import type { ScenarioInfo, ScenarioSessionInfo } from '../../services/domain/sc
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
-import { useScrollFade } from '../../composables/useScrollFade'
 import { useEndStateConfig, type EndStateReason } from '../../composables/useEndStateConfig'
 import { useLimitReachedMessage } from '../../composables/useLimitReachedMessage'
 import { useScenarioRunRecovery } from '../../composables/useScenarioRunRecovery'
@@ -336,7 +374,13 @@ const { t } = useTranslations({
       expiresIn1min: 'Your session expires in less than 1 minute!',
       expiryWarningTitle: 'Session Expiring',
       scenarioBriefing: 'Scenario Briefing',
-      collapseBriefing: 'Close briefing',
+      collapseBriefing: 'Close',
+      startBriefing: 'Start',
+      openTerminal: 'Open the terminal',
+      hideTerminal: 'Hide the terminal',
+      floatTerminal: 'Float the terminal over the quiz',
+      dockTerminal: 'Dock the terminal beside the quiz',
+      briefingDuration: 'About {n} min',
       collapseScenario: 'Collapse instructions',
       expandScenario: 'Expand instructions',
       recordingNotice: 'Your terminal commands are recorded for security and learning purposes.',
@@ -383,7 +427,13 @@ const { t } = useTranslations({
       expiresIn1min: 'Votre session expire dans moins d\'une minute !',
       expiryWarningTitle: 'Expiration de la session',
       scenarioBriefing: 'Briefing du scénario',
-      collapseBriefing: 'Fermer le briefing',
+      collapseBriefing: 'Fermer',
+      startBriefing: 'Commencer',
+      openTerminal: 'Ouvrir le terminal',
+      hideTerminal: 'Masquer le terminal',
+      floatTerminal: 'Détacher le terminal au-dessus du quiz',
+      dockTerminal: 'Ancrer le terminal à côté du quiz',
+      briefingDuration: 'Environ {n} min',
       collapseScenario: 'Réduire les instructions',
       expandScenario: 'Afficher les instructions',
       recordingNotice: 'Vos commandes terminal sont enregistrées à des fins de sécurité et d\'apprentissage.',
@@ -443,20 +493,16 @@ function dismissRecordingNotice() {
 // Get session ID from route
 const sessionId = route.params.sessionId as string
 
-// Scenario briefing (full-width card above the terminal layout)
+// Scenario briefing (modal, opened once at the start of a run)
 const scenarioBriefing = ref<ScenarioInfo | null>(null)
 const showBriefing = ref(true)
+// Once closed, the modal's button says "Close" rather than "Start".
+const briefingSeen = ref(false)
 const briefingContentRef = ref<HTMLElement | null>(null)
-const { hasOverflow: briefingHasOverflow, check: checkBriefingFade } = useScrollFade(briefingContentRef)
-
-watch(showBriefing, (visible) => {
-  if (visible) {
-    nextTick(() => checkBriefingFade())
-  }
-})
 
 function toggleBriefing() {
   showBriefing.value = !showBriefing.value
+  if (!showBriefing.value) briefingSeen.value = true
   if (scenarioSessionId.value) {
     const key = 'briefing-dismissed-' + scenarioSessionId.value
     if (!showBriefing.value) {
@@ -476,10 +522,9 @@ const renderedBriefingText = computed(() => {
   return renderKillercodaMarkdown(scenarioBriefingText.value)
 })
 
-watch(renderedBriefingText, () => {
+// The modal mounts its content only while open, so images load on each open.
+watch([renderedBriefingText, showBriefing], () => {
   nextTick(() => {
-    checkBriefingFade()
-    // Load scenario images in briefing text
     if (briefingContentRef.value && scenarioBriefing.value?.id) {
       loadScenarioImages(briefingContentRef.value, scenarioBriefing.value.id)
     }
@@ -501,6 +546,7 @@ const terminalHadScenario = ref(false)
 watch(scenarioSessionId, (id) => {
   if (id && localStorage.getItem('briefing-dismissed-' + id)) {
     showBriefing.value = false
+    briefingSeen.value = true
   }
 })
 
@@ -1182,6 +1228,41 @@ function startPanelResize(event: MouseEvent) {
   document.addEventListener('mouseup', onMouseUp)
 }
 
+// Quiz steps: the quiz takes the main area and the console steps aside.
+const quizWide = computed(() => !!scenarioPanelRef.value?.isQuizStep && !scenarioPanelCollapsed.value)
+const quizTerminal = ref<'closed' | 'docked' | 'popup'>('closed')
+const popupPos = ref({ left: 0, top: 0 })
+const popupStyle = computed(() => ({ left: `${popupPos.value.left}px`, top: `${popupPos.value.top}px` }))
+
+function floatTerminal() {
+  // Opens at the bottom right, clear of the quiz's own navigation.
+  popupPos.value = {
+    left: Math.max(16, window.innerWidth - 680),
+    top: Math.max(16, window.innerHeight - 480)
+  }
+  quizTerminal.value = 'popup'
+}
+
+function startPopupDrag(event: PointerEvent) {
+  if (quizTerminal.value !== 'popup' || (event.target as HTMLElement).closest('button')) return
+  event.preventDefault()
+  const dx = event.clientX - popupPos.value.left
+  const dy = event.clientY - popupPos.value.top
+  function onMove(e: PointerEvent) {
+    // Kept on screen by its title bar, so it can always be grabbed again.
+    popupPos.value = {
+      left: Math.min(window.innerWidth - 120, Math.max(0, e.clientX - dx)),
+      top: Math.min(window.innerHeight - 40, Math.max(0, e.clientY - dy))
+    }
+  }
+  function onUp() {
+    document.removeEventListener('pointermove', onMove)
+    document.removeEventListener('pointerup', onUp)
+  }
+  document.addEventListener('pointermove', onMove)
+  document.addEventListener('pointerup', onUp)
+}
+
 onMounted(() => {
   loadSession()
 })
@@ -1607,19 +1688,6 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
-/* The briefing is read once and collapses away; the console is worked in for
-   the whole session. 50vh is a fair share of a page that scrolls, and far too
-   much of one that doesn't — it left a 221px console on a 1600x900 screen.
-   Capped here, the briefing scrolls internally instead of taking the room.
-   30% is the point where it holds enough lines to read without the console
-   dropping below ~350px at 1600x900; the console never moves either way, so
-   this number is only a share of the space, never the pinning rule.
-   A percentage rather than vh: it is measured against the page area, which
-   already excludes the top bar. */
-.console-pinned > .scenario-briefing {
-  max-height: 30%;
-}
-
 /* The console region takes whatever is left. `.terminal-session-layout` already
    declares the same pair below — it was inert until this view became a flex
    column. */
@@ -1636,6 +1704,7 @@ onBeforeUnmount(() => {
    one case it cannot absorb — a viewport too short even for the console's
    minimum height — where scrolling beats clipping. */
 .terminal-main-area {
+  position: relative;
   flex: 1;
   min-width: 0;
   min-height: 0;
@@ -1644,102 +1713,140 @@ onBeforeUnmount(() => {
   overflow-y: auto;
 }
 
-/* Scenario briefing card */
-.scenario-briefing {
-  margin-bottom: var(--spacing-md);
-  max-height: 50vh;
-  display: flex;
-  flex-direction: column;
-  background: var(--color-bg-secondary);
-  border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: var(--border-radius-md);
-  overflow: hidden;
-  transition: all var(--transition-base);
+/* Quiz step: the quiz takes the main area, the console steps aside. `order`
+   swaps the columns without moving the console in the DOM, which would
+   remount it and drop its connection. */
+.quiz-wide > .scenario-panel {
+  order: -1;
+  flex: 1;
+  width: auto;
+  min-width: 0;
 }
 
-.briefing-header {
+.quiz-wide > .terminal-main-area {
+  flex: 0 0 auto;
+  margin-left: var(--spacing-md);
+  overflow: hidden;
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-primary);
+}
+
+.quiz-terminal-closed > .terminal-main-area {
+  width: 44px;
+}
+
+/* Hidden, not unmounted: the console keeps its shell for when it reopens. */
+.quiz-terminal-closed > .terminal-main-area > :not(.quiz-terminal-bar) {
+  display: none;
+}
+
+.quiz-terminal-docked > .terminal-main-area {
+  width: 45%;
+}
+
+.quiz-terminal-popup > .terminal-main-area {
+  position: fixed;
+  z-index: var(--z-index-dropdown);
+  width: 640px;
+  height: 420px;
+  min-width: 320px;
+  min-height: 220px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  margin: 0;
+  resize: both;
+  box-shadow: var(--shadow-xl);
+}
+
+.quiz-terminal-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: var(--spacing-sm) var(--spacing-md);
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
   border-bottom: var(--border-width-thin) solid var(--color-border-light);
+  background: var(--color-bg-secondary);
   flex-shrink: 0;
 }
 
-.briefing-title {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
+.quiz-terminal-popup .quiz-terminal-bar {
+  cursor: move;
+  touch-action: none;
 }
 
-.briefing-title i {
-  color: var(--color-primary);
-  font-size: var(--font-size-md);
-}
-
-.briefing-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
+.quiz-terminal-closed .quiz-terminal-bar {
+  height: 100%;
   padding: 0;
-  background: var(--color-bg-secondary);
-  border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: var(--border-radius-md);
+  border-bottom: none;
+}
+
+.quiz-terminal-title {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.quiz-terminal-btn,
+.quiz-terminal-open {
+  background: none;
+  border: none;
   color: var(--color-text-muted);
   cursor: pointer;
-  font-size: var(--font-size-xs);
-  transition: all var(--transition-fast);
+  border-radius: var(--border-radius-sm);
 }
 
-.briefing-toggle:hover {
+.quiz-terminal-btn {
+  width: 28px;
+  height: 28px;
+}
+
+.quiz-terminal-btn:hover,
+.quiz-terminal-open:hover {
+  color: var(--color-primary);
   background: var(--color-surface-hover);
-  color: var(--color-text-primary);
-  border-color: var(--color-border-medium);
+}
+
+.quiz-terminal-btn:focus-visible,
+.quiz-terminal-open:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Closed, the strip reads top to bottom: the icon, then the label on its side. */
+.quiz-terminal-open {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.quiz-terminal-open span {
+  writing-mode: vertical-rl;
+}
+
+/* Scenario briefing: a reading column, not a panel. The modal scrolls; the
+   text keeps a line length that reads at a glance. */
+.briefing-duration {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin: 0 0 var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
 }
 
 .briefing-content {
-  padding: 0 var(--spacing-md) var(--spacing-md);
-  font-size: var(--font-size-sm);
+  max-width: 68ch;
+  font-size: var(--font-size-md);
   line-height: var(--line-height-relaxed);
-  color: var(--color-text-secondary);
-  overflow-y: auto;
-  flex: 1;
-  min-height: 0;
-  position: relative;
-}
-
-.briefing-footer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: var(--spacing-xs) var(--spacing-md);
-  flex-shrink: 0;
-  border-top: var(--border-width-thin) solid var(--color-border-light);
-}
-
-.briefing-collapse-btn {
-  padding: var(--spacing-xs) var(--spacing-md);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  background: none;
-  border: var(--border-width-thin) solid var(--color-border-light);
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-  transition: color 0.2s, border-color 0.2s;
-}
-
-.briefing-collapse-btn:hover {
   color: var(--color-text-primary);
-  border-color: var(--color-border-medium);
-}
-
-.briefing-collapse-btn i {
-  margin-right: var(--spacing-xs);
 }
 
 /* Markdown content styles (v-html requires :deep for scoped styles) */

@@ -9,7 +9,7 @@
 -->
 
 <template>
-  <div class="scenario-panel" :class="{ collapsed: isCollapsed }">
+  <div class="scenario-panel" :class="{ collapsed: isCollapsed, 'quiz-step': isQuizStep }">
     <!-- Collapse/Expand toggle button -->
     <button
       class="collapse-toggle"
@@ -1192,9 +1192,13 @@ onBeforeUnmount(() => {
   stopStepProvisioningPoll()
 })
 
+// A quiz step takes the main area of the page; the console steps aside.
+const isQuizStep = computed(() => panelState.value === 'step' && resolvedStepType.value === 'quiz')
+
 defineExpose({
   toggleCollapse,
   isCollapsed,
+  isQuizStep,
   // The abandon button lives in the page's nav row now; the confirm flow and
   // the API call stay here, with the session state they belong to.
   abandon: handleAbandon,

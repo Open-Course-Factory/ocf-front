@@ -179,6 +179,13 @@ test('the learner plays the authored scenario through to completion', async ({ p
   await page.getByTestId('scenario-info-ack').click();
 
   await expect(page.getByTestId('scenario-step-title')).toHaveText(QUIZ_STEP, { timeout: 30_000 });
+  // The quiz takes the main area; the console opens beside it, then floats.
+  await page.getByTestId('quiz-terminal-open').click();
+  await expect(page.getByTestId('quiz-terminal-close')).toBeVisible();
+  await page.getByTestId('quiz-terminal-mode').click();
+  await expect(page.locator('.quiz-terminal-popup')).toBeVisible();
+  await page.getByTestId('quiz-terminal-close').click();
+  await expect(page.getByTestId('quiz-terminal-open')).toBeVisible();
   await page.getByTestId('quiz-option').filter({ hasText: RIGHT_ANSWER }).first().click();
   await page.getByTestId('quiz-validate').click();
   await page.getByTestId('quiz-confirm-submit').click();

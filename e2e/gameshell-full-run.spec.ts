@@ -175,12 +175,19 @@ async function expectBriefingInTheChosenLanguage(page: Page): Promise<void> {
   if (!FOREIGN_INTRO.length) return;
 
   const briefing = page.getByTestId('scenario-briefing');
+  // The modal may already have been closed to reach the console: reopen it.
   if (!(await briefing.isVisible().catch(() => false))) {
-    trail('no briefing on screen — nothing to check');
-    return;
+    const toggle = page.getByTestId('briefing-toggle');
+    if (!(await toggle.isVisible().catch(() => false))) {
+      trail('no briefing for this scenario — nothing to check');
+      return;
+    }
+    await toggle.click();
+    await expect(briefing).toBeVisible();
   }
 
   const said = (await briefing.innerText().catch(() => '')).trim();
+  await page.getByTestId('briefing-close').click();
   if (!said) return;
 
   const foreign = FOREIGN_INTRO.find((fragment) => said.includes(fragment));
