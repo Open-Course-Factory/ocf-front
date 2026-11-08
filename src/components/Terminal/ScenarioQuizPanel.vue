@@ -126,9 +126,12 @@
             <i class="fas fa-arrow-left"></i>
             {{ t('scenarioPanel.previous') }}
           </button>
+          <!-- One blue button at a time: Next while questions are still
+               unanswered, then Submit once every one has an answer. -->
           <button
             type="button"
-            class="btn-secondary"
+            class="quiz-next"
+            :class="allAnswered ? 'btn-secondary' : 'verify-btn'"
             data-testid="quiz-next"
             :disabled="quizCurrentIndex >= quizQuestions.length - 1"
             @click="quizCurrentIndex++"
@@ -138,7 +141,8 @@
           </button>
           <button
             type="button"
-            class="verify-btn quiz-submit"
+            class="quiz-submit"
+            :class="allAnswered ? 'verify-btn' : 'btn-secondary'"
             data-testid="quiz-validate"
             :disabled="isSubmitting || !isActive"
             @click="showConfirm = true"
@@ -435,6 +439,8 @@ function isAnswered(q: CurrentStepQuestion): boolean {
 const unansweredIndexes = computed(() =>
   quizQuestions.value.flatMap((q, idx) => (isAnswered(q) ? [] : [idx]))
 )
+
+const allAnswered = computed(() => unansweredIndexes.value.length === 0)
 
 // Exam mode has no "Try again", so its confirmation must read as final.
 const isExam = computed(() => !props.step.show_immediate_feedback)
@@ -799,15 +805,6 @@ function onTryAgain() {
 
 .ocf-quiz-recorded i {
   color: var(--color-success);
-}
-
-.quiz-submit {
-  background: var(--scenario-node-quiz);
-}
-
-.quiz-submit:hover:not(:disabled) {
-  background: var(--scenario-node-quiz);
-  filter: brightness(0.92);
 }
 
 .quiz-results {

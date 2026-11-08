@@ -164,6 +164,18 @@
   flex-shrink: 0;
 }
 
-.scenario-panel .quiz-nav .verify-btn {
+/* Next and Submit trade the blue style as the quiz fills in. Their size comes
+   from their role, never from that style, so the row does not move. */
+.scenario-panel .quiz-nav .quiz-next {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.scenario-panel .quiz-nav .quiz-submit {
   flex: 1;
+  width: auto;
+}
+
+.scenario-panel .quiz-nav .verify-btn {
+  border: var(--border-width-thin) solid transparent;
 }
