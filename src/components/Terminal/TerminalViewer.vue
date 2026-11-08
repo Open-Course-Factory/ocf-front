@@ -622,7 +622,10 @@ async function initXterm(): Promise<boolean> {
       cols: 80,
       theme: getTerminalTheme(),
       scrollback: 1000,
-      convertEol: true
+      // No convertEol: the shell's PTY already sends CRLF. Turning a bare LF into
+      // CRLF breaks full-screen programs that move down a row with LF — tmux split
+      // panes lost their first column and could not be cleared.
+      convertEol: false
     })
 
     fitAddon = new FitAddon()

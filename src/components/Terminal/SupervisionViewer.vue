@@ -227,7 +227,10 @@ async function initTerminal() {
     cols: 80,
     theme: getTerminalTheme(),
     scrollback: 1000,
-    convertEol: true,
+    // No convertEol: the shell's PTY already sends CRLF. Turning a bare LF into
+    // CRLF breaks full-screen programs that move down a row with LF — tmux split
+    // panes lost their first column and could not be cleared.
+    convertEol: false,
     // stdin stays enabled so xterm still emits onData once the hand is taken;
     // read-only-by-default is enforced in forwardKeystroke (a no-op until then),
     // not by disabling stdin (which would also block typing after taking control).
