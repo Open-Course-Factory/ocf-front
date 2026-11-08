@@ -170,6 +170,18 @@ describe('the prompt in French and in English', () => {
       expect(tokens).toContain(token)
   })
 
+  it('teaches how to write for learners working alone, and the exam scoring fields, in both languages', () => {
+    const en = buildCreatePrompt(brief, catalog, 'en')
+    const fr = buildCreatePrompt(brief, catalog, 'fr')
+    expect(en).toContain('### Writing for learners working alone')
+    expect(fr).toContain('### Écrire pour un apprenant en autonomie')
+    for (const prompt of [en, fr]) {
+      expect(prompt).toContain('"quiz_scoring_mode"')
+      expect(prompt).toContain('"quiz_wrong_penalty"')
+      expect(prompt).toContain('/usr/local/bin')
+    }
+  })
+
   it('writes the instructions in French with vouvoiement, and the content language separately', () => {
     const prompt = buildCreatePrompt({ ...brief, language: 'en' }, null, 'fr')
     expect(prompt).toContain('Vous êtes un formateur Linux expert')

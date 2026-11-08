@@ -138,7 +138,9 @@ Step fields:
 - "background_timeout_seconds" (integer): leave out unless a background script needs more than a minute.
 - "foreground_script": leave out. It is typed into the learner's live shell.
 ${effects ? `- "intro_effect", "outro_effect": leave out unless asked; otherwise one of ${BANNER_EFFECTS.join(', ')}. "intro_text", "outro_text": the banner's words (max 500 characters).
-` : ''}- "show_immediate_feedback" (boolean): quiz steps — true shows right/wrong after each answer.
+` : ''}- "show_immediate_feedback" (boolean): quiz steps — true shows right/wrong after each answer and lets the learner retry (a learning quiz); false is exam mode: one attempt, no correction, only the score.
+- "quiz_scoring_mode": quiz steps — "all_or_nothing" (the default) counts a question only when it is exactly right; "partial" gives each right option ticked its share of the points and takes back "quiz_wrong_penalty" times that share for each wrong one, and the quiz total never goes below 0.
+- "quiz_wrong_penalty" (number, 0 to 10, default 1): "partial" mode only. 0.25 is a usual exam penalty.
 - "flag_path" (string): flag steps only. See the flag rules below.
 - "questions" (array): quiz steps only, at least one. See the quiz rules below.
 - "translations" (array): this step's text in other languages: [{"locale", "title", "text_content", "hint_content"${effects ? ', "intro_text", "outro_text"' : ''}}]. At most one entry per locale. Scripts are never translated.
@@ -180,7 +182,19 @@ The learner gets ONE Linux container (an LXC system container) and a root shell 
 - The distribution images are minimal: do not assume python3, curl, nginx or any other tool is installed. Install what the lab needs in setup_script, with "network" in build_features (or in required_features if the learner needs the network too).
 - Scripts run non-interactively: use apt-get -y, no prompts, no editors.
 - Each step's background_script must work on its own: it may run on a fresh container where earlier steps were skipped, so create whatever it needs rather than assuming the learner did it.
-- Write every text field (titles, text_content, hints, explanations, verify messages, intro and finish) in the content language. JSON keys and code stay in English.`,
+- Write every text field (titles, text_content, hints, explanations, verify messages, intro and finish) in the content language. JSON keys and code stay in English.
+### Writing for learners working alone
+Learners often do these labs with no trainer in the room. Everything they need must be on the page, in the order they need it.
+- Open every step with why it matters, then a short "what to understand" part that introduces every notion the step uses. Never use a term, tool or pattern before it has been introduced.
+- Teach one notion at a time. Split a step that brings several new concepts or a lot of new syntax. Give the exact syntax of the language or tool the learner must write, with a small example that is not the answer.
+- Introduce a new tool in its own short step, with a runnable example before the exercise that uses it.
+- Write instructions as numbered points, one action each, with the exact command, path or value and the expected result. Inside a step, say "point 2", never "step 2": the platform numbers the steps itself.
+- When the lab improves something, measure before and after, keep the first measure in its own file (and warn that rerunning with the same file name overwrites it), and explain how to read the result and its traps.
+- When a helper command hides the real ones, show the real commands it runs.
+- Keep quizzes short (two to four questions), right after the practice they test, each preceded by plain explanations of what it asks. Check understanding with quizzes rather than by asking for written notes, and end a session with an exam-mode quiz (show_immediate_feedback false) whose every question the session actually taught.
+- Do not tell the learner what to do if a working step fails: only describe failures that really happen, in the verify message.
+- Write the text the way a native speaker of the content language would, never as a word-for-word translation, and keep the English technical terms professionals use (cache, timeout, token, commit, push).
+- The learner's first shell may open before setup_script finishes: put helper tools in /usr/local/bin rather than in shell aliases or exported variables.`,
   createRole: 'You are an expert Linux trainer writing a hands-on lab for the Open Course Factory platform. The lab is imported as a JSON file, which the platform checks strictly: follow the format and rules below exactly.',
   improveRole: 'You are an expert Linux trainer improving a hands-on lab for the Open Course Factory platform. The lab is a JSON file, which the platform checks strictly when it is imported back: follow the format and rules below exactly.',
   labHeading: '## The lab to write',
@@ -252,7 +266,9 @@ Champs d'une étape :
 - "background_timeout_seconds" (entier) : à omettre, sauf si un script d'arrière-plan a besoin de plus d'une minute.
 - "foreground_script" : à omettre. Il est tapé dans le shell de l'apprenant.
 ${effects ? `- "intro_effect", "outro_effect" : à omettre sauf demande ; sinon l'une des valeurs ${BANNER_EFFECTS.join(', ')}. "intro_text", "outro_text" : le texte de la bannière (500 caractères au plus).
-` : ''}- "show_immediate_feedback" (booléen) : étapes quiz — true indique juste/faux après chaque réponse.
+` : ''}- "show_immediate_feedback" (booléen) : étapes quiz — true indique juste/faux après chaque réponse et permet de recommencer (un quiz d'apprentissage) ; false, c'est le mode examen : une seule tentative, pas de correction, seulement le score.
+- "quiz_scoring_mode" : étapes quiz — "all_or_nothing" (par défaut) ne compte une question que si elle est exactement juste ; "partial" donne à chaque bonne option cochée sa part des points, et retire "quiz_wrong_penalty" fois cette part pour chaque mauvaise, sans que le total du quiz descende sous 0.
+- "quiz_wrong_penalty" (nombre, de 0 à 10, 1 par défaut) : mode "partial" seulement. 0.25 est une pénalité d'examen courante.
 - "flag_path" (chaîne) : étapes à drapeau uniquement. Voir les règles des drapeaux ci-dessous.
 - "questions" (tableau) : étapes quiz uniquement, au moins une. Voir les règles des quiz ci-dessous.
 - "translations" (tableau) : les textes de l'étape dans d'autres langues : [{"locale", "title", "text_content", "hint_content"${effects ? ', "intro_text", "outro_text"' : ''}}]. Une entrée au plus par langue. Les scripts ne se traduisent jamais.
@@ -294,7 +310,19 @@ L'apprenant dispose d'UN SEUL conteneur Linux (un conteneur système LXC) et d'u
 - Les images des distributions sont minimales : ne supposez pas que python3, curl, nginx ou tout autre outil est installé. Installez ce dont le TP a besoin dans setup_script, avec "network" dans build_features (ou dans required_features si l'apprenant a aussi besoin du réseau).
 - Les scripts s'exécutent sans interaction : utilisez apt-get -y, aucune question, aucun éditeur.
 - Le background_script de chaque étape doit fonctionner seul : il peut s'exécuter sur un conteneur neuf où les étapes précédentes ont été sautées, donc créez tout ce dont il a besoin au lieu de supposer que l'apprenant l'a fait.
-- Rédigez chaque champ texte (titres, text_content, indices, explications, messages de vérification, introduction et conclusion) dans la langue du contenu. Les clés JSON et le code restent en anglais.`,
+- Rédigez chaque champ texte (titres, text_content, indices, explications, messages de vérification, introduction et conclusion) dans la langue du contenu. Les clés JSON et le code restent en anglais.
+### Écrire pour un apprenant en autonomie
+Les apprenants font souvent ces TP sans formateur dans la salle. Tout ce dont ils ont besoin doit être sur la page, dans l'ordre où ils en ont besoin.
+- Ouvrez chaque étape sur son intérêt, puis une courte partie « À comprendre » qui présente toutes les notions qu'elle utilise. N'employez jamais un terme, un outil ou un pattern avant de l'avoir présenté.
+- Une notion à la fois. Découpez une étape qui apporte plusieurs concepts ou beaucoup de syntaxe nouvelle. Donnez la syntaxe exacte du langage ou de l'outil que l'apprenant doit écrire, avec un petit exemple qui n'est pas la réponse.
+- Présentez un nouvel outil dans sa propre étape courte, avec un exemple à lancer avant l'exercice qui s'en sert.
+- Rédigez les consignes en points numérotés, une action chacun, avec la commande, le chemin ou la valeur exacts, et le résultat attendu. Dans une étape, dites « point 2 », jamais « étape 2 » : la plateforme numérote elle-même les étapes.
+- Quand le TP améliore quelque chose, mesurez avant et après, gardez la première mesure dans son propre fichier (en prévenant qu'une relance sous le même nom l'écrase), et expliquez comment lire le résultat et ses pièges.
+- Quand une commande d'aide cache les vraies commandes, montrez celles qu'elle lance.
+- Faites des quiz courts (deux à quatre questions), juste après la pratique qu'ils vérifient, chacun précédé d'explications simples sur ce qu'il demande. Vérifiez la compréhension par des quiz plutôt qu'en demandant des notes écrites, et terminez une séance par un quiz en mode examen (show_immediate_feedback à false) dont chaque question a vraiment été enseignée pendant la séance.
+- N'expliquez pas quoi faire si une étape qui fonctionne échoue : ne décrivez que les échecs qui arrivent vraiment, dans le message de vérification.
+- Écrivez comme un locuteur natif de la langue du contenu, jamais comme une traduction mot à mot, et gardez les termes techniques anglais qu'emploient les professionnels (cache, timeout, token, commit, push).
+- Le premier shell de l'apprenant peut s'ouvrir avant la fin de setup_script : placez les outils d'aide dans /usr/local/bin plutôt que dans des alias ou des variables exportées.`,
   createRole: "Vous êtes un formateur Linux expert et vous rédigez un TP pratique pour la plateforme Open Course Factory. Le TP est importé sous forme de fichier JSON, que la plateforme contrôle strictement : suivez exactement le format et les règles ci-dessous.",
   improveRole: "Vous êtes un formateur Linux expert et vous améliorez un TP pratique pour la plateforme Open Course Factory. Le TP est un fichier JSON, que la plateforme contrôle strictement lorsqu'il est réimporté : suivez exactement le format et les règles ci-dessous.",
   labHeading: '## Le TP à rédiger',
