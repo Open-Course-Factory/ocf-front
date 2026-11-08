@@ -187,7 +187,7 @@ const { t } = useTranslations({
     helpClasses: {
       members: {
         title: 'Adding learners',
-        intro: 'Two ways to fill a class: add people who already have an OCF account one by one from the Learners page, or create the accounts and the class in one go with a CSV import at organization level.',
+        intro: 'Two ways to fill a class: add people who already have a Labinux account one by one from the Learners page, or create the accounts and the class in one go with a CSV import at organization level.',
         page: {
           title: 'The Learners page',
           p1: 'The roster of the class, owner first, then every member with their role. Only the owner and the managers see the action buttons.',
@@ -199,7 +199,7 @@ const { t } = useTranslations({
         },
         one: {
           title: 'Adding a learner one by one',
-          p1: 'For someone who already has an OCF account.',
+          p1: 'For someone who already has a Labinux account.',
           step1: {
             title: 'Click "Add member"',
             description: 'Top right of the Learners page.'
@@ -264,7 +264,7 @@ const { t } = useTranslations({
     helpClasses: {
       members: {
         title: 'Ajouter des apprenants',
-        intro: 'Deux façons de remplir une classe : ajouter un par un, depuis la page Apprenants, des personnes qui ont déjà un compte OCF, ou créer les comptes et la classe d\'un coup par un import CSV au niveau de l\'organisation.',
+        intro: 'Deux façons de remplir une classe : ajouter un par un, depuis la page Apprenants, des personnes qui ont déjà un compte Labinux, ou créer les comptes et la classe d\'un coup par un import CSV au niveau de l\'organisation.',
         page: {
           title: 'La page Apprenants',
           p1: 'L\'effectif de la classe : le propriétaire d\'abord, puis chaque membre avec son rôle. Seuls le propriétaire et les gestionnaires voient les boutons d\'action.',
@@ -276,7 +276,7 @@ const { t } = useTranslations({
         },
         one: {
           title: 'Ajouter un apprenant un par un',
-          p1: 'Pour une personne qui a déjà un compte OCF.',
+          p1: 'Pour une personne qui a déjà un compte Labinux.',
           step1: {
             title: 'Cliquez sur « Ajouter un membre »',
             description: 'En haut à droite de la page Apprenants.'

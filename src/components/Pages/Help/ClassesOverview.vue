@@ -159,7 +159,7 @@ const { t } = useTranslations({
     helpClasses: {
       overview: {
         title: 'What a class is',
-        intro: 'A class is the place where you teach on OCF: your learners, the scenarios you give them and everything you see of their work, on five pages that share one banner.',
+        intro: 'A class is the place where you teach on Labinux: your learners, the scenarios you give them and everything you see of their work, on five pages that share one banner.',
         what: {
           title: 'A group of learners, a trainer, scenarios',
           p1: 'A class is a group inside a team organization. It has:',
@@ -225,7 +225,7 @@ const { t } = useTranslations({
     helpClasses: {
       overview: {
         title: 'Qu\'est-ce qu\'une classe ?',
-        intro: 'La classe est l\'endroit où vous enseignez sur OCF : vos apprenants, les scénarios que vous leur donnez et tout ce que vous voyez de leur travail, sur cinq pages qui partagent un même bandeau.',
+        intro: 'La classe est l\'endroit où vous enseignez sur Labinux : vos apprenants, les scénarios que vous leur donnez et tout ce que vous voyez de leur travail, sur cinq pages qui partagent un même bandeau.',
         what: {
           title: 'Des apprenants, un formateur, des scénarios',
           p1: 'Une classe est un groupe au sein d\'une organisation d\'équipe. Elle a :',

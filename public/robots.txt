@@ -10,4 +10,4 @@ Allow: /help-public
 Allow: /assets/
 Disallow: /
 
-Sitemap: https://ocf.labinux.com/sitemap.xml
+Sitemap: https://app.labinux.com/sitemap.xml

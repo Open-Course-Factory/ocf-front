@@ -179,7 +179,7 @@ const { t } = useTranslations({
         },
         bulk: {
           title: 'Starting a scenario for the whole class',
-          p1: '"Start for all" saves each learner the launch step: every environment is built at once and the learner finds a session ready when they open OCF. On a platform with several terminal backends you choose which one hosts the class.',
+          p1: '"Start for all" saves each learner the launch step: every environment is built at once and the learner finds a session ready when they open Labinux. On a platform with several terminal backends you choose which one hosts the class.',
           learnersOnly: 'Sessions are started for the learners only — not for the owner nor the managers.',
           replaces: 'A learner who still holds a session on this scenario gets a fresh one: the old session is closed first.',
           duration: 'Each session lasts four hours by default.',
@@ -239,7 +239,7 @@ const { t } = useTranslations({
         },
         bulk: {
           title: 'Lancer un scénario pour toute la classe',
-          p1: '« Démarrer pour tous » épargne à chaque apprenant l\'étape de lancement : tous les environnements sont construits d\'un coup et l\'apprenant trouve une session prête en ouvrant OCF. Sur une plateforme à plusieurs serveurs de terminaux, vous choisissez lequel héberge la classe.',
+          p1: '« Démarrer pour tous » épargne à chaque apprenant l\'étape de lancement : tous les environnements sont construits d\'un coup et l\'apprenant trouve une session prête en ouvrant Labinux. Sur une plateforme à plusieurs serveurs de terminaux, vous choisissez lequel héberge la classe.',
           learnersOnly: 'Les sessions sont lancées pour les apprenants seulement — ni pour le propriétaire, ni pour les gestionnaires.',
           replaces: 'Un apprenant qui a encore une session sur ce scénario en reçoit une neuve : l\'ancienne est fermée d\'abord.',
           duration: 'Chaque session dure quatre heures par défaut.',

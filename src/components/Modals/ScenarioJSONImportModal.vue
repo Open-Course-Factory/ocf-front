@@ -140,7 +140,7 @@ const { t } = useTranslations({
   en: {
     jsonImport: {
       title: 'Import JSON Scenario',
-      description: 'Upload a scenario JSON file exported from OCF. The file must contain a title and steps.',
+      description: 'Upload a scenario JSON file exported from Labinux. The file must contain a title and steps.',
       dragDrop: 'Drag & drop or click to select a file',
       acceptedFormats: 'Accepted format: .json (max 5 MB)',
       clearFile: 'Clear file',
@@ -160,7 +160,7 @@ const { t } = useTranslations({
   fr: {
     jsonImport: {
       title: 'Importer un scénario JSON',
-      description: 'Téléversez un fichier JSON de scénario exporté depuis OCF. Le fichier doit contenir un titre et des étapes.',
+      description: 'Téléversez un fichier JSON de scénario exporté depuis Labinux. Le fichier doit contenir un titre et des étapes.',
       dragDrop: 'Glisser-déposer ou cliquer pour sélectionner un fichier',
       acceptedFormats: 'Format accepté : .json (max 5 Mo)',
       clearFile: 'Effacer le fichier',

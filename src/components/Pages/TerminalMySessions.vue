@@ -1350,7 +1350,7 @@ function toggleIframePreview(sessionId: string) {
 
 function copyIframeCode(sessionId: string) {
   const url = getTerminalUrl(sessionId)
-  currentIframeCode.value = `<iframe src="${url}" width="100%" height="600" frameborder="0" title="Terminal OCF"></iframe>`
+  currentIframeCode.value = `<iframe src="${url}" width="100%" height="600" frameborder="0" title="Terminal Labinux"></iframe>`
 
   copyIframeCodeToClipboard()
 

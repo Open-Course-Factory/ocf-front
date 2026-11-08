@@ -338,7 +338,7 @@ import { useTranslations } from '../../composables/useTranslations'
 const { t } = useTranslations({
   en: {
     designSystem: {
-      title: 'OCF CSS Variable Visual Audit',
+      title: 'Labinux CSS Variable Visual Audit',
       light: 'Light',
       dark: 'Dark',
       sidebarTitle: '1. Sidebar — MainNavMenu + SettingsNavMenu',
@@ -372,7 +372,7 @@ const { t } = useTranslations({
   },
   fr: {
     designSystem: {
-      title: 'Audit visuel des variables CSS OCF',
+      title: 'Audit visuel des variables CSS Labinux',
       light: 'Clair',
       dark: 'Sombre',
       sidebarTitle: '1. Barre latérale — MainNavMenu + SettingsNavMenu',

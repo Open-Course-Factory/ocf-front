@@ -23,7 +23,7 @@ describe('instance branding', () => {
     document.documentElement.removeAttribute('data-theme')
   })
 
-  it('injects nothing when the branding is the OCF default', () => {
+  it('injects nothing when the branding is the default', () => {
     applyBrandingStyle({ ...defaultBranding, primary_color: '#007BFF' })
     expect(brandStyle()).toBeNull()
     expect(document.documentElement.getAttribute('style')).toBeNull()

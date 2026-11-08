@@ -253,7 +253,7 @@
     <!-- Footer -->
     <div class="terminal-footer" v-if="showFooter">
       <small class="text-muted">
-        Terminal OCF - Session: {{ displaySessionId }}
+        Terminal Labinux - Session: {{ displaySessionId }}
       </small>
     </div>
   </div>

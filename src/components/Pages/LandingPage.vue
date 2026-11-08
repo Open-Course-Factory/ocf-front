@@ -487,7 +487,7 @@ const { t } = useTranslations({
       },
 
       footer: {
-        description: 'Open Course Factory provides browser-based terminals for hands-on DevOps learning. Practice Linux, Docker, Kubernetes, GitLab, and more, safely and instantly.',
+        description: 'Labinux provides browser-based terminals for hands-on DevOps learning. Practice Linux, Docker, Kubernetes, GitLab, and more, safely and instantly.',
         platform: 'Platform',
         documentation: 'Documentation',
         gitlab: 'GitLab repository',
@@ -591,7 +591,7 @@ const { t } = useTranslations({
       },
 
       footer: {
-        description: 'Open Course Factory fournit des terminaux dans le navigateur pour l\'apprentissage pratique du DevOps. Pratiquez Linux, Docker, Kubernetes, GitLab et plus, en toute sécurité et instantanément.',
+        description: 'Labinux fournit des terminaux dans le navigateur pour l\'apprentissage pratique du DevOps. Pratiquez Linux, Docker, Kubernetes, GitLab et plus, en toute sécurité et instantanément.',
         platform: 'Plateforme',
         documentation: 'Documentation',
         gitlab: 'Dépôt GitLab',

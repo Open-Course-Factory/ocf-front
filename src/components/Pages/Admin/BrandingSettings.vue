@@ -20,7 +20,7 @@ const { t } = useTranslations({
     name: 'Nom affiché', logo: 'Logo', limits: 'PNG ou JPEG, 256 Kio maximum, 2 048 pixels par côté et 2 millions de pixels au total.',
     colorsHint: 'Les couleurs doivent rester lisibles : un contraste d’au moins 3:1 avec le texte blanc des boutons et avec les fonds clair et sombre.',
     primary: 'Couleur principale', secondary: 'Couleur secondaire', remove: 'Retirer le logo', preview: 'Aperçu',
-    save: 'Enregistrer', saving: 'Enregistrement…', reset: 'Rétablir les valeurs OCF dans le formulaire', saved: 'Identité enregistrée. Elle sera chargée à la prochaine ouverture des autres navigateurs.',
+    save: 'Enregistrer', saving: 'Enregistrement…', reset: 'Rétablir les valeurs par défaut dans le formulaire', saved: 'Identité enregistrée. Elle sera chargée à la prochaine ouverture des autres navigateurs.',
     loadError: 'Impossible de charger l’identité. Rechargez la page avant de modifier les réglages.', saveError: 'Enregistrement impossible. Vérifiez le nom, le contraste des couleurs et les dimensions du logo.', imageError: 'Choisissez une image PNG ou JPEG de 256 Kio maximum.'
   } },
   en: { branding: {
@@ -28,7 +28,7 @@ const { t } = useTranslations({
     name: 'Display name', logo: 'Logo', limits: 'PNG or JPEG, up to 256 KiB, 2,048 pixels per side and 2 million pixels in total.',
     colorsHint: 'Colors must stay readable: a contrast of at least 3:1 with the white button text and with both the light and dark backgrounds.',
     primary: 'Primary color', secondary: 'Secondary color', remove: 'Remove logo', preview: 'Preview',
-    save: 'Save', saving: 'Saving…', reset: 'Restore OCF defaults in the form', saved: 'Identity saved. Other browsers will load it the next time they open the application.',
+    save: 'Save', saving: 'Saving…', reset: 'Restore the defaults in the form', saved: 'Identity saved. Other browsers will load it the next time they open the application.',
     loadError: 'Unable to load the identity. Reload this page before editing settings.', saveError: 'Unable to save. Check the name, the color contrast and the logo dimensions.', imageError: 'Choose a PNG or JPEG image no larger than 256 KiB.'
   } }
 })

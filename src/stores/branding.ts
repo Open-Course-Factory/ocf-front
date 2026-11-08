@@ -20,7 +20,7 @@ export interface BrandingUpdate {
 }
 
 export const defaultBranding: Branding = {
-  name: 'OCF', logo_version: '', logo_width: 0, logo_height: 0, primary_color: '#007bff', secondary_color: '#6c757d'
+  name: 'Labinux', logo_version: '', logo_width: 0, logo_height: 0, primary_color: '#007bff', secondary_color: '#6c757d'
 }
 
 const STYLE_ELEMENT_ID = 'ocf-branding'

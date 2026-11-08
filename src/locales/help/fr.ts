@@ -310,11 +310,11 @@ export const helpFr = {
     courses: {
       structure: {
         title: "Structure des Cours",
-        intro: "Comprendre l'organisation hiérarchique des contenus pédagogiques dans OCF",
+        intro: "Comprendre l'organisation hiérarchique des contenus pédagogiques dans Labinux",
 
         hierarchy: {
           title: "Hiérarchie des contenus",
-          description: "OCF utilise une structure hiérarchique à quatre niveaux pour organiser les contenus pédagogiques. Cette organisation permet une navigation intuitive et une gestion flexible des cours.",
+          description: "Labinux utilise une structure hiérarchique à quatre niveaux pour organiser les contenus pédagogiques. Cette organisation permet une navigation intuitive et une gestion flexible des cours.",
           levels: {
             course: {
               title: "Cours",
@@ -451,7 +451,7 @@ export const helpFr = {
 
         types: {
           title: "Types de contenu",
-          description: "OCF prend en charge différents types de contenus pédagogiques pour s'adapter à vos méthodes d'enseignement et aux besoins d'apprentissage.",
+          description: "Labinux prend en charge différents types de contenus pédagogiques pour s'adapter à vos méthodes d'enseignement et aux besoins d'apprentissage.",
           theoretical: {
             title: "Leçons théoriques",
             description: "Contenu explicatif avec texte, images et diagrammes. Idéal pour présenter les concepts et notions fondamentales.",
@@ -807,7 +807,7 @@ export const helpFr = {
 
         portal: {
           title: "Le portail Stripe",
-          description: "OCF ne stocke aucune donnée de carte : les paiements et les cartes sont gérés par Stripe. Le portail s'ouvre depuis Gérer l'abonnement (tableau de bord) ou Ajouter une carte (moyens de paiement) et vous ramène ensuite dans l'application. Vous pouvez y :",
+          description: "Labinux ne stocke aucune donnée de carte : les paiements et les cartes sont gérés par Stripe. Le portail s'ouvre depuis Gérer l'abonnement (tableau de bord) ou Ajouter une carte (moyens de paiement) et vous ramène ensuite dans l'application. Vous pouvez y :",
           card: "mettre à jour votre carte bancaire ;",
           history: "consulter l'historique des paiements ;",
           invoices: "télécharger vos factures."
@@ -911,7 +911,7 @@ export const helpFr = {
         },
         navigation: {
           title: "Navigation",
-          description: "Page d'accueil par défaut : la page ouverte après connexion et quand vous cliquez sur le logo OCF.",
+          description: "Page d'accueil par défaut : la page ouverte après connexion et quand vous cliquez sur le logo Labinux.",
           defaultPage: {
             title: "Choix proposés",
             description: "Tableau de bord d'abonnement, Sessions de terminal, Mes classes ou Groupes (selon les fonctionnalités ouvertes sur la plateforme). Sans choix explicite, un formateur qui gère des classes dans son organisation active arrive sur Mes classes ; les autres sur Sessions de terminal."
@@ -1348,13 +1348,13 @@ export const helpFr = {
         },
         ai: {
           title: "Écrire un scénario avec votre IA",
-          description: "OCF n'appelle aucune IA : vous travaillez avec l'assistant de votre choix (ChatGPT, Claude, Le Chat…), par copier-coller. Importer › Créer avec l'IA ouvre une fenêtre en trois temps :",
+          description: "Labinux n'appelle aucune IA : vous travaillez avec l'assistant de votre choix (ChatGPT, Claude, Le Chat…), par copier-coller. Importer › Créer avec l'IA ouvre une fenêtre en trois temps :",
           describe: "Décrire — ce que l'apprenant doit pratiquer, la langue du contenu, le niveau, un nombre d'étapes approximatif, les types d'étapes voulus et l'endroit où créer le scénario. La langue des instructions données à votre IA se choisit à part.",
-          prompt: "Copier le prompt — OCF écrit un prompt complet : votre demande, le format JSON attendu, les règles des scripts, et les distributions, tailles et fonctionnalités réellement disponibles sur la plateforme. Copiez-le dans votre assistant.",
-          answer: "Coller la réponse — collez-la telle quelle, même entourée de texte. OCF compte les étapes reconnues, puis importe le scénario par la même voie qu'un fichier JSON. Si l'import est refusé, chaque problème est listé, avec un prompt de correction prêt à copier pour votre assistant.",
+          prompt: "Copier le prompt — Labinux écrit un prompt complet : votre demande, le format JSON attendu, les règles des scripts, et les distributions, tailles et fonctionnalités réellement disponibles sur la plateforme. Copiez-le dans votre assistant.",
+          answer: "Coller la réponse — collez-la telle quelle, même entourée de texte. Labinux compte les étapes reconnues, puis importe le scénario par la même voie qu'un fichier JSON. Si l'import est refusé, chaque problème est listé, avec un prompt de correction prêt à copier pour votre assistant.",
           improve: "Améliorer avec l'IA, dans la barre du haut, fait de même sur le scénario ouvert : décrivez le changement voulu, le prompt emporte l'export JSON du scénario, et la réponse le met à jour sur place, après vous avoir montré les étapes ajoutées et retirées.",
           shotDescribe: "Créer avec l'IA, étape 1 : la demande, la langue, le niveau, les types d'étapes et l'organisation où créer le scénario.",
-          shotPrompt: "Étape 2 : le prompt écrit par OCF, à copier dans l'assistant de votre choix."
+          shotPrompt: "Étape 2 : le prompt écrit par Labinux, à copier dans l'assistant de votre choix."
         },
         steps: {
           title: "Ajouter des étapes",
@@ -1410,7 +1410,7 @@ export const helpFr = {
           title: "Importer et exporter",
           description: "Le menu Importer de l'éditeur, comme l'onglet Scénarios d'une organisation ou d'une classe, accepte deux formats :",
           killercoda: "Importer KillerCoda — une archive .zip ou .tar.gz (10 Mo max) organisée comme un scénario KillerCoda : un index.json, un répertoire par étape avec son texte et ses scripts, des ressources. Les indices écrits avec des titres ### Indice n deviennent des niveaux d'indice ; un extensions.json facultatif par étape déclare le type d'étape et les questions de quiz.",
-          json: "Importer JSON — un fichier .json (5 Mo max) exporté d'OCF avec Exporter en JSON. Il doit contenir un titre et des étapes. Importer un scénario qui existe déjà dans l'organisation le met à jour.",
+          json: "Importer JSON — un fichier .json (5 Mo max) exporté de Labinux avec Exporter en JSON. Il doit contenir un titre et des étapes. Importer un scénario qui existe déjà dans l'organisation le met à jour.",
           export: "Exporter en JSON et Exporter Archive KillerCoda, dans le menu ⋮ de l'éditeur et sur l'onglet Scénarios de l'organisation, téléchargent le scénario dans l'un ou l'autre format : pour le sauvegarder, le déplacer vers une autre organisation, ou le modifier dans un éditeur de texte."
         },
         archive: {

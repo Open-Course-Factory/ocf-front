@@ -195,8 +195,8 @@ Learners often do these labs with no trainer in the room. Everything they need m
 - Do not tell the learner what to do if a working step fails: only describe failures that really happen, in the verify message.
 - Write the text the way a native speaker of the content language would, never as a word-for-word translation, and keep the English technical terms professionals use (cache, timeout, token, commit, push).
 - The learner's first shell may open before setup_script finishes: put helper tools in /usr/local/bin rather than in shell aliases or exported variables.`,
-  createRole: 'You are an expert Linux trainer writing a hands-on lab for the Open Course Factory platform. The lab is imported as a JSON file, which the platform checks strictly: follow the format and rules below exactly.',
-  improveRole: 'You are an expert Linux trainer improving a hands-on lab for the Open Course Factory platform. The lab is a JSON file, which the platform checks strictly when it is imported back: follow the format and rules below exactly.',
+  createRole: 'You are an expert Linux trainer writing a hands-on lab for the Labinux platform. The lab is imported as a JSON file, which the platform checks strictly: follow the format and rules below exactly.',
+  improveRole: 'You are an expert Linux trainer improving a hands-on lab for the Labinux platform. The lab is a JSON file, which the platform checks strictly when it is imported back: follow the format and rules below exactly.',
   labHeading: '## The lab to write',
   labLines: (language, code, level, stepCount, types) => `- Content language: ${language}. Write every title, text, hint, question, explanation and verify message in ${language}; set "default_locale": "${code}" and "locales": ["${code}"].
 - Level: ${level} (set "difficulty": "${level}").
@@ -323,8 +323,8 @@ Les apprenants font souvent ces TP sans formateur dans la salle. Tout ce dont il
 - N'expliquez pas quoi faire si une étape qui fonctionne échoue : ne décrivez que les échecs qui arrivent vraiment, dans le message de vérification.
 - Écrivez comme un locuteur natif de la langue du contenu, jamais comme une traduction mot à mot, et gardez les termes techniques anglais qu'emploient les professionnels (cache, timeout, token, commit, push).
 - Le premier shell de l'apprenant peut s'ouvrir avant la fin de setup_script : placez les outils d'aide dans /usr/local/bin plutôt que dans des alias ou des variables exportées.`,
-  createRole: "Vous êtes un formateur Linux expert et vous rédigez un TP pratique pour la plateforme Open Course Factory. Le TP est importé sous forme de fichier JSON, que la plateforme contrôle strictement : suivez exactement le format et les règles ci-dessous.",
-  improveRole: "Vous êtes un formateur Linux expert et vous améliorez un TP pratique pour la plateforme Open Course Factory. Le TP est un fichier JSON, que la plateforme contrôle strictement lorsqu'il est réimporté : suivez exactement le format et les règles ci-dessous.",
+  createRole: "Vous êtes un formateur Linux expert et vous rédigez un TP pratique pour la plateforme Labinux. Le TP est importé sous forme de fichier JSON, que la plateforme contrôle strictement : suivez exactement le format et les règles ci-dessous.",
+  improveRole: "Vous êtes un formateur Linux expert et vous améliorez un TP pratique pour la plateforme Labinux. Le TP est un fichier JSON, que la plateforme contrôle strictement lorsqu'il est réimporté : suivez exactement le format et les règles ci-dessous.",
   labHeading: '## Le TP à rédiger',
   labLines: (language, code, level, stepCount, types) => `- Langue du contenu : ${language}. Rédigez chaque titre, texte, indice, question, explication et message de vérification en ${language} ; mettez "default_locale": "${code}" et "locales": ["${code}"].
 - Niveau : ${level} (mettez "difficulty": "${level}").

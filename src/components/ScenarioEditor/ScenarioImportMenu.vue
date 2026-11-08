@@ -68,7 +68,7 @@ const { t } = useTranslations({
       import: 'Import',
       title: 'Bring in a scenario: from a file, or from your own AI',
       killercoda: 'KillerCoda archive',
-      json: 'OCF JSON',
+      json: 'Labinux JSON',
       ai: 'Create with AI'
     }
   },
@@ -77,7 +77,7 @@ const { t } = useTranslations({
       import: 'Importer',
       title: "Faire entrer un scénario : depuis un fichier, ou depuis votre propre IA",
       killercoda: 'Archive KillerCoda',
-      json: 'JSON OCF',
+      json: 'JSON Labinux',
       ai: "Créer avec l'IA"
     }
   }

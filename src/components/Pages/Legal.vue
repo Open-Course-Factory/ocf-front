@@ -147,7 +147,7 @@ const { t } = useTranslations({
 
       intellectualProperty: {
         title: 'Intellectual Property',
-        description: 'Open Course Factory is free and open-source software released under the GNU Affero General Public License version 3 (AGPL-3.0). You are free to use, modify, and redistribute this software under the terms of the AGPL-3.0 license.',
+        description: 'Labinux is free and open-source software released under the GNU Affero General Public License version 3 (AGPL-3.0). You are free to use, modify, and redistribute this software under the terms of the AGPL-3.0 license.',
         license: 'License',
         agpl: 'GNU Affero General Public License v3.0 (AGPL-3.0)',
         viewLicense: 'View Full License Text',
@@ -156,7 +156,7 @@ const { t } = useTranslations({
 
       personalData: {
         title: 'Personal Data Protection',
-        collection: 'In accordance with the General Data Protection Regulation (GDPR), Open Course Factory collects and processes the following personal data:',
+        collection: 'In accordance with the General Data Protection Regulation (GDPR), Labinux collects and processes the following personal data:',
         item1: 'Email address and username for account creation',
         item2: 'Session data for terminal access and authentication',
         item3: 'Usage metrics for service improvement (anonymized)',
@@ -175,7 +175,7 @@ const { t } = useTranslations({
 
       liability: {
         title: 'Limitation of Liability',
-        description: 'Open Course Factory provides educational terminal access "as is" without warranty of any kind. Labinux cannot be held liable for damages resulting from the use of this platform, including but not limited to data loss, service interruption, or security incidents. Users are responsible for their actions within the provided terminals.'
+        description: 'Labinux provides educational terminal access "as is" without warranty of any kind. Labinux cannot be held liable for damages resulting from the use of this platform, including but not limited to data loss, service interruption, or security incidents. Users are responsible for their actions within the provided terminals.'
       },
 
       applicableLaw: {
@@ -212,7 +212,7 @@ const { t } = useTranslations({
 
       intellectualProperty: {
         title: 'Propriété intellectuelle',
-        description: 'Open Course Factory est un logiciel libre et open source publié sous la licence GNU Affero General Public License version 3 (AGPL-3.0). Vous êtes libre d\'utiliser, modifier et redistribuer ce logiciel selon les termes de la licence AGPL-3.0.',
+        description: 'Labinux est un logiciel libre et open source publié sous la licence GNU Affero General Public License version 3 (AGPL-3.0). Vous êtes libre d\'utiliser, modifier et redistribuer ce logiciel selon les termes de la licence AGPL-3.0.',
         license: 'Licence',
         agpl: 'GNU Affero General Public License v3.0 (AGPL-3.0)',
         viewLicense: 'Voir le texte complet de la licence',
@@ -221,7 +221,7 @@ const { t } = useTranslations({
 
       personalData: {
         title: 'Protection des données personnelles',
-        collection: 'Conformément au Règlement Général sur la Protection des Données (RGPD), Open Course Factory collecte et traite les données personnelles suivantes :',
+        collection: 'Conformément au Règlement Général sur la Protection des Données (RGPD), Labinux collecte et traite les données personnelles suivantes :',
         item1: 'Adresse email et nom d\'utilisateur pour la création de compte',
         item2: 'Données de session pour l\'accès aux terminaux et l\'authentification',
         item3: 'Métriques d\'utilisation pour l\'amélioration du service (anonymisées)',
@@ -240,7 +240,7 @@ const { t } = useTranslations({
 
       liability: {
         title: 'Limitation de responsabilité',
-        description: 'Open Course Factory fournit un accès éducatif aux terminaux "en l\'état" sans garantie d\'aucune sorte. Labinux ne peut être tenu responsable des dommages résultant de l\'utilisation de cette plateforme, y compris mais sans s\'y limiter, la perte de données, l\'interruption de service ou les incidents de sécurité. Les utilisateurs sont responsables de leurs actions dans les terminaux fournis.'
+        description: 'Labinux fournit un accès éducatif aux terminaux "en l\'état" sans garantie d\'aucune sorte. Labinux ne peut être tenu responsable des dommages résultant de l\'utilisation de cette plateforme, y compris mais sans s\'y limiter, la perte de données, l\'interruption de service ou les incidents de sécurité. Les utilisateurs sont responsables de leurs actions dans les terminaux fournis.'
       },
 
       applicableLaw: {

@@ -310,11 +310,11 @@ export const helpEn = {
     courses: {
       structure: {
         title: "Course Structure",
-        intro: "Understanding the hierarchical organization of educational content in OCF",
+        intro: "Understanding the hierarchical organization of educational content in Labinux",
 
         hierarchy: {
           title: "Content Hierarchy",
-          description: "OCF uses a four-level hierarchical structure for organizing educational content:",
+          description: "Labinux uses a four-level hierarchical structure for organizing educational content:",
           levels: {
             course: {
               title: "Course",
@@ -451,7 +451,7 @@ export const helpEn = {
 
         types: {
           title: "Content Types",
-          description: "OCF supports different types of educational content to adapt to your teaching methods and learning needs.",
+          description: "Labinux supports different types of educational content to adapt to your teaching methods and learning needs.",
           theoretical: {
             title: "Theoretical Lessons",
             description: "Explanatory content with text, images, and diagrams. Ideal for presenting fundamental concepts and notions.",
@@ -807,7 +807,7 @@ export const helpEn = {
 
         portal: {
           title: "The Stripe portal",
-          description: "OCF stores no card data: payments and cards are handled by Stripe. The portal opens from Manage subscription (dashboard) or Add a card (payment methods) and brings you back to the app afterwards. There you can:",
+          description: "Labinux stores no card data: payments and cards are handled by Stripe. The portal opens from Manage subscription (dashboard) or Add a card (payment methods) and brings you back to the app afterwards. There you can:",
           card: "update your card;",
           history: "review your payment history;",
           invoices: "download your invoices."
@@ -911,7 +911,7 @@ export const helpEn = {
         },
         navigation: {
           title: "Navigation",
-          description: "Default landing page: the page opened after login and when you click the OCF logo.",
+          description: "Default landing page: the page opened after login and when you click the Labinux logo.",
           defaultPage: {
             title: "Available choices",
             description: "Subscription dashboard, Terminal sessions, My classes or Groups (depending on the features enabled on the platform). Without an explicit choice, a trainer who runs classes in their active organisation lands on My classes; everyone else on Terminal sessions."
@@ -1348,13 +1348,13 @@ export const helpEn = {
         },
         ai: {
           title: "Write a scenario with your AI",
-          description: "OCF calls no AI itself: you work with the assistant of your choice (ChatGPT, Claude, Le Chat…), by copy and paste. Import › Create with AI opens a window in three steps:",
+          description: "Labinux calls no AI itself: you work with the assistant of your choice (ChatGPT, Claude, Le Chat…), by copy and paste. Import › Create with AI opens a window in three steps:",
           describe: "Describe — what the learner should practise, the content language, the level, a rough number of steps, the step types you want and where to create the scenario. The language of the instructions given to your AI is chosen separately.",
-          prompt: "Copy the prompt — OCF writes a complete prompt: your request, the expected JSON format, the rules for scripts, and the distributions, sizes and features actually available on the platform. Copy it into your assistant.",
-          answer: "Paste the answer — paste it as is, even wrapped in prose. OCF counts the steps it recognises, then imports the scenario the same way as a JSON file. If the import is refused, every problem is listed, with a ready-made fix-up prompt to copy back to your assistant.",
+          prompt: "Copy the prompt — Labinux writes a complete prompt: your request, the expected JSON format, the rules for scripts, and the distributions, sizes and features actually available on the platform. Copy it into your assistant.",
+          answer: "Paste the answer — paste it as is, even wrapped in prose. Labinux counts the steps it recognises, then imports the scenario the same way as a JSON file. If the import is refused, every problem is listed, with a ready-made fix-up prompt to copy back to your assistant.",
           improve: "Improve with AI, in the top bar, does the same on the open scenario: describe the change you want, the prompt carries the scenario's JSON export, and the answer updates it in place, after showing you the steps added and removed.",
           shotDescribe: "Create with AI, step 1: the request, the language, the level, the step types and the organisation to create the scenario in.",
-          shotPrompt: "Step 2: the prompt OCF writes, to copy into the assistant of your choice."
+          shotPrompt: "Step 2: the prompt Labinux writes, to copy into the assistant of your choice."
         },
         steps: {
           title: "Add steps",
@@ -1410,7 +1410,7 @@ export const helpEn = {
           title: "Import and export",
           description: "The editor's Import menu, like the Scenarios tab of an organisation or a class, accepts two formats:",
           killercoda: "Import KillerCoda — a .zip or .tar.gz archive (10 MB max) laid out like a KillerCoda scenario: an index.json, one directory per step with its text and scripts, assets. Hints written with ### Hint n headings become hint levels; an optional extensions.json per step declares the step type and quiz questions.",
-          json: "Import JSON — a .json file (5 MB max) exported from OCF with Export JSON. It must contain a title and steps. Importing a scenario that already exists in the organisation updates it.",
+          json: "Import JSON — a .json file (5 MB max) exported from Labinux with Export JSON. It must contain a title and steps. Importing a scenario that already exists in the organisation updates it.",
           export: "Export as JSON and Export as KillerCoda archive, in the editor's ⋮ menu and on the organisation's Scenarios tab, download the scenario in either format: to back it up, move it to another organisation, or edit it in a text editor."
         },
         archive: {

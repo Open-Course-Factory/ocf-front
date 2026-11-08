@@ -43,8 +43,8 @@ export function registerCoursesHelp(store: ReturnType<typeof useHelpRegistryStor
           fr: 'Structure des Cours'
         },
         description: {
-          en: 'Understanding the hierarchical organization of educational content in OCF',
-          fr: 'Comprendre l\'organisation hiérarchique des contenus pédagogiques dans OCF'
+          en: 'Understanding the hierarchical organization of educational content in Labinux',
+          fr: 'Comprendre l\'organisation hiérarchique des contenus pédagogiques dans Labinux'
         },
         icon: 'fas fa-sitemap'
       },

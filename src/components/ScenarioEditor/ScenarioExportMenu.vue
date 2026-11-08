@@ -72,14 +72,14 @@ const { t } = useTranslations({
     scenarioExportMenu: {
       export: 'Export',
       killercoda: 'KillerCoda archive (.zip)',
-      json: 'OCF JSON (.json)'
+      json: 'Labinux JSON (.json)'
     }
   },
   fr: {
     scenarioExportMenu: {
       export: 'Exporter',
       killercoda: 'Archive KillerCoda (.zip)',
-      json: 'JSON OCF (.json)'
+      json: 'JSON Labinux (.json)'
     }
   }
 })
