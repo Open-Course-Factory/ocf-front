@@ -17,6 +17,7 @@
       <TerminalViewer
         ref="terminalRef"
         :inert="!!$slots['console-overlay']"
+        :auto-connect="!holdConsole"
         :session-info="sessionInfo"
         :is-recording="isRecording"
         :end-reason="endReason"
@@ -106,6 +107,10 @@ interface Props {
   scenarioCrashTraps?: boolean
   endReason?: 'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed' | ''
   hasScenario?: boolean
+  // Keep the console unconnected: tt-backend starts the shell on the first
+  // connection, and a shell started during a scenario's setup misses the
+  // environment the setup builds.
+  holdConsole?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
@@ -121,7 +126,8 @@ withDefaults(defineProps<Props>(), {
   scenarioFlagsEnabled: false,
   scenarioCrashTraps: false,
   endReason: '',
-  hasScenario: false
+  hasScenario: false,
+  holdConsole: false
 })
 
 defineEmits<{

@@ -150,6 +150,7 @@
             :show-stop-button="true"
             :is-stopping="isStopping"
             :can-stop="!isScenarioProvisioning"
+            :hold-console="isScenarioProvisioning"
             :show-destroy-button="isPersistent"
             :is-destroying="isDeleting"
             @stop="stopSession"

@@ -1085,6 +1085,12 @@ watch(() => props.sessionInfo, async (newSessionInfo, oldSessionInfo) => {
   }
 }, { immediate: false })
 
+// A held console (a scenario run still running its setup) connects once the
+// hold is lifted, so its shell starts with the environment the setup built.
+watch(() => props.autoConnect, (autoConnect, wasAutoConnect) => {
+  if (autoConnect && !wasAutoConnect && !socket.value) initializeTerminal()
+})
+
 // Ctrl+W deletes a word in the shell, but the browser closes the tab before the
 // page sees the key. Asking before leaving a live console is the only catch.
 function confirmLeavingLiveConsole(event: BeforeUnloadEvent) {
