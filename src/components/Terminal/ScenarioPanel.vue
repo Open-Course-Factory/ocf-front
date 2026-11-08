@@ -248,6 +248,18 @@
             />
 
           </template>
+
+          <!-- A submitted quiz, revisited: the learner's answers and the
+               correction, nothing left to submit. -->
+          <ScenarioQuizPanel
+            v-else-if="displayedStep?.quiz_result"
+            :step="displayedStep"
+            :scenario-session-id="scenarioSessionId"
+            :is-active="false"
+            :is-submitting="false"
+            :result="displayedStep.quiz_result"
+            replay
+          />
         </div>
 
         <!-- Fixed step controls. They are not instructions, and keeping them in

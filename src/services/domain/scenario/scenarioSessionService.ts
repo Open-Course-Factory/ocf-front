@@ -27,6 +27,10 @@ export interface CurrentStepResponse {
   has_flag: boolean
   hints_total_count: number
   hints_revealed: number
+  // A submitted quiz, replayed when the learner goes back to it: their answers
+  // and the correction. Absent on an exam step and before submission.
+  quiz_answers?: Record<string, string>
+  quiz_result?: SubmitQuizResponse
 }
 
 export interface CurrentStepQuestion {

@@ -240,9 +240,13 @@
             <i :class="r.correct ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
             <span class="qb-text">{{ findQuestionText(r.question_id) }}</span>
           </div>
+          <div class="qb-yours" data-testid="quiz-breakdown-yours">
+            <strong>{{ t('scenarioPanel.yourAnswerWas') }}</strong>
+            {{ formatAnswer(r.question_id, submittedAnswer(r.question_id)) || t('scenarioPanel.noAnswer') }}
+          </div>
           <div v-if="!r.correct && r.correct_answer" class="qb-correct">
             <strong>{{ t('scenarioPanel.correctAnswerWas') }}</strong>
-            {{ formatCorrectAnswer(r) }}
+            {{ formatAnswer(r.question_id, r.correct_answer) }}
           </div>
           <div v-if="r.explanation" class="qb-explanation">{{ r.explanation }}</div>
         </li>
@@ -255,7 +259,7 @@
         then advances on its own. Same predicate on both sides:
         quizResultAwaitsReview.
       -->
-      <div v-if="awaitsReview" class="quiz-results-actions">
+      <div v-if="awaitsReview && !replay" class="quiz-results-actions">
         <button v-if="step.show_immediate_feedback" class="btn-secondary" @click="onTryAgain">
           <i class="fas fa-redo"></i>
           {{ t('scenarioPanel.tryQuizAgain') }}
@@ -298,7 +302,6 @@ import { quizResultAwaitsReview } from '../../services/domain/scenario'
 import type {
   CurrentStepResponse,
   CurrentStepQuestion,
-  QuizQuestionResult,
   SubmitQuizResponse
 } from '../../services/domain/scenario'
 
@@ -309,9 +312,13 @@ const props = withDefaults(defineProps<{
   isSubmitting: boolean
   result?: SubmitQuizResponse | null
   submitError?: string
+  // A submitted quiz revisited: the correction alone, without the buttons
+  // that move the run on.
+  replay?: boolean
 }>(), {
   result: null,
-  submitError: ''
+  submitError: '',
+  replay: false
 })
 
 const emit = defineEmits<{
@@ -346,6 +353,8 @@ const { t } = useTranslations({
       quizScore: 'Score: {score}% ({correct}/{total} correct)',
       quizSubmitError: 'Failed to submit your answers. Please try again.',
       correctAnswerWas: 'Correct answer:',
+      yourAnswerWas: 'Your answer:',
+      noAnswer: 'no answer',
       freeAnswerPlaceholder: 'Type your answer...',
       true: 'True',
       false: 'False',
@@ -378,6 +387,8 @@ const { t } = useTranslations({
       quizScore: 'Score : {score} % ({correct}/{total} bonnes réponses)',
       quizSubmitError: 'Échec de l\'envoi de vos réponses. Réessayez.',
       correctAnswerWas: 'Bonne réponse :',
+      yourAnswerWas: 'Votre réponse :',
+      noAnswer: 'sans réponse',
       freeAnswerPlaceholder: 'Saisissez votre réponse...',
       true: 'Vrai',
       false: 'Faux',
@@ -462,21 +473,23 @@ function findQuestionText(questionId: string): string {
   return q?.question_text || ''
 }
 
-function formatCorrectAnswer(r: QuizQuestionResult): string {
-  if (!r.correct_answer) return ''
-  const q = quizQuestions.value.find(x => x.id === r.question_id)
-  if (!q) return r.correct_answer
-  // multiple_choice: backend returns the index as a string — translate into the option text
+// An answer as the backend stores it (option index, JSON index list, 'true',
+// free text), in the words the learner saw.
+function formatAnswer(questionId: string, raw: string): string {
+  if (!raw) return ''
+  const q = quizQuestions.value.find(x => x.id === questionId)
+  if (!q) return raw
+  // multiple_choice: the index as a string — translate into the option text
   if (q.question_type === 'multiple_choice') {
     const opts = parseQuestionOptions(q)
-    const idx = Number(r.correct_answer)
+    const idx = Number(raw)
     if (!Number.isNaN(idx) && opts[idx] !== undefined) return opts[idx]
-    return r.correct_answer
+    return raw
   }
-  // multi_answer: backend returns JSON array of indices — translate into joined option texts
+  // multi_answer: a JSON array of indices — translate into joined option texts
   if (q.question_type === 'multi_answer') {
     try {
-      const arr = JSON.parse(r.correct_answer)
+      const arr = JSON.parse(raw)
       if (Array.isArray(arr)) {
         const opts = parseQuestionOptions(q)
         return arr.map((i: number) => opts[i]).filter(Boolean).join(', ')
@@ -484,9 +497,28 @@ function formatCorrectAnswer(r: QuizQuestionResult): string {
     } catch {
       // fall through
     }
-    return r.correct_answer
+    return raw
   }
-  return r.correct_answer
+  if (q.question_type === 'true_false') {
+    if (raw === 'true') return t('scenarioPanel.true')
+    if (raw === 'false') return t('scenarioPanel.false')
+  }
+  return raw
+}
+
+// What the learner answered: recorded by the backend when the quiz is
+// revisited, otherwise what this panel just submitted.
+function submittedAnswer(questionId: string): string {
+  if (props.step.quiz_answers) return props.step.quiz_answers[questionId] ?? ''
+  const q = quizQuestions.value.find(x => x.id === questionId)
+  return q ? answerOf(q) : ''
+}
+
+function answerOf(q: CurrentStepQuestion): string {
+  if (q.question_type === 'multi_answer') {
+    return JSON.stringify(multiAnswerSelections.value[q.id] || [])
+  }
+  return (quizAnswers.value[q.id] || '').toString()
 }
 
 function parseQuestionOptions(q: CurrentStepQuestion): string[] {
@@ -589,11 +621,7 @@ function confirmSubmit() {
   if (props.isSubmitting || !props.isActive) return
   const payload: Record<string, string> = {}
   for (const q of quizQuestions.value) {
-    if (q.question_type === 'multi_answer') {
-      payload[q.id] = JSON.stringify(multiAnswerSelections.value[q.id] || [])
-    } else {
-      payload[q.id] = (quizAnswers.value[q.id] || '').toString()
-    }
+    payload[q.id] = answerOf(q)
   }
   emit('submit', payload)
 }
@@ -882,12 +910,14 @@ function onTryAgain() {
   line-height: var(--line-height-relaxed);
 }
 
+.qb-yours,
 .qb-correct {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   padding-left: calc(var(--font-size-sm) + var(--spacing-sm));
 }
 
+.qb-yours strong,
 .qb-correct strong {
   color: var(--color-text-primary);
   font-weight: var(--font-weight-semibold);

@@ -93,6 +93,7 @@ export class ScenarioMock {
   private verifyCursor = new Map<number, number>();
   private hintsRevealed = new Map<number, number>();
   private flagAttempts = new Map<number, number>();
+  private quizAnswers = new Map<number, Record<string, string>>();
   private validatedFlags: { step_order: number; flag: string; submitted_at: string }[] = [];
   private provisioningPollsLeft = 0;
   /** True while a per-step (post-validation) provisioning wait is running —
@@ -163,6 +164,27 @@ export class ScenarioMock {
     return Math.round((sum / this.steps.length) * 100);
   }
 
+  private gradeQuiz(step: MockStep, answers: Record<string, string>) {
+    const questions = step.questions ?? [];
+    const perQuestion = questions.map((q) => ({
+      question_id: q.id,
+      correct: (answers[q.id] ?? '') === q.correct,
+      correct_answer: q.correct,
+      explanation: q.explanation,
+    }));
+    const correctCount = perQuestion.filter((r) => r.correct).length;
+    const score = questions.length ? correctCount / questions.length : 0;
+    return { total: questions.length, score, correct_count: correctCount, per_question_results: perQuestion };
+  }
+
+  /** Mirrors ocf-core: a submitted quiz comes back with the learner's answers
+   *  and its correction, except on an exam step. */
+  private quizReplay(step: MockStep) {
+    const answers = this.quizAnswers.get(step.order);
+    if (!answers || !(step.show_immediate_feedback ?? true)) return {};
+    return { quiz_answers: answers, quiz_result: this.gradeQuiz(step, answers) };
+  }
+
   private stepPayload(step: MockStep) {
     const completed = this.stepScores.has(step.order);
     return {
@@ -188,6 +210,7 @@ export class ScenarioMock {
       has_flag: step.type === 'flag',
       hints_total_count: step.hints?.length ?? 0,
       hints_revealed: this.hintsRevealed.get(step.order) ?? 0,
+      ...this.quizReplay(step),
     };
   }
 
@@ -384,24 +407,12 @@ export class ScenarioMock {
       const step = this.stepByOrder(this.currentStep);
       if (!step || !step.questions) return route.fulfill(json({ error: 'no quiz' }, 500));
       const answers = (route.request().postDataJSON() as { answers: Record<string, string> }).answers;
-      const perQuestion = step.questions.map((q) => ({
-        question_id: q.id,
-        correct: (answers[q.id] ?? '') === q.correct,
-        correct_answer: q.correct,
-        explanation: q.explanation,
-      }));
-      const correctCount = perQuestion.filter((r) => r.correct).length;
-      const score = step.questions.length ? correctCount / step.questions.length : 0;
-      const next = this.advance(step.order, score);
+      const { total, ...grade } = this.gradeQuiz(step, answers);
+      this.quizAnswers.set(step.order, answers);
+      const next = this.advance(step.order, grade.score);
       // Mirrors ocf-core: a learner's exam run (feedback off) gets no grade back.
       const graded = step.show_immediate_feedback ?? true;
-      return route.fulfill(
-        json({
-          total: step.questions.length,
-          next_step: next,
-          ...(graded ? { score, correct_count: correctCount, per_question_results: perQuestion } : {}),
-        })
-      );
+      return route.fulfill(json({ total, next_step: next, ...(graded ? grade : {}) }));
     });
 
     await page.route(`**/api/v1/scenario-sessions/${MOCK_SESSION_ID}/steps/*/hints/*/reveal`, (route) => {

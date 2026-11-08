@@ -260,6 +260,54 @@ test.describe('Scenario player (mocked backend)', () => {
     await expect(page.getByTestId('scenario-completed')).toBeVisible({ timeout: 15_000 });
   });
 
+  test('a submitted learning quiz, revisited, shows the answers and the correction', async ({ page }) => {
+    const steps: MockStep[] = [
+      {
+        order: 1,
+        title: 'Warm-up quiz',
+        type: 'quiz',
+        show_immediate_feedback: true,
+        questions: [
+          { id: 'q1', order: 1, question_text: 'Which command lists files?', question_type: 'multiple_choice', options: ['cd', 'ls', 'rm'], correct: '1' },
+          { id: 'q2', order: 2, question_text: 'The root user has UID 0.', question_type: 'true_false', correct: 'true' },
+        ],
+      },
+      { order: 2, title: 'Read on', type: 'info', text: 'Next part.' },
+    ];
+    const mock = new ScenarioMock(steps);
+    await mock.install(page);
+    await login(page, E2E_USER, E2E_PASS);
+    await launchIntoPlayer(page, mock);
+
+    // q1 right ("ls"), q2 wrong ("false"). Next is the blue button until
+    // every question has an answer; then Submit takes over.
+    await page.getByTestId('quiz-option').filter({ hasText: 'ls' }).click();
+    await expect(page.getByTestId('quiz-next')).toHaveClass(/verify-btn/);
+    await expect(page.getByTestId('quiz-validate')).toHaveClass(/btn-secondary/);
+    await page.getByTestId('quiz-next').click();
+    await page.getByTestId('quiz-option').filter({ hasText: /faux|false/i }).click();
+    await expect(page.getByTestId('quiz-validate')).toHaveClass(/verify-btn/);
+    await expect(page.getByTestId('quiz-next')).toHaveClass(/btn-secondary/);
+    await page.getByTestId('quiz-validate').click();
+    await page.getByTestId('quiz-confirm-submit').click();
+    await page.getByTestId('quiz-advance').click();
+    await expect(page.getByTestId('scenario-step-title')).toHaveText('Read on', { timeout: 15_000 });
+
+    // Back to the quiz from the progress dots.
+    await page.getByTestId('scenario-progress-dot').first().click();
+    await expect(page.getByTestId('scenario-review-banner')).toBeVisible();
+    const items = page.getByTestId('quiz-breakdown-item');
+    await expect(items).toHaveCount(2);
+    await expect(items.nth(0)).toHaveClass(/is-correct/);
+    await expect(items.nth(0).getByTestId('quiz-breakdown-yours')).toContainText('ls');
+    await expect(items.nth(1)).toHaveClass(/is-incorrect/);
+    await expect(items.nth(1).getByTestId('quiz-breakdown-yours')).toContainText(/faux|false/i);
+    await expect(items.nth(1)).toContainText(/vrai|true/i);
+    // Nothing left to submit or move on from.
+    await expect(page.getByTestId('quiz-advance')).toHaveCount(0);
+    await expect(page.getByTestId('quiz-finish')).toHaveCount(0);
+  });
+
   // A failed check used to open the first hint by itself. Revealing a hint is
   // recorded server-side, so doing it for the learner both takes the decision
   // away and scores them as having asked for help they never asked for.
