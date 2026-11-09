@@ -66,7 +66,6 @@ vi.mock('../../src/services/domain/terminal/terminalService', () => ({
 // Stub the xterm dynamic imports so initXterm() doesn't try to load real DOM.
 vi.mock('@xterm/xterm', () => ({ Terminal: class { open() {} loadAddon() {} attachCustomKeyEventHandler() {} dispose() {} onResize() {} focus() {} reset() {} cols = 80; rows = 24; element = null } }))
 vi.mock('@xterm/addon-fit', () => ({ FitAddon: class { fit() {} dispose() {} } }))
-vi.mock('@xterm/addon-attach', () => ({ AttachAddon: class { dispose() {} } }))
 
 import TerminalViewer from '../../src/components/Terminal/TerminalViewer.vue'
 

@@ -22,7 +22,6 @@
         :end-reason="endReason"
         :has-scenario="hasScenario"
         :scenario-crash-traps="scenarioCrashTraps"
-        supervision-enabled
         :exposed-ports-enabled="showExposedPorts"
         use-settings-card
         :title="sessionInfo?.name || ('Terminal ' + (sessionInfo?.session_id?.substring(0, 8) || ''))"

@@ -6,7 +6,7 @@
  * → TextDecoder → routeSupervisionFrame → branch terminal / control — is currently
  * duplicated verbatim in two places:
  *   - SupervisionViewer.vue      (socket.onmessage, ~L278-295)
- *   - TerminalViewer.vue         (attachSupervisedSocket, ~L655-665)
+ *   - TerminalViewer.vue         (attachSocket)
  * A change to one that misses the other re-opens the safety-critical bug the router
  * exists to prevent (control JSON leaking into the shell, or a wrong indicator).
  *

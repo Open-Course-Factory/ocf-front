@@ -16,7 +16,7 @@
  *
  * WHERE THE USER SEES IT (primary path): the student session page
  *   /terminal-session/:id → TerminalSessionView → TerminalSessionPanel
- *   → TerminalViewer with `use-settings-card` + `supervision-enabled`.
+ *   → TerminalViewer with `use-settings-card`.
  * `useSettingsCard` is true there, so the visible title bar is the SettingsCard
  * `.card-header`. The right group lives in the `#headerActions` slot; the centered
  * chip lives in a NEW `#headerCenter` slot that SettingsCard renders as a direct
@@ -102,7 +102,6 @@ vi.mock('../../src/services/domain/terminal/terminalService', () => ({
 
 vi.mock('@xterm/xterm', () => ({ Terminal: class { open() {} loadAddon() {} attachCustomKeyEventHandler() {} dispose() {} onResize() {} onData() { return { dispose() {} } } focus() {} reset() {} write() {} paste() {} cols = 80; rows = 24; element = null } }))
 vi.mock('@xterm/addon-fit', () => ({ FitAddon: class { fit() {} dispose() {} } }))
-vi.mock('@xterm/addon-attach', () => ({ AttachAddon: class { dispose() {} } }))
 
 import TerminalViewer from '../../src/components/Terminal/TerminalViewer.vue'
 
@@ -140,7 +139,6 @@ function mountViewer(props: Record<string, unknown> = {}) {
     props: {
       sessionInfo: { session_id: 'sess-test', state: 'running', expires_at: '2999-01-01T00:00:00Z' },
       autoConnect: false,
-      supervisionEnabled: true,
       ...props
     },
     global: {
@@ -332,12 +330,6 @@ describe('TerminalViewer — supervision indicator centered in the title bar', (
         expect(wrapper.find('.terminal-container').classes()).not.toContain('has-supervision-banner')
       }
     })
-
-    it('renders no chip when supervision is disabled even if a watched state leaks in', async () => {
-      const wrapper = mountViewer({ supervisionEnabled: false })
-      await setSupervision(wrapper, { watched: true })
-      expect(wrapper.find('.supervision-chip').exists()).toBe(false)
-    })
   })
 
   // ── FALLBACK: standalone with no header at all — RGPD indicator must survive ──
@@ -412,8 +404,8 @@ describe('TerminalViewer — supervision indicator centered in the title bar', (
   })
 
   describe('no supervision — nothing renders (zero input)', () => {
-    it('renders neither chip nor anchor nor slot nor banner when supervision is off and idle', async () => {
-      const wrapper = mountViewer({ useSettingsCard: true, supervisionEnabled: false })
+    it('renders neither chip nor anchor nor slot nor banner while nobody supervises', async () => {
+      const wrapper = mountViewer({ useSettingsCard: true })
       await nextTick()
 
       expect(wrapper.find('.supervision-chip').exists()).toBe(false)

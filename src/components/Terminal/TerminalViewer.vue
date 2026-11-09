@@ -331,13 +331,6 @@ interface Props {
   // (an ordinary terminal, or a scenario without traps) a killed shell is just
   // a killed shell and the session stays alive.
   scenarioCrashTraps?: boolean
-  // Supervision-aware console: when true, the console connection carries control
-  // frames (a trainer may watch, or type alongside the learner in, this terminal). The
-  // socket is wired through the shared supervision message handler instead of the
-  // plain AttachAddon so control metadata never leaks into the shell, and a banner is
-  // shown while watched/controlled. Default false keeps the normal console path
-  // byte-for-byte unchanged.
-  supervisionEnabled?: boolean
   // Public port exposure chip in the header. The parent decides where it
   // belongs (plain terminals, scenarios that allow it); the chip itself hides
   // when the backend says the feature is not for this session.
@@ -374,7 +367,6 @@ const props = withDefaults(defineProps<Props>(), {
   endReason: '',
   hasScenario: false,
   scenarioCrashTraps: false,
-  supervisionEnabled: false,
   exposedPortsEnabled: false
 })
 
@@ -538,11 +530,11 @@ const SESSION_STOPPED_CLOSE_CODE = 4300
 let autoRetriesLeft = AUTO_RETRY_ATTEMPTS
 let autoRetryTimeout: ReturnType<typeof setTimeout> | null = null
 
-// Supervision indicator state (only meaningful when props.supervisionEnabled).
-// Driven by binary control frames routed through routeSupervisionFrame.
+// Supervision indicator state, driven by binary control frames routed through
+// routeSupervisionFrame. ocf-core only asks tt-backend for them on a supervisable
+// session, so an unsupervised console never shows the chip.
 const supervisionState = ref<SupervisionState>(initialSupervisionState())
 const supervisionChip = computed(() => {
-  if (!props.supervisionEnabled) return null
   if (supervisionState.value.controlled) {
     return { icon: '✋', text: t('terminal.supervisionControlled'), controlled: true }
   }
@@ -559,9 +551,7 @@ let supervisedDataDisposable: { dispose: () => void } | null = null
 // xterm.js modules (lazy loaded)
 let Terminal: any = null
 let FitAddon: any = null
-let AttachAddon: any = null
 let fitAddon: any = null
-let attachAddon: any = null
 
 // Resize observer
 let resizeObserver: ResizeObserver | null = null
@@ -603,15 +593,13 @@ async function initXterm(): Promise<boolean> {
   loadingMessage.value = t('terminal.loadingModules')
 
   try {
-    const [xtermModule, fitModule, attachModule] = await Promise.all([
+    const [xtermModule, fitModule] = await Promise.all([
       import('@xterm/xterm'),
-      import('@xterm/addon-fit'),
-      import('@xterm/addon-attach')
+      import('@xterm/addon-fit')
     ])
 
     Terminal = xtermModule.Terminal
     FitAddon = fitModule.FitAddon
-    AttachAddon = attachModule.AttachAddon
 
     // Create terminal instance
     terminal.value = new Terminal({
@@ -746,11 +734,11 @@ function setupResizeObserver() {
   window.addEventListener('resize', handleResize)
 }
 
-// Supervision-aware socket wiring (used instead of AttachAddon when
-// props.supervisionEnabled). Incoming TEXT frames are written to xterm; incoming
-// BINARY frames are parsed as control metadata and update the learner indicator
-// (never written to the shell). Outgoing keystrokes are forwarded as TEXT frames.
-function attachSupervisedSocket() {
+// Socket wiring. Incoming TEXT frames are written to xterm; incoming BINARY frames
+// are control metadata that update the learner indicator and are never written to
+// the shell. ocf-core, not this client, decides whether a console carries them, so
+// every console is wired this way. Outgoing keystrokes are forwarded as TEXT frames.
+function attachSocket() {
   if (!socket.value || socket.value.readyState !== WebSocket.OPEN) return
 
   // Deliver binary control frames as ArrayBuffer so we can distinguish them from
@@ -807,12 +795,7 @@ async function connectToTerminal() {
     const apiUrl = import.meta.env.VITE_API_URL
     const token = userStore.secretToken
 
-    let wsUrl = `${protocol}://${apiUrl}/api/v1/terminals/${displaySessionId.value}/console?width=${terminal.value.cols}&height=${terminal.value.rows}`
-    // Opt the console into supervision control frames so the learner indicator
-    // can react to a trainer watching / taking control.
-    if (props.supervisionEnabled) {
-      wsUrl += `&control=1`
-    }
+    const wsUrl = `${protocol}://${apiUrl}/api/v1/terminals/${displaySessionId.value}/console?width=${terminal.value.cols}&height=${terminal.value.rows}`
     if (!token) {
       console.warn('No authentication token available for WebSocket connection')
     }
@@ -831,30 +814,7 @@ async function connectToTerminal() {
       // Clear old terminal content before attaching new session
       terminal.value.reset()
 
-      // Attach socket to terminal
-      if (attachAddon) {
-        try {
-          attachAddon.dispose()
-        } catch {
-          // Addon may not be fully loaded yet
-        }
-        attachAddon = null
-      }
-
-      if (props.supervisionEnabled) {
-        // Supervision-aware wiring: control frames must never reach the shell, so we
-        // bypass AttachAddon and route every frame through the shared handler instead.
-        attachSupervisedSocket()
-      } else if (socket.value && socket.value.readyState === WebSocket.OPEN) {
-        attachAddon = new AttachAddon(socket.value)
-        try {
-          terminal.value.loadAddon(attachAddon)
-        } catch {
-          // xterm may throw "Could not dispose an addon that has not been loaded"
-          // when the socket's onclose fires during activate() — this is a benign
-          // race condition, the addon still works after loadAddon completes
-        }
-      }
+      attachSocket()
 
       // Send resize events to backend as binary WebSocket frames
       // so the container PTY dimensions stay in sync with the browser
@@ -1099,15 +1059,6 @@ function cleanup() {
   }
 
   // Dispose addons before terminal to avoid "addon not loaded" errors
-  if (attachAddon) {
-    try {
-      attachAddon.dispose()
-    } catch {
-      // Addon may not be fully loaded yet
-    }
-    attachAddon = null
-  }
-
   if (fitAddon) {
     try {
       fitAddon.dispose()

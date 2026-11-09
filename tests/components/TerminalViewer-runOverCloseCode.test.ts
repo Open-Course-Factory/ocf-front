@@ -86,7 +86,6 @@ vi.mock('@xterm/xterm', () => ({
   }
 }))
 vi.mock('@xterm/addon-fit', () => ({ FitAddon: class { fit() {} dispose() {} } }))
-vi.mock('@xterm/addon-attach', () => ({ AttachAddon: class { dispose() {} } }))
 
 import TerminalViewer from '../../src/components/Terminal/TerminalViewer.vue'
 
