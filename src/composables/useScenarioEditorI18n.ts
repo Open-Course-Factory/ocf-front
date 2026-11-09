@@ -229,6 +229,8 @@ export function useScenarioEditorI18n() {
       previewFromStepConfirmBody: "Builds a fresh machine as a learner resuming at this step would get it: setup, then every step's setup script up to this one. Nothing the learner would have typed is replayed.",
       previewErrorUnknownStep: 'This step no longer exists in the saved scenario. Reload the scenario, then try again.',
       previewErrorForbidden: 'You cannot preview this scenario: you are not allowed to, or your plan does not include terminals.',
+      previewBlockedByRun: 'You already have a run of this scenario in progress, outside preview. Starting the preview abandons that run: its progress is lost.',
+      previewAbandonRunAction: 'Abandon that run and preview',
       previewErrorSessionExists: 'You already have a run of this scenario in progress, outside preview. Finish or abandon it, then try again.',
     }
   },
@@ -448,6 +450,8 @@ export function useScenarioEditorI18n() {
       previewFromStepConfirmBody: "Construit une machine neuve, telle que l'aurait un apprenant qui reprend à cette étape : la préparation, puis le script de préparation de chaque étape jusqu'à celle-ci. Rien de ce que l'apprenant aurait tapé n'est rejoué.",
       previewErrorUnknownStep: "Cette étape n'existe plus dans le scénario enregistré. Rechargez le scénario, puis réessayez.",
       previewErrorForbidden: "Vous ne pouvez pas prévisualiser ce scénario : vous n'en avez pas le droit, ou votre abonnement n'inclut pas de terminaux.",
+      previewBlockedByRun: 'Vous avez déjà une partie de ce scénario en cours, hors prévisualisation. Démarrer la prévisualisation abandonne cette partie : sa progression est perdue.',
+      previewAbandonRunAction: 'Abandonner cette partie et prévisualiser',
       previewErrorSessionExists: 'Vous avez déjà une partie de ce scénario en cours, hors prévisualisation. Terminez-la ou abandonnez-la, puis réessayez.',
     }
   }

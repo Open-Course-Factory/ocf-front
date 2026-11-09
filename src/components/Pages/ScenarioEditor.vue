@@ -248,7 +248,7 @@
       :title="t('scenarioEditor.previewConfirmTitle')"
       size="small"
       :show-default-footer="true"
-      :confirm-text="isPreviewLoading ? t('scenarioEditor.previewStarting') : t('scenarioEditor.previewConfirmAction')"
+      :confirm-text="isPreviewLoading ? t('scenarioEditor.previewStarting') : t(blockingRunId ? 'scenarioEditor.previewAbandonRunAction' : 'scenarioEditor.previewConfirmAction')"
       :cancel-text="t('scenarioEditor.cancel')"
       :is-loading="isPreviewLoading"
       confirm-icon="fas fa-play"
@@ -257,6 +257,7 @@
     >
       <p>{{ previewFromStepOrder === null ? t('scenarioEditor.previewConfirmBody') : t('scenarioEditor.previewFromStepConfirmBody') }}</p>
       <p v-if="previewStaysInEditor">{{ t('scenarioEditor.previewForCheckBody') }}</p>
+      <p v-if="blockingRunId" class="preview-blocked">{{ t('scenarioEditor.previewBlockedByRun') }}</p>
     </BaseModal>
   </div>
 </template>
@@ -1078,11 +1079,15 @@ const previewFromStepOrder = ref<number | null>(null)
 // where the unsaved script is: the step editor runs the check once it is up.
 const previewStaysInEditor = ref(false)
 const checkPreviewSessionId = ref<string | null>(null)
+// The author's own run of this scenario that refused the preview (409
+// session_exists): confirming again abandons it, then starts the preview.
+const blockingRunId = ref<string | null>(null)
 
 const openPreviewConfirm = (fromStepOrder: number | null = null, staysInEditor = false) => {
   if (!canPreviewScenario.value) return
   previewFromStepOrder.value = fromStepOrder
   previewStaysInEditor.value = staysInEditor
+  blockingRunId.value = null
   showPreviewConfirmModal.value = true
 }
 
@@ -1091,12 +1096,19 @@ const closePreviewConfirm = () => {
   showPreviewConfirmModal.value = false
   previewFromStepOrder.value = null
   previewStaysInEditor.value = false
+  blockingRunId.value = null
 }
 
 const handleConfirmPreview = async () => {
   if (!selectedScenarioId.value) return
   isPreviewLoading.value = true
   try {
+    if (blockingRunId.value) {
+      // Best-effort: a run that ended meanwhile no longer blocks, and one that
+      // still does comes back as the same 409.
+      await scenarioSessionService.abandonSession(blockingRunId.value).catch(() => {})
+      blockingRunId.value = null
+    }
     const orgId = currentScenario.value?.organization_id || undefined
     const result = await scenarioSessionService.previewScenario(
       selectedScenarioId.value,
@@ -1123,6 +1135,10 @@ const handleConfirmPreview = async () => {
     })
   } catch (err: any) {
     const data = err?.response?.data
+    if (err?.response?.status === 409 && data?.reason === 'session_exists' && data?.session_id) {
+      blockingRunId.value = data.session_id
+      return
+    }
     const refusal = previewRefusalKey(err?.response?.status, data, previewFromStepOrder.value)
     notification.showError(refusal
       ? t(refusal)
@@ -1134,6 +1150,10 @@ const handleConfirmPreview = async () => {
 </script>
 
 <style scoped>
+.preview-blocked {
+  color: var(--color-warning-text);
+}
+
 .ocf-scenario-workbench {
   display: flex;
   flex-direction: column;

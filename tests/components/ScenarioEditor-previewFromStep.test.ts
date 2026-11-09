@@ -140,3 +140,27 @@ describe('ScenarioEditor.vue — a refused preview says why', () => {
     expect(new Set(REFUSALS.map((k) => en[k])).size).toBe(REFUSALS.length)
   })
 })
+
+describe('ScenarioEditor.vue — a preview blocked by the author\'s own run offers to abandon it', () => {
+  it('keeps the modal open on a 409 that names the blocking run', () => {
+    expect(previewHandler).toMatch(/data\?\.reason === 'session_exists' && data\?\.session_id\)\s*{\s*blockingRunId\.value = data\.session_id\s*return/)
+  })
+
+  it('abandons that run before asking for the preview again', () => {
+    const abandonAt = previewHandler.indexOf('abandonSession(blockingRunId.value)')
+    expect(abandonAt).toBeGreaterThan(-1)
+    expect(abandonAt).toBeLessThan(previewHandler.indexOf('previewScenario('))
+  })
+
+  it('says so in the modal and on its button', () => {
+    expect(previewConfirmModal).toMatch(/v-if="blockingRunId"[^>]*>\{\{ t\('scenarioEditor\.previewBlockedByRun'\) \}\}/)
+    expect(previewConfirmModal).toMatch(/blockingRunId \? 'scenarioEditor\.previewAbandonRunAction'/)
+  })
+
+  it.each(['previewBlockedByRun', 'previewAbandonRunAction'])('has %s in English and French', (key) => {
+    const { en, fr } = editorMessages()
+    expect(en[key]).toBeTruthy()
+    expect(fr[key]).toBeTruthy()
+    expect(fr[key]).not.toBe(en[key])
+  })
+})
