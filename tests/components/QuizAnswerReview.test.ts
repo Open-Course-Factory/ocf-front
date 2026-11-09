@@ -101,6 +101,33 @@ describe('QuizAnswerReview', () => {
     expect(options[2].find('.quiz-option-tag i.fas.fa-times').exists()).toBe(true)
   })
 
+  it('shows a multi_answer question as its options, never as raw index lists', () => {
+    // As stored by the backend: the learner picked option 1, option 0 was expected.
+    const wrapper = mountReview(makeStep([makeQuestion({
+      question_type: 'multi_answer',
+      options: JSON.stringify(['docker ps', 'docker images']),
+      student_answer: '[1]',
+      correct_answer: '[0]'
+    })]))
+    const options = wrapper.findAll('.quiz-question-option')
+
+    expect(wrapper.text()).not.toContain('[1]')
+    expect(wrapper.text()).not.toContain('[0]')
+    expect(options[0].classes()).toContain('option-correct')
+    expect(options[1].classes()).toContain('option-student-wrong')
+  })
+
+  it('shows true/false answers as words', () => {
+    const wrapper = mountReview(makeStep([makeQuestion({
+      question_type: 'true_false',
+      options: '',
+      student_answer: 'false',
+      correct_answer: 'true'
+    })]))
+    const values = wrapper.findAll('.quiz-answer-value').map(v => v.text())
+    expect(values).toEqual(['False', 'True'])
+  })
+
   it('marks a fully-correct pick as student-correct', () => {
     // student picked idx1 AND idx1 is correct.
     const wrapper = mountReview(makeStep([makeQuestion({ student_answer: '1', correct_answer: '1', is_correct: true })]))

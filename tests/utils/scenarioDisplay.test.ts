@@ -167,23 +167,21 @@ describe('displayAnswer', () => {
 })
 
 describe('isOrphanStudentAnswer', () => {
-  const options = ['Alpha', 'Beta', 'Gamma']
-
   it('returns false when there is no student answer', () => {
-    expect(isOrphanStudentAnswer(makeQuestion({ student_answer: '' }) as any, options)).toBe(false)
+    expect(isOrphanStudentAnswer(makeQuestion({ student_answer: '' }) as any)).toBe(false)
   })
 
   it('returns false when the answer is a valid index into options', () => {
-    expect(isOrphanStudentAnswer(makeQuestion({ student_answer: '2' }) as any, options)).toBe(false)
+    expect(isOrphanStudentAnswer(makeQuestion({ student_answer: '2' }) as any)).toBe(false)
   })
 
   it('returns false when the answer matches an option text literally (legacy form)', () => {
-    expect(isOrphanStudentAnswer(makeQuestion({ student_answer: 'Beta' }) as any, options)).toBe(false)
+    expect(isOrphanStudentAnswer(makeQuestion({ student_answer: 'Beta' }) as any)).toBe(false)
   })
 
   it('returns true when the answer resolves to nothing (orphan)', () => {
-    expect(isOrphanStudentAnswer(makeQuestion({ student_answer: '9' }) as any, options)).toBe(true)
-    expect(isOrphanStudentAnswer(makeQuestion({ student_answer: 'Zeta' }) as any, options)).toBe(true)
+    expect(isOrphanStudentAnswer(makeQuestion({ student_answer: '9' }) as any)).toBe(true)
+    expect(isOrphanStudentAnswer(makeQuestion({ student_answer: 'Zeta' }) as any)).toBe(true)
   })
 })
 
@@ -208,6 +206,32 @@ describe('resolveAnswerText', () => {
   it('returns empty string for an empty raw answer', () => {
     const q = makeQuestion()
     expect(resolveAnswerText(q as any, '')).toBe('')
+  })
+})
+
+describe('multi_answer questions (answers stored as a JSON index list)', () => {
+  const multi = (student: string, correct: string) => makeQuestion({
+    question_type: 'multi_answer',
+    options: JSON.stringify(['docker ps', 'docker images', 'docker rm']),
+    student_answer: student,
+    correct_answer: correct
+  })
+
+  it('resolves both answers to the option texts', () => {
+    const q = multi('[1]', '[0,2]')
+    expect(resolveAnswerText(q as any, q.student_answer)).toBe('docker images')
+    expect(resolveAnswerText(q as any, q.correct_answer)).toBe('docker ps, docker rm')
+  })
+
+  it('tags each option as picked, expected or both', () => {
+    const q = multi('[0,1]', '[0,2]')
+    expect([0, 1, 2].map(i => optionRole(i, q as any))).toEqual(['student-correct', 'student-wrong', 'correct'])
+  })
+
+  it('treats an empty list as no answer, and an unparsable or out-of-range one as orphan', () => {
+    expect(isOrphanStudentAnswer(multi('[]', '[0]') as any)).toBe(false)
+    expect(isOrphanStudentAnswer(multi('[7]', '[0]') as any)).toBe(true)
+    expect(isOrphanStudentAnswer(multi('docker ps', '[0]') as any)).toBe(true)
   })
 })
 

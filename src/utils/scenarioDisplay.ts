@@ -34,20 +34,45 @@ export function parseQuizOptions(rawOptions?: string): string[] {
   }
 }
 
-// Per multiple-choice option, returns one of:
-//   'student-correct' — student picked this AND it's the right answer
-//   'correct'         — the right answer (student picked something else)
-//   'student-wrong'   — student picked this AND it's wrong
-//   ''                — not picked, not the right answer
-//
-// Multiple-choice answers are stored as the option's index as a string —
-// the player (ScenarioPanel.vue) submits `String(idx)` and the backend
-// stores `correct_answer` as the same index string. So we compare indexes,
-// not the literal option text.
+// Questions answered by picking options, rendered as an option list.
+export function isChoiceQuestion(q: SessionStepQuestionDetail): boolean {
+  return q.question_type === 'multiple_choice' || q.question_type === 'multi_answer'
+}
+
+// The options a stored answer picks. multiple_choice stores one index as a
+// string ("1"; legacy data may hold the option text), multi_answer a JSON list
+// of indexes ("[0,2]"). Returns [] for no answer, null when the answer does not
+// match the options (edited options, legacy data).
+export function answerIndexes(q: SessionStepQuestionDetail, raw: string): number[] | null {
+  if (!raw) return []
+  const options = parseQuizOptions(q.options)
+  const inRange = (i: unknown): i is number =>
+    typeof i === 'number' && Number.isInteger(i) && i >= 0 && i < options.length
+  if (q.question_type === 'multiple_choice') {
+    const idx = Number(raw)
+    if (inRange(idx)) return [idx]
+    const textIdx = options.indexOf(raw)
+    return textIdx >= 0 ? [textIdx] : null
+  }
+  if (q.question_type === 'multi_answer') {
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.every(inRange)) return parsed
+    } catch {
+      // not a JSON list: unresolvable
+    }
+  }
+  return null
+}
+
+// Per option of a choice question, returns one of:
+//   'student-correct' — student picked this AND it's expected
+//   'correct'         — expected, the student did not pick it
+//   'student-wrong'   — student picked this AND it's not expected
+//   ''                — not picked, not expected
 export function optionRole(optIdx: number, q: SessionStepQuestionDetail): OptionRole {
-  const idxStr = String(optIdx)
-  const isStudent = idxStr === q.student_answer
-  const isCorrect = idxStr === q.correct_answer
+  const isStudent = (answerIndexes(q, q.student_answer) ?? []).includes(optIdx)
+  const isCorrect = (answerIndexes(q, q.correct_answer) ?? []).includes(optIdx)
   if (isStudent && isCorrect) return 'student-correct'
   if (isCorrect) return 'correct'
   if (isStudent) return 'student-wrong'
@@ -72,32 +97,21 @@ export function displayAnswer(answer: string): string {
   return answer && answer.trim() !== '' ? answer : ''
 }
 
-// Returns true when student_answer is set but cannot be resolved against the
-// options list (legacy free-text-on-mc data, edited options, etc.). Used to
-// decide whether to show the orphan-answer fallback line. We accept either
-// the index form ("0") or the literal text form for backwards compat.
-export function isOrphanStudentAnswer(q: SessionStepQuestionDetail, options: string[]): boolean {
-  if (!q.student_answer) return false
-  const asIndex = Number(q.student_answer)
-  if (Number.isInteger(asIndex) && asIndex >= 0 && asIndex < options.length) return false
-  if (options.includes(q.student_answer)) return false
-  return true
+// True when a choice question's student_answer is set but matches no option,
+// so the option list cannot show it and the raw value must be.
+export function isOrphanStudentAnswer(q: SessionStepQuestionDetail): boolean {
+  return !!q.student_answer && answerIndexes(q, q.student_answer) === null
 }
 
-// Resolve a stored answer (string) to display text. For multiple_choice the
-// answer is an option index ("0", "1", ...) and we look up the text in the
-// options list. For other types it's the literal value. Returns '' when the
-// answer is empty.
+// A stored answer in the words the learner saw: option texts for choice
+// questions (joined with ", " for multi_answer), the literal value otherwise.
+// Returns '' when the answer is empty, the raw value when it matches no option.
 export function resolveAnswerText(q: SessionStepQuestionDetail, raw: string): string {
-  if (!raw) return ''
-  if (q.question_type === 'multiple_choice') {
-    const opts = parseQuizOptions(q.options)
-    const idx = Number(raw)
-    if (Number.isInteger(idx) && idx >= 0 && idx < opts.length) {
-      return opts[idx]
-    }
-  }
-  return raw
+  if (!isChoiceQuestion(q)) return raw
+  const indexes = answerIndexes(q, raw)
+  if (indexes === null) return raw
+  const options = parseQuizOptions(q.options)
+  return indexes.map(i => options[i]).join(', ')
 }
 
 export function quizCorrectCount(step: SessionStepDetail): number {

@@ -26,7 +26,7 @@
         </div>
         <div class="quiz-question-text">{{ q.question_text }}</div>
         <div
-          v-if="q.question_type === 'multiple_choice' && parseQuizOptions(q.options).length > 0"
+          v-if="isChoiceQuestion(q) && parseQuizOptions(q.options).length > 0"
           class="quiz-question-options"
         >
           <div
@@ -45,12 +45,11 @@
               {{ optionRoleText(optIdx, q) }}
             </span>
           </div>
-          <!-- If the student's submitted value cannot be resolved as an
-               index OR a literal option (legacy data, edited options,
-               etc.), surface the raw value so the trainer still sees
-               what was actually submitted. -->
+          <!-- If the student's submitted value matches no option (legacy
+               data, edited options, etc.), surface the raw value so the
+               trainer still sees what was actually submitted. -->
           <div
-            v-if="isOrphanStudentAnswer(q, parseQuizOptions(q.options))"
+            v-if="isOrphanStudentAnswer(q)"
             class="quiz-answer-line"
           >
             <span class="quiz-answer-label">{{ t('groupScenarios.yourAnswer') }}:</span>
@@ -66,12 +65,12 @@
               class="quiz-answer-value"
               :class="q.is_correct ? 'quiz-answer-correct' : 'quiz-answer-wrong'"
             >
-              {{ displayAnswer(q.student_answer) || t('groupScenarios.noAnswer') }}
+              {{ answerText(q, q.student_answer) || t('groupScenarios.noAnswer') }}
             </span>
           </div>
           <div class="quiz-answer-line">
             <span class="quiz-answer-label">{{ t('groupScenarios.correctAnswer') }}:</span>
-            <span class="quiz-answer-value quiz-answer-correct">{{ q.correct_answer }}</span>
+            <span class="quiz-answer-value quiz-answer-correct">{{ answerText(q, q.correct_answer) }}</span>
           </div>
         </div>
         <div v-if="q.explanation" class="quiz-question-explanation">
@@ -90,8 +89,10 @@ import {
   optionRoleClass,
   optionRoleIcon,
   displayAnswer,
+  isChoiceQuestion,
   isOrphanStudentAnswer,
   parseQuizOptions,
+  resolveAnswerText,
   quizCorrectCount,
   quizQuestionTotal
 } from '../../utils/scenarioDisplay'
@@ -111,6 +112,8 @@ const { t } = useTranslations({
       correctIndicator: 'Correct',
       incorrectIndicator: 'Incorrect',
       noAnswer: 'No answer',
+      true: 'True',
+      false: 'False',
       questionsCorrect: '{correct}/{total} correct'
     }
   },
@@ -123,10 +126,20 @@ const { t } = useTranslations({
       correctIndicator: 'Correcte',
       incorrectIndicator: 'Incorrecte',
       noAnswer: 'Pas de réponse',
+      true: 'Vrai',
+      false: 'Faux',
       questionsCorrect: '{correct}/{total} correctes'
     }
   }
 })
+
+// A stored answer in the words the learner saw; '' when empty.
+function answerText(q: SessionStepQuestionDetail, raw: string): string {
+  if (q.question_type === 'true_false' && (raw === 'true' || raw === 'false')) {
+    return t(`groupScenarios.${raw}`)
+  }
+  return displayAnswer(resolveAnswerText(q, raw))
+}
 
 function optionRoleText(optIdx: number, q: SessionStepQuestionDetail): string {
   switch (optionRole(optIdx, q)) {
