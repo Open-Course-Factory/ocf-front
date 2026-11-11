@@ -358,6 +358,8 @@ const { t } = useTranslations({
       unavailablePlanHint: 'Upgrade your plan to access larger machines.',
       unavailableOfflineHint: 'The required machines may be temporarily offline. Try again later.',
       unavailableNoDistributionHint: 'Contact your administrator to configure compatible machines.',
+      unavailableServerNotAllowed: 'The server chosen for this scenario is not available to you.',
+      unavailableServerNotAllowedHint: 'Ask your trainer to choose another server, or Automatic.',
       unavailableBudget: 'Your resource budget is fully used by your current sessions.',
       unavailableBudgetHint: 'Stop a running session to free capacity, or upgrade your plan.',
       unavailableSize: 'This scenario needs a machine larger than your plan allows.',
@@ -405,6 +407,8 @@ const { t } = useTranslations({
       unavailablePlanHint: 'Mettez à niveau votre plan pour accéder aux machines plus puissantes.',
       unavailableOfflineHint: 'Les machines requises sont peut-être temporairement hors ligne. Réessayez plus tard.',
       unavailableNoDistributionHint: 'Contactez votre administrateur pour configurer des machines compatibles.',
+      unavailableServerNotAllowed: 'Le serveur choisi pour ce scénario ne vous est pas accessible.',
+      unavailableServerNotAllowedHint: 'Demandez à votre formateur de choisir un autre serveur, ou le mode Automatique.',
       unavailableBudget: 'Votre budget de ressources est entièrement utilisé par vos sessions en cours.',
       unavailableBudgetHint: 'Arrêtez une session en cours pour libérer de la capacité, ou mettez à niveau votre plan.',
       unavailableSize: 'Ce scénario demande une machine plus grande que ce que permet votre offre.',
@@ -688,10 +692,11 @@ function getBlockReasonIcon(scenario: any): string {
   }
 }
 
-// The backend emits block_reason 'no_distribution', 'budget_exhausted' and
-// 'size_over_plan' (scenarioLaunchController). 'plan' and 'offline' are kept as
-// defensive fallbacks only — without a budget branch, an out-of-budget student
-// used to be told the server was down.
+// The backend emits block_reason 'no_distribution', 'offline',
+// 'server_not_allowed', 'budget_exhausted' and 'size_over_plan'
+// (scenarioLaunchController). 'plan' is kept as a defensive fallback only —
+// without a budget branch, an out-of-budget student used to be told the server
+// was down.
 //
 // 'size_over_plan' exists because the budget message is a lie for it: a machine
 // bigger than the plan can ever host does not become available by stopping
@@ -708,6 +713,8 @@ function getUnavailableReason(scenario: any): string {
       return t('launcher.unavailablePlan')
     case 'no_distribution':
       return t('launcher.unavailableNoDistribution')
+    case 'server_not_allowed':
+      return t('launcher.unavailableServerNotAllowed')
     case 'offline':
     default:
       return t('launcher.unavailableOffline')
@@ -731,6 +738,8 @@ function getUnavailableHint(scenario: any): string {
       return t('launcher.unavailablePlanHint')
     case 'no_distribution':
       return t('launcher.unavailableNoDistributionHint')
+    case 'server_not_allowed':
+      return t('launcher.unavailableServerNotAllowedHint')
     case 'offline':
     default:
       return t('launcher.unavailableOfflineHint')

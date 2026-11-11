@@ -262,10 +262,13 @@ async function handleAssign(payload: { scenarioId: string; startDate: string; de
 // Open the bulk start confirmation; the backend choice is the only input
 async function handleBulkStart(assignment: ScenarioAssignment) {
   assignmentToBulkStart.value = assignment
+  // The server choice lists the organization's servers. A class outside any
+  // organization has no list to choose from (the unscoped one is admin-only),
+  // and a failed load must not keep the dialog shut: the start still works.
   if (props.organizationId) {
-    await backendsStore.fetchBackends(props.organizationId)
+    await backendsStore.fetchBackends(props.organizationId).catch(() => {})
   } else {
-    await backendsStore.fetchBackends()
+    backendsStore.backends = []
   }
   // Start where the assignment says; "" is automatic. Sending nothing would
   // land there too, but the teacher sees which server it is.

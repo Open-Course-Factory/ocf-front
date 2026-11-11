@@ -20,10 +20,9 @@ vi.mock('../../src/services/domain/scenario', () => ({
 }))
 
 let releaseBackends: (servers: unknown[]) => void = () => {}
+const getBackends = vi.fn(() => new Promise(resolve => { releaseBackends = resolve }))
 vi.mock('../../src/services/domain/terminal', () => ({
-  terminalService: {
-    getBackends: () => new Promise(resolve => { releaseBackends = resolve }),
-  },
+  terminalService: { getBackends: (...a: unknown[]) => getBackends(...a) },
 }))
 
 vi.mock('../../src/composables/useNotification', () => ({
@@ -43,9 +42,9 @@ const ASSIGNMENT = {
   scenario: { id: 'scn-1', name: 'lab', title: 'Lab', difficulty: 'beginner' },
 }
 
-async function mountTab() {
+async function mountTab(org: { organizationId?: string } = { organizationId: 'org-1' }) {
   const wrapper = mount(GroupScenariosTab, {
-    props: { groupId: 'g1', organizationId: 'org-1', canEditGroup: true },
+    props: { groupId: 'g1', canEditGroup: true, ...org },
     global: {
       plugins: [createI18n({ legacy: false, locale: 'en', messages: { en: {}, fr: {} }, missingWarn: false, fallbackWarn: false })],
       stubs: {
@@ -85,5 +84,14 @@ describe('GroupScenariosTab — servers', () => {
     releaseBackends(servers)
     await flushPromises()
     expect(useTerminalBackendsStore().selectedBackendId).toBe('spare')
+  })
+
+  it('opens "start for the class" outside an organization without the admin-only server list', async () => {
+    const wrapper = await mountTab({})
+    getBackends.mockClear()
+    wrapper.findComponent({ name: 'AssignmentCard' }).vm.$emit('bulk-start')
+    await flushPromises()
+    expect(getBackends).not.toHaveBeenCalled()
+    expect(wrapper.findComponent({ name: 'BulkStartScenarioModal' }).props('visible')).toBe(true)
   })
 })
