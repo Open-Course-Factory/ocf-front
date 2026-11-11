@@ -364,10 +364,10 @@ const isAssigned = computed(() => isAssignedSubscription(currentSubscription.val
 // session state before submitting (see startNewSession() below).
 
 // Capacity check — single source of truth is the backend.
-// We call GET /terminals/capacity-check whenever distribution or size changes
-// (debounced 300ms) and render whatever the backend says. The same function
-// powers the launch middleware, so the indicator can never disagree with the
-// real launch decision.
+// We call GET /terminals/capacity-check whenever distribution, size, server or
+// organization changes (debounced 300ms) and render whatever the backend says.
+// It chooses the host the way the launch does, so the indicator can never
+// disagree with the real launch decision.
 const capacityCheck = ref<{ status: 'ok' | 'warning' | 'critical' | 'unknown', reason: string } | null>(null)
 const isCheckingCapacity = ref(false)
 let capacityCheckTimer: ReturnType<typeof setTimeout> | null = null
@@ -377,7 +377,12 @@ function scheduleCapacityCheck(distribution: string, size: string) {
   capacityCheckTimer = setTimeout(async () => {
     isCheckingCapacity.value = true
     try {
-      capacityCheck.value = await terminalService.checkCapacity(distribution, size)
+      capacityCheck.value = await terminalService.checkCapacity(
+        distribution,
+        size,
+        backendsStore.selectedBackendId || undefined,
+        selectedOrganizationId.value || undefined
+      )
     } catch {
       // Hint only — don't bother the user with a toast. The real verdict comes
       // from the launch endpoint.
@@ -388,8 +393,15 @@ function scheduleCapacityCheck(distribution: string, size: string) {
   }, 300)
 }
 
+// The server and organization decide which host is checked, so a change to
+// either re-asks too.
 watch(
-  () => [composerRef.value?.selectedDistribution?.name, composerRef.value?.selectedSize?.key] as const,
+  () => [
+    composerRef.value?.selectedDistribution?.name,
+    composerRef.value?.selectedSize?.key,
+    backendsStore.selectedBackendId,
+    selectedOrganizationId.value
+  ] as const,
   ([dist, size]) => {
     if (!dist || !size) {
       capacityCheck.value = null

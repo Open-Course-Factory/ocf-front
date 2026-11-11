@@ -411,13 +411,16 @@ export const teacherService = {
     return response.data
   },
 
-  async assignScenarioToGroup(groupId: string, scenarioId: string, data?: { start_date?: string; deadline?: string }): Promise<any> {
+  // backend names the server the class's runs are built on; omitted or "",
+  // ocf-core places each run on the least loaded allowed server.
+  async assignScenarioToGroup(groupId: string, scenarioId: string, data?: { start_date?: string; deadline?: string; backend?: string }): Promise<any> {
     const response = await axios.post('/scenario-assignments', {
       scenario_id: scenarioId,
       group_id: groupId,
       scope: 'group',
       start_date: data?.start_date || undefined,
-      deadline: data?.deadline || undefined
+      deadline: data?.deadline || undefined,
+      backend: data?.backend || undefined
     })
     return response.data
   },

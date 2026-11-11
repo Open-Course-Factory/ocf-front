@@ -121,6 +121,7 @@ describe('AssignScenarioModal', () => {
       scenarioId: 'org-2',
       startDate: '2026-06-01',
       deadline: '2026-06-30',
+      backend: '', // automatic placement
     })
   })
 

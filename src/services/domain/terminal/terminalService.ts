@@ -119,9 +119,16 @@ export const terminalService = {
     return response.data
   },
 
-  async checkCapacity(distribution: string, size: string): Promise<{ status: 'ok' | 'warning' | 'critical' | 'unknown', reason: string }> {
+  // The answer is for the server the launch would use: backendId when the user
+  // chose one, otherwise the least loaded server the organization allows.
+  async checkCapacity(distribution: string, size: string, backendId?: string, organizationId?: string): Promise<{ status: 'ok' | 'warning' | 'critical' | 'unknown', reason: string }> {
     const response = await axios.get('/terminals/capacity-check', {
-      params: { distribution, size }
+      params: {
+        distribution,
+        size,
+        ...(backendId && { backend: backendId }),
+        ...(organizationId && { organization_id: organizationId })
+      }
     })
     return response.data
   },

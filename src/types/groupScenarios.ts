@@ -15,6 +15,8 @@ export interface ScenarioAssignment {
   start_date?: string
   deadline?: string
   is_active: boolean
+  // The server the class's runs are built on; "" = automatic placement.
+  backend?: string
   // When the teacher published the class's results (RFC3339), null while
   // learners' grades are withheld.
   results_published_at?: string | null
