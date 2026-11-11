@@ -83,6 +83,7 @@ export const useBrandingStore = defineStore('branding', () => {
   function apply(value: Branding) {
     branding.value = value
     applyBrandingStyle(value)
+    document.title = value.name
   }
   async function load() {
     const { data } = await axios.get<Branding>('/branding')

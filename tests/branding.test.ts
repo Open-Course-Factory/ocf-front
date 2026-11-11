@@ -80,4 +80,17 @@ describe('instance branding', () => {
     await store.save({ ...defaultBranding, name: ' Foehn ' })
     expect(store.branding.name).toBe('Foehn')
   })
+
+  it('names the browser tab after the platform once the branding loads', async () => {
+    document.title = 'OCF'
+    vi.mocked(axios.get).mockResolvedValue({ data: { ...defaultBranding, name: 'Labinux' } })
+    await useBrandingStore().load()
+    expect(document.title).toBe('Labinux')
+  })
+
+  it('renames the tab as soon as an administrator saves a new name', async () => {
+    vi.mocked(axios.put).mockResolvedValue({ data: { ...defaultBranding, name: 'Foehn' } })
+    await useBrandingStore().save({ ...defaultBranding, name: 'Foehn' })
+    expect(document.title).toBe('Foehn')
+  })
 })
