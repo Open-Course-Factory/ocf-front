@@ -59,6 +59,7 @@ const { t } = useTranslations({
     groupMembers: {
       // Members Section
       searchMembers: 'Search members...',
+      userEmailPlaceholder: 'Their full email address',
       memberEmail: 'Email',
       memberJoinedAt: 'Joined',
       noMembers: 'No members in this group',
@@ -108,6 +109,7 @@ const { t } = useTranslations({
     groupMembers: {
       // Members Section
       searchMembers: 'Rechercher des membres...',
+      userEmailPlaceholder: 'Son adresse email complète',
       memberEmail: 'Email',
       memberJoinedAt: 'Rejoint le',
       noMembers: 'Aucun membre dans ce groupe',
@@ -495,7 +497,7 @@ async function handleRemoveMember(member: GroupMember) {
               v-model="userSearchQuery"
               type="text"
               class="form-control"
-              placeholder="Search by name or email..."
+              :placeholder="t('groupMembers.userEmailPlaceholder')"
               @input="onUserSearchInput"
               @focus="onUserSearchFocus"
               @blur="onUserSearchBlur"
