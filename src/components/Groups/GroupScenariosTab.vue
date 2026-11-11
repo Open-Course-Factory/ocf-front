@@ -239,7 +239,7 @@ async function loadScenarios() {
 }
 
 // Assign scenario
-async function handleAssign(payload: { scenarioId: string; startDate: string; deadline: string }) {
+async function handleAssign(payload: { scenarioId: string; startDate: string; deadline: string; backend: string }) {
   if (!payload.scenarioId) return
   try {
     await teacherService.assignScenarioToGroup(
@@ -247,7 +247,8 @@ async function handleAssign(payload: { scenarioId: string; startDate: string; de
       payload.scenarioId,
       {
         start_date: payload.startDate || undefined,
-        deadline: payload.deadline || undefined
+        deadline: payload.deadline || undefined,
+        backend: payload.backend
       }
     )
     showAssignModal.value = false
@@ -510,6 +511,11 @@ function handleJSONImported() {
 
 function openAssignModal() {
   loadScenarios()
+  // The server choice needs the organization's servers; without an
+  // organization the class uses automatic placement.
+  if (props.organizationId) {
+    backendsStore.fetchBackends(props.organizationId).catch(() => {})
+  }
   showAssignModal.value = true
 }
 
@@ -635,6 +641,7 @@ onMounted(() => {
     <AssignScenarioModal
       :visible="showAssignModal"
       :scenarios="availableScenarios"
+      :backends="organizationId ? backendsStore.backends : undefined"
       @assign="handleAssign"
       @close="showAssignModal = false"
     />

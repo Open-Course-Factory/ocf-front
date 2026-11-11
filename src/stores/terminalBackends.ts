@@ -60,7 +60,7 @@ export const useTerminalBackendsStore = defineStore('terminalBackends', () => {
 
     try {
       backends.value = await terminalService.getBackends(organizationId)
-      autoSelectDefault()
+      dropStaleSelection()
       return backends.value
     } catch (err: any) {
       error.value = err.response?.data?.error_message || err.message || t('terminalBackends.loadError')
@@ -98,30 +98,14 @@ export const useTerminalBackendsStore = defineStore('terminalBackends', () => {
     selectedBackendId.value = null
   }
 
-  function autoSelectDefault() {
-    // If we already have a valid selection, keep it
-    if (selectedBackendId.value) {
-      const stillExists = backends.value.find(
-        b => b.id === selectedBackendId.value && b.connected
-      )
-      if (stillExists) return
-    }
-
-    // Auto-select the default backend if it's online
-    const def = defaultBackend.value
-    if (def && def.connected) {
-      selectedBackendId.value = def.id
-      return
-    }
-
-    // Fallback: first online backend
-    const firstOnline = onlineBackends.value[0]
-    if (firstOnline) {
-      selectedBackendId.value = firstOnline.id
-      return
-    }
-
-    selectedBackendId.value = null
+  // No selection means "Automatic": ocf-core then places the session on the
+  // least loaded allowed server, so the store never picks one for the user.
+  // A choice the user made is kept while that server is offered and online.
+  function dropStaleSelection() {
+    const stillValid = backends.value.some(
+      b => b.id === selectedBackendId.value && b.connected
+    )
+    if (!stillValid) selectedBackendId.value = null
   }
 
   return {

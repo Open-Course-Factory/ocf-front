@@ -60,6 +60,12 @@
         class="form-control"
       />
     </div>
+    <!-- Which server the class's runs are built on; "" = automatic placement. -->
+    <BackendSelector
+      v-if="backends && backends.length > 1"
+      v-model="backend"
+      :backends="backends"
+    />
   </BaseModal>
 </template>
 
@@ -67,7 +73,9 @@
 import { ref, computed, watch } from 'vue'
 import { useTranslations } from '../../../composables/useTranslations'
 import BaseModal from '../../Modals/BaseModal.vue'
+import BackendSelector from '../../Terminal/BackendSelector.vue'
 import type { Scenario } from '../../../types/groupScenarios'
+import type { Backend } from '../../../types/entities'
 
 const props = defineProps<{
   visible: boolean
@@ -75,11 +83,13 @@ const props = defineProps<{
   // When set, the scenario is already chosen (the first of `scenarios`) and
   // the modal asks for one of these classes instead.
   groups?: Array<{ id: string; name: string }>
+  // The organization's servers; the choice is offered when there are several.
+  backends?: Backend[]
 }>()
 
 const emit = defineEmits<{
   close: []
-  assign: [payload: { scenarioId: string; startDate: string; deadline: string; groupId?: string }]
+  assign: [payload: { scenarioId: string; startDate: string; deadline: string; groupId?: string; backend: string }]
 }>()
 
 const { t } = useTranslations({
@@ -125,6 +135,7 @@ const selectedScenarioId = ref('')
 const selectedGroupId = ref('')
 const startDate = ref('')
 const deadline = ref('')
+const backend = ref('')
 const search = ref('')
 
 function translateDifficulty(difficulty: string): string {
@@ -155,7 +166,8 @@ function onConfirm() {
     scenarioId: selectedScenarioId.value,
     startDate: startDate.value,
     deadline: deadline.value,
-    groupId: props.groups ? selectedGroupId.value : undefined
+    groupId: props.groups ? selectedGroupId.value : undefined,
+    backend: backend.value
   })
 }
 
@@ -166,6 +178,7 @@ watch(() => props.visible, (visible) => {
     selectedGroupId.value = ''
     startDate.value = ''
     deadline.value = ''
+    backend.value = ''
     search.value = ''
   }
 })

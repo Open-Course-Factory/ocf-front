@@ -18,8 +18,24 @@
       <span v-if="backends[0].is_default" class="default-badge">{{ t('backendSelector.default') }}</span>
     </div>
 
-    <!-- Multiple backends: selectable cards -->
+    <!-- Multiple backends: selectable cards, "Automatic" first. Its value is
+         "", which callers send as no backend: ocf-core then places the
+         session on the least loaded allowed server. -->
     <div v-else class="backend-cards">
+      <button
+        type="button"
+        :class="['backend-card', { 'selected': modelValue === '' }]"
+        :disabled="disabled"
+        @click="handleSelect('')"
+      >
+        <div class="card-content">
+          <i class="fas fa-wand-magic-sparkles auto-icon" aria-hidden="true"></i>
+          <div class="card-text">
+            <span class="card-name">{{ t('backendSelector.automatic') }}</span>
+            <span class="card-description">{{ t('backendSelector.automaticDescription') }}</span>
+          </div>
+        </div>
+      </button>
       <button
         v-for="backend in backends"
         :key="backend.id"
@@ -71,7 +87,9 @@ const { t } = useTranslations({
       label: 'Server',
       helpText: 'Select which server to run your terminal on.',
       default: 'Default',
-      offline: 'Offline'
+      offline: 'Offline',
+      automatic: 'Automatic (recommended)',
+      automaticDescription: 'The least busy available server'
     }
   },
   fr: {
@@ -79,7 +97,9 @@ const { t } = useTranslations({
       label: 'Serveur',
       helpText: 'Sélectionnez sur quel serveur exécuter votre terminal.',
       default: 'Par défaut',
-      offline: 'Hors ligne'
+      offline: 'Hors ligne',
+      automatic: 'Automatique (recommandé)',
+      automaticDescription: 'Le serveur disponible le moins chargé'
     }
   }
 })
@@ -99,6 +119,10 @@ function handleSelect(backendId: string) {
   border-radius: var(--border-radius-md);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+}
+
+.auto-icon {
+  color: var(--color-primary);
 }
 
 .backend-cards {

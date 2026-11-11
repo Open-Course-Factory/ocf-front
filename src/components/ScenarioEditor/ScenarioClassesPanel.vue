@@ -27,7 +27,7 @@
       type="button"
       class="ocf-rail-btn"
       data-testid="rail-assign"
-      @click="showAssign = true"
+      @click="openAssign"
     >
       <i class="fas fa-user-plus" aria-hidden="true"></i> {{ t('scenarioEditor.assignToClass') }}
     </button>
@@ -36,6 +36,7 @@
       :visible="showAssign"
       :scenarios="[{ id: scenario.id, name: scenario.name, title: scenario.title, difficulty: scenario.difficulty, source: 'org' } as any]"
       :groups="assignableClasses"
+      :backends="backends"
       @close="showAssign = false"
       @assign="assign"
     />
@@ -49,6 +50,8 @@ import { useTeacherGroupsStore } from '../../stores/teacherGroups'
 import { classLearnerCount, isInactiveClass, teacherService, type TeacherGroupSummary } from '../../services/domain/scenario/teacherService'
 import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 import { useNotification } from '../../composables/useNotification'
+import { terminalService } from '../../services/domain/terminal'
+import type { Backend } from '../../types/entities'
 
 const props = defineProps<{
   scenario: any
@@ -75,12 +78,23 @@ const assignableClasses = computed(() =>
 
 const showAssign = ref(false)
 
-async function assign(payload: { scenarioId: string; startDate: string; deadline: string; groupId?: string }) {
+// An organization's scenario runs on that organization's servers; the server
+// choice is offered from them. A platform scenario uses automatic placement.
+const backends = ref<Backend[]>([])
+
+async function openAssign() {
+  showAssign.value = true
+  const orgId = props.scenario.organization_id
+  backends.value = orgId ? await terminalService.getBackends(orgId).catch(() => []) : []
+}
+
+async function assign(payload: { scenarioId: string; startDate: string; deadline: string; groupId?: string; backend: string }) {
   if (!payload.groupId) return
   try {
     await teacherService.assignScenarioToGroup(payload.groupId, payload.scenarioId, {
       start_date: payload.startDate || undefined,
-      deadline: payload.deadline || undefined
+      deadline: payload.deadline || undefined,
+      backend: payload.backend
     })
     showAssign.value = false
     notification.showSuccess(t('scenarioEditor.assignSuccess'))
