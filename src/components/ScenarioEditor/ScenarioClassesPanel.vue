@@ -82,10 +82,12 @@ const showAssign = ref(false)
 // choice is offered from them. A platform scenario uses automatic placement.
 const backends = ref<Backend[]>([])
 
+// Loaded before the dialog opens, so the server choice does not appear later
+// and push its buttons down.
 async function openAssign() {
-  showAssign.value = true
   const orgId = props.scenario.organization_id
   backends.value = orgId ? await terminalService.getBackends(orgId).catch(() => []) : []
+  showAssign.value = true
 }
 
 async function assign(payload: { scenarioId: string; startDate: string; deadline: string; groupId?: string; backend: string }) {

@@ -127,4 +127,8 @@ export const useTerminalBackendsStore = defineStore('terminalBackends', () => {
     selectBackend,
     clearSelection
   }
-})
+// Not persisted: the server list is the backend's answer for this session,
+// and a saved selection would pin every launch to it. The launcher used to
+// pre-select the default server, so restoring that would keep every existing
+// user off automatic placement.
+}, { persist: false })

@@ -267,6 +267,9 @@ async function handleBulkStart(assignment: ScenarioAssignment) {
   } else {
     await backendsStore.fetchBackends()
   }
+  // Start where the assignment says; "" is automatic. Sending nothing would
+  // land there too, but the teacher sees which server it is.
+  backendsStore.selectBackend(assignment.backend ?? '')
   showBulkStartModal.value = true
 }
 
@@ -509,12 +512,13 @@ function handleJSONImported() {
   loadAssignments()
 }
 
-function openAssignModal() {
+async function openAssignModal() {
   loadScenarios()
   // The server choice needs the organization's servers; without an
-  // organization the class uses automatic placement.
+  // organization the class uses automatic placement. Loaded before the dialog
+  // opens, so the choice does not appear later and push its buttons down.
   if (props.organizationId) {
-    backendsStore.fetchBackends(props.organizationId).catch(() => {})
+    await backendsStore.fetchBackends(props.organizationId).catch(() => {})
   }
   showAssignModal.value = true
 }
