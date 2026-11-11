@@ -26,6 +26,7 @@ import { featureFlagService } from '../services/features';
 import { useSettingsNavigation } from '../composables/useSettingsNavigation';
 import { getCurrentActorRoles } from '../composables/useFeatureFlags';
 import { useScenarioEditorAccess } from '../composables/useScenarioEditorAccess';
+import { useAdminViewMode } from '../composables/useAdminViewMode';
 import { useUserMembershipsStore } from '../stores/userMemberships';
 import Layout from '../components/Layout.vue';
 import Courses from '../components/Pages/Courses.vue';
@@ -527,6 +528,19 @@ router.beforeEach(async (to, from) => {
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!currentUserStore.isAuthenticated) {
       return { name: 'Login' };
+    }
+  }
+
+  // Platform-operator pages. The menu hides them; a typed URL must not open
+  // them either. On a reload the router runs before main.ts has loaded the
+  // roles, so load them here rather than refuse an administrator. A failed
+  // load leaves no role, which refuses the page instead of breaking navigation.
+  if (to.matched.some(record => record.meta.requiresAdmin)) {
+    if (currentUserStore.userRoles.length === 0) {
+      await currentUserStore.loadUserData().catch(() => undefined);
+    }
+    if (!useAdminViewMode().isAdmin.value) {
+      return { name: 'TerminalSessions', query: { error: 'insufficient_permissions' } };
     }
   }
 
