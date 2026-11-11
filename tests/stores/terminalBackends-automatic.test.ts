@@ -48,3 +48,22 @@ describe('terminalBackends store — automatic placement', () => {
     expect(store.selectedBackendId).toBeNull()
   })
 })
+
+describe('terminalBackends store — not restored from localStorage', () => {
+  it('ignores a server the old launcher saved for the user', async () => {
+    const { createApp } = await import('vue')
+    const { piniaPluginPersist } = await import('../../src/piniaPluginPersist')
+    // What the previous launcher left behind: it pre-selected the default
+    // server and the persistence plugin saved it.
+    localStorage.setItem('pinia_state_terminalBackends', JSON.stringify({ selectedBackendId: 'main', backends: two }))
+    const pinia = createPinia()
+    pinia.use(piniaPluginPersist)
+    createApp({}).use(pinia)
+    setActivePinia(pinia)
+
+    const store = useTerminalBackendsStore()
+    expect(store.selectedBackendId).toBeNull()
+    expect(store.backends).toEqual([])
+    localStorage.clear()
+  })
+})
