@@ -685,11 +685,6 @@ watch(storeOrgId, async (newOrgId) => {
   composerRef.value?.loadDistributions()
 })
 
-// Watch for backend changes to reload distributions in composer
-watch(selectedBackendId, () => {
-  composerRef.value?.loadDistributions()
-})
-
 async function startNewSession() {
   const composer = composerRef.value
   if (!composer?.selectedDistribution || !composer?.selectedSize) {

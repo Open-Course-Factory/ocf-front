@@ -421,10 +421,23 @@ async function selectDefaultDistribution() {
   // the locked sizes and the "unlock more power" CTA explain why.
 }
 
+// Bumped on every load, so a slow answer for a server the user has since left
+// cannot overwrite the list of the one they are on now.
+let distributionsRequest = 0
+
 async function loadDistributions() {
+  const request = ++distributionsRequest
   loadingDistributions.value = true
   try {
-    distributions.value = await terminalService.getDistributions(props.backendId)
+    const loaded = await terminalService.getDistributions(props.backendId)
+    if (request !== distributionsRequest) return
+    distributions.value = loaded
+    // A choice made on another server may not exist on this one.
+    if (selectedDistribution.value && !loaded.some(d => d.name === selectedDistribution.value!.name)) {
+      selectedDistribution.value = null
+      selectedSize.value = null
+      sessionOptions.value = null
+    }
     if (distributions.value.length === 0) return
     // Auto-restore last used config if available
     if (lastConfig.value) {
@@ -444,9 +457,9 @@ async function loadDistributions() {
     }
   } catch (e) {
     console.error('Failed to load distributions:', e)
-    distributions.value = []
+    if (request === distributionsRequest) distributions.value = []
   } finally {
-    loadingDistributions.value = false
+    if (request === distributionsRequest) loadingDistributions.value = false
   }
 }
 
@@ -675,6 +688,10 @@ onMounted(() => {
   } catch (e) { /* ignore invalid stored data */ }
   loadDistributions()
 })
+
+// Each server has its own catalogue. Watching the prop here, rather than in
+// the parent, guarantees the reload sees the new server.
+watch(() => props.backendId, () => loadDistributions())
 
 // Re-fetch session options when org context changes (different plan)
 watch(() => props.organizationId, () => {
