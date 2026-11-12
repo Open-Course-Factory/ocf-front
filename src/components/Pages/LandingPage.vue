@@ -62,7 +62,7 @@
         <!-- Simulated terminal snippet with typing animation -->
         <div class="terminal-demo">
           <div class="terminal-header">
-            <span class="terminal-user">user@opencourse-factory</span>
+            <span class="terminal-user">user@labinux</span>
           </div>
           <div class="terminal-body">
             <div class="terminal-line" v-if="terminalStep >= 1">
