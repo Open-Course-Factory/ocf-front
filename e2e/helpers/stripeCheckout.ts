@@ -1,4 +1,4 @@
-import { type Page, expect } from '@playwright/test';
+import { type Locator, type Page, expect } from '@playwright/test';
 import { demoPause } from './demo';
 
 /**
@@ -9,6 +9,11 @@ import { demoPause } from './demo';
  * from a test-mode session. Field set varies with the session configuration
  * (email may be prefilled, postal code depends on country), so optional fields
  * are filled only when present.
+ *
+ * Stripe serves two layouts and switches accounts between them on its own:
+ * the classic one renders the form in the page (#cardNumber, #billingName…);
+ * the newer one renders it inside nested Stripe iframes with other ids. Each
+ * selector below lists both, and every lookup searches all frames.
  */
 
 export const STRIPE_TEST_CARD = {
@@ -18,61 +23,73 @@ export const STRIPE_TEST_CARD = {
   name: 'OCF E2E Test',
 };
 
+const CARD_NUMBER = '#cardNumber, input[name="number"]';
+// Card sits behind a choice (accordion or radio list) whenever the account
+// offers more than one payment method.
+const CARD_CHOICE =
+  '.p-AccordionButton[data-value="card"], [data-testid*="card"][data-testid*="accordion"], .AccordionItem:has-text("Card")';
+const SUBMIT = '.SubmitButton, [data-testid="payment-form-submit-button"]';
+
+async function visibleInAnyFrame(page: Page, selector: string): Promise<Locator | null> {
+  for (const frame of page.frames()) {
+    const match = frame.locator(selector).first();
+    if (await match.isVisible().catch(() => false)) return match;
+  }
+  return null;
+}
+
+async function waitInAnyFrame(page: Page, selector: string, timeout: number): Promise<Locator> {
+  const deadline = Date.now() + timeout;
+  for (;;) {
+    const match = await visibleInAnyFrame(page, selector);
+    if (match) return match;
+    if (Date.now() > deadline) throw new Error(`Stripe Checkout: nothing visible matches ${selector}`);
+    await page.waitForTimeout(250);
+  }
+}
+
 export async function fillStripeCheckout(page: Page, options?: { email?: string }): Promise<void> {
   await expect(page).toHaveURL(/checkout\.stripe\.com/, { timeout: 30_000 });
 
-  // The hosted page is a SPA. Payment methods can render either as a direct
-  // card form (#cardNumber immediately present) or as an accordion (Card /
-  // SEPA / …) where the card fields only exist after the Card method is
-  // selected — wait for whichever appears first instead of probing them in
-  // sequence, which wastes a full timeout on the layout that isn't there.
-  const cardNumber = page.locator('#cardNumber');
-  const cardAccordion = page
-    .locator('[data-testid*="card"][data-testid*="accordion"], .AccordionItem:has-text("Card")')
-    .first();
-  await expect(cardNumber.or(cardAccordion).first()).toBeVisible({ timeout: 30_000 });
-  if (!(await cardNumber.isVisible())) {
-    await cardAccordion.click();
-    await cardNumber.waitFor({ state: 'visible', timeout: 15_000 });
+  // Wait for whichever renders first — the card field itself or the choice
+  // hiding it — instead of probing in sequence, which wastes a full timeout on
+  // the layout that isn't there.
+  await waitInAnyFrame(page, `${CARD_NUMBER}, ${CARD_CHOICE}`, 30_000);
+  let cardNumber = await visibleInAnyFrame(page, CARD_NUMBER);
+  if (!cardNumber) {
+    await (await waitInAnyFrame(page, CARD_CHOICE, 5_000)).click();
+    cardNumber = await waitInAnyFrame(page, CARD_NUMBER, 15_000);
   }
 
   // Email: prefilled (readonly) when the backend attaches a customer; fill otherwise.
-  const email = page.locator('#email');
-  if (await email.isVisible().catch(() => false)) {
+  const email = await visibleInAnyFrame(page, '#email, #linkAuthentication-emailInput');
+  if (email && options?.email) {
     const isReadonly = await email.evaluate(
       (el) => (el as HTMLInputElement).readOnly || (el as HTMLInputElement).disabled
     );
-    if (!isReadonly && options?.email) {
-      await email.fill(options.email);
-    }
+    if (!isReadonly) await email.fill(options.email);
   }
 
   await cardNumber.fill(STRIPE_TEST_CARD.number);
-  await page.locator('#cardExpiry').fill(STRIPE_TEST_CARD.expiry);
-  await page.locator('#cardCvc').fill(STRIPE_TEST_CARD.cvc);
-  await page.locator('#billingName').fill(STRIPE_TEST_CARD.name);
+  await (await waitInAnyFrame(page, '#cardExpiry, input[name="expiry"]', 5_000)).fill(STRIPE_TEST_CARD.expiry);
+  await (await waitInAnyFrame(page, '#cardCvc, input[name="cvc"]', 5_000)).fill(STRIPE_TEST_CARD.cvc);
+  await (await waitInAnyFrame(page, '#billingName, #billingAddress-nameInput', 5_000)).fill(STRIPE_TEST_CARD.name);
 
-  // Country select + postal code appear depending on the session; France needs
-  // no postal code, US layouts do.
-  const country = page.locator('#billingCountry');
-  if (await country.isVisible().catch(() => false)) {
-    await country.selectOption('FR').catch(() => {});
-  }
+  // Country select + address appear depending on the session and layout.
+  const country = await visibleInAnyFrame(page, '#billingCountry, #billingAddress-countryInput');
+  await country?.selectOption('FR').catch(() => {});
   const addressFields: Array<[string, string]> = [
-    ['#billingAddressLine1', '1 rue de la Paix'],
-    ['#billingPostalCode', '75001'],
-    ['#billingLocality', 'Paris'],
+    ['#billingAddressLine1, #billingAddress-addressLine1Input', '1 rue de la Paix'],
+    ['#billingPostalCode, #billingAddress-postalCodeInput', '75001'],
+    ['#billingLocality, #billingAddress-localityInput', 'Paris'],
   ];
   for (const [selector, value] of addressFields) {
-    const field = page.locator(selector);
-    if (await field.isVisible().catch(() => false)) {
-      await field.fill(value);
-    }
+    await (await visibleInAnyFrame(page, selector))?.fill(value);
   }
 
   // Decline the Link save-my-info upsell if it is offered as a checkbox.
-  const linkCheckbox = page.locator('#enableStripePass');
-  if (await linkCheckbox.isChecked().catch(() => false)) {
+  const linkCheckbox = await visibleInAnyFrame(page, '#enableStripePass');
+  if (linkCheckbox && (await linkCheckbox.isChecked().catch(() => false))) {
     await linkCheckbox.uncheck().catch(() => {});
   }
 
@@ -83,7 +100,7 @@ export async function fillStripeCheckout(page: Page, options?: { email?: string 
   // submit click — dismiss it, then submit, retrying once if the page has not
   // left Stripe (still same URL, button back to idle).
   await page.keyboard.press('Escape');
-  const submit = page.locator('.SubmitButton');
+  const submit = await waitInAnyFrame(page, SUBMIT, 10_000);
   for (let attempt = 0; attempt < 2; attempt++) {
     await submit.click();
     const left = await page
