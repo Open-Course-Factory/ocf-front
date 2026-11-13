@@ -234,3 +234,105 @@ describe('GroupMembersManager selection across search and sort', () => {
     expect((rowOf(wrapper, 'Alice Participant').find('input.member-checkbox').element as HTMLInputElement).checked).toBe(true)
   })
 })
+
+describe('GroupMembersManager password regeneration', () => {
+  async function clickRegenerateOne(wrapper: VueWrapper, name: string) {
+    await rowOf(wrapper, name).find('.member-actions .btn-icon').trigger('click')
+    await rowOf(wrapper, name).find('[data-testid="member-regenerate-password"]').trigger('click')
+  }
+
+  it('offers a single regeneration on a participant row only', async () => {
+    const wrapper = await mountRoster()
+
+    for (const name of PARTICIPANTS) {
+      await rowOf(wrapper, name).find('.member-actions .btn-icon').trigger('click')
+      expect(rowOf(wrapper, name).find('[data-testid="member-regenerate-password"]').exists(), name).toBe(true)
+    }
+    for (const name of ['Co Owner', 'Manny Manager']) {
+      const trigger = rowOf(wrapper, name).find('.member-actions .btn-icon')
+      if (trigger.exists()) await trigger.trigger('click')
+      expect(rowOf(wrapper, name).find('[data-testid="member-regenerate-password"]').exists(), name).toBe(false)
+    }
+  })
+
+  it('asks before regenerating one participant\'s password, and sends nothing yet', async () => {
+    const wrapper = await mountRoster()
+
+    expect(wrapper.find('[data-testid="regenerate-confirm"]').exists()).toBe(false)
+    await clickRegenerateOne(wrapper, 'Bob Participant')
+
+    expect(wrapper.find('[data-testid="regenerate-confirm"]').exists()).toBe(true)
+    expect(bulkImportService.regeneratePasswords).not.toHaveBeenCalled()
+  })
+
+  it('regenerates only that participant\'s password once confirmed, shows the credentials, and leaves the selection alone', async () => {
+    vi.mocked(bulkImportService.regeneratePasswords).mockResolvedValueOnce({
+      success: true,
+      credentials: [{ user_id: 'p-bob', name: 'Bob Participant', email: 'bob@example.com', password: 'n3w-s3cret' }],
+      errors: []
+    } as any)
+    const wrapper = await mountRoster()
+    await tick(wrapper, 'Alice Participant')
+
+    await clickRegenerateOne(wrapper, 'Bob Participant')
+    await wrapper.find('[data-testid="regenerate-confirm"]').trigger('click')
+    await flushPromises()
+
+    expect(bulkImportService.regeneratePasswords).toHaveBeenCalledTimes(1)
+    expect(bulkImportService.regeneratePasswords).toHaveBeenCalledWith('org-1', 'test-group-id', ['p-bob'])
+    expect(wrapper.find('[data-testid="regenerate-confirm"]').exists()).toBe(false)
+    const credentials = wrapper.find('.credentials-table')
+    expect(credentials.exists()).toBe(true)
+    expect(credentials.text()).toContain('bob@example.com')
+    expect(credentials.text()).toContain('n3w-s3cret')
+    expect(bulkBarText(wrapper)).toContain('1 selected')
+  })
+
+  it('sends nothing when the single regeneration is cancelled', async () => {
+    const wrapper = await mountRoster()
+
+    await clickRegenerateOne(wrapper, 'Bob Participant')
+    await wrapper.find('[data-testid="regenerate-cancel"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="regenerate-confirm"]').exists()).toBe(false)
+    expect(bulkImportService.regeneratePasswords).not.toHaveBeenCalled()
+    expect(wrapper.find('.credentials-table').exists()).toBe(false)
+  })
+
+  it('bulk: asks first, then regenerates the selection and clears it once confirmed', async () => {
+    const wrapper = await mountRoster()
+    await tick(wrapper, 'Alice Participant')
+    await tick(wrapper, 'Zoe Participant')
+
+    await wrapper.find('[data-testid="regenerate-passwords"]').trigger('click')
+    expect(wrapper.find('[data-testid="regenerate-confirm"]').exists()).toBe(true)
+    expect(bulkImportService.regeneratePasswords).not.toHaveBeenCalled()
+
+    await wrapper.find('[data-testid="regenerate-confirm"]').trigger('click')
+    await flushPromises()
+
+    expect(bulkImportService.regeneratePasswords).toHaveBeenCalledTimes(1)
+    const [orgId, groupId, ids] = vi.mocked(bulkImportService.regeneratePasswords).mock.calls[0]
+    expect([orgId, groupId]).toEqual(['org-1', 'test-group-id'])
+    expect([...ids].sort()).toEqual(['p-alice', 'p-zoe'])
+    // The bar keeps its slot: back to the hint, count at 0, action disabled.
+    expect(bulkBarText(wrapper)).toContain('0 selected')
+    expect(wrapper.find('[data-testid="regenerate-passwords"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.findAll('input.member-checkbox').some(c => (c.element as HTMLInputElement).checked)).toBe(false)
+  })
+
+  it('bulk: cancelling sends nothing and keeps the selection', async () => {
+    const wrapper = await mountRoster()
+    await tick(wrapper, 'Alice Participant')
+    await tick(wrapper, 'Zoe Participant')
+
+    await wrapper.find('[data-testid="regenerate-passwords"]').trigger('click')
+    await wrapper.find('[data-testid="regenerate-cancel"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="regenerate-confirm"]').exists()).toBe(false)
+    expect(bulkImportService.regeneratePasswords).not.toHaveBeenCalled()
+    expect(bulkBarText(wrapper)).toContain('2 selected')
+  })
+})

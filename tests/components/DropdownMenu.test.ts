@@ -145,4 +145,37 @@ describe('DropdownMenu', () => {
     await left.find('.btn-icon').trigger('click')
     expect(left.find('.ocf-dropdown-menu').classes()).toContain('ocf-dropdown-menu--left')
   })
+
+  it('names the default trigger with triggerLabel and reports the menu state to assistive tech', async () => {
+    const wrapper = mount(DropdownMenu, {
+      props: { triggerLabel: 'Actions for Alice' },
+      slots: { default: '<button class="ocf-dropdown-item">X</button>' },
+    })
+    const trigger = wrapper.find('.btn-icon')
+
+    expect(trigger.attributes('aria-label')).toBe('Actions for Alice')
+    expect(trigger.attributes('title')).toBe('Actions for Alice')
+    expect(trigger.attributes('aria-haspopup')).toBe('menu')
+    expect(trigger.attributes('aria-expanded')).toBe('false')
+
+    await trigger.trigger('click')
+    expect(trigger.attributes('aria-expanded')).toBe('true')
+
+    await trigger.trigger('click')
+    expect(trigger.attributes('aria-expanded')).toBe('false')
+  })
+
+  it('without triggerLabel, renders the default trigger with no aria-label nor title, and still toggles', async () => {
+    const wrapper = mount(DropdownMenu, {
+      slots: { default: '<button class="ocf-dropdown-item">X</button>' },
+    })
+    const trigger = wrapper.find('.btn-icon')
+
+    expect(trigger.attributes('aria-label')).toBeUndefined()
+    expect(trigger.attributes('title')).toBeUndefined()
+    expect(trigger.find('i.fa-ellipsis-v').exists()).toBe(true)
+
+    await trigger.trigger('click')
+    expect(wrapper.find('.ocf-dropdown-menu').exists()).toBe(true)
+  })
 })
