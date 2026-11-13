@@ -162,7 +162,7 @@ describe('GroupMembersManager', () => {
     it('is not offered a change of the class creator\'s role', async () => {
       const wrapper = await mountWithRoster(coTrainer)
 
-      const creatorCard = wrapper.findAll('.member-card').find(card => card.text().includes('Creator'))!
+      const creatorCard = wrapper.findAll('[data-testid="member-row"]').find(card => card.text().includes('Creator'))!
       expect(creatorCard.find('select.role-select').exists()).toBe(false)
     })
   })
