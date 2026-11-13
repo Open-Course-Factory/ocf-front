@@ -294,4 +294,101 @@ describe('GroupMembersManager', () => {
       expect(wrapper.find('.search-dropdown').exists()).toBe(false)
     })
   })
+
+  describe('sorting members by name', () => {
+    // Every row is a plain member, so no role grouping can mask the name order.
+    // "zoe@example.com" has no name: the email stands in as the sort key.
+    const roster = [
+      { name: 'Participant 10', email: 'p10@example.com' },
+      { name: 'Fabrice', email: 'fabrice@example.com' },
+      { name: 'Participant 2', email: 'p2@example.com' },
+      { name: null, email: 'zoe@example.com' },
+      { name: 'élodie', email: 'elodie@example.com' },
+      { name: 'Delphine', email: 'delphine@example.com' },
+      { name: 'alice', email: 'alice@example.com' }
+    ]
+
+    async function mountRoster() {
+      vi.mocked(axios.get).mockResolvedValueOnce({
+        data: {
+          data: roster.map((m, i) => ({
+            id: `gm-${i}`,
+            user_id: `user-${i}`,
+            role: 'member',
+            user: { id: `user-${i}`, email: m.email, ...(m.name ? { display_name: m.name } : {}) }
+          }))
+        }
+      })
+      const wrapper = mountComponent()
+      await flushPromises()
+      return wrapper
+    }
+
+    // The label a row is identified by: its name, or its email when it has none.
+    function rowLabels(wrapper: VueWrapper) {
+      const labels = roster.map(m => m.name ?? m.email)
+      return wrapper.findAll('[data-testid="member-row"]').map(row => {
+        const text = row.text()
+        // Longest match first so "Participant 10" is not read as "Participant 1…".
+        return [...labels].sort((a, b) => b.length - a.length).find(l => text.includes(l))
+      })
+    }
+
+    function sortButton(wrapper: VueWrapper) {
+      return wrapper.find('[data-testid="members-sort"]')
+    }
+
+    const AZ = ['alice', 'Delphine', 'élodie', 'Fabrice', 'Participant 2', 'Participant 10', 'zoe@example.com']
+
+    it('offers a labelled sort button', async () => {
+      const wrapper = await mountRoster()
+
+      const button = sortButton(wrapper)
+      expect(button.exists()).toBe(true)
+      expect(button.element.tagName).toBe('BUTTON')
+      const label = button.attributes('aria-label') || button.attributes('title') || button.text()
+      expect(label.trim().length).toBeGreaterThan(0)
+    })
+
+    it('lists members A to Z by default, case-, accent- and number-aware, email standing in for a missing name', async () => {
+      const wrapper = await mountRoster()
+
+      expect(rowLabels(wrapper)).toEqual(AZ)
+    })
+
+    it('reverses to Z to A on toggle, and back to A to Z on a second toggle', async () => {
+      const wrapper = await mountRoster()
+
+      await sortButton(wrapper).trigger('click')
+      expect(rowLabels(wrapper)).toEqual([...AZ].reverse())
+
+      await sortButton(wrapper).trigger('click')
+      expect(rowLabels(wrapper)).toEqual(AZ)
+    })
+
+    it('sorts the search-filtered list without widening it', async () => {
+      const wrapper = await mountRoster()
+
+      await wrapper.find('input.search-input').setValue('Participant')
+      expect(rowLabels(wrapper)).toEqual(['Participant 2', 'Participant 10'])
+
+      await sortButton(wrapper).trigger('click')
+      expect(rowLabels(wrapper)).toEqual(['Participant 10', 'Participant 2'])
+    })
+
+    it('keeps a selected member selected across a sort change', async () => {
+      const wrapper = await mountRoster()
+
+      const fabriceRow = () => wrapper.findAll('[data-testid="member-row"]').find(r => r.text().includes('Fabrice'))!
+      await fabriceRow().find('input.member-checkbox').setValue(true)
+      expect((fabriceRow().find('input.member-checkbox').element as HTMLInputElement).checked).toBe(true)
+
+      await sortButton(wrapper).trigger('click')
+
+      expect((fabriceRow().find('input.member-checkbox').element as HTMLInputElement).checked).toBe(true)
+      const checked = wrapper.findAll('input.member-checkbox').filter(c => (c.element as HTMLInputElement).checked)
+      expect(checked).toHaveLength(1)
+    })
+  })
+
 })
