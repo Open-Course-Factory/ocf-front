@@ -100,8 +100,12 @@ describe('TerminalSessionView — back link', () => {
     expect(link.text()).not.toContain('My Sessions')
   })
 
-  it('ignores a returnTo that is not an in-app path', async () => {
-    const wrapper = await mountWithQuery({ returnTo: 'https://evil.example/phish' })
+  it.each([
+    'https://evil.example/phish',
+    '//example.com',
+    '/\\example.com'
+  ])('ignores a returnTo of %j, which is not an in-app path', async (returnTo) => {
+    const wrapper = await mountWithQuery({ returnTo })
     expect(wrapper.findComponent(RouterLinkStub).props('to')).toEqual({ name: 'TerminalSessions' })
   })
 })

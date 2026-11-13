@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
@@ -61,8 +61,9 @@ vi.mock('../../src/composables/useToast', () => ({
 
 // Mock the router module
 const mockPush = vi.fn()
+const routeQuery: Record<string, any> = {}
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ query: {} }),
+  useRoute: () => ({ query: routeQuery }),
   useRouter: () => ({ push: mockPush }),
   createRouter: vi.fn(),
   createWebHistory: vi.fn()
@@ -102,6 +103,10 @@ vi.mock('../../src/composables/useFeatureFlags', () => ({
     waitForInitialization: mockWaitForInit,
     isEnabled: () => true
   })
+}))
+
+vi.mock('../../src/composables/useLandingPage', () => ({
+  resolveLandingPage: vi.fn().mockResolvedValue('/landing-page')
 }))
 
 // Mock useStoreTranslations for stores that call it at module level
@@ -147,6 +152,8 @@ vi.mock('../../src/utils/asyncWrapper', () => ({
 
 import Login from '../../src/components/Pages/Login.vue'
 import { COMPANY } from '../../src/config/company'
+import { useCurrentUserStore } from '../../src/stores/currentUser'
+import { useUserSettingsStore } from '../../src/stores/userSettings'
 import axios from 'axios'
 
 const mockPost = vi.mocked(axios.post)
@@ -182,6 +189,7 @@ function mountLogin() {
 describe('Login', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    for (const key of Object.keys(routeQuery)) delete routeQuery[key]
     setActivePinia(createPinia())
   })
 
@@ -378,6 +386,60 @@ describe('Login', () => {
 
       // Error message should be cleared (the new request is in progress)
       expect(wrapper.find('[data-testid="login-error"]').exists()).toBe(false)
+    })
+  })
+
+  // After signing in, the page follows `?redirect=` only when it names a
+  // path inside the app; anything else falls back to the landing page.
+  describe('destination after sign-in', () => {
+    const originalLocation = window.location
+
+    beforeEach(() => {
+      delete (window as any).location
+      ;(window as any).location = { href: '', origin: 'http://localhost:4000' }
+    })
+
+    afterEach(() => {
+      ;(window as any).location = originalLocation
+    })
+
+    async function signInWithRedirect(redirect: string) {
+      routeQuery.redirect = redirect
+      mockPost.mockResolvedValueOnce({
+        data: {
+          access_token: 'token',
+          user_name: 'test',
+          user_id: 'id',
+          user_roles: ['Member'],
+          email: 'test@example.com'
+        }
+      })
+
+      const wrapper = mountLogin()
+      const userStore = useCurrentUserStore()
+      vi.spyOn(userStore, 'loadUserData').mockResolvedValue(undefined as any)
+      vi.spyOn(userStore, 'loadPermissions').mockResolvedValue(undefined as any)
+      vi.spyOn(useUserSettingsStore(), 'loadSettings').mockResolvedValue({} as any)
+
+      await wrapper.find('[data-testid="login-email-input"]').setValue('test@example.com')
+      await wrapper.find('[data-testid="login-password-input"]').setValue('password123')
+      await wrapper.find('[data-testid="login-form"]').trigger('submit')
+      await flushPromises()
+    }
+
+    it('goes to the in-app path named by redirect', async () => {
+      await signInWithRedirect('/courses')
+      expect(window.location.href).toBe('/courses')
+    })
+
+    it.each([
+      'javascript:alert(1)',
+      '//example.com',
+      'https://example.com',
+      '/\\example.com'
+    ])('goes to the landing page when redirect is %j', async (redirect) => {
+      await signInWithRedirect(redirect)
+      expect(window.location.href).toBe('/landing-page')
     })
   })
 
