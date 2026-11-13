@@ -13,7 +13,9 @@ describe('inAppPath', () => {
     '/terminal-sessions',
     '/courses?x=1#h',
     '/a/b',
-    '/scenario-editor?scenarioId=abc'
+    '/scenario-editor?scenarioId=abc',
+    '/a/../courses',
+    '/./courses'
   ])('keeps the in-app path %j unchanged', (path) => {
     expect(inAppPath(path)).toBe(path)
   })
@@ -48,7 +50,13 @@ describe('inAppPath', () => {
     './courses',
     '../courses',
     '?redirect=/courses',
-    '#/courses'
+    '#/courses',
+    '/.//example.com',
+    '/..//example.com',
+    '/%2e//example.com',
+    '/%2E%2E//example.com',
+    '/a/..//example.com',
+    '/a/b/../..//example.com'
   ])('returns null for %j, which is not an in-app path', (value) => {
     expect(inAppPath(value)).toBeNull()
   })

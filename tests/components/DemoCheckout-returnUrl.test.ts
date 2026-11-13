@@ -84,4 +84,9 @@ describe('DemoCheckout — outcome destination', () => {
     await simulate('error', { cancel_url: url })
     expect(window.location.href).toBe('/subscription-plans?error=payment_failed')
   })
+
+  it('stays in the app with the error flag when cancel_url normalises to a leading double slash', async () => {
+    await simulate('error', { cancel_url: '/.//example.com' })
+    expect(window.location.href).toBe('/subscription-plans?error=payment_failed')
+  })
 })
