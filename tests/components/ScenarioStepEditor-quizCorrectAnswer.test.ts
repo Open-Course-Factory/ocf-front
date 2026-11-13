@@ -139,6 +139,8 @@ describe('ScenarioStepEditor — survey step (no correct answers)', () => {
       { question_text: 'Pick some', question_type: 'multi_answer', options: ['A', 'B', 'C'], correct_answer: '[0]' },
       { question_text: 'Any comment?', question_type: 'free_text', options: [], correct_answer: 'leftover' },
     ])
+    // An unchanged existing step keeps Save disabled; make one edit first.
+    await wrapper.find('#q-0-text').setValue('How was it, really?')
     expect(wrapper.text()).not.toContain('Mark at least one correct option.')
     expect(wrapper.find('.field-error').exists()).toBe(false)
     expect(saveButton(wrapper).attributes('disabled')).toBeUndefined()
