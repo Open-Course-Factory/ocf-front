@@ -28,6 +28,7 @@ import { getCurrentActorRoles } from '../composables/useFeatureFlags';
 import { useScenarioEditorAccess } from '../composables/useScenarioEditorAccess';
 import { useAdminViewMode } from '../composables/useAdminViewMode';
 import { useUserMembershipsStore } from '../stores/userMemberships';
+import { COMPANY } from '../config/company';
 import Layout from '../components/Layout.vue';
 import Courses from '../components/Pages/Courses.vue';
 import Chapters from '../components/Pages/Chapters.vue';
@@ -61,6 +62,16 @@ const basicRoutes = [
     name: 'Register',
     component: () => import('../components/Pages/Register.vue'),
     meta: { requiresAuth: false }
+  },
+  // Prices moved to the marketing site; keep old links and indexed URLs working.
+  {
+    path: '/pricing',
+    component: { render: () => null },
+    meta: { requiresAuth: false },
+    beforeEnter: () => {
+      window.location.replace(`${COMPANY.website}/tarifs`);
+      return false;
+    }
   },
   {
     path: '/verify-email',
