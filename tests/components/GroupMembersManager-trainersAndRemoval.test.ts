@@ -110,6 +110,12 @@ function bulkBarText(wrapper: VueWrapper) {
   return wrapper.find('[data-testid="members-bulk-bar"]').text()
 }
 
+// "Remove" sits in the row's ⋯ actions menu: open it, then pick the item.
+async function clickRemove(wrapper: VueWrapper, name: string) {
+  await rowOf(wrapper, name).find('.member-actions .btn-icon').trigger('click')
+  await rowOf(wrapper, name).find('[data-testid="member-remove"]').trigger('click')
+}
+
 async function tick(wrapper: VueWrapper, name: string) {
   await rowOf(wrapper, name).find('input.member-checkbox').setValue(true)
 }
@@ -171,11 +177,11 @@ describe('GroupMembersManager trainers and participants', () => {
 })
 
 describe('GroupMembersManager member removal', () => {
-  it('asks before removing: the remove button opens a confirmation and deletes nothing', async () => {
+  it('asks before removing: the remove action opens a confirmation and deletes nothing', async () => {
     const wrapper = await mountRoster()
 
     expect(wrapper.find('[data-testid="member-remove-confirm"]').exists()).toBe(false)
-    await rowOf(wrapper, 'Bob Participant').find('[data-testid="member-remove"]').trigger('click')
+    await clickRemove(wrapper, 'Bob Participant')
 
     expect(wrapper.find('[data-testid="member-remove-confirm"]').exists()).toBe(true)
     expect(axios.delete).not.toHaveBeenCalled()
@@ -185,7 +191,7 @@ describe('GroupMembersManager member removal', () => {
   it('removes the member once confirmed and reports one member fewer', async () => {
     const wrapper = await mountRoster()
 
-    await rowOf(wrapper, 'Bob Participant').find('[data-testid="member-remove"]').trigger('click')
+    await clickRemove(wrapper, 'Bob Participant')
     await wrapper.find('[data-testid="member-remove-confirm"]').trigger('click')
     await flushPromises()
 
@@ -199,7 +205,7 @@ describe('GroupMembersManager member removal', () => {
   it('removes nothing when the trainer cancels', async () => {
     const wrapper = await mountRoster()
 
-    await rowOf(wrapper, 'Bob Participant').find('[data-testid="member-remove"]').trigger('click')
+    await clickRemove(wrapper, 'Bob Participant')
     const cancel = wrapper.find('.base-modal-footer').findAll('button').find(b => b.text() === 'Cancel')
     expect(cancel).toBeDefined()
     await cancel!.trigger('click')
