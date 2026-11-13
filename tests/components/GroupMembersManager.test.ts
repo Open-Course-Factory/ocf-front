@@ -247,14 +247,14 @@ describe('GroupMembersManager', () => {
   describe('loading and empty states', () => {
     it('shows empty state when no members loaded', async () => {
       const wrapper = mountComponent()
-      await nextTick()
-      await nextTick()
+      await flushPromises()
 
-      // After loading completes with empty data, the empty state should show
+      // After loading completes with empty data, the empty state shows,
+      // translated, in place of the table.
       const emptyState = wrapper.find('.empty-state')
-      if (emptyState.exists()) {
-        expect(emptyState.text()).toContain('noMembers')
-      }
+      expect(emptyState.exists()).toBe(true)
+      expect(emptyState.text()).toBe('No members in this group')
+      expect(wrapper.find('[data-testid="member-row"]').exists()).toBe(false)
     })
   })
 
