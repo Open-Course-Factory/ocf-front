@@ -49,7 +49,6 @@
         </div>
 
         <p>{{ t('help.account.subscription.catalogue.ttc') }}</p>
-        <HelpScreenshot name="pricing" :caption="t('help.account.subscription.subscribe.screenshot')" />
       </section>
 
       <section class="help-section">
@@ -58,7 +57,6 @@
         <ul>
           <li>{{ t('help.account.subscription.whereToFind.dashboard') }}</li>
           <li>{{ t('help.account.subscription.whereToFind.plans') }}</li>
-          <li>{{ t('help.account.subscription.whereToFind.pricing') }}</li>
           <li>{{ t('help.account.subscription.whereToFind.licenses') }}</li>
         </ul>
       </section>

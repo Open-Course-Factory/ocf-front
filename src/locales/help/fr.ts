@@ -638,7 +638,7 @@ export const helpFr = {
         catalogue: {
           title: "Les formules",
           description: "Quatre formules couvrent les usages, de la découverte à l'établissement. Elles se distinguent par la capacité de terminal (les tailles de machine que vous pouvez lancer en même temps), la durée maximale d'une session, la persistance des données et l'accès réseau.",
-          ttc: "Les prix affichés dans l'application et sur la page Tarifs sont TTC. En cas de doute, la page Tarifs fait foi.",
+          ttc: "Les prix affichés dans l'application et sur la page Tarifs de labinux.com sont TTC. En cas de doute, la page Tarifs de labinux.com fait foi.",
           discovery: {
             title: "Découverte",
             price: "Gratuit",
@@ -657,7 +657,7 @@ export const helpFr = {
           school: {
             title: "Écoles et organismes de formation",
             price: "Sur devis",
-            description: "Capacité et tarifs négociés, licences attribuées administrativement à vos apprenants, facturation sur devis. Contactez-nous depuis la page Tarifs."
+            description: "Capacité et tarifs négociés, licences attribuées administrativement à vos apprenants, facturation sur devis. Contactez-nous depuis la page Tarifs de labinux.com."
           },
           screenshot: "La page Plans disponibles, avec le plan actif signalé par le badge « Actuel »."
         },
@@ -667,7 +667,6 @@ export const helpFr = {
           description: "Dans le menu latéral, la rubrique Abonnement & Licences regroupe :",
           dashboard: "Mon abonnement — votre tableau de bord : plan actif, utilisation, factures récentes.",
           plans: "Plans disponibles — la grille des formules pour souscrire ou changer de plan.",
-          pricing: "Tarifs publics — la page Tarifs telle que la voient les visiteurs, ouverte dans un nouvel onglet.",
           licenses: "Acheter des licences et Gérer les licences — les sièges apprenants (formule Formateur)."
         },
 
@@ -682,8 +681,7 @@ export const helpFr = {
             title: "Plan payant",
             description: "Une fenêtre récapitule le plan et son prix TTC, propose un code promo facultatif et vous demande de cocher la renonciation au délai de rétractation de 14 jours (le service démarre tout de suite). Vous êtes ensuite redirigé vers la page de paiement sécurisée Stripe ; à la fin, vous revenez dans l'application avec l'abonnement actif. Si vous annulez sur Stripe, vous revenez sur une page qui propose de réessayer."
           },
-          emailVerified: "Un plan payant exige une adresse e-mail vérifiée. Si ce n'est pas encore fait, le bouton du plan vous renvoie vers la vérification.",
-          screenshot: "La page Tarifs, publique, avec les quatre formules et la mention des prix TTC."
+          emailVerified: "Un plan payant exige une adresse e-mail vérifiée. Si ce n'est pas encore fait, le bouton du plan vous renvoie vers la vérification."
         },
 
         changePlan: {

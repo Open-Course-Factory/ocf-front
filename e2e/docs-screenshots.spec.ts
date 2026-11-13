@@ -54,7 +54,6 @@ const CREDENTIALS: Record<Exclude<Persona, 'public'>, { email: string; password:
 
 const SCREENS: Screen[] = [
   // Public
-  { name: 'pricing', path: '/pricing', as: 'public', fullPage: true },
   { name: 'login', path: '/login', as: 'public' },
   { name: 'register', path: '/register', as: 'public' },
 

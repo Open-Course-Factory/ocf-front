@@ -638,7 +638,7 @@ export const helpEn = {
         catalogue: {
           title: "The plans",
           description: "Four plans cover every use, from a first look to a whole school. They differ by terminal capacity (the machine sizes you can run at the same time), maximum session length, data persistence and network access.",
-          ttc: "Prices shown in the app and on the Pricing page include VAT. When in doubt, the Pricing page is the reference.",
+          ttc: "Prices shown in the app and on the Pricing page of labinux.com include VAT. When in doubt, the Pricing page of labinux.com is the reference.",
           discovery: {
             title: "Discovery",
             price: "Free",
@@ -657,7 +657,7 @@ export const helpEn = {
           school: {
             title: "Schools and training organisations",
             price: "On quote",
-            description: "Negotiated capacity and pricing, licenses assigned to your learners by an administrator, invoicing on quote. Contact us from the Pricing page."
+            description: "Negotiated capacity and pricing, licenses assigned to your learners by an administrator, invoicing on quote. Contact us from the Pricing page of labinux.com."
           },
           screenshot: "The Available plans page, with the active plan marked by the “Current” badge."
         },
@@ -667,7 +667,6 @@ export const helpEn = {
           description: "In the side menu, the Subscription & Licenses section holds:",
           dashboard: "My subscription — your dashboard: active plan, usage, recent invoices.",
           plans: "Available plans — the plan grid, to subscribe or change plan.",
-          pricing: "Public pricing — the Pricing page as visitors see it, opened in a new tab.",
           licenses: "Purchase licenses and Manage licenses — learner seats (Trainer plan)."
         },
 
@@ -682,8 +681,7 @@ export const helpEn = {
             title: "Paid plan",
             description: "A dialog sums up the plan and its price including VAT, offers an optional coupon code and asks you to tick the waiver of the 14-day right of withdrawal (the service starts right away). You are then sent to Stripe's secure payment page; when it completes you are back in the app with the subscription active. If you cancel on Stripe, you return to a page that offers to retry."
           },
-          emailVerified: "A paid plan requires a verified email address. If yours is not verified yet, the plan button sends you to the verification step.",
-          screenshot: "The public Pricing page, with the four plans and the VAT-included notice."
+          emailVerified: "A paid plan requires a verified email address. If yours is not verified yet, the plan button sends you to the verification step."
         },
 
         changePlan: {

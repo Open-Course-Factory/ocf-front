@@ -42,7 +42,6 @@
               :icon="item.icon"
               :tooltip="isMenuCollapsed ? item.title : ''"
               :disabled="category.disabled"
-              :newTab="item.newTab"
               @click="handleMenuItemClick"
             />
           </NavCategory>
@@ -79,7 +78,6 @@
               :icon="item.icon"
               :tooltip="isMenuCollapsed ? item.title : ''"
               :disabled="category.disabled"
-              :newTab="item.newTab"
               @click="handleMenuItemClick"
             />
           </NavCategory>
@@ -260,7 +258,6 @@ interface MenuItem {
   requiresScenarioManager?: boolean
   disabled?: boolean
   disabledTooltip?: string
-  newTab?: boolean
 }
 
 interface MenuCategory {
@@ -456,17 +453,6 @@ const menuCategories = computed((): MenuCategory[] => [
         title: t('navigation.availablePlansTitle'),
         icon: 'fas fa-tags',
         hideForAssignedOnly: true
-      },
-      {
-        // The public page, reachable from inside the product so it can be looked
-        // at or shared without logging out. It renders without the application
-        // shell, so opening it in place would strand the user on a page with no
-        // menu to leave by.
-        route: '/pricing',
-        label: t('navigation.publicPricing'),
-        title: t('navigation.publicPricingTitle'),
-        icon: 'fas fa-tag',
-        newTab: true
       },
       {
         route: '/bulk-license-purchase',
