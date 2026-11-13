@@ -162,12 +162,12 @@ describe('GroupMembersManager trainers and participants', () => {
 
   it('select-all ticks the participants only, and the password reset reaches only them', async () => {
     const wrapper = await mountRoster()
-    window.confirm = vi.fn(() => true)
 
     await wrapper.find('.select-all-checkbox input').setValue(true)
     expect(bulkBarText(wrapper)).toContain('3 selected')
 
     await wrapper.find('[data-testid="regenerate-passwords"]').trigger('click')
+    await wrapper.find('[data-testid="regenerate-confirm"]').trigger('click')
     await flushPromises()
 
     expect(bulkImportService.regeneratePasswords).toHaveBeenCalledTimes(1)
@@ -206,9 +206,7 @@ describe('GroupMembersManager member removal', () => {
     const wrapper = await mountRoster()
 
     await clickRemove(wrapper, 'Bob Participant')
-    const cancel = wrapper.find('.base-modal-footer').findAll('button').find(b => b.text() === 'Cancel')
-    expect(cancel).toBeDefined()
-    await cancel!.trigger('click')
+    await wrapper.find('[data-testid="member-remove-cancel"]').trigger('click')
     await flushPromises()
 
     expect(wrapper.find('[data-testid="member-remove-confirm"]').exists()).toBe(false)

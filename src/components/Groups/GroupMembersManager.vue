@@ -368,22 +368,27 @@ function toggleSelectAll() {
   }
 }
 
-// One participant (row menu) or the current selection (bulk bar). A bulk run
-// clears the selection; a single one leaves it alone.
-async function regeneratePasswords(userIds: string[]) {
-  if (userIds.length === 0 || !props.group?.organization_id) return false
+// One participant (row menu) or the current selection (bulk bar). Like a
+// removal, it asks first in a modal: it invalidates the current passwords.
+// A bulk run clears the selection once done; a single one leaves it alone.
+const regenerationPending = ref<{ userIds: string[]; clearsSelection: boolean } | null>(null)
 
-  const confirmed = window.confirm(
-    t('groupMembers.regeneratePasswordsConfirm', { count: userIds.length })
-  )
-  if (!confirmed) return false
+function askRegeneratePasswords(userIds: string[], clearsSelection: boolean) {
+  if (userIds.length === 0 || !props.group?.organization_id) return
+  regenerationPending.value = { userIds, clearsSelection }
+}
+
+async function confirmRegeneratePasswords() {
+  const pending = regenerationPending.value
+  if (!pending || !props.group?.organization_id) return
+  regenerationPending.value = null
 
   isRegenerating.value = true
   try {
     const response = await bulkImportService.regeneratePasswords(
       props.group.organization_id,
       props.group.id,
-      userIds
+      pending.userIds
     )
 
     if (response.credentials.length > 0) {
@@ -394,18 +399,12 @@ async function regeneratePasswords(userIds: string[]) {
     if (response.errors.length > 0) {
       error.value = t('groupMembers.regeneratePasswordsError')
     }
-    return true
+
+    if (pending.clearsSelection) selectedMemberIds.value = new Set()
   } catch (err: any) {
     error.value = err.response?.data?.error_message || t('groupMembers.regeneratePasswordsError')
-    return false
   } finally {
     isRegenerating.value = false
-  }
-}
-
-async function handleRegeneratePasswords() {
-  if (await regeneratePasswords(Array.from(selectedMemberIds.value))) {
-    selectedMemberIds.value = new Set()
   }
 }
 
@@ -509,7 +508,7 @@ async function confirmRemoveMember() {
           class="btn btn-sm btn-primary"
           :disabled="isRegenerating || selectedCount === 0"
           data-testid="regenerate-passwords"
-          @click="handleRegeneratePasswords"
+          @click="askRegeneratePasswords(Array.from(selectedMemberIds), true)"
         >
           <i class="fas fa-key" aria-hidden="true"></i>
           {{ t('groupMembers.regeneratePasswords') }}
@@ -643,7 +642,7 @@ async function confirmRemoveMember() {
                   class="ocf-dropdown-item"
                   data-testid="member-regenerate-password"
                   :disabled="isRegenerating"
-                  @click="regeneratePasswords([member.user_id])"
+                  @click="askRegeneratePasswords([member.user_id], false)"
                 >
                   <i class="fas fa-key"></i>
                   <span>{{ t('groupMembers.regeneratePassword') }}</span>
@@ -769,6 +768,26 @@ async function confirmRemoveMember() {
       </template>
     </BaseModal>
 
+    <!-- Password Regeneration Confirmation -->
+    <BaseModal
+      :visible="!!regenerationPending"
+      :title="t('groupMembers.regeneratePasswords')"
+      size="small"
+      @close="regenerationPending = null"
+    >
+      <p v-if="regenerationPending" class="ocf-members-confirm">
+        {{ t('groupMembers.regeneratePasswordsConfirm', { count: regenerationPending.userIds.length }) }}
+      </p>
+      <template #footer>
+        <button type="button" class="btn btn-danger" data-testid="regenerate-confirm" @click="confirmRegeneratePasswords">
+          {{ t('groupMembers.regeneratePasswords') }}
+        </button>
+        <button type="button" class="btn btn-secondary" data-testid="regenerate-cancel" @click="regenerationPending = null">
+          {{ t('groupMembers.cancel') }}
+        </button>
+      </template>
+    </BaseModal>
+
     <!-- Remove Member Confirmation -->
     <BaseModal
       :visible="!!memberPendingRemoval"
@@ -776,14 +795,14 @@ async function confirmRemoveMember() {
       size="small"
       @close="memberPendingRemoval = null"
     >
-      <p v-if="memberPendingRemoval" class="ocf-remove-confirm">
+      <p v-if="memberPendingRemoval" class="ocf-members-confirm">
         {{ t('groupMembers.removeMemberConfirm', { name: memberName(memberPendingRemoval), groupName: group?.display_name }) }}
       </p>
       <template #footer>
         <button type="button" class="btn btn-danger" data-testid="member-remove-confirm" @click="confirmRemoveMember">
           {{ t('groupMembers.removeMember') }}
         </button>
-        <button type="button" class="btn btn-secondary" @click="memberPendingRemoval = null">
+        <button type="button" class="btn btn-secondary" data-testid="member-remove-cancel" @click="memberPendingRemoval = null">
           {{ t('groupMembers.cancel') }}
         </button>
       </template>
@@ -1011,7 +1030,7 @@ async function confirmRemoveMember() {
   font-size: var(--font-size-sm);
 }
 
-.ocf-remove-confirm {
+.ocf-members-confirm {
   margin: 0;
   color: var(--color-text-primary);
 }
