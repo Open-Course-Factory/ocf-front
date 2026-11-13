@@ -146,7 +146,7 @@ describe('DropdownMenu', () => {
     expect(left.find('.ocf-dropdown-menu').classes()).toContain('ocf-dropdown-menu--left')
   })
 
-  it('names the default trigger with triggerLabel and reports the menu state to assistive tech', async () => {
+  it('names the default trigger with triggerLabel and reports its open state, without claiming a menu popup', async () => {
     const wrapper = mount(DropdownMenu, {
       props: { triggerLabel: 'Actions for Alice' },
       slots: { default: '<button class="ocf-dropdown-item">X</button>' },
@@ -155,7 +155,8 @@ describe('DropdownMenu', () => {
 
     expect(trigger.attributes('aria-label')).toBe('Actions for Alice')
     expect(trigger.attributes('title')).toBe('Actions for Alice')
-    expect(trigger.attributes('aria-haspopup')).toBe('menu')
+    // No aria-haspopup: the items are plain buttons, not a role="menu".
+    expect(trigger.attributes('aria-haspopup')).toBeUndefined()
     expect(trigger.attributes('aria-expanded')).toBe('false')
 
     await trigger.trigger('click')
