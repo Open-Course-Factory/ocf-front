@@ -21,7 +21,7 @@ export const COMPANY = {
   address: 'Bureau 3, 5 impasse de la Colombette, 31000 Toulouse',
   publicationDirector: 'Thomas Saquet',
   /** Env-backed like SUPPORT_EMAIL so a deployment can point elsewhere without a rebuild. */
-  website: import.meta.env.VITE_COMPANY_WEBSITE || 'https://www.labinux.com',
+  website: import.meta.env.VITE_COMPANY_WEBSITE || 'https://labinux.com',
 } as const
 
 /** Hosting provider, named separately because LCEN requires the host's own identity. */
