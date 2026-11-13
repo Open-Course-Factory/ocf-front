@@ -146,6 +146,7 @@ vi.mock('../../src/utils/asyncWrapper', () => ({
 }))
 
 import Login from '../../src/components/Pages/Login.vue'
+import { COMPANY } from '../../src/config/company'
 import axios from 'axios'
 
 const mockPost = vi.mocked(axios.post)
@@ -170,7 +171,7 @@ function mountLogin() {
       plugins: [i18n],
       stubs: {
         'router-link': {
-          template: '<a class="router-link-stub"><slot /></a>',
+          template: '<a class="router-link-stub" :href="typeof to === \'string\' ? to : undefined"><slot /></a>',
           props: ['to']
         }
       }
@@ -229,6 +230,12 @@ describe('Login', () => {
       const wrapper = mountLogin()
       const registerDiv = wrapper.find('[data-testid="login-register-link"]')
       expect(registerDiv.exists()).toBe(true)
+    })
+
+    // `/` is the login page itself now; home is the marketing site.
+    it('links the logo to the marketing site, not back to itself', () => {
+      const wrapper = mountLogin()
+      expect(wrapper.find('.auth-brand a').attributes('href')).toBe(COMPANY.website)
     })
   })
 

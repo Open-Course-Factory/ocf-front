@@ -17,10 +17,16 @@ const robots = readFileSync(resolve(publicDir, 'robots.txt'), 'utf8')
 const sitemapUrls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => new URL(m[1]))
 
 describe('public/sitemap.xml', () => {
-  it('lists at least the login and pricing pages', () => {
+  it('lists the login page', () => {
     const paths = sitemapUrls.map(u => u.pathname)
     expect(paths).toContain('/login')
-    expect(paths).toContain('/pricing')
+  })
+
+  // `/` is the login form and prices live on the marketing site.
+  it('lists neither the root nor a pricing page', () => {
+    const paths = sitemapUrls.map(u => u.pathname)
+    expect(paths).not.toContain('/')
+    expect(paths).not.toContain('/pricing')
   })
 
   it.each(sitemapUrls.map(u => [u.pathname]))('%s is a declared route open without login', (path) => {
@@ -36,6 +42,10 @@ describe('public/sitemap.xml', () => {
 })
 
 describe('public/robots.txt', () => {
+  it('does not open a /pricing page to crawlers', () => {
+    expect(robots).not.toMatch(/^Allow:\s*\/pricing/m)
+  })
+
   it('points crawlers at the sitemap on the same origin', () => {
     const [origin] = [...new Set(sitemapUrls.map(u => u.origin))]
     expect(robots).toContain(`Sitemap: ${origin}/sitemap.xml`)

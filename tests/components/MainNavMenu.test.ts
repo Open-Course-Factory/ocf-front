@@ -81,3 +81,19 @@ describe('MainNavMenu.vue — Bug M5: FR tooltip should include action hint', ()
     expect(hasActionHint).toBe(true)
   })
 })
+
+// The public pricing page is gone (prices live on the marketing site), so the
+// menu entry that opened it in a new tab goes with it.
+describe('MainNavMenu.vue — no public pricing entry', () => {
+  const menuSource = readFileSync(resolve(__dirname, '../../src/components/Menus/MainNavMenu.vue'), 'utf-8')
+
+  it('declares no menu item for /pricing', () => {
+    expect(menuSource).not.toMatch(/route:\s*['"]\/pricing['"]/)
+    expect(menuSource).not.toContain('navigation.publicPricing')
+  })
+
+  it('is no longer described by the subscription help page', () => {
+    const helpPage = readFileSync(resolve(__dirname, '../../src/components/Pages/Help/AccountSubscription.vue'), 'utf-8')
+    expect(helpPage).not.toContain('whereToFind.pricing')
+  })
+})
