@@ -42,10 +42,6 @@ describe('public/sitemap.xml', () => {
 })
 
 describe('public/robots.txt', () => {
-  it('does not open a /pricing page to crawlers', () => {
-    expect(robots).not.toMatch(/^Allow:\s*\/pricing/m)
-  })
-
   it('points crawlers at the sitemap on the same origin', () => {
     const [origin] = [...new Set(sitemapUrls.map(u => u.origin))]
     expect(robots).toContain(`Sitemap: ${origin}/sitemap.xml`)

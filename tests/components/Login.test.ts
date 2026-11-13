@@ -171,7 +171,7 @@ function mountLogin() {
       plugins: [i18n],
       stubs: {
         'router-link': {
-          template: '<a class="router-link-stub" :href="typeof to === \'string\' ? to : undefined"><slot /></a>',
+          template: '<a class="router-link-stub"><slot /></a>',
           props: ['to']
         }
       }

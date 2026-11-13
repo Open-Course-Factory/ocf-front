@@ -55,7 +55,9 @@ describe('the disabled-feature guard', () => {
     })
   })
 
-  it('still sends an anonymous visitor to Login', async () => {
+  // Every requiresFeature route also requiresAuth, so the auth guard stops an
+  // anonymous visitor before the feature guard is reached.
+  it('lets the auth guard stop an anonymous visitor first', async () => {
     user.isAuthenticated = false
     user.userId = null
     await router.replace('/login').catch(() => undefined)
