@@ -1241,8 +1241,15 @@ async function confirmRemoveMember() {
     display: none;
   }
 
+  /* Wide enough for « Gestionnaire » with the chevron, at the phone's
+     smaller root font size. */
   .ocf-members-table .ocf-members-col-role {
-    width: 8.5rem;
+    width: 9.5rem;
+  }
+
+  .form-control.role-select {
+    padding-right: 1.5rem;
+    background-position: right var(--spacing-xs) center;
   }
 
   .ocf-members-table th,
