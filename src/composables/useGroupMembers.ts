@@ -128,10 +128,19 @@ export function useGroupMembers({ groupId, currentUserId, canManageMembers }: Us
     })
   })
 
+  // Trainers first (owner, then manager), then members; within a role, by name.
+  // A member without a name sorts by their email, the label their row shows.
+  const nameSortDirection = ref<'asc' | 'desc'>('asc')
+  const nameCollator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true })
+  const sortLabel = (member: GroupMember) =>
+    member.user?.display_name || member.user?.email || member.user_id
+
   const sortedMembers = computed(() => {
     const roleOrder = { owner: 2, manager: 1, member: 0 }
+    const direction = nameSortDirection.value === 'asc' ? 1 : -1
     return [...filteredMembers.value].sort((a, b) => {
       return (roleOrder[b.role] || 0) - (roleOrder[a.role] || 0)
+        || direction * nameCollator.compare(sortLabel(a), sortLabel(b))
     })
   })
 
@@ -297,6 +306,7 @@ export function useGroupMembers({ groupId, currentUserId, canManageMembers }: Us
     // State
     members,
     memberSearchQuery,
+    nameSortDirection,
     newMemberData,
     isLoading,
     error,
