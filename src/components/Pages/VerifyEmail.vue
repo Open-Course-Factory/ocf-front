@@ -115,6 +115,7 @@ import { useEmailVerification } from '../../composables/useEmailVerification'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
 import ResendVerificationEmail from '../Auth/ResendVerificationEmail.vue'
+import { inAppPath } from '../../utils/inAppPath'
 
 const { t } = useTranslations({
   en: {
@@ -310,8 +311,7 @@ function redirectAfterVerification() {
   if (redirectTimer) {
     clearInterval(redirectTimer)
   }
-  const redirect = route.query.redirect as string
-  router.push(redirect || '/terminal-sessions')
+  router.push(inAppPath(route.query.redirect) ?? '/terminal-sessions')
 }
 
 const startRedirectCountdown = () => {

@@ -117,6 +117,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
 import { logDemoAction, simulateDelay } from '../../services/demo'
+import { inAppPath } from '../../utils/inAppPath'
 
 const route = useRoute()
 
@@ -182,7 +183,7 @@ const returnUrl = ref('')
 
 onMounted(() => {
   sessionId.value = route.query.session_id as string || ''
-  returnUrl.value = route.query.return_url as string || '/subscription-dashboard'
+  returnUrl.value = inAppPath(route.query.return_url) ?? '/subscription-dashboard'
 
   logDemoAction('Demo portal page loaded', {
     sessionId: sessionId.value,

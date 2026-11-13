@@ -334,17 +334,15 @@ import CommandHistory from '../Terminal/CommandHistory.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import { getEffectiveSessionState } from '../../utils/sessionState'
 import { showsValidatedFlags } from '../../utils/scenarioDisplay'
+import { inAppPath } from '../../utils/inAppPath'
 
 const route = useRoute()
 const router = useRouter()
 
 // Where "back" leads. A caller that navigated here in the same tab (the
 // scenario editor's preview) names its own page in `returnTo`; only an
-// in-app path is honoured, so the query can never send anyone off-site.
-const returnTo = computed(() => {
-  const raw = route.query.returnTo
-  return typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//') ? raw : null
-})
+// in-app path is honoured.
+const returnTo = computed(() => inAppPath(route.query.returnTo))
 const backTarget = computed(() => returnTo.value ?? { name: 'TerminalSessions' })
 const backLabel = computed(() => t(returnTo.value ? 'sessionView.back' : 'sessionView.backToSessions'))
 const { showSuccess, showWarning, showError: showErrorNotification, showInfo, showConfirm } = useNotification()

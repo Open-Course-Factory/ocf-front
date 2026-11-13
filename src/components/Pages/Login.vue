@@ -83,6 +83,7 @@ import { useTheme } from '../../composables/useTheme';
 import { useFeatureFlags } from '../../composables/useFeatureFlags';
 import { resolveLandingPage } from '../../composables/useLandingPage';
 import { useTranslations } from '../../composables/useTranslations';
+import { inAppPath } from '../../utils/inAppPath';
 
 const { t } = useTranslations({
   en: {
@@ -180,9 +181,8 @@ async function redirect() {
 
       const landingPage = await resolveLandingPage();
 
-      // Check for redirect query parameter (e.g., from session expiry)
-      const redirectParam = route.query.redirect as string | undefined
-      const targetPage = redirectParam || landingPage
+      // Go back where the user was (e.g. after session expiry), but only to a path inside the app
+      const targetPage = inAppPath(route.query.redirect) ?? landingPage
 
       // Full page reload to cleanly transition from public to authenticated app shell
       window.location.href = targetPage;
