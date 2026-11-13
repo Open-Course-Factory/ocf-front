@@ -561,11 +561,10 @@ router.beforeEach(async (to, from) => {
 
     if (!isFeatureEnabled) {
       console.warn(`🏴 Access denied: Feature "${requiredFeature}" is disabled`);
-      // Like the sibling guards: a signed-in user lands on their sessions,
-      // where the reason is shown. Login would bounce them there by path and
-      // drop the query on the way.
+      // Like the sibling guards (requiresAdmin, requiredPermissions). Login would
+      // bounce a signed-in user on by path and drop the query.
       return {
-        name: currentUserStore.isAuthenticated ? 'TerminalSessions' : 'Login',
+        name: 'TerminalSessions',
         query: { error: 'feature_disabled', feature: requiredFeature }
       };
     }
