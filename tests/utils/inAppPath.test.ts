@@ -56,7 +56,8 @@ describe('inAppPath', () => {
     '/%2e//example.com',
     '/%2E%2E//example.com',
     '/a/..//example.com',
-    '/a/b/../..//example.com'
+    '/a/b/../..//example.com',
+    '/.///example.com'
   ])('returns null for %j, which is not an in-app path', (value) => {
     expect(inAppPath(value)).toBeNull()
   })
