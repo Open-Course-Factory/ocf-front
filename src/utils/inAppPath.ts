@@ -5,8 +5,9 @@
  * demo `return_url`, verify-email `redirect`, session view `returnTo`) only
  * follow same-origin paths, so a query parameter can never send the browser
  * elsewhere. Backslashes, whitespace and control characters are refused
- * outright: browsers normalise them in ways that can turn `/\host` or
- * `/\t/host` into `//host`. The original string is returned untouched.
+ * outright. A path whose normalised form starts with `//` is refused too,
+ * since it would be read as another host once rebuilt. The original string
+ * is returned untouched.
  */
 export function inAppPath(raw: unknown): string | null {
   if (typeof raw !== 'string' || !raw.startsWith('/')) return null
@@ -14,7 +15,7 @@ export function inAppPath(raw: unknown): string | null {
   if (/[\\\s\u0000-\u001f\u007f]/.test(raw)) return null
   try {
     const url = new URL(raw, window.location.origin)
-    return url.origin === window.location.origin ? raw : null
+    return url.origin === window.location.origin && !url.pathname.startsWith('//') ? raw : null
   } catch {
     return null
   }
