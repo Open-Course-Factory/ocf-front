@@ -390,6 +390,16 @@ describe('ScenarioQuizPanel', () => {
     expect(errBlock.exists()).toBe(true)
     expect(errBlock.text()).toContain('Server exploded')
   })
+  it('labels the quiz free-text input with its question (aria-labelledby → question id)', () => {
+    const step = makeStep([{ id: 'q1', order: 0, question_text: 'FT q1?', question_type: 'free_text' }])
+    const wrapper = mountQuiz({ step })
+    const input = wrapper.find('[data-testid="quiz-free-input"]')
+    const labelledBy = input.attributes('aria-labelledby')
+    expect(labelledBy).toBeTruthy()
+    expect(wrapper.find('.quiz-question-text').attributes('id')).toBe(labelledBy)
+    expect(wrapper.find(`#${labelledBy}`).text()).toContain('FT q1?')
+  })
+
   describe('survey step (step_type "survey")', () => {
     function ftQuestion(id: string, order: number): CurrentStepQuestion {
       return { id, order, question_text: `FT ${id}?`, question_type: 'free_text' }
@@ -443,6 +453,16 @@ describe('ScenarioQuizPanel', () => {
       expect(wrapper.find('[data-testid="quiz-results-score"]').exists()).toBe(false)
       expect(wrapper.find('.quiz-breakdown').exists()).toBe(false)
       expect(wrapper.find('.quiz-results-actions').exists()).toBe(false)
+    })
+
+    it('labels the survey textarea with its question (aria-labelledby → question id)', () => {
+      const wrapper = mountQuiz({ step: surveyStep([ftQuestion('q1', 0)]) })
+      const area = wrapper.find('[data-testid="survey-free-textarea"]')
+      const labelledBy = area.attributes('aria-labelledby')
+      expect(labelledBy).toBeTruthy()
+      const question = wrapper.find('.quiz-question-text')
+      expect(question.attributes('id')).toBe(labelledBy)
+      expect(wrapper.find(`#${labelledBy}`).text()).toContain('FT q1?')
     })
 
     it('after submit in French: « Merci, vos réponses ont été envoyées. »', () => {
