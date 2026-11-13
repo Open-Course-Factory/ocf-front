@@ -24,9 +24,13 @@
 <template>
   <div class="help-page">
     <div class="back-button">
-      <a href="#" class="btn-back" @click.prevent="goBack">
+      <a v-if="isPublicHelp" :href="COMPANY.website" class="btn-back">
         <i class="fas fa-arrow-left"></i>
-        {{ backButtonText }}
+        {{ t('help.backToHome') }}
+      </a>
+      <a v-else href="#" class="btn-back" @click.prevent="goBack">
+        <i class="fas fa-arrow-left"></i>
+        {{ t('help.backToApp') }}
       </a>
     </div>
     <div class="help-header">
@@ -106,6 +110,7 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
 import { SUPPORT_EMAIL } from '../../config/contact'
+import { COMPANY } from '../../config/company'
 import { useLocale } from '../../composables/useLocale'
 import { useHelpRegistryStore } from '../../stores/helpRegistry'
 import { resolveLandingPage } from '../../composables/useLandingPage'
@@ -150,15 +155,10 @@ const expandedSections = ref(new Set<string>())
 const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
 const routePrefix = computed(() => isPublicHelp.value ? '/help-public' : '/help')
 
-// Back button: the public hub returns to the login page, the in-app hub to
-// the user's own home page (same resolution as the OCF logo, see useLandingPage).
-const backButtonText = computed(() => isPublicHelp.value ? t('help.backToHome') : t('help.backToApp'))
-
+// Back button: the public hub returns to the marketing site (`/` is the login
+// form, not a home page), the in-app hub to the user's own home page (same
+// resolution as the OCF logo, see useLandingPage).
 async function goBack() {
-  if (isPublicHelp.value) {
-    router.push('/')
-    return
-  }
   try {
     await useUserSettingsStore().loadSettings()
     router.push(await resolveLandingPage())

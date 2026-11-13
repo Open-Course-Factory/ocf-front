@@ -2,9 +2,9 @@
   <div class="connection-page">
     <div class="connection-form">
       <div class="auth-brand">
-        <router-link to="/">
+        <a :href="COMPANY.website">
           <InstanceBrand />
-        </router-link>
+        </a>
       </div>
       <h2>{{ t('login.title') }}</h2>
       <form data-testid="login-form" @submit.prevent="handleSubmit">
@@ -71,6 +71,7 @@
 
 <script setup lang="ts">
 import InstanceBrand from '../Common/InstanceBrand.vue'
+import { COMPANY } from '../../config/company'
 import { ref } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';

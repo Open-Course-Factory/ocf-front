@@ -2,9 +2,9 @@
   <div class="register-page">
     <div class="register-form">
       <div class="auth-brand">
-        <router-link to="/">
+        <a :href="COMPANY.website">
           <InstanceBrand />
-        </router-link>
+        </a>
       </div>
       <h2>{{ t('register.title') }}</h2>
       <form @submit.prevent="handleSubmit">
@@ -213,7 +213,7 @@ import { ref, computed, reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import TermsOfServiceModal from '../../components/Modals/TermsOfServiceModal.vue';
-import { TOS_VERSION } from '../../config/company';
+import { COMPANY, TOS_VERSION } from '../../config/company';
 import { useTranslations } from '../../composables/useTranslations';
 import { extractErrorMessage } from '../../utils/formatters';
 

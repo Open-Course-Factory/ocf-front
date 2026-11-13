@@ -107,9 +107,9 @@
       </div>
 
       <div class="legal-footer">
-        <router-link to="/" class="back-link">
+        <a :href="COMPANY.website" class="back-link">
           <i class="fas fa-arrow-left"></i> {{ t('legal.backToHome') }}
-        </router-link>
+        </a>
       </div>
     </div>
   </div>
