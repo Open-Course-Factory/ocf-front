@@ -29,7 +29,8 @@ export function useScenarioAiTranslations() {
           terminal: 'Terminal (checked by a script)',
           flag: 'Flag to find',
           quiz: 'Quiz',
-          info: 'Information'
+          info: 'Information',
+          survey: 'Survey (feedback, not graded)'
         },
         destination: 'Create in',
         noDestination: 'You manage no organization or class to create a scenario in.',
@@ -90,7 +91,8 @@ export function useScenarioAiTranslations() {
           terminal: 'Terminal (vérifiée par un script)',
           flag: 'Drapeau à trouver',
           quiz: 'Quiz',
-          info: 'Information'
+          info: 'Information',
+          survey: 'Questionnaire (avis, non noté)'
         },
         destination: 'Créer dans',
         noDestination: 'Vous ne gérez aucune organisation ni classe dans laquelle créer un scénario.',

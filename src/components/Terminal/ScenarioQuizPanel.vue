@@ -2,7 +2,7 @@
   <div class="quiz-step">
     <!-- Question entry view (shown until we have a result) -->
     <template v-if="!result && currentQuestion">
-      <p v-if="isPartialScoring" class="ocf-quiz-rule" data-testid="quiz-scoring-rule">
+      <p v-if="isPartialScoring && !isSurvey" class="ocf-quiz-rule" data-testid="quiz-scoring-rule">
         <i class="fas fa-info-circle" aria-hidden="true"></i>
         {{ scoringRule }}
       </p>
@@ -102,9 +102,18 @@
           </label>
         </div>
 
-        <!-- Free text -->
+        <!-- Free text: a survey asks for an opinion, so room for a few lines. -->
         <div v-else class="quiz-free">
+          <textarea
+            v-if="isSurvey"
+            rows="4"
+            class="quiz-free-input"
+            data-testid="survey-free-textarea"
+            v-model="quizAnswers[currentQuestion.id]"
+            :placeholder="t('scenarioPanel.freeAnswerPlaceholder')"
+          ></textarea>
           <input
+            v-else
             type="text"
             class="quiz-free-input"
             data-testid="quiz-free-input"
@@ -145,10 +154,10 @@
             :class="allAnswered ? 'verify-btn' : 'btn-secondary'"
             data-testid="quiz-validate"
             :disabled="isSubmitting || !isActive"
-            @click="showConfirm = true"
+            @click="isSurvey ? confirmSubmit() : (showConfirm = true)"
           >
-            <i :class="isSubmitting ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
-            {{ isSubmitting ? t('scenarioPanel.submitting') : t('scenarioPanel.submitQuiz') }}
+            <i :class="isSubmitting ? 'fas fa-spinner fa-spin' : (isSurvey ? 'fas fa-paper-plane' : 'fas fa-check')"></i>
+            {{ isSubmitting ? t('scenarioPanel.submitting') : (isSurvey ? t('scenarioPanel.sendSurvey') : t('scenarioPanel.submitQuiz')) }}
           </button>
         </div>
       </div>
@@ -212,8 +221,13 @@
 
     <!-- Quiz results -->
     <div v-else-if="result" class="quiz-results">
+      <!-- A survey is never graded: thanks, and the run moves on. -->
+      <p v-if="isSurvey" class="ocf-quiz-recorded" data-testid="survey-recorded" role="status">
+        <i class="fas fa-check-circle" aria-hidden="true"></i>
+        {{ t('scenarioPanel.surveyRecorded') }}
+      </p>
       <h4
-        v-if="result.score !== undefined && result.score !== null"
+        v-else-if="result.score !== undefined && result.score !== null"
         class="quiz-results-score"
         data-testid="quiz-results-score"
       >
@@ -228,7 +242,7 @@
         {{ t('scenarioPanel.answersRecorded') }}
       </p>
 
-      <ul v-if="result.per_question_results?.length" class="quiz-breakdown">
+      <ul v-if="!isSurvey && result.per_question_results?.length" class="quiz-breakdown">
         <li
           v-for="r in result.per_question_results"
           :key="r.question_id"
@@ -333,6 +347,8 @@ const { t } = useTranslations({
     scenarioPanel: {
       quizPosition: 'Question {n} of {total}',
       submitQuiz: 'Submit my answers',
+      sendSurvey: 'Send',
+      surveyRecorded: 'Thank you, your answers have been sent.',
       questionNavigator: 'Questions',
       goToAnswered: 'Question {n}, answered',
       goToUnanswered: 'Question {n}, not answered',
@@ -368,6 +384,8 @@ const { t } = useTranslations({
     scenarioPanel: {
       quizPosition: 'Question {n} sur {total}',
       submitQuiz: 'Valider mes réponses',
+      sendSurvey: 'Envoyer',
+      surveyRecorded: 'Merci, vos réponses ont été envoyées.',
       questionNavigator: 'Questions',
       goToAnswered: 'Question {n}, répondue',
       goToUnanswered: 'Question {n}, sans réponse',
@@ -454,6 +472,9 @@ const unansweredIndexes = computed(() =>
 )
 
 const allAnswered = computed(() => unansweredIndexes.value.length === 0)
+
+// A survey: every question optional, nothing graded, sent without confirmation.
+const isSurvey = computed(() => props.step.step_type === 'survey')
 
 // Exam mode has no "Try again", so its confirmation must read as final.
 const isExam = computed(() => !props.step.show_immediate_feedback)
@@ -717,6 +738,8 @@ function onTryAgain() {
 
 .quiz-free-input {
   width: 100%;
+  font-family: inherit;
+  resize: vertical;
   padding: var(--spacing-sm);
   border: var(--border-width-thin) solid var(--color-border-medium);
   border-radius: var(--border-radius-md);

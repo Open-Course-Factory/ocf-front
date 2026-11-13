@@ -118,11 +118,25 @@ export function buildSessionDetailCsv(
       ]
       // Step row: leave the 6 question columns blank.
       rows.push([...stepCols, '', '', '', '', '', ''])
-      // Quiz step → one row per question, repeating the step columns so
-      // each row is self-contained for filtering / pivoting.
-      if (normalizedStepType(step.step_type) === 'quiz' && step.questions) {
+      // Quiz or survey step → one row per question, repeating the step
+      // columns so each row is self-contained for filtering / pivoting.
+      // A survey is never graded: its correct-answer and correct? cells stay blank.
+      const type = normalizedStepType(step.step_type)
+      if ((type === 'quiz' || type === 'survey') && step.questions) {
         for (let i = 0; i < step.questions.length; i++) {
           const q = step.questions[i]
+          if (type === 'survey') {
+            rows.push([
+              ...stepCols,
+              (q.order != null ? q.order + 1 : i + 1),
+              q.question_text,
+              q.question_type,
+              resolveAnswerText(q, q.student_answer),
+              '',
+              ''
+            ])
+            continue
+          }
           rows.push([
             ...stepCols,
             (q.order != null ? q.order + 1 : i + 1),

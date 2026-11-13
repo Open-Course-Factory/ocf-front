@@ -712,7 +712,7 @@ const handleSaveStep = async (formData: any) => {
       await scenarioStepsStore.updateEntity('/scenario-steps', stepId, stepData)
     }
 
-    if (stepId && (step.step_type === 'quiz' || (Array.isArray(newQuestions) && newQuestions.length > 0))) {
+    if (stepId && (step.step_type === 'quiz' || step.step_type === 'survey' || (Array.isArray(newQuestions) && newQuestions.length > 0))) {
       await scenarioStepService.syncQuestions(stepId, step.questions || [], newQuestions || [])
     }
 

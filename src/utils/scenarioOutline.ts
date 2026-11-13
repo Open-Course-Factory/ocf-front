@@ -8,14 +8,15 @@
 
 import { renumberSequence, type RenumberResult } from './renumberSequence'
 
-export const STEP_TYPES = ['terminal', 'flag', 'info', 'quiz'] as const
+export const STEP_TYPES = ['terminal', 'flag', 'info', 'quiz', 'survey'] as const
 export type StepType = typeof STEP_TYPES[number]
 
 export const TYPE_ICONS: Record<StepType, string> = {
   terminal: 'fas fa-terminal',
   flag: 'fas fa-flag',
   info: 'fas fa-book-open',
-  quiz: 'fas fa-question'
+  quiz: 'fas fa-question',
+  survey: 'fas fa-clipboard-list'
 }
 
 /** The drag type the outline accepts step-library steps under (a JSON array of step ids). */

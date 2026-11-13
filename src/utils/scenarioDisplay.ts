@@ -122,11 +122,12 @@ export function quizQuestionTotal(step: SessionStepDetail): number {
   return (step.questions || []).length
 }
 
-export function normalizedStepType(stepType?: string): 'terminal' | 'flag' | 'info' | 'quiz' {
+export function normalizedStepType(stepType?: string): 'terminal' | 'flag' | 'info' | 'quiz' | 'survey' {
   switch (stepType) {
     case 'flag': return 'flag'
     case 'info': return 'info'
     case 'quiz': return 'quiz'
+    case 'survey': return 'survey'
     default: return 'terminal'
   }
 }
@@ -136,6 +137,7 @@ export function stepTypeIcon(stepType?: string): string {
     case 'flag': return 'fas fa-flag'
     case 'info': return 'fas fa-book-open'
     case 'quiz': return 'fas fa-question-circle'
+    case 'survey': return 'fas fa-clipboard-list'
     default: return 'fas fa-terminal'
   }
 }

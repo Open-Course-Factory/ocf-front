@@ -19,11 +19,11 @@
  * separately from the language of the scenario's content.
  */
 
-export type ScenarioAiStepType = 'terminal' | 'flag' | 'quiz' | 'info'
+export type ScenarioAiStepType = 'terminal' | 'flag' | 'quiz' | 'info' | 'survey'
 export type ScenarioAiLevel = 'beginner' | 'intermediate' | 'advanced'
 export type ScenarioAiLanguage = 'fr' | 'en'
 
-export const SCENARIO_AI_STEP_TYPES: ScenarioAiStepType[] = ['terminal', 'flag', 'quiz', 'info']
+export const SCENARIO_AI_STEP_TYPES: ScenarioAiStepType[] = ['terminal', 'flag', 'quiz', 'info', 'survey']
 
 // Effect names accepted by ocf-banner in the container, for the step editor
 // and the prompt alike. Kept in step with the tool rather than invented here:
@@ -130,7 +130,7 @@ Scenario fields:
 
 Step fields:
 - "title" (required, string).
-- "step_type" (required): "terminal", "flag", "quiz" or "info".
+- "step_type" (required): "terminal", "flag", "quiz", "info" or "survey".
 - "text_content" (markdown): the instructions. A fenced code block whose closing fence is written \`\`\`{{exec}} becomes a block the learner clicks to run it in the terminal; \`\`\`{{copy}} makes it click-to-copy. Inline \`command\`{{exec}} works too.
 - "hint_content" (markdown): progressive hints, revealed one by one. Write two or more, each under its own heading "### Hint 1", "### Hint 2", … (in French, "### Indice 1", …). The first nudges, the last nearly gives the answer.
 - "verify_script" (bash): terminal steps only. See the rules below.
@@ -173,6 +173,12 @@ The learner gets ONE Linux container (an LXC system container) and a root shell 
 - "true_false": no options; correct_answer is "true" or "false".
 - "free_text": no options; correct_answer is the exact expected text, kept short (one word or one command).
 - "explanation" says why the answer is right; it is shown after answering.
+
+### Survey steps (step_type "survey")
+- A questionnaire for the learner's opinion or feedback, never graded. At least one question.
+- Questions are written like quiz questions: {"order": 1, "question_text": "...", "question_type": "...", "options": "..."}, with "options" encoded as a string the same way.
+- "question_type" is "multiple_choice", "multi_answer" (at least 2 options each) or "free_text" (no options).
+- No correct_answer, explanation or points: there is no right answer. Every question is optional for the learner.
 
 ### Info steps (step_type "info")
 - Text only, nothing to verify. Use them sparingly, for context between practical steps.
@@ -258,7 +264,7 @@ Champs du scénario :
 
 Champs d'une étape :
 - "title" (obligatoire, chaîne).
-- "step_type" (obligatoire) : "terminal", "flag", "quiz" ou "info".
+- "step_type" (obligatoire) : "terminal", "flag", "quiz", "info" ou "survey".
 - "text_content" (markdown) : la consigne. Un bloc de code dont la clôture s'écrit \`\`\`{{exec}} devient un bloc que l'apprenant clique pour l'exécuter dans le terminal ; \`\`\`{{copy}} le rend copiable d'un clic. \`commande\`{{exec}} fonctionne aussi en ligne.
 - "hint_content" (markdown) : des indices progressifs, révélés un par un. Écrivez-en au moins deux, chacun sous son propre titre "### Indice 1", "### Indice 2", … (en anglais, "### Hint 1", …). Le premier met sur la voie, le dernier donne presque la réponse.
 - "verify_script" (bash) : étapes terminal uniquement. Voir les règles ci-dessous.
@@ -301,6 +307,12 @@ L'apprenant dispose d'UN SEUL conteneur Linux (un conteneur système LXC) et d'u
 - "true_false" : pas d'options ; correct_answer vaut "true" ou "false".
 - "free_text" : pas d'options ; correct_answer est le texte exact attendu, court (un mot ou une commande).
 - "explanation" explique pourquoi la réponse est juste ; elle s'affiche après la réponse.
+
+### Étapes questionnaire (step_type "survey")
+- Un questionnaire pour recueillir l'avis ou le ressenti de l'apprenant, jamais noté. Au moins une question.
+- Les questions s'écrivent comme celles d'un quiz : {"order": 1, "question_text": "...", "question_type": "...", "options": "..."}, avec "options" encodé dans une chaîne de la même façon.
+- "question_type" vaut "multiple_choice", "multi_answer" (au moins 2 options chacune) ou "free_text" (pas d'options).
+- Ni correct_answer, ni explanation, ni points : il n'y a pas de bonne réponse. Chaque question est facultative pour l'apprenant.
 
 ### Étapes d'information (step_type "info")
 - Du texte seul, rien à vérifier. À utiliser avec parcimonie, pour donner du contexte entre deux étapes pratiques.

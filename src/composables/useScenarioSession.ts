@@ -87,9 +87,9 @@ export function useScenarioSession(
 
   // Resolve the step type with backward-compat for legacy data: when step_type is empty,
   // fall back to has_flag-driven detection (flag vs terminal).
-  const resolvedStepType = computed<'terminal' | 'flag' | 'info' | 'quiz'>(() => {
+  const resolvedStepType = computed<'terminal' | 'flag' | 'info' | 'quiz' | 'survey'>(() => {
     const st = displayedStep.value?.step_type
-    if (st === 'terminal' || st === 'flag' || st === 'info' || st === 'quiz') return st
+    if (st === 'terminal' || st === 'flag' || st === 'info' || st === 'quiz' || st === 'survey') return st
     return displayedStep.value?.has_flag ? 'flag' : 'terminal'
   })
 

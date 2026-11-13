@@ -1,6 +1,6 @@
 <template>
   <div class="quiz-questions-block">
-    <div class="quiz-questions-summary">
+    <div v-if="!survey" class="quiz-questions-summary">
       {{ t('groupScenarios.questionsCorrect', {
         correct: quizCorrectCount(step),
         total: quizQuestionTotal(step)
@@ -11,13 +11,13 @@
         v-for="(q, qIdx) in (step.questions || [])"
         :key="q.id || qIdx"
         class="quiz-question-item"
-        :class="q.is_correct ? 'quiz-q-correct' : 'quiz-q-incorrect'"
+        :class="survey ? '' : (q.is_correct ? 'quiz-q-correct' : 'quiz-q-incorrect')"
       >
         <div class="quiz-question-header">
           <span class="quiz-question-label">
             {{ t('groupScenarios.question') }} {{ q.order != null ? q.order + 1 : qIdx + 1 }}
           </span>
-          <span :class="['quiz-question-indicator', q.is_correct ? 'indicator-correct' : 'indicator-incorrect']">
+          <span v-if="!survey" :class="['quiz-question-indicator', q.is_correct ? 'indicator-correct' : 'indicator-incorrect']">
             <i :class="q.is_correct ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
             {{ q.is_correct
               ? t('groupScenarios.correctIndicator')
@@ -33,11 +33,11 @@
             v-for="(opt, optIdx) in parseQuizOptions(q.options)"
             :key="optIdx"
             class="quiz-question-option"
-            :class="optionRoleClass(optIdx, q)"
+            :class="survey ? '' : optionRoleClass(optIdx, q)"
           >
             <span class="quiz-option-label">{{ opt }}</span>
             <span
-              v-if="optionRole(optIdx, q)"
+              v-if="!survey && optionRole(optIdx, q)"
               class="quiz-option-tag"
               :class="'tag-' + optionRole(optIdx, q)"
             >
@@ -49,7 +49,7 @@
                data, edited options, etc.), surface the raw value so the
                trainer still sees what was actually submitted. -->
           <div
-            v-if="isOrphanStudentAnswer(q)"
+            v-if="!survey && isOrphanStudentAnswer(q)"
             class="quiz-answer-line"
           >
             <span class="quiz-answer-label">{{ t('groupScenarios.yourAnswer') }}:</span>
@@ -58,17 +58,19 @@
             </span>
           </div>
         </div>
-        <div v-else class="quiz-question-answers">
+        <!-- A survey states the learner's answer under the options too: there
+             is no correction to mark the picked option with. -->
+        <div v-if="survey || !isChoiceQuestion(q) || parseQuizOptions(q.options).length === 0" class="quiz-question-answers">
           <div class="quiz-answer-line">
             <span class="quiz-answer-label">{{ t('groupScenarios.yourAnswer') }}:</span>
             <span
               class="quiz-answer-value"
-              :class="q.is_correct ? 'quiz-answer-correct' : 'quiz-answer-wrong'"
+              :class="survey ? '' : (q.is_correct ? 'quiz-answer-correct' : 'quiz-answer-wrong')"
             >
               {{ answerText(q, q.student_answer) || t('groupScenarios.noAnswer') }}
             </span>
           </div>
-          <div class="quiz-answer-line">
+          <div v-if="!survey" class="quiz-answer-line">
             <span class="quiz-answer-label">{{ t('groupScenarios.correctAnswer') }}:</span>
             <span class="quiz-answer-value quiz-answer-correct">{{ answerText(q, q.correct_answer) }}</span>
           </div>
@@ -98,9 +100,13 @@ import {
 } from '../../utils/scenarioDisplay'
 import type { SessionStepDetail, SessionStepQuestionDetail } from '../../services/domain/scenario'
 
-defineProps<{
+withDefaults(defineProps<{
   step: SessionStepDetail
-}>()
+  // A survey step: answers only, never graded, so no correction at all.
+  survey?: boolean
+}>(), {
+  survey: false
+})
 
 const { t } = useTranslations({
   en: {

@@ -266,7 +266,7 @@
           <div class="section-title"><i class="fas fa-flask"></i> {{ t('designSystem.scenarioNodesTitle') }}</div>
           <div class="section-body">
             <div style="display:flex;gap:16px;">
-              <span v-for="type in ['terminal', 'flag', 'info', 'quiz']" :key="type" style="display:inline-flex;align-items:center;gap:8px;">
+              <span v-for="type in ['terminal', 'flag', 'info', 'quiz', 'survey']" :key="type" style="display:inline-flex;align-items:center;gap:8px;">
                 <span class="ocf-step-type-icon" :class="`is-${type}`" style="width:1.5rem;height:1.5rem;"><i class="fas fa-circle" style="font-size:0.5rem;"></i></span>
                 {{ type }}
               </span>

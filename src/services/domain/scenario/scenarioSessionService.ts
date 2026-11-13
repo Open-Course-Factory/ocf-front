@@ -18,7 +18,7 @@ export interface CurrentStepResponse {
   title: string
   text?: string
   text_content?: string
-  step_type?: string // 'terminal' | 'flag' | 'info' | 'quiz' (defaults to 'terminal' when empty)
+  step_type?: string // 'terminal' | 'flag' | 'info' | 'quiz' | 'survey' (defaults to 'terminal' when empty)
   show_immediate_feedback?: boolean // quiz only
   quiz_scoring_mode?: QuizScoringMode | '' // quiz only; empty = all_or_nothing
   questions?: CurrentStepQuestion[] // quiz only
@@ -78,9 +78,11 @@ export interface SubmitQuizResponse {
  * player advances on its own. ScenarioPanel and ScenarioQuizPanel both use it.
  */
 export function quizResultAwaitsReview(
-  step: Pick<CurrentStepResponse, 'show_immediate_feedback'> | null | undefined,
+  step: Pick<CurrentStepResponse, 'show_immediate_feedback' | 'step_type'> | null | undefined,
   result: Pick<SubmitQuizResponse, 'per_question_results'>
 ): boolean {
+  // A survey has nothing to review: it always moves on by itself.
+  if (step?.step_type === 'survey') return false
   return !!step?.show_immediate_feedback || !!result.per_question_results?.length
 }
 

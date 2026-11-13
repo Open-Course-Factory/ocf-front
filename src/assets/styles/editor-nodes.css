@@ -177,6 +177,7 @@
 .ocf-step-type-icon.is-flag { background: var(--scenario-node-flag); }
 .ocf-step-type-icon.is-info { background: var(--scenario-node-info); }
 .ocf-step-type-icon.is-quiz { background: var(--scenario-node-quiz); }
+.ocf-step-type-icon.is-survey { background: var(--scenario-node-survey); }
 
 /* ========================================
    NODE LIBRARY PANEL

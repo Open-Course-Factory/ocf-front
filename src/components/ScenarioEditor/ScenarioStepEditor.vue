@@ -362,7 +362,8 @@
           </div>
         </div>
 
-        <!-- Questions tab (only shown when resolvedStepType === 'quiz') -->
+        <!-- Questions tab (quiz and survey steps). A survey is never graded:
+             no correct answers, points, explanations or scoring settings. -->
         <div
           v-if="activeTab === 'questions'"
           id="panel-questions"
@@ -390,7 +391,7 @@
           </header>
 
           <!-- Quiz-wide settings -->
-          <div class="quiz-settings">
+          <div v-if="!isSurvey" class="quiz-settings">
             <label class="quiz-toggle">
               <input type="checkbox" v-model="formData.show_immediate_feedback" />
               <span>{{ t('quizEdit.showImmediateFeedback') }}</span>
@@ -534,7 +535,7 @@
                   >
                     <option value="multiple_choice">{{ t('quizEdit.typeMcq') }}</option>
                     <option value="multi_answer">{{ t('quizEdit.typeMulti') }}</option>
-                    <option value="true_false">{{ t('quizEdit.typeTf') }}</option>
+                    <option v-if="!isSurvey" value="true_false">{{ t('quizEdit.typeTf') }}</option>
                     <option value="free_text">{{ t('quizEdit.typeFree') }}</option>
                   </select>
                 </div>
@@ -549,9 +550,9 @@
                       v-for="(_opt, oIdx) in question.options"
                       :key="`q-${qIdx}-o-${oIdx}`"
                       class="option-row"
-                      :class="{ 'option-row--correct': isCorrect(question, oIdx) }"
+                      :class="{ 'option-row--correct': !isSurvey && isCorrect(question, oIdx), 'ocf-option-row--survey': isSurvey }"
                     >
-                      <label class="option-row__correct">
+                      <label v-if="!isSurvey" class="option-row__correct">
                         <input
                           v-if="question.question_type === 'multiple_choice'"
                           type="radio"
@@ -598,7 +599,7 @@
                   </p>
                 </fieldset>
 
-                <fieldset v-else-if="question.question_type === 'true_false'" class="tf-fieldset">
+                <fieldset v-else-if="question.question_type === 'true_false' && !isSurvey" class="tf-fieldset">
                   <legend>{{ t('quizEdit.correctAnswer') }}</legend>
                   <div
                     class="tf-options"
@@ -632,7 +633,7 @@
                   </div>
                 </fieldset>
 
-                <div v-else class="form-group">
+                <div v-else-if="!isSurvey" class="form-group">
                   <label :for="`q-${qIdx}-correct`">{{ t('quizEdit.expectedAnswer') }}</label>
                   <input
                     :id="`q-${qIdx}-correct`"
@@ -644,7 +645,7 @@
                   <p class="form-hint">{{ t('quizEdit.freeTextHint') }}</p>
                 </div>
 
-                <details class="advanced-section">
+                <details v-if="!isSurvey" class="advanced-section">
                   <summary>
                     <i class="fas fa-sliders-h" aria-hidden="true"></i>
                     {{ t('quizEdit.advanced') }}
@@ -852,7 +853,8 @@ const { t, locale: i18nLocale } = useTranslations({
       typeTerminal: 'Terminal',
       typeFlag: 'Flag',
       typeInfo: 'Info',
-      typeQuiz: 'Quiz'
+      typeQuiz: 'Quiz',
+      typeSurvey: 'Survey'
     },
     quizEdit: {
       questions: 'Questions',
@@ -971,7 +973,8 @@ const { t, locale: i18nLocale } = useTranslations({
       typeTerminal: 'Terminal',
       typeFlag: 'Drapeau',
       typeInfo: 'Information',
-      typeQuiz: 'Quiz'
+      typeQuiz: 'Quiz',
+      typeSurvey: 'Questionnaire'
     },
     quizEdit: {
       questions: 'Questions',
@@ -1214,10 +1217,14 @@ const stepTypeLabel = computed(() => {
     terminal: t('stepEdit.typeTerminal'),
     flag: t('stepEdit.typeFlag'),
     info: t('stepEdit.typeInfo'),
-    quiz: t('stepEdit.typeQuiz')
+    quiz: t('stepEdit.typeQuiz'),
+    survey: t('stepEdit.typeSurvey')
   }
   return labels[resolvedStepType.value]
 })
+
+// A survey reuses the quiz authoring UI minus everything about grading.
+const isSurvey = computed(() => resolvedStepType.value === 'survey')
 
 // Tabs vary by step type
 const allTabs = computed(() => [
@@ -1237,7 +1244,8 @@ const visibleTabs = computed(() => {
     terminal: ['content', 'hints', 'verify', 'background', 'foreground', 'effects'],
     flag: ['content', 'hints', 'background', 'effects'],
     info: ['content', 'effects'],
-    quiz: ['content', 'hints', 'questions', 'effects']
+    quiz: ['content', 'hints', 'questions', 'effects'],
+    survey: ['content', 'questions', 'effects']
   }
   const allowed = tabMap[resolvedStepType.value]
   return allTabs.value.filter(tab => allowed.includes(tab.key) && (tab.key !== 'effects' || props.showEffects))
@@ -1564,6 +1572,7 @@ const hasAnyCorrect = (q: QuestionData): boolean => {
 const questionError = (q: QuestionData): 'errorMinOptions' | 'errorNoCorrect' | null => {
   if (q.question_type !== 'multiple_choice' && q.question_type !== 'multi_answer') return null
   if (q.options.length < 2) return 'errorMinOptions'
+  if (isSurvey.value) return null
   if (!hasAnyCorrect(q)) return 'errorNoCorrect'
   return null
 }
@@ -1642,7 +1651,9 @@ const handleSave = () => {
     quiz_wrong_penalty: typeof formData.value.quiz_wrong_penalty === 'number' ? formData.value.quiz_wrong_penalty : 1,
     questions: formData.value.questions.map((q) => {
       let ca: string
-      if (q.question_type === 'multiple_choice') {
+      if (isSurvey.value) {
+        ca = ''
+      } else if (q.question_type === 'multiple_choice') {
         ca = q.correct_answer === '' || q.correct_answer == null ? '' : String(q.correct_answer)
       } else if (q.question_type === 'multi_answer') {
         ca = JSON.stringify(Array.isArray(q.correct_answer) ? q.correct_answer : [])
@@ -2405,6 +2416,11 @@ const handleSaveTranslation = () => {
   border-left: 3px solid transparent;
   background: var(--color-background);
   transition: background 0.15s, border-color 0.15s;
+}
+
+/* Survey options carry no correct mark: no first column. */
+.ocf-option-row--survey {
+  grid-template-columns: 1fr auto;
 }
 
 .option-row:focus-within {

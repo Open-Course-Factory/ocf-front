@@ -26,7 +26,7 @@ export interface SessionStepQuestionDetail {
 export interface SessionStepDetail {
   step_order: number
   step_title: string
-  // 'terminal' | 'flag' | 'info' | 'quiz' (defaults to terminal when empty)
+  // 'terminal' | 'flag' | 'info' | 'quiz' | 'survey' (defaults to terminal when empty)
   step_type?: string
   status: string
   verify_attempts: number

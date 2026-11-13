@@ -87,7 +87,7 @@
                   <span :class="['status-chip', getStatusClass(step.status)]">{{ translateStatus(step.status) }}</span>
                 </td>
                 <td>
-                  <template v-if="normalizedStepType(step.step_type) === 'quiz'">
+                  <template v-if="hasQuestions(step.step_type)">
                     <span
                       v-if="step.quiz_score != null"
                       :class="['quiz-score-badge', quizScoreClass(step.quiz_score)]"
@@ -140,14 +140,14 @@
                 </td>
               </tr>
               <tr
-                v-if="normalizedStepType(step.step_type) === 'quiz'
+                v-if="hasQuestions(step.step_type)
                   && step.questions && step.questions.length > 0
                   && isQuizStepExpanded(step.step_order)"
                 :key="`questions-${step.step_order}`"
                 class="quiz-questions-row"
               >
                 <td :colspan="9" :id="`quiz-questions-${step.step_order}`">
-                  <QuizAnswerReview :step="step" />
+                  <QuizAnswerReview :step="step" :survey="normalizedStepType(step.step_type) === 'survey'" />
                 </td>
               </tr>
             </template>
@@ -426,6 +426,7 @@ const { t } = useTranslations({
       typeFlag: 'Flag',
       typeInfo: 'Reading',
       typeQuiz: 'Quiz',
+      typeSurvey: 'Survey',
       hintsUsed: 'Hints',
       timeSpent: 'Time',
       attemptsCount: '{n} attempt(s)',
@@ -489,6 +490,7 @@ const { t } = useTranslations({
       typeFlag: 'Drapeau',
       typeInfo: 'Lecture',
       typeQuiz: 'Quiz',
+      typeSurvey: 'Questionnaire',
       hintsUsed: 'Indices',
       timeSpent: 'Temps',
       attemptsCount: '{n} tentative(s)',
@@ -649,8 +651,15 @@ function stepTypeLabel(stepType?: string): string {
     case 'flag': return t('groupScenarios.typeFlag')
     case 'info': return t('groupScenarios.typeInfo')
     case 'quiz': return t('groupScenarios.typeQuiz')
+    case 'survey': return t('groupScenarios.typeSurvey')
     default: return t('groupScenarios.typeTerminal')
   }
+}
+
+// Quiz and survey steps both list their questions; only a quiz has a score.
+function hasQuestions(stepType?: string): boolean {
+  const type = normalizedStepType(stepType)
+  return type === 'quiz' || type === 'survey'
 }
 
 function formatQuizScorePct(score: number): string {
@@ -881,6 +890,11 @@ async function exportCommandsCsv() {
 .step-type-quiz {
   background: var(--scenario-node-quiz-bg);
   color: var(--scenario-node-quiz);
+}
+
+.step-type-survey {
+  background: var(--scenario-node-survey-bg);
+  color: var(--scenario-node-survey);
 }
 
 .quiz-score-badge {

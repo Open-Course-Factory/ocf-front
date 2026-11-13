@@ -82,7 +82,7 @@
             <span v-if="!step.id" class="ocf-outline-draft">{{ t('scenarioEditor.draft') }}</span>
             <i v-if="step.hint_content" class="fas fa-lightbulb" :title="t('scenarioEditor.hasHints')" aria-hidden="true"></i>
             <i v-if="step.step_type === 'flag'" class="fas fa-key" :title="t('scenarioEditor.hasFlag')" aria-hidden="true"></i>
-            <span v-if="step.step_type === 'quiz' && step.questions?.length" class="ocf-outline-qcount">
+            <span v-if="(step.step_type === 'quiz' || step.step_type === 'survey') && step.questions?.length" class="ocf-outline-qcount">
               {{ t('scenarioEditor.questionCount', { count: String(step.questions.length) }) }}
             </span>
             <span

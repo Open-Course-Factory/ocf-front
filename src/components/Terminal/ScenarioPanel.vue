@@ -232,9 +232,9 @@
               </div>
             </div>
 
-            <!-- Quiz step -->
+            <!-- Quiz or survey step (the panel tells them apart) -->
             <ScenarioQuizPanel
-              v-else-if="resolvedStepType === 'quiz'"
+              v-else-if="resolvedStepType === 'quiz' || resolvedStepType === 'survey'"
               :step="currentStep!"
               :scenario-session-id="scenarioSessionId"
               :is-active="canAnswer"
@@ -450,6 +450,7 @@ const { t } = useTranslations({
       typeFlag: 'Flag',
       typeInfo: 'Reading',
       typeQuiz: 'Quiz',
+      typeSurvey: 'Survey',
       // Info step
       infoSubtitle: 'Reading — no exercise',
       infoAck: "I've read this, next",
@@ -509,6 +510,7 @@ const { t } = useTranslations({
       typeFlag: 'Drapeau',
       typeInfo: 'Lecture',
       typeQuiz: 'Quiz',
+      typeSurvey: 'Questionnaire',
       // Info step
       infoSubtitle: 'Lecture — pas d\'exercice',
       infoAck: 'J\'ai lu, suivant',
@@ -831,7 +833,7 @@ const formattedElapsedTime = computed(() => {
 
 
 interface StepTypeMeta {
-  key: 'terminal' | 'flag' | 'info' | 'quiz'
+  key: 'terminal' | 'flag' | 'info' | 'quiz' | 'survey'
   icon: string
   label: string
   color: string
@@ -884,6 +886,13 @@ const stepTypeMeta = computed<StepTypeMeta | null>(() => {
       label: t('scenarioPanel.typeQuiz'),
       color: 'var(--scenario-node-quiz)',
       bg: 'var(--scenario-node-quiz-bg)'
+    },
+    survey: {
+      key: 'survey',
+      icon: 'fas fa-clipboard-list',
+      label: t('scenarioPanel.typeSurvey'),
+      color: 'var(--scenario-node-survey)',
+      bg: 'var(--scenario-node-survey-bg)'
     }
   }
   return map[resolvedStepType.value]
@@ -1218,7 +1227,9 @@ onBeforeUnmount(() => {
 // aside. Not in review mode: the quiz is not shown there, and the console
 // carries the end-of-run controls.
 const isQuizStep = computed(() =>
-  panelState.value === 'step' && resolvedStepType.value === 'quiz' && !isReviewMode.value
+  panelState.value === 'step'
+    && (resolvedStepType.value === 'quiz' || resolvedStepType.value === 'survey')
+    && !isReviewMode.value
 )
 
 defineExpose({
