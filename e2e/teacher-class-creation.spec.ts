@@ -88,7 +88,7 @@ async function addLearner(page: Page, email: string): Promise<void> {
   await modal.locator('.base-modal-footer button.btn-primary').click()
   await expect(modal).toBeHidden()
 
-  await expect(page.locator('.member-card').filter({ hasText: email })).toHaveCount(1)
+  await expect(page.getByTestId('member-row').filter({ hasText: email })).toHaveCount(1)
 }
 
 /**
@@ -224,9 +224,9 @@ test.describe('Teacher creates a class', () => {
         await addLearner(page, email)
       }
 
-      await expect(page.locator('.member-card')).toHaveCount(MEMBERS_WITH_LEARNERS)
+      await expect(page.getByTestId('member-row')).toHaveCount(MEMBERS_WITH_LEARNERS)
       for (const email of LEARNER_EMAILS) {
-        await expect(page.locator('.member-card').filter({ hasText: email })).toHaveCount(1)
+        await expect(page.getByTestId('member-row').filter({ hasText: email })).toHaveCount(1)
       }
     })
 
