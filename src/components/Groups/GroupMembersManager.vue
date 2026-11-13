@@ -34,7 +34,6 @@ import type { ClassGroup } from '../../types'
 import BaseModal from '../Modals/BaseModal.vue'
 import AdminBadge from '../Common/AdminBadge.vue'
 import DropdownMenu from '../Common/DropdownMenu.vue'
-import EmptyState from '../Common/EmptyState.vue'
 
 const props = defineProps<{
   groupId: string
@@ -64,9 +63,7 @@ const { t } = useTranslations({
       userEmailPlaceholder: 'Their full email address',
       memberEmail: 'Email',
       noMembers: 'No members in this group',
-      noMembersHint: 'The people you add to the class appear here.',
       noMatch: 'No member matches this search',
-      noMatchHint: 'Search by name, email or login.',
       memberName: 'Name',
       memberRole: 'Role',
       trainers: 'Trainers',
@@ -132,9 +129,7 @@ const { t } = useTranslations({
       userEmailPlaceholder: 'Son adresse email complète',
       memberEmail: 'Email',
       noMembers: 'Aucun membre dans ce groupe',
-      noMembersHint: 'Les personnes ajoutées à la classe apparaissent ici.',
       noMatch: 'Aucun membre ne correspond à cette recherche',
-      noMatchHint: 'Cherchez par nom, email ou identifiant.',
       memberName: 'Nom',
       memberRole: 'Rôle',
       trainers: 'Formateurs',
@@ -529,19 +524,11 @@ async function confirmRemoveMember() {
       <p>{{ t('groupMembers.loadingMembers') }}</p>
     </div>
 
-    <EmptyState
-      v-else-if="groupMembersComposable.members.value.length === 0"
-      icon-class="fas fa-users"
-      :title="t('groupMembers.noMembers')"
-      :description="t('groupMembers.noMembersHint')"
-    />
-
-    <EmptyState
-      v-else-if="groupMembersComposable.sortedMembers.value.length === 0"
-      icon-class="fas fa-search"
-      :title="t('groupMembers.noMatch')"
-      :description="t('groupMembers.noMatchHint')"
-    />
+    <!-- Same empty state as the other class tabs (cards-common .empty-state). -->
+    <div v-else-if="groupMembersComposable.sortedMembers.value.length === 0" class="empty-state">
+      <i :class="['fas', groupMembersComposable.members.value.length === 0 ? 'fa-users' : 'fa-search']"></i>
+      <p>{{ groupMembersComposable.members.value.length === 0 ? t('groupMembers.noMembers') : t('groupMembers.noMatch') }}</p>
+    </div>
 
     <table v-else class="ocf-data-table ocf-members-table">
       <thead>
@@ -834,28 +821,35 @@ async function confirmRemoveMember() {
   max-width: 400px;
 }
 
+/* Search: GroupCommandHistory's search box, the class tabs' only one. */
 .ocf-members-search__icon {
   position: absolute;
-  left: var(--spacing-md);
+  left: var(--spacing-sm);
   top: 50%;
   transform: translateY(-50%);
   color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
   pointer-events: none;
 }
 
 .search-input {
   width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) calc(var(--spacing-md) + 1.5em);
-  border: var(--border-width-thin) solid var(--color-border-medium);
+  padding: var(--spacing-xs) var(--spacing-md) var(--spacing-xs) calc(var(--spacing-sm) + 20px);
+  border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: var(--border-radius-md);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  outline: none;
   transition: border-color var(--transition-fast);
 }
 
 .search-input:focus {
-  outline: none;
   border-color: var(--color-primary);
+}
+
+.search-input::placeholder {
+  color: var(--color-text-muted);
 }
 
 .ocf-members-count {
