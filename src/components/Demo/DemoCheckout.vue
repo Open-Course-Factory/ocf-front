@@ -86,6 +86,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
 import { logDemoAction, simulateDelay } from '../../services/demo'
+import { inAppPath } from '../../utils/inAppPath'
 
 const route = useRoute()
 
@@ -137,8 +138,8 @@ const isProcessing = ref(false)
 onMounted(() => {
   // Extract parameters from URL
   sessionId.value = route.query.session_id as string || ''
-  successUrl.value = route.query.success_url as string || ''
-  cancelUrl.value = route.query.cancel_url as string || ''
+  successUrl.value = inAppPath(route.query.success_url) ?? '/subscription-dashboard'
+  cancelUrl.value = inAppPath(route.query.cancel_url) ?? '/subscription-plans'
   planName.value = route.query.plan_name as string || 'Unknown Plan'
   amount.value = parseInt(route.query.amount as string) || 0
   currency.value = route.query.currency as string || 'eur'
@@ -184,9 +185,9 @@ async function simulateError() {
   await simulateDelay(2000)
 
   // Redirect to cancel URL with error parameter
-  const errorUrl = new URL(cancelUrl.value)
+  const errorUrl = new URL(cancelUrl.value, window.location.origin)
   errorUrl.searchParams.set('error', 'payment_failed')
-  window.location.href = errorUrl.toString()
+  window.location.href = errorUrl.pathname + errorUrl.search + errorUrl.hash
 }
 </script>
 

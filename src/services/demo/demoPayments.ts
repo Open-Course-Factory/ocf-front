@@ -135,8 +135,8 @@ export class DemoPaymentService {
     const baseUrl = `${window.location.origin}/demo-checkout`
     const params = new URLSearchParams({
       session_id: sessionId,
-      success_url: successUrl,
-      cancel_url: cancelUrl,
+      success_url: toAppPath(successUrl),
+      cancel_url: toAppPath(cancelUrl),
       plan_name: plan.name,
       amount: plan.price_amount.toString(),
       currency: plan.currency
@@ -152,7 +152,7 @@ export class DemoPaymentService {
     const baseUrl = `${window.location.origin}/demo-portal`
     const params = new URLSearchParams({
       session_id: sessionId,
-      return_url: returnUrl
+      return_url: toAppPath(returnUrl)
     })
 
     return `${baseUrl}?${params.toString()}`
@@ -205,3 +205,12 @@ export const createDemoPortalSession = (returnUrl: string) =>
 
 export const validateDemoCoupon = (couponCode: string, planId: string) =>
   demoPayments.validateCoupon(couponCode, planId)
+
+/**
+ * The demo pages only follow in-app paths, while callers pass the absolute
+ * URLs Stripe needs; keep just the path, query and hash.
+ */
+function toAppPath(url: string): string {
+  const parsed = new URL(url, window.location.origin)
+  return parsed.pathname + parsed.search + parsed.hash
+}
