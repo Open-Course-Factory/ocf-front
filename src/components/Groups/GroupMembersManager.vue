@@ -76,7 +76,8 @@ const { t } = useTranslations({
       joinedOn: 'Joined on {date}',
       selectMember: 'Select {name}',
       selectionHint: 'Tick participants to regenerate their passwords.',
-      selectedCount: '{count} selected',
+      selectedCountOne: '1 selected',
+      selectedCountMany: '{count} selected',
       clearSelection: 'Clear selection',
       memberActions: 'Actions for {name}',
       regeneratePassword: 'Regenerate password',
@@ -107,7 +108,8 @@ const { t } = useTranslations({
       // Password Regeneration
       selectAll: 'Select all participants',
       regeneratePasswords: 'Regenerate Passwords',
-      regeneratePasswordsConfirm: 'Are you sure you want to regenerate passwords for {count} member(s)? This will invalidate their current passwords.',
+      regeneratePasswordsConfirm: 'Regenerate the passwords of {count} participants? The current ones will stop working.',
+      regeneratePasswordConfirm: 'Regenerate the password of {name}? The current one will stop working.',
       regeneratePasswordsError: 'Failed to regenerate passwords',
       credentialsTitle: 'New Credentials',
       password: 'Password',
@@ -142,7 +144,8 @@ const { t } = useTranslations({
       joinedOn: 'Rejoint le {date}',
       selectMember: 'Sélectionner {name}',
       selectionHint: 'Cochez des participants pour régénérer leurs mots de passe.',
-      selectedCount: '{count} sélectionné(s)',
+      selectedCountOne: '1 sélectionné',
+      selectedCountMany: '{count} sélectionnés',
       clearSelection: 'Désélectionner',
       memberActions: 'Actions pour {name}',
       regeneratePassword: 'Régénérer le mot de passe',
@@ -173,7 +176,8 @@ const { t } = useTranslations({
       // Password Regeneration
       selectAll: 'Sélectionner tous les participants',
       regeneratePasswords: 'Régénérer les mots de passe',
-      regeneratePasswordsConfirm: 'Êtes-vous sûr de vouloir régénérer les mots de passe de {count} membre(s) ? Cela invalidera leurs mots de passe actuels.',
+      regeneratePasswordsConfirm: 'Régénérer les mots de passe de {count} participants ? Les actuels ne fonctionneront plus.',
+      regeneratePasswordConfirm: 'Régénérer le mot de passe de {name} ? L\'actuel ne fonctionnera plus.',
       regeneratePasswordsError: 'Échec de la régénération des mots de passe',
       credentialsTitle: 'Nouveaux identifiants',
       password: 'Mot de passe',
@@ -229,17 +233,24 @@ const participants = computed(() =>
 )
 const selectableMembers = participants
 
-// A selection only holds rows the trainer can see: when the search hides a
-// row, it leaves the selection, so the bulk bar's count is the true count.
+// A selection only holds participants the trainer can see: a row the search
+// hides, or a participant promoted to trainer, leaves it, so the bulk bar's
+// count is the true count and a bulk reset never reaches a trainer.
 // Sorting does not touch it.
 // Watches the ids, not the array: a removal splices the roster in place.
-watch(() => groupMembersComposable.filteredMembers.value.map(m => m.user_id), (ids) => {
+watch(() => selectableMembers.value.map(m => m.user_id), (ids) => {
   const visibleIds = new Set(ids)
   const kept = [...selectedMemberIds.value].filter(id => visibleIds.has(id))
   if (kept.length !== selectedMemberIds.value.size) {
     selectedMemberIds.value = new Set(kept)
   }
 })
+
+// The bulk slot follows the roster, not the search: a search that hides every
+// participant must not take the slot away and shift the list up.
+const hasParticipants = computed(() =>
+  groupMembersComposable.members.value.some(m => m.role === 'member')
+)
 
 const memberCountLabel = computed(() => {
   const total = groupMembersComposable.members.value.length
@@ -368,6 +379,14 @@ function toggleSelectAll() {
 // A bulk run clears the selection once done; a single one leaves it alone.
 const regenerationPending = ref<{ userIds: string[]; clearsSelection: boolean } | null>(null)
 
+// One participant: a singular dialog naming them, whichever control opened it.
+const regenerationSingleName = computed(() => {
+  const ids = regenerationPending.value?.userIds
+  if (!ids || ids.length !== 1) return null
+  const member = groupMembersComposable.members.value.find(m => m.user_id === ids[0])
+  return member ? memberName(member) : ids[0]
+})
+
 function askRegeneratePasswords(userIds: string[], clearsSelection: boolean) {
   if (userIds.length === 0 || !props.group?.organization_id) return
   regenerationPending.value = { userIds, clearsSelection }
@@ -488,7 +507,7 @@ async function confirmRemoveMember() {
          overlaid by a hint: the slot keeps the bar's height in both states, so
          selecting never moves the list, whatever the screen. -->
     <div
-      v-if="groupMembersComposable.canManageMembers.value && selectableMembers.length > 0"
+      v-if="groupMembersComposable.canManageMembers.value && hasParticipants"
       :class="['ocf-members-bulk', { 'ocf-members-bulk--active': selectedCount > 0 }]"
       data-testid="members-bulk-bar"
     >
@@ -496,7 +515,7 @@ async function confirmRemoveMember() {
       <div class="ocf-members-bulk__actions" :aria-hidden="selectedCount === 0 ? 'true' : undefined">
         <span class="ocf-members-bulk__count">
           <i class="fas fa-check-square" aria-hidden="true"></i>
-          {{ t('groupMembers.selectedCount', { count: selectedCount }) }}
+          {{ selectedCount === 1 ? t('groupMembers.selectedCountOne') : t('groupMembers.selectedCountMany', { count: selectedCount }) }}
         </span>
         <button
           type="button"
@@ -548,7 +567,6 @@ async function confirmRemoveMember() {
               type="button"
               class="ocf-data-table__sort"
               data-testid="members-sort"
-              :aria-label="sortAscending ? t('groupMembers.sortAscHint') : t('groupMembers.sortDescHint')"
               :title="sortAscending ? t('groupMembers.sortAscHint') : t('groupMembers.sortDescHint')"
               @click="toggleNameSort"
             >
@@ -758,16 +776,18 @@ async function confirmRemoveMember() {
     <!-- Password Regeneration Confirmation -->
     <BaseModal
       :visible="!!regenerationPending"
-      :title="t('groupMembers.regeneratePasswords')"
+      :title="regenerationSingleName ? t('groupMembers.regeneratePassword') : t('groupMembers.regeneratePasswords')"
       size="small"
       @close="regenerationPending = null"
     >
       <p v-if="regenerationPending" class="ocf-members-confirm">
-        {{ t('groupMembers.regeneratePasswordsConfirm', { count: regenerationPending.userIds.length }) }}
+        {{ regenerationSingleName
+          ? t('groupMembers.regeneratePasswordConfirm', { name: regenerationSingleName })
+          : t('groupMembers.regeneratePasswordsConfirm', { count: regenerationPending.userIds.length }) }}
       </p>
       <template #footer>
         <button type="button" class="btn btn-danger" data-testid="regenerate-confirm" @click="confirmRegeneratePasswords">
-          {{ t('groupMembers.regeneratePasswords') }}
+          {{ regenerationSingleName ? t('groupMembers.regeneratePassword') : t('groupMembers.regeneratePasswords') }}
         </button>
         <button type="button" class="btn btn-secondary" data-testid="regenerate-cancel" @click="regenerationPending = null">
           {{ t('groupMembers.cancel') }}
@@ -1017,11 +1037,21 @@ async function confirmRemoveMember() {
   color: var(--color-text-primary);
 }
 
-/* The design-system select, compact for a table row. It saves on change. */
+/* The design-system select, compact for a table row and quiet until the
+   pointer or focus reaches it. It saves on change. */
 .form-control.role-select {
   padding: var(--spacing-2xs) 2rem var(--spacing-2xs) var(--spacing-sm);
   background-position: right var(--spacing-sm) center;
   font-size: var(--font-size-sm);
+  border-color: transparent;
+}
+
+.form-control.role-select:hover {
+  border-color: var(--color-border-medium);
+}
+
+.form-control.role-select:focus {
+  border-color: var(--color-primary);
 }
 
 .ocf-members-confirm {
@@ -1212,7 +1242,7 @@ async function confirmRemoveMember() {
   }
 
   .ocf-members-table .ocf-members-col-role {
-    width: 7.5rem;
+    width: 8.5rem;
   }
 
   .ocf-members-table th,

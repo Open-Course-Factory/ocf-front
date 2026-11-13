@@ -649,7 +649,7 @@ import ProgressBar from '../Common/ProgressBar.vue'
 
 `src/components/Common/DropdownMenu.vue` — the SSOT for row/overflow menus (replaces the ~4 hand-rolled dropdowns, e.g. in `TerminalMySessions.vue`). Owns the open/close + outside-click logic **once** so consumers don't re-implement it.
 
-**Props:** `align?: 'left' | 'right'` (default `'right'`), `triggerLabel?: string` (accessible name and tooltip of the default ⋯ trigger — set it when the menu repeats per row, e.g. "Actions for Alice"). The default trigger also carries `aria-haspopup="menu"` and `aria-expanded`.
+**Props:** `align?: 'left' | 'right'` (default `'right'`), `triggerLabel?: string` (accessible name and tooltip of the default ⋯ trigger — set it when the menu repeats per row, e.g. "Actions for Alice"). The default trigger also carries `aria-expanded` (no `aria-haspopup`: the items are plain buttons, not a `role="menu"`).
 **Slots:** `#trigger` (optional; defaults to a `.btn-icon` ⋯ button) and the default slot for the menu items, which receives a `{ close }` slot prop. Clicking any item closes the menu automatically (the item's own `@click` still runs); clicking outside closes it too.
 
 Classes are `ocf-`-namespaced to avoid colliding with Bootstrap's global `.dropdown-menu`/`.dropdown-item` (Bootstrap sets `.dropdown-menu { display:none }`).
