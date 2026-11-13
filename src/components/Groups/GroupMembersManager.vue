@@ -33,6 +33,8 @@ import { bulkImportService, type UserCredential } from '../../services/domain/bu
 import type { ClassGroup } from '../../types'
 import BaseModal from '../Modals/BaseModal.vue'
 import AdminBadge from '../Common/AdminBadge.vue'
+import DropdownMenu from '../Common/DropdownMenu.vue'
+import EmptyState from '../Common/EmptyState.vue'
 
 const props = defineProps<{
   groupId: string
@@ -62,7 +64,9 @@ const { t } = useTranslations({
       userEmailPlaceholder: 'Their full email address',
       memberEmail: 'Email',
       noMembers: 'No members in this group',
+      noMembersHint: 'The people you add to the class appear here.',
       noMatch: 'No member matches this search',
+      noMatchHint: 'Search by name, email or login.',
       memberName: 'Name',
       memberRole: 'Role',
       trainers: 'Trainers',
@@ -70,8 +74,6 @@ const { t } = useTranslations({
       memberCountOne: '1 member',
       memberCountMany: '{count} members',
       memberCountFiltered: '{shown} of {total} members',
-      sortAsc: 'Name A–Z',
-      sortDesc: 'Name Z–A',
       sortAscHint: 'Sorted by name, A to Z. Click to sort Z to A.',
       sortDescHint: 'Sorted by name, Z to A. Click to sort A to Z.',
       joinedOn: 'Joined on {date}',
@@ -79,7 +81,9 @@ const { t } = useTranslations({
       selectionHint: 'Tick participants to regenerate their passwords.',
       selectedCount: '{count} selected',
       clearSelection: 'Clear selection',
-      removeMemberLabel: 'Remove {name} from the class',
+      memberActions: 'Actions for {name}',
+      regeneratePassword: 'Regenerate password',
+      removeMemberLabel: 'Remove from the class',
       removeMemberTitle: 'Remove a member',
       removeMemberConfirm: '{name} will no longer be a member of {groupName}.',
 
@@ -128,7 +132,9 @@ const { t } = useTranslations({
       userEmailPlaceholder: 'Son adresse email complète',
       memberEmail: 'Email',
       noMembers: 'Aucun membre dans ce groupe',
+      noMembersHint: 'Les personnes ajoutées à la classe apparaissent ici.',
       noMatch: 'Aucun membre ne correspond à cette recherche',
+      noMatchHint: 'Cherchez par nom, email ou identifiant.',
       memberName: 'Nom',
       memberRole: 'Rôle',
       trainers: 'Formateurs',
@@ -136,8 +142,6 @@ const { t } = useTranslations({
       memberCountOne: '1 membre',
       memberCountMany: '{count} membres',
       memberCountFiltered: '{shown} sur {total} membres',
-      sortAsc: 'Nom A–Z',
-      sortDesc: 'Nom Z–A',
       sortAscHint: 'Trié par nom, de A à Z. Cliquez pour trier de Z à A.',
       sortDescHint: 'Trié par nom, de Z à A. Cliquez pour trier de A à Z.',
       joinedOn: 'Rejoint le {date}',
@@ -145,7 +149,9 @@ const { t } = useTranslations({
       selectionHint: 'Cochez des participants pour régénérer leurs mots de passe.',
       selectedCount: '{count} sélectionné(s)',
       clearSelection: 'Désélectionner',
-      removeMemberLabel: 'Retirer {name} de la classe',
+      memberActions: 'Actions pour {name}',
+      regeneratePassword: 'Régénérer le mot de passe',
+      removeMemberLabel: 'Retirer de la classe',
       removeMemberTitle: 'Retirer un membre',
       removeMemberConfirm: '{name} ne fera plus partie de {groupName}.',
 
@@ -261,6 +267,8 @@ function roleLabel(role: GroupMember['role']) {
   return t(`groupMembers.role${role.charAt(0).toUpperCase() + role.slice(1)}`)
 }
 
+const columnCount = computed(() => (groupMembersComposable.canManageMembers.value ? 5 : 3))
+
 const memberGroups = computed(() => [
   { key: 'trainers', label: t('groupMembers.trainers'), members: trainers.value },
   { key: 'participants', label: t('groupMembers.participants'), members: participants.value }
@@ -360,20 +368,22 @@ function toggleSelectAll() {
   }
 }
 
-async function handleRegeneratePasswords() {
-  if (selectedCount.value === 0 || !props.group?.organization_id) return
+// One participant (row menu) or the current selection (bulk bar). A bulk run
+// clears the selection; a single one leaves it alone.
+async function regeneratePasswords(userIds: string[]) {
+  if (userIds.length === 0 || !props.group?.organization_id) return false
 
   const confirmed = window.confirm(
-    t('groupMembers.regeneratePasswordsConfirm', { count: selectedCount.value })
+    t('groupMembers.regeneratePasswordsConfirm', { count: userIds.length })
   )
-  if (!confirmed) return
+  if (!confirmed) return false
 
   isRegenerating.value = true
   try {
     const response = await bulkImportService.regeneratePasswords(
       props.group.organization_id,
       props.group.id,
-      Array.from(selectedMemberIds.value)
+      userIds
     )
 
     if (response.credentials.length > 0) {
@@ -384,12 +394,18 @@ async function handleRegeneratePasswords() {
     if (response.errors.length > 0) {
       error.value = t('groupMembers.regeneratePasswordsError')
     }
-
-    selectedMemberIds.value = new Set()
+    return true
   } catch (err: any) {
     error.value = err.response?.data?.error_message || t('groupMembers.regeneratePasswordsError')
+    return false
   } finally {
     isRegenerating.value = false
+  }
+}
+
+async function handleRegeneratePasswords() {
+  if (await regeneratePasswords(Array.from(selectedMemberIds.value))) {
+    selectedMemberIds.value = new Set()
   }
 }
 
@@ -423,24 +439,17 @@ async function confirmRemoveMember() {
 <template>
   <div class="members-tab">
     <div class="members-toolbar">
-      <input
-        v-model="groupMembersComposable.memberSearchQuery.value"
-        type="text"
-        :placeholder="t('groupMembers.searchMembers')"
-        class="search-input"
-      />
-      <button
-        type="button"
-        class="ocf-members-sort"
-        data-testid="members-sort"
-        :aria-label="sortAscending ? t('groupMembers.sortAscHint') : t('groupMembers.sortDescHint')"
-        :title="sortAscending ? t('groupMembers.sortAscHint') : t('groupMembers.sortDescHint')"
-        @click="toggleNameSort"
-      >
-        <i :class="['fas', sortAscending ? 'fa-arrow-down-a-z' : 'fa-arrow-down-z-a']" aria-hidden="true"></i>
-        {{ sortAscending ? t('groupMembers.sortAsc') : t('groupMembers.sortDesc') }}
-      </button>
-      <span class="ocf-members-count" aria-live="polite">{{ memberCountLabel }}</span>
+      <div class="ocf-members-search">
+        <i class="fas fa-search ocf-members-search__icon" aria-hidden="true"></i>
+        <input
+          v-model="groupMembersComposable.memberSearchQuery.value"
+          type="text"
+          :placeholder="t('groupMembers.searchMembers')"
+          :aria-label="t('groupMembers.searchMembers')"
+          class="search-input"
+        />
+      </div>
+      <span v-if="groupMembersComposable.members.value.length > 0" class="ocf-members-count" aria-live="polite">{{ memberCountLabel }}</span>
       <div class="toolbar-actions">
         <!--
           Giving every member an environment happens on the Scenarios tab: a
@@ -481,29 +490,39 @@ async function confirmRemoveMember() {
       </div>
     </div>
 
-    <!-- Reserved slot: the bulk bar replaces the hint in place, the list never moves. -->
+    <!-- The bulk bar is always laid out, hidden while nothing is selected and
+         overlaid by a hint: the slot keeps the bar's height in both states, so
+         selecting never moves the list, whatever the screen. -->
     <div
       v-if="groupMembersComposable.canManageMembers.value && selectableMembers.length > 0"
       :class="['ocf-members-bulk', { 'ocf-members-bulk--active': selectedCount > 0 }]"
       data-testid="members-bulk-bar"
     >
-      <template v-if="selectedCount > 0">
-        <span class="ocf-members-bulk__count">{{ t('groupMembers.selectedCount', { count: selectedCount }) }}</span>
+      <span v-if="selectedCount === 0" class="ocf-members-bulk__hint">{{ t('groupMembers.selectionHint') }}</span>
+      <div class="ocf-members-bulk__actions" :aria-hidden="selectedCount === 0 ? 'true' : undefined">
+        <span class="ocf-members-bulk__count">
+          <i class="fas fa-check-square" aria-hidden="true"></i>
+          {{ t('groupMembers.selectedCount', { count: selectedCount }) }}
+        </span>
         <button
           type="button"
-          class="btn btn-sm btn-warning"
-          :disabled="isRegenerating"
+          class="btn btn-sm btn-primary"
+          :disabled="isRegenerating || selectedCount === 0"
           data-testid="regenerate-passwords"
           @click="handleRegeneratePasswords"
         >
           <i class="fas fa-key" aria-hidden="true"></i>
           {{ t('groupMembers.regeneratePasswords') }}
         </button>
-        <button type="button" class="ocf-members-bulk__clear" @click="selectedMemberIds = new Set()">
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-primary ocf-members-bulk__clear"
+          :disabled="selectedCount === 0"
+          @click="selectedMemberIds = new Set()"
+        >
           {{ t('groupMembers.clearSelection') }}
         </button>
-      </template>
-      <span v-else class="ocf-members-bulk__hint">{{ t('groupMembers.selectionHint') }}</span>
+      </div>
     </div>
 
     <div v-if="groupMembersComposable.isLoading.value && groupMembersComposable.members.value.length === 0" class="loading-state">
@@ -511,48 +530,69 @@ async function confirmRemoveMember() {
       <p>{{ t('groupMembers.loadingMembers') }}</p>
     </div>
 
-    <div v-else-if="groupMembersComposable.sortedMembers.value.length === 0" class="empty-state">
-      <i class="fas fa-users"></i>
-      <p>{{ groupMembersComposable.members.value.length === 0 ? t('groupMembers.noMembers') : t('groupMembers.noMatch') }}</p>
-    </div>
+    <EmptyState
+      v-else-if="groupMembersComposable.members.value.length === 0"
+      icon-class="fas fa-users"
+      :title="t('groupMembers.noMembers')"
+      :description="t('groupMembers.noMembersHint')"
+    />
 
-    <div
-      v-else
-      :class="['ocf-members-table', { 'ocf-members-table--manage': groupMembersComposable.canManageMembers.value }]"
-      role="table"
-    >
-      <div class="ocf-members-head" role="row">
-        <span v-if="groupMembersComposable.canManageMembers.value" class="ocf-members-cell ocf-members-cell--check" role="columnheader">
-          <label v-if="selectableMembers.length > 0" class="select-all-checkbox" :title="t('groupMembers.selectAll')">
-            <input
-              type="checkbox"
-              :checked="allSelectableSelected"
-              :aria-label="t('groupMembers.selectAll')"
-              @change="toggleSelectAll"
-            />
-          </label>
-        </span>
-        <span class="ocf-members-cell ocf-members-cell--name" role="columnheader">{{ t('groupMembers.memberName') }}</span>
-        <span class="ocf-members-cell ocf-members-cell--email" role="columnheader">{{ t('groupMembers.memberEmail') }}</span>
-        <span class="ocf-members-cell ocf-members-cell--role" role="columnheader">{{ t('groupMembers.memberRole') }}</span>
-        <span v-if="groupMembersComposable.canManageMembers.value" class="ocf-members-cell ocf-members-cell--actions" role="columnheader"></span>
-      </div>
+    <EmptyState
+      v-else-if="groupMembersComposable.sortedMembers.value.length === 0"
+      icon-class="fas fa-search"
+      :title="t('groupMembers.noMatch')"
+      :description="t('groupMembers.noMatchHint')"
+    />
 
-      <template v-for="memberGroup in memberGroups" :key="memberGroup.key">
-        <div class="ocf-members-group" role="row" :data-testid="`members-group-${memberGroup.key}`">
-          <span role="rowheader">
+    <table v-else class="ocf-data-table ocf-members-table">
+      <thead>
+        <tr>
+          <th v-if="groupMembersComposable.canManageMembers.value" class="ocf-members-col-check">
+            <label v-if="selectableMembers.length > 0" class="select-all-checkbox" :title="t('groupMembers.selectAll')">
+              <input
+                type="checkbox"
+                :checked="allSelectableSelected"
+                :aria-label="t('groupMembers.selectAll')"
+                @change="toggleSelectAll"
+              />
+            </label>
+          </th>
+          <th :aria-sort="sortAscending ? 'ascending' : 'descending'">
+            <button
+              type="button"
+              class="ocf-data-table__sort"
+              data-testid="members-sort"
+              :aria-label="sortAscending ? t('groupMembers.sortAscHint') : t('groupMembers.sortDescHint')"
+              :title="sortAscending ? t('groupMembers.sortAscHint') : t('groupMembers.sortDescHint')"
+              @click="toggleNameSort"
+            >
+              {{ t('groupMembers.memberName') }}
+              <i :class="['fas', sortAscending ? 'fa-sort-up' : 'fa-sort-down']" aria-hidden="true"></i>
+            </button>
+          </th>
+          <th class="ocf-members-col-email">{{ t('groupMembers.memberEmail') }}</th>
+          <th class="ocf-members-col-role">{{ t('groupMembers.memberRole') }}</th>
+          <th v-if="groupMembersComposable.canManageMembers.value" class="ocf-members-col-actions"></th>
+        </tr>
+      </thead>
+      <tbody
+        v-for="memberGroup in memberGroups"
+        :key="memberGroup.key"
+        :data-testid="`members-group-${memberGroup.key}`"
+      >
+        <tr class="ocf-members-group">
+          <th :colspan="columnCount" scope="rowgroup">
             {{ memberGroup.label }}
             <span class="ocf-members-group__count">{{ memberGroup.members.length }}</span>
-          </span>
-        </div>
-        <div
+          </th>
+        </tr>
+        <tr
           v-for="member in memberGroup.members"
           :key="member.id"
           :class="['ocf-member-row', { 'ocf-member-row--selected': selectedMemberIds.has(member.user_id) }]"
-          role="row"
           data-testid="member-row"
         >
-          <span v-if="groupMembersComposable.canManageMembers.value" class="ocf-members-cell ocf-members-cell--check" role="cell">
+          <td v-if="groupMembersComposable.canManageMembers.value" class="ocf-members-col-check">
             <input
               v-if="member.role === 'member'"
               type="checkbox"
@@ -561,26 +601,24 @@ async function confirmRemoveMember() {
               :aria-label="t('groupMembers.selectMember', { name: memberName(member) })"
               @change="toggleMemberSelection(member.user_id)"
             />
-          </span>
-          <span
-            class="ocf-members-cell ocf-members-cell--name ocf-member-row__name"
-            role="cell"
-            :title="member.joined_at ? t('groupMembers.joinedOn', { date: formatDate(member.joined_at) }) : undefined"
-          >
-            <span class="ocf-member-row__label">{{ memberName(member) }}</span>
-            <span v-if="member.source_group" class="ocf-member-row__source">
+          </td>
+          <td :title="member.joined_at ? t('groupMembers.joinedOn', { date: formatDate(member.joined_at) }) : undefined">
+            <span class="ocf-member-row__name">{{ memberName(member) }}</span>
+            <span v-if="member.source_group" class="badge badge-secondary ocf-member-row__source">
               <i class="fas fa-layer-group" aria-hidden="true"></i>
               {{ member.source_group.display_name }}
             </span>
-          </span>
-          <span class="ocf-members-cell ocf-members-cell--email ocf-member-row__email" role="cell">
+            <!-- Phones have no email column: the email folds under the name. -->
+            <span v-if="member.user?.display_name" class="ocf-member-row__email-inline">{{ member.user?.email }}</span>
+          </td>
+          <td class="ocf-members-col-email ocf-member-row__email">
             {{ member.user?.display_name ? member.user?.email : '' }}
-          </span>
-          <span class="ocf-members-cell ocf-members-cell--role ocf-member-row__role" role="cell">
+          </td>
+          <td class="ocf-members-col-role">
             <select
               v-if="groupMembersComposable.canEditMember(member)"
               v-model="member.role"
-              class="role-select"
+              class="form-control form-select role-select"
               :aria-label="t('groupMembers.memberRole')"
               @change="groupMembersComposable.updateMemberRole(member)"
             >
@@ -589,27 +627,43 @@ async function confirmRemoveMember() {
               <option value="manager">{{ t('groupMembers.roleManager') }}</option>
               <option value="member">{{ t('groupMembers.roleMember') }}</option>
             </select>
-            <span v-else-if="member.role !== 'member'" :class="['ocf-member-row__role-text', `ocf-member-row__role-text--${member.role}`]">
+            <span v-else-if="member.role !== 'member'" :class="['ocf-member-row__role', `ocf-member-row__role--${member.role}`]">
               {{ roleLabel(member.role) }}
             </span>
-          </span>
-          <span v-if="groupMembersComposable.canManageMembers.value" class="ocf-members-cell ocf-members-cell--actions" role="cell">
-            <span v-if="groupMembersComposable.canRemoveMember(member)" class="member-actions">
-              <button
-                type="button"
-                class="ocf-member-remove"
-                data-testid="member-remove"
-                :aria-label="t('groupMembers.removeMemberLabel', { name: memberName(member) })"
-                :title="t('groupMembers.removeMemberLabel', { name: memberName(member) })"
-                @click="memberPendingRemoval = member"
-              >
-                <i class="fas fa-user-minus" aria-hidden="true"></i>
-              </button>
+          </td>
+          <td v-if="groupMembersComposable.canManageMembers.value" class="ocf-members-col-actions">
+            <span
+              v-if="member.role === 'member' || groupMembersComposable.canRemoveMember(member)"
+              class="member-actions"
+            >
+              <DropdownMenu :trigger-label="t('groupMembers.memberActions', { name: memberName(member) })">
+                <button
+                  v-if="member.role === 'member'"
+                  type="button"
+                  class="ocf-dropdown-item"
+                  data-testid="member-regenerate-password"
+                  :disabled="isRegenerating"
+                  @click="regeneratePasswords([member.user_id])"
+                >
+                  <i class="fas fa-key"></i>
+                  <span>{{ t('groupMembers.regeneratePassword') }}</span>
+                </button>
+                <button
+                  v-if="groupMembersComposable.canRemoveMember(member)"
+                  type="button"
+                  class="ocf-dropdown-item ocf-dropdown-item--danger"
+                  data-testid="member-remove"
+                  @click="memberPendingRemoval = member"
+                >
+                  <i class="fas fa-user-minus"></i>
+                  <span>{{ t('groupMembers.removeMemberLabel') }}</span>
+                </button>
+              </DropdownMenu>
             </span>
-          </span>
-        </div>
-      </template>
-    </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
 
     <!-- Add Member Modal -->
     <BaseModal
@@ -738,12 +792,13 @@ async function confirmRemoveMember() {
 </template>
 
 <style scoped>
-/* Members Tab */
+/* Members Tab — toolbar and search follow EntityTable / the class tabs. */
 .members-toolbar {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-md);
+  flex-wrap: wrap;
 }
 
 .toolbar-actions {
@@ -753,15 +808,42 @@ async function confirmRemoveMember() {
   margin-left: auto;
 }
 
-.search-input {
+.ocf-members-search {
+  position: relative;
   flex: 1;
-  min-width: 10rem;
-  max-width: 24rem;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border-medium);
+  min-width: 200px;
+  max-width: 400px;
+}
+
+.ocf-members-search__icon {
+  position: absolute;
+  left: var(--spacing-md);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) calc(var(--spacing-md) + 1.5em);
+  border: var(--border-width-thin) solid var(--color-border-medium);
   border-radius: var(--border-radius-md);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
+  transition: border-color var(--transition-fast);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.ocf-members-count {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
 .loading-state {
@@ -778,314 +860,160 @@ async function confirmRemoveMember() {
   color: var(--color-primary);
 }
 
-.empty-state {
+/* Bulk bar: AssignmentResultsView's bulk-actions bar, in a slot that is
+   always there so selecting never moves the list. */
+.ocf-members-bulk {
+  position: relative;
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: var(--border-width-thin) dashed var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.ocf-members-bulk--active {
+  background: var(--color-primary-bg);
+  border: var(--border-width-thin) solid var(--color-primary-border);
+  color: var(--color-primary);
+}
+
+.ocf-members-bulk__actions {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding: var(--spacing-2xl);
+  gap: var(--spacing-sm);
+}
+
+.ocf-members-bulk:not(.ocf-members-bulk--active) .ocf-members-bulk__actions {
+  visibility: hidden;
+}
+
+.ocf-members-bulk__hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-md);
   color: var(--color-text-muted);
 }
 
-.empty-state i {
-  font-size: var(--font-size-3xl);
-  margin-bottom: var(--spacing-md);
-}
-
-/* Member table: one grid shared by the header, the group captions and every
-   row, so each column lines up whatever a row holds. A row without a checkbox
-   or an action keeps an empty cell, never a missing one. */
-.ocf-members-table {
-  --ocf-members-cols: minmax(10rem, 1.1fr) minmax(12rem, 1.4fr) 9.5rem;
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--border-radius-md);
-  background-color: var(--color-bg-primary);
-  overflow: hidden;
-}
-
-.ocf-members-table--manage {
-  --ocf-members-cols: 2.25rem minmax(10rem, 1.1fr) minmax(12rem, 1.4fr) 9.5rem 2.5rem;
-}
-
-.ocf-members-head,
-.ocf-member-row {
-  display: grid;
-  grid-template-columns: var(--ocf-members-cols);
+.ocf-members-bulk__count {
+  display: inline-flex;
   align-items: center;
-  column-gap: var(--spacing-sm);
-  padding: 0 var(--spacing-md);
-}
-
-.ocf-members-head {
-  min-height: 2.25rem;
-  background-color: var(--color-bg-secondary);
-  border-bottom: 1px solid var(--color-border-light);
-  font-size: var(--font-size-xs);
+  gap: var(--spacing-xs);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
 }
 
-.ocf-members-group {
-  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-xs);
+.ocf-members-bulk__clear {
+  margin-left: auto;
+}
+
+/* Member table: .ocf-data-table (tables-common.css) carries the look; these
+   rules only size the columns and mark the trainer / participant groups. */
+.ocf-members-table {
+  table-layout: fixed;
+}
+
+.ocf-members-col-check {
+  width: 2.75rem;
+}
+
+.ocf-members-col-role {
+  width: 10rem;
+}
+
+.ocf-members-col-actions {
+  width: 3.5rem;
+  text-align: right;
+}
+
+/* The ⋯ trigger (.btn-icon) sets the row height; a tighter cell padding
+   keeps rows near 40px. */
+.ocf-members-table td {
+  padding-top: var(--spacing-xs);
+  padding-bottom: var(--spacing-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ocf-members-table td.ocf-members-col-actions {
+  overflow: visible;
+}
+
+.ocf-members-table .ocf-members-group th {
+  padding-top: var(--spacing-md);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
-  border-bottom: 1px solid var(--color-border-light);
+  background: none;
+}
+
+.ocf-members-table tbody .ocf-members-group:hover {
+  background: none;
 }
 
 .ocf-members-group__count {
   margin-left: var(--spacing-xs);
   font-weight: var(--font-weight-normal);
   color: var(--color-text-muted);
-  font-variant-numeric: tabular-nums;
 }
 
-.ocf-member-row {
-  min-height: 2.5rem;
-  border-bottom: 1px solid var(--color-border-light);
-  box-shadow: inset 3px 0 0 transparent;
-  transition: background-color var(--transition-fast);
-}
-
-.ocf-member-row:last-child {
-  border-bottom: none;
-}
-
-.ocf-member-row:hover {
-  background-color: var(--color-bg-secondary);
-}
-
-.ocf-member-row--selected,
-.ocf-member-row--selected:hover {
+.ocf-members-table .ocf-member-row--selected,
+.ocf-members-table .ocf-member-row--selected:hover {
   background-color: var(--color-primary-bg);
+}
+
+.ocf-member-row--selected td:first-child {
   box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
-.ocf-members-cell {
-  min-width: 0;
-}
-
-.ocf-members-cell--check {
-  display: flex;
-  align-items: center;
-}
-
-.ocf-members-cell--check input,
+.ocf-members-col-check input,
 .select-all-checkbox {
-  cursor: pointer;
+  display: flex;
   margin: 0;
-}
-
-.select-all-checkbox {
-  display: flex;
-}
-
-/* With a pointer, the per-row remove action waits for its row. Touch screens
-   have no hover: there it stays visible. */
-@media (hover: hover) {
-  .ocf-member-remove {
-    opacity: 0;
-  }
-
-  .ocf-member-row:hover .ocf-member-remove,
-  .ocf-member-remove:focus-visible {
-    opacity: 1;
-  }
-}
-
-.ocf-members-cell--actions {
-  display: flex;
-  justify-content: flex-end;
+  cursor: pointer;
 }
 
 .ocf-member-row__name {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.ocf-member-row__label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
 }
 
 .ocf-member-row__source {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 6px;
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  background-color: var(--color-info-bg);
-  color: var(--color-info-text);
+  margin-left: var(--spacing-sm);
+  gap: var(--spacing-xs);
 }
 
 .ocf-member-row__email {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
 
-/* Same box as the role select, so a role read and a role edited line up. */
-.ocf-member-row__role-text {
-  display: inline-block;
-  padding: 2px var(--spacing-sm);
-  border: 1px solid transparent;
+.ocf-member-row__email-inline {
+  display: none;
+}
+
+/* A role read lines up with a role edited: same left inset as the select. */
+.ocf-member-row__role {
+  padding-left: calc(var(--spacing-sm) + var(--border-width-thin));
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
 
-.ocf-member-row__role-text--owner {
+.ocf-member-row__role--owner {
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
 }
 
-/* Role saves on change: quiet until the pointer or focus reaches it. */
-.role-select {
-  width: 100%;
-  padding: 2px var(--spacing-sm);
-  appearance: none;
-  border: 1px solid transparent;
-  border-radius: var(--border-radius-sm);
-  background-color: transparent;
-  color: var(--color-text-secondary);
+/* The design-system select, compact for a table row. It saves on change. */
+.form-control.role-select {
+  padding: var(--spacing-2xs) 2rem var(--spacing-2xs) var(--spacing-sm);
+  background-position: right var(--spacing-sm) center;
   font-size: var(--font-size-sm);
-  cursor: pointer;
-}
-
-.role-select:hover,
-.role-select:focus {
-  appearance: auto;
-  border-color: var(--color-border-medium);
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-}
-
-.ocf-member-remove {
-  width: 2rem;
-  height: 2rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: var(--border-radius-sm);
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.ocf-member-remove:hover,
-.ocf-member-remove:focus-visible {
-  color: var(--color-danger);
-  background-color: var(--color-danger-bg);
-}
-
-.ocf-member-remove:focus-visible,
-.ocf-members-sort:focus-visible,
-.ocf-members-bulk__clear:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-focus);
-}
-
-/* Toolbar: sort + count */
-.ocf-members-sort {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: 1px solid var(--color-border-medium);
-  border-radius: var(--border-radius-md);
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.ocf-members-sort:hover {
-  background-color: var(--color-bg-secondary);
-}
-
-.ocf-members-count {
-  align-self: center;
-  white-space: nowrap;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Bulk bar: a fixed-height slot, always there, so selecting never moves the list. */
-.ocf-members-bulk {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  min-height: 2.75rem;
-  margin-bottom: var(--spacing-sm);
-  padding: 0 var(--spacing-md);
-  border: 1px dashed var(--color-border-light);
-  border-radius: var(--border-radius-md);
-  font-size: var(--font-size-sm);
-}
-
-.ocf-members-bulk--active {
-  border: 1px solid var(--color-primary-border);
-  background-color: var(--color-primary-bg);
-}
-
-.ocf-members-bulk__hint {
-  color: var(--color-text-muted);
-}
-
-.ocf-members-bulk__count {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  font-variant-numeric: tabular-nums;
-}
-
-.ocf-members-bulk__clear {
-  margin-left: auto;
-  border: none;
-  background: none;
-  padding: var(--spacing-xs);
-  color: var(--color-primary);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-}
-
-.ocf-members-bulk__clear:hover {
-  text-decoration: underline;
 }
 
 .ocf-remove-confirm {
   margin: 0;
   color: var(--color-text-primary);
-}
-
-.btn-warning {
-  background: var(--color-warning, #f59e0b);
-  color: var(--color-text-on-warning, #fff);
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: var(--border-radius, 6px);
-  cursor: pointer;
-  font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.btn-warning:hover {
-  opacity: 0.9;
-}
-
-.btn-warning:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* Credentials */
@@ -1239,73 +1167,53 @@ async function confirmRemoveMember() {
   border: 1px solid var(--color-danger-border);
 }
 
-/* Responsive: the email folds under the name, the column header keeps only
-   the select-all box. */
+/* Phones: the email column folds under the name; the bulk slot reserves
+   two lines (count and clear, then the action) in every state. */
 @media (max-width: 768px) {
-  .members-toolbar {
-    flex-wrap: wrap;
-  }
-
-  .search-input {
+  .ocf-members-search {
     flex-basis: 100%;
     max-width: none;
   }
 
   .toolbar-actions {
-    flex-basis: 100%;
     flex-wrap: wrap;
     margin-left: 0;
   }
 
-  /* The bar takes two lines on a phone (count and clear, then the action);
-     the slot reserves both in every state so selecting never moves the list. */
-  .ocf-members-bulk {
+  .ocf-members-bulk__actions {
     flex-wrap: wrap;
-    align-content: center;
     row-gap: var(--spacing-xs);
-    min-height: 5.25rem;
   }
 
-  .ocf-members-bulk .btn-warning {
+  .ocf-members-bulk .btn-primary {
     order: 3;
     white-space: nowrap;
   }
 
-  /* Fixed areas: name over email, role and actions to the right. */
-  .ocf-members-head,
-  .ocf-member-row {
-    grid-template-columns: minmax(0, 1fr) 7.5rem;
-    grid-template-areas: "name role" "email role";
-    padding-top: var(--spacing-xs);
-    padding-bottom: var(--spacing-xs);
+  .ocf-members-table {
+    table-layout: auto;
   }
 
-  .ocf-members-table--manage .ocf-members-head,
-  .ocf-members-table--manage .ocf-member-row {
-    grid-template-columns: 2rem minmax(0, 1fr) 7.5rem 2.25rem;
-    grid-template-areas: "check name role actions" "check email role actions";
-  }
-
-  .ocf-members-cell--check { grid-area: check; }
-  .ocf-members-cell--name { grid-area: name; }
-  .ocf-members-cell--email { grid-area: email; }
-  .ocf-members-cell--role { grid-area: role; }
-  .ocf-members-cell--actions { grid-area: actions; }
-
-  .ocf-members-head {
-    grid-template-areas: "name role";
-  }
-
-  .ocf-members-table--manage .ocf-members-head {
-    grid-template-areas: "check name role actions";
-  }
-
-  .ocf-members-head .ocf-members-cell--email {
+  .ocf-members-table .ocf-members-col-email {
     display: none;
   }
 
-  .ocf-member-row__email {
+  .ocf-members-table .ocf-members-col-role {
+    width: 7.5rem;
+  }
+
+  .ocf-members-table th,
+  .ocf-members-table td {
+    padding-left: var(--spacing-sm);
+    padding-right: var(--spacing-sm);
+  }
+
+  .ocf-member-row__email-inline {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
   }
 }
 </style>

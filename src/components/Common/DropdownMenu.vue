@@ -26,6 +26,8 @@ import { ref, onMounted, onUnmounted } from 'vue'
 
 interface Props {
   align?: 'left' | 'right'
+  /** Accessible name of the default ⋯ trigger, e.g. "Actions for Alice". */
+  triggerLabel?: string
 }
 
 withDefaults(defineProps<Props>(), {
@@ -63,7 +65,14 @@ onUnmounted(() => {
     <!-- Trigger: custom #trigger slot, or the default .btn-icon ⋯ button. -->
     <div class="dropdown-trigger" @click.stop="toggle">
       <slot name="trigger">
-        <button class="btn-icon" type="button">
+        <button
+          class="btn-icon"
+          type="button"
+          aria-haspopup="menu"
+          :aria-expanded="open"
+          :aria-label="triggerLabel"
+          :title="triggerLabel"
+        >
           <i class="fas fa-ellipsis-v"></i>
         </button>
       </slot>

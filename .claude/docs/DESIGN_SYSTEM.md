@@ -649,7 +649,7 @@ import ProgressBar from '../Common/ProgressBar.vue'
 
 `src/components/Common/DropdownMenu.vue` — the SSOT for row/overflow menus (replaces the ~4 hand-rolled dropdowns, e.g. in `TerminalMySessions.vue`). Owns the open/close + outside-click logic **once** so consumers don't re-implement it.
 
-**Props:** `align?: 'left' | 'right'` (default `'right'`).
+**Props:** `align?: 'left' | 'right'` (default `'right'`), `triggerLabel?: string` (accessible name and tooltip of the default ⋯ trigger — set it when the menu repeats per row, e.g. "Actions for Alice"). The default trigger also carries `aria-haspopup="menu"` and `aria-expanded`.
 **Slots:** `#trigger` (optional; defaults to a `.btn-icon` ⋯ button) and the default slot for the menu items, which receives a `{ close }` slot prop. Clicking any item closes the menu automatically (the item's own `@click` still runs); clicking outside closes it too.
 
 Classes are `ocf-`-namespaced to avoid colliding with Bootstrap's global `.dropdown-menu`/`.dropdown-item` (Bootstrap sets `.dropdown-menu { display:none }`).
@@ -675,6 +675,26 @@ import DropdownMenu from '../Common/DropdownMenu.vue'
     </template>
   </DropdownMenu>
 </template>
+```
+
+### Data Table
+
+`src/assets/styles/tables-common.css` — `.ocf-data-table`, the table of the class tabs (header row on `--color-bg-secondary`, one hairline between rows, hover tint). The participation, analytics and assignment-results tabs still carry their own copy of these rules; new tables use the shared class. `.ocf-data-table__sort` is EntityTable's sortable header as a real button (label + `fa-sort-up` / `fa-sort-down`); put `aria-sort` on its `<th>`.
+
+```html
+<table class="ocf-data-table">
+  <thead>
+    <tr>
+      <th aria-sort="ascending">
+        <button type="button" class="ocf-data-table__sort" @click="toggleSort">
+          Name <i class="fas fa-sort-up" aria-hidden="true"></i>
+        </button>
+      </th>
+      <th>Email</th>
+    </tr>
+  </thead>
+  <tbody>...</tbody>
+</table>
 ```
 
 ---
