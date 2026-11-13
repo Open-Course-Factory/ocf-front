@@ -563,7 +563,7 @@ const { t } = useTranslations({
         section: 'Seat pricing',
         bulkPurchasable: 'Sellable as seats',
         bulkPurchasableHint:
-          'Lets a trainer buy licences of this plan for learners. Independent of catalog visibility — a learner seat is normally hidden from the pricing page yet sellable.',
+          'Lets a trainer buy licences of this plan for learners. Independent of catalog visibility — a learner seat is normally left out of the catalog yet sellable.',
         useTiered: 'Volume pricing (graduated brackets)',
         useTieredHint:
           'Brackets stack: 20 units under 1-10 @ 9.00 then 11+ @ 7.00 cost 10x9.00 + 10x7.00, not 20x7.00.',
@@ -648,7 +648,7 @@ const { t } = useTranslations({
         section: 'Tarification des sièges',
         bulkPurchasable: 'Vendable en sièges',
         bulkPurchasableHint:
-          "Permet à un formateur d'acheter des licences de ce plan pour ses apprenants. Indépendant de la visibilité au catalogue — un siège apprenant est normalement masqué de la page tarifs tout en restant vendable.",
+          "Permet à un formateur d'acheter des licences de ce plan pour ses apprenants. Indépendant de la visibilité au catalogue — un siège apprenant est normalement absent du catalogue tout en restant vendable.",
         useTiered: 'Tarification dégressive (paliers cumulés)',
         useTieredHint:
           'Les paliers se cumulent : 20 unités avec 1-10 à 9,00 puis 11+ à 7,00 coûtent 10x9,00 + 10x7,00, et non 20x7,00.',

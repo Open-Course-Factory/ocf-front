@@ -54,8 +54,8 @@ export const bulkLicenseService = {
   /**
    * The seat products this trainer may buy for learners.
    *
-   * Seat plans are hidden from the catalogue (is_catalog=false, so they never
-   * reach the public pricing page), which means the ordinary plan list does not
+   * Seat plans are hidden from the catalogue (is_catalog=false, so they are
+   * never offered as subscriptions), which means the ordinary plan list does not
    * contain them. This endpoint returns exactly what a purchase would accept,
    * plus whether the caller may buy at all — an ineligible caller gets
    * can_purchase=false with a reason rather than a 403, because the screen has

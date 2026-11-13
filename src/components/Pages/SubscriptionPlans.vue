@@ -173,9 +173,9 @@ const entityStoreWithFiltering = computed(() => ({
 const currentSubscription = computed(() => subscriptionsStore.currentSubscription)
 const hasActiveSubscription = computed(() => subscriptionsStore.hasActiveSubscription())
 
-// Helper to render a plan's capacity in the same size-count language the
-// pricing page uses. Closes the visibility gap reported in the first user
-// test: admins had to open each plan in edit mode to see the budget.
+// Helper to render a plan's capacity in size-count language. Closes the
+// visibility gap reported in the first user test: admins had to open each
+// plan in edit mode to see the budget.
 // Returns "1 XL OR 2 L OR 4 M" for a budget that fits at least one size, and
 // "no size fits" otherwise — so a misconfigured plan is visible in the list.
 const getCapacitySummary = (plan: any): string => {

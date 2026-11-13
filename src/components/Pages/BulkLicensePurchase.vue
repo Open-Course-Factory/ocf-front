@@ -338,7 +338,7 @@ const selectedGroupId = ref('')
 const couponCode = ref('')
 
 // Seat products come from their OWN endpoint, not from the plan catalogue.
-// Seat plans are is_catalog=false so they never reach the public pricing page —
+// Seat plans are is_catalog=false so they are never offered in the plan catalogue —
 // which also means plansStore.entities does not contain them for a non-admin.
 // Reading the catalogue here showed a trainer an empty page: the purchase screen
 // could not see the only products it exists to sell.

@@ -138,13 +138,13 @@ Routes can require specific feature flags using `requiresFeature` meta:
 ### Router Guard Logic
 
 ```typescript
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to) => {
   // 1. Check authentication
   // 2. Check feature flag
   const requiredFeature = to.meta.requiresFeature
-  if (requiredFeature && !isFeatureEnabled(requiredFeature, actor)) {
-    // Redirect to home with error
-    next({ name: 'LandingPage', query: { error: 'feature_disabled' } })
+  if (requiredFeature && !featureFlagService.isEnabled(requiredFeature, actor)) {
+    // Send the user to their sessions, like the other access guards
+    return { name: 'TerminalSessions', query: { error: 'feature_disabled', feature: requiredFeature } }
   }
 })
 ```
