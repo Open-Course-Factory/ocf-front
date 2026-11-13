@@ -68,7 +68,6 @@ onUnmounted(() => {
         <button
           class="btn-icon"
           type="button"
-          aria-haspopup="menu"
           :aria-expanded="open"
           :aria-label="triggerLabel"
           :title="triggerLabel"
