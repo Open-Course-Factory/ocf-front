@@ -123,28 +123,17 @@ export function buildSessionDetailCsv(
       // A survey is never graded: its correct-answer and correct? cells stay blank.
       const type = normalizedStepType(step.step_type)
       if ((type === 'quiz' || type === 'survey') && step.questions) {
+        const graded = type === 'quiz'
         for (let i = 0; i < step.questions.length; i++) {
           const q = step.questions[i]
-          if (type === 'survey') {
-            rows.push([
-              ...stepCols,
-              (q.order != null ? q.order + 1 : i + 1),
-              q.question_text,
-              q.question_type,
-              resolveAnswerText(q, q.student_answer),
-              '',
-              ''
-            ])
-            continue
-          }
           rows.push([
             ...stepCols,
             (q.order != null ? q.order + 1 : i + 1),
             q.question_text,
             q.question_type,
             resolveAnswerText(q, q.student_answer),
-            resolveAnswerText(q, q.correct_answer),
-            q.is_correct ? yes : no
+            graded ? resolveAnswerText(q, q.correct_answer) : '',
+            graded ? (q.is_correct ? yes : no) : ''
           ])
         }
       }

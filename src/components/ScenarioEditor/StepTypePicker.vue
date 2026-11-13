@@ -3,7 +3,7 @@
  * Open Course Factory - Front
  * Copyright (C) 2023-2026 Solution Libre
  *
- * The four kinds of step, as a small menu. Escape or a click elsewhere closes it.
+ * The kinds of step (STEP_TYPES), as a small menu. Escape or a click elsewhere closes it.
  */
 -->
 

@@ -33,7 +33,7 @@
       </div>
 
       <div class="quiz-question">
-        <p class="quiz-question-text">{{ currentQuestion.question_text }}</p>
+        <p :id="questionTextId" class="quiz-question-text">{{ currentQuestion.question_text }}</p>
 
         <!-- Multiple choice -->
         <div v-if="currentQuestion.question_type === 'multiple_choice'" class="quiz-options">
@@ -109,6 +109,7 @@
             rows="4"
             class="quiz-free-input"
             data-testid="survey-free-textarea"
+            :aria-labelledby="questionTextId"
             v-model="quizAnswers[currentQuestion.id]"
             :placeholder="t('scenarioPanel.freeAnswerPlaceholder')"
           ></textarea>
@@ -117,6 +118,7 @@
             type="text"
             class="quiz-free-input"
             data-testid="quiz-free-input"
+            :aria-labelledby="questionTextId"
             v-model="quizAnswers[currentQuestion.id]"
             :placeholder="t('scenarioPanel.freeAnswerPlaceholder')"
           />
@@ -431,6 +433,9 @@ const quizQuestions = computed<CurrentStepQuestion[]>(() => {
 })
 
 const currentQuestion = computed(() => quizQuestions.value[quizCurrentIndex.value] || null)
+
+// The free-text field's accessible name is its question.
+const questionTextId = computed(() => currentQuestion.value ? `ocf-quiz-q-${currentQuestion.value.id}` : undefined)
 
 const parsedOptions = computed<string[]>(() => {
   const q = currentQuestion.value

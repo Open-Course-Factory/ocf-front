@@ -127,11 +127,12 @@
 
       <!-- Step transition (full panel) -->
       <div v-else-if="panelState === 'transitioning'" class="panel-transitioning">
-        <!-- Phase 1: Step validated -->
+        <!-- Phase 1: Step validated. A survey is not validated, it is
+             answered: currentStep still holds it during the hold. -->
         <template v-if="transitionState === 'validated'">
           <div class="transition-validated">
             <i class="fas fa-check-circle validated-icon"></i>
-            <span class="validated-text">{{ t('scenarioPanel.stepValidated') }}</span>
+            <span class="validated-text">{{ currentStep?.step_type === 'survey' ? t('scenarioPanel.surveyRecorded') : t('scenarioPanel.stepValidated') }}</span>
           </div>
         </template>
         <!-- Phase 2 (async next step): preparing the environment -->
@@ -423,6 +424,7 @@ const { t } = useTranslations({
       expandPanel: 'Expand panel',
       viewMyScenarios: 'View my scenarios',
       stepValidated: 'Step validated!',
+      surveyRecorded: 'Thank you, your answers have been sent.',
       nextStep: 'Loading next step...',
       preparingNextStep: 'Preparing the next step…',
       preparingHint: 'Installing what the next step needs. This usually takes a few seconds.',
@@ -485,6 +487,7 @@ const { t } = useTranslations({
       expandPanel: 'Déplier le panneau',
       viewMyScenarios: 'Voir mes scénarios',
       stepValidated: 'Étape validée !',
+      surveyRecorded: 'Merci, vos réponses ont été envoyées.',
       nextStep: 'Chargement de l\'étape suivante...',
       preparingNextStep: 'Préparation de l\'étape suivante…',
       preparingHint: 'Installation des éléments nécessaires à l\'étape suivante. Cela prend généralement quelques secondes.',
