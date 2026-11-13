@@ -11,6 +11,7 @@ import { describe, it, expect } from 'vitest'
 import {
   BANNER_EFFECTS,
   EXAMPLE_SCENARIOS,
+  SCENARIO_AI_STEP_TYPES,
   buildCreatePrompt,
   buildImprovePrompt,
   buildFixPrompt,
@@ -51,6 +52,15 @@ function questionProblem(q: any): string {
   return 'type'
 }
 
+/** A survey question: like a quiz question minus the answer (ignored), and no true_false. */
+function surveyQuestionProblem(q: any): string {
+  if (q.question_type === 'multiple_choice' || q.question_type === 'multi_answer') {
+    const options = JSON.parse(q.options)
+    return Array.isArray(options) && options.length >= 2 ? '' : 'options'
+  }
+  return q.question_type === 'free_text' ? '' : 'type'
+}
+
 const brief: ScenarioAiBrief = {
   description: 'Teach nginx: install it, serve a page, read the access log.',
   language: 'fr',
@@ -84,9 +94,10 @@ describe.each(['en', 'fr'] as const)('EXAMPLE_SCENARIOS.%s', language => {
     expect(example.hostname).toMatch(/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/)
     for (const step of example.steps as any[]) {
       expect(step.title.trim()).not.toBe('')
-      expect(['terminal', 'flag', 'quiz', 'info']).toContain(step.step_type)
-      if (step.step_type === 'quiz') expect(step.questions.length).toBeGreaterThan(0)
-      for (const q of step.questions || []) expect(questionProblem(q), q.question_text).toBe('')
+      expect(['terminal', 'flag', 'quiz', 'info', 'survey']).toContain(step.step_type)
+      if (step.step_type === 'quiz' || step.step_type === 'survey') expect(step.questions.length).toBeGreaterThan(0)
+      const problem = step.step_type === 'survey' ? surveyQuestionProblem : questionProblem
+      for (const q of step.questions || []) expect(problem(q), q.question_text).toBe('')
     }
   })
 
@@ -259,7 +270,37 @@ describe('buildCreatePrompt', () => {
   })
 
   it('asks for every step type when the teacher ticked none', () => {
-    expect(buildCreatePrompt({ ...brief, stepTypes: [] }, null, 'en')).toContain('step types: terminal, flag, quiz, info.')
+    expect(buildCreatePrompt({ ...brief, stepTypes: [] }, null, 'en')).toContain('step types: terminal, flag, quiz, info, survey.')
+  })
+})
+
+describe('survey steps in the prompt', () => {
+  it('offers survey as a step type the teacher can tick', () => {
+    expect(SCENARIO_AI_STEP_TYPES).toContain('survey')
+  })
+
+  it('lists "survey" among the step_type values, in both languages', () => {
+    expect(buildCreatePrompt(brief, null, 'en')).toContain('- "step_type" (required): "terminal", "flag", "quiz", "info" or "survey".')
+    expect(buildCreatePrompt(brief, null, 'fr')).toContain('- "step_type" (obligatoire) : "terminal", "flag", "quiz", "info" ou "survey".')
+  })
+
+  it('documents survey steps in their own section, in both languages', () => {
+    const en = buildCreatePrompt(brief, null, 'en')
+    const fr = buildCreatePrompt(brief, null, 'fr')
+    expect(en).toContain('### Survey steps (step_type "survey")')
+    expect(fr).toContain('### Étapes questionnaire (step_type "survey")')
+  })
+
+  it('tells the model a survey is never graded and carries no correct answer', () => {
+    const en = buildCreatePrompt(brief, null, 'en')
+    const section = en.slice(en.indexOf('### Survey steps'), en.indexOf('###', en.indexOf('### Survey steps') + 4))
+    expect(section).toContain('"multiple_choice"')
+    expect(section).toContain('"multi_answer"')
+    expect(section).toContain('"free_text"')
+    expect(section).not.toContain('"true_false"')
+    expect(section).toMatch(/correct_answer/)
+    expect(section).toMatch(/never graded/i)
+    expect(section).toMatch(/optional/i)
   })
 })
 

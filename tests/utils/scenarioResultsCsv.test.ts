@@ -238,6 +238,35 @@ describe('buildSessionDetailCsv', () => {
     // And the raw text quotes the field and doubles the inner quotes.
     expect(csv).toContain('"Smith, ""Bob"""')
   })
+
+  it('survey step emits one row per question with the learner answer, correct answer and correct? left blank', () => {
+    const survey = makeQuizStep({
+      step_type: 'survey',
+      step_title: 'Feedback',
+      quiz_score: null,
+      questions: [
+        {
+          id: 'q1', order: 0, question_text: 'How was it?', question_type: 'multiple_choice',
+          options: JSON.stringify(['Good', 'Bad']), student_answer: '0', correct_answer: '', is_correct: false, points: 0,
+        },
+        {
+          id: 'q2', order: 1, question_text: 'Any comment?', question_type: 'free_text',
+          options: '', student_answer: 'More labs', correct_answer: '', is_correct: false, points: 0,
+        },
+      ],
+    })
+    const rows = parseCsv(buildSessionDetailCsv(
+      [{ result: makeResult(), detail: { steps: [survey] } as any }],
+      detailLabels,
+    ))
+    expect(rows.length).toBe(4) // header + step row + 2 question rows
+
+    expect(rows[1][6]).toBe('survey')
+    expect(rows[1][9]).toBe('') // never a quiz score
+
+    expect(rows[2].slice(13)).toEqual(['1', 'How was it?', 'multiple_choice', 'Good', '', ''])
+    expect(rows[3].slice(13)).toEqual(['2', 'Any comment?', 'free_text', 'More labs', '', ''])
+  })
 })
 
 describe('buildCommandsCsv', () => {

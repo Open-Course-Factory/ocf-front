@@ -390,4 +390,64 @@ describe('ScenarioQuizPanel', () => {
     expect(errBlock.exists()).toBe(true)
     expect(errBlock.text()).toContain('Server exploded')
   })
+  describe('survey step (step_type "survey")', () => {
+    function ftQuestion(id: string, order: number): CurrentStepQuestion {
+      return { id, order, question_text: `FT ${id}?`, question_type: 'free_text' }
+    }
+    function surveyStep(questions: CurrentStepQuestion[], overrides: Partial<CurrentStepResponse> = {}) {
+      return makeStep(questions, { step_type: 'survey', show_immediate_feedback: false, ...overrides } as Partial<CurrentStepResponse>)
+    }
+
+    it('renders a free_text survey question as a 4-row textarea, not a one-line input', () => {
+      const wrapper = mountQuiz({ step: surveyStep([ftQuestion('q1', 0)]) })
+      const area = wrapper.find('textarea[data-testid="survey-free-textarea"]')
+      expect(area.exists()).toBe(true)
+      expect(area.attributes('rows')).toBe('4')
+      expect(wrapper.find('[data-testid="quiz-free-input"]').exists()).toBe(false)
+    })
+
+    it('Send submits directly: no confirmation modal, no "worth 0" warning', async () => {
+      const step = surveyStep([ftQuestion('q1', 0), mcQuestion('q2', 1, ['Yes', 'No'])])
+      const wrapper = mountQuiz({ step })
+
+      await wrapper.find('[data-testid="survey-free-textarea"]').setValue('Great lab')
+      const send = wrapper.find('[data-testid="quiz-validate"]')
+      expect(send.text()).toContain('Send')
+      await send.trigger('click')
+
+      expect(wrapper.find('[data-testid="quiz-confirm"]').exists()).toBe(false)
+      expect(wrapper.text()).not.toMatch(/score 0|worth 0|vaudront 0/i)
+      const emitted = wrapper.emitted('submit')
+      expect(emitted).toBeTruthy()
+      expect(emitted!.length).toBe(1)
+      expect(emitted![0][0]).toEqual({ q1: 'Great lab', q2: '' })
+    })
+
+    it('the Send button reads « Envoyer » in French', () => {
+      const wrapper = mountQuiz({ step: surveyStep([ftQuestion('q1', 0)]) }, 'fr')
+      expect(wrapper.find('[data-testid="quiz-validate"]').text()).toContain('Envoyer')
+    })
+
+    it('never shows the scoring rule, even when quiz_scoring_mode is partial', () => {
+      const step = surveyStep([maQuestion('q1', 0, ['One', 'Two'])], { quiz_scoring_mode: 'partial' })
+      expect(mountQuiz({ step }).find('[data-testid="quiz-scoring-rule"]').exists()).toBe(false)
+    })
+
+    it('after submit: thanks message, no score, no breakdown, no actions', () => {
+      const wrapper = mountQuiz({ step: surveyStep([ftQuestion('q1', 0)]), result: { total: 1, next_step: 1 } })
+
+      const recorded = wrapper.find('[data-testid="survey-recorded"]')
+      expect(recorded.exists()).toBe(true)
+      expect(recorded.text()).toContain('Thank you, your answers have been sent.')
+      expect(wrapper.find('[data-testid="quiz-recorded"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="quiz-results-score"]').exists()).toBe(false)
+      expect(wrapper.find('.quiz-breakdown').exists()).toBe(false)
+      expect(wrapper.find('.quiz-results-actions').exists()).toBe(false)
+    })
+
+    it('after submit in French: « Merci, vos réponses ont été envoyées. »', () => {
+      const wrapper = mountQuiz({ step: surveyStep([ftQuestion('q1', 0)]), result: { total: 1, next_step: 1 } }, 'fr')
+      expect(wrapper.find('[data-testid="survey-recorded"]').text()).toContain('Merci, vos réponses ont été envoyées.')
+    })
+  })
 })

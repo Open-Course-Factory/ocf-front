@@ -222,6 +222,47 @@ describe('SessionDetailModal', () => {
     })
   })
 
+  describe('survey step', () => {
+    function surveyStep(order: number) {
+      return {
+        ...terminalStep(order, 'Feedback'),
+        step_type: 'survey',
+        quiz_score: null,
+        questions: [
+          { id: 'q1', order: 0, question_text: 'Any comment?', question_type: 'free_text', student_answer: 'Nice', correct_answer: '', is_correct: false },
+        ],
+      }
+    }
+
+    it('labels the step as a survey, with no score badge', async () => {
+      mockGetSessionDetail.mockResolvedValue(makeDetail([terminalStep(0, 'First step'), surveyStep(1)]))
+      const wrapper = mountModal({ visible: true })
+      await flushPromises()
+
+      const row = wrapper.findAll('.steps-table tbody tr')[1]
+      expect(row.find('.step-type-chip').classes()).toContain('step-type-survey')
+      expect(row.find('.step-type-label').text()).toBe('Survey')
+      expect(row.find('.quiz-score-badge').exists()).toBe(false)
+      // Not rendered as a terminal step either.
+      expect(row.text()).not.toMatch(/attempt/i)
+    })
+
+    it('expands the answers with QuizAnswerReview in survey mode', async () => {
+      mockGetSessionDetail.mockResolvedValue(makeDetail([surveyStep(0)]))
+      const wrapper = mountModal({ visible: true })
+      await flushPromises()
+
+      const toggle = wrapper.find('.quiz-toggle-btn')
+      expect(toggle.exists()).toBe(true)
+      await toggle.trigger('click')
+
+      const review = wrapper.findComponent({ name: 'QuizAnswerReview' })
+      expect(wrapper.find('.quiz-questions-row').exists()).toBe(true)
+      expect(review.exists()).toBe(true)
+      expect(review.props('survey')).toBe(true)
+    })
+  })
+
   it('emits close when the BaseModal close button is clicked', async () => {
     const wrapper = mountModal({ visible: true })
     await flushPromises()

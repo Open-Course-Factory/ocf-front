@@ -260,6 +260,7 @@ describe('normalizedStepType / stepTypeIcon', () => {
     { input: 'flag', type: 'flag', icon: 'fas fa-flag' },
     { input: 'info', type: 'info', icon: 'fas fa-book-open' },
     { input: 'quiz', type: 'quiz', icon: 'fas fa-question-circle' },
+    { input: 'survey', type: 'survey', icon: 'fas fa-clipboard-list' },
     { input: 'terminal', type: 'terminal', icon: 'fas fa-terminal' },
     { input: 'something-unknown', type: 'terminal', icon: 'fas fa-terminal' },
     { input: undefined, type: 'terminal', icon: 'fas fa-terminal' },

@@ -12,7 +12,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 const patchMock = vi.fn()
 vi.mock('axios', () => ({ default: { patch: (...args: any[]) => patchMock(...args) } }))
 
-import { draftStep, insertStep, moveStep, renumberSteps, savedPosition, toOutlineSteps } from '../../src/utils/scenarioOutline'
+import { draftStep, insertStep, moveStep, renumberSteps, resolveStepType, savedPosition, STEP_TYPES, toOutlineSteps, TYPE_ICONS } from '../../src/utils/scenarioOutline'
 
 const steps = () => toOutlineSteps([
   { id: 'c', order: 2, title: 'Third', step_type: 'quiz' },
@@ -97,5 +97,16 @@ describe('savedPosition', () => {
     expect(savedPosition(list, 0)).toBe(0)
     expect(savedPosition(list, 2)).toBe(1)
     expect(savedPosition(list, 4)).toBe(3)
+  })
+})
+
+describe('survey step type', () => {
+  it('resolves step_type "survey" to survey, not terminal', () => {
+    expect(resolveStepType({ step_type: 'survey' })).toBe('survey')
+  })
+
+  it('is a known step type with the clipboard icon', () => {
+    expect(STEP_TYPES).toContain('survey')
+    expect((TYPE_ICONS as Record<string, string>).survey).toBe('fas fa-clipboard-list')
   })
 })

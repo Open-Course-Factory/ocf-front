@@ -80,3 +80,79 @@ describe('ScenarioStepEditor — multiple-choice correct answer', () => {
     expect(saved.questions[0].correct_answer).toBe('0')
   })
 })
+
+async function mountSurveyWith(questions: any[]) {
+  const wrapper = mount(ScenarioStepEditor, {
+    props: {
+      isNew: false,
+      stepType: 'survey',
+      stepData: { title: 'Feedback', order: 0, step_type: 'survey', questions },
+    },
+    global: {
+      plugins: [createTestI18n()],
+      stubs: { BaseModal: { template: '<div><slot /><slot name="footer" /></div>' } },
+    },
+  })
+  await wrapper.vm.$nextTick()
+  ;(wrapper.vm as any).activeTab = 'questions'
+  await wrapper.vm.$nextTick()
+  return wrapper
+}
+
+describe('ScenarioStepEditor — survey step (no correct answers)', () => {
+  const choice = (correct_answer = '') =>
+    ({ question_text: 'How was it?', question_type: 'multiple_choice', options: ['Good', 'Bad'], correct_answer })
+
+  it('shows the questions tab with the options but no correct marks', async () => {
+    const wrapper = await mountSurveyWith([choice()])
+    expect(wrapper.findAll('.option-row')).toHaveLength(2)
+    expect(wrapper.findAll('.option-row__input')).toHaveLength(2)
+    expect(wrapper.find('.option-row__correct').exists()).toBe(false)
+    expect(radios(wrapper)).toHaveLength(0)
+    expect(wrapper.findAll('.option-row--correct')).toHaveLength(0)
+  })
+
+  it('hides the feedback and scoring settings, and the points and explanation fields', async () => {
+    const wrapper = await mountSurveyWith([choice()])
+    expect(wrapper.find('.quiz-settings').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="quiz-scoring-mode"]').exists()).toBe(false)
+    expect(wrapper.find('#q-0-points').exists()).toBe(false)
+    expect(wrapper.find('#q-0-explanation').exists()).toBe(false)
+  })
+
+  it('offers no true/false question type', async () => {
+    const wrapper = await mountSurveyWith([choice()])
+    const values = wrapper.findAll('#q-0-type option').map((o: any) => (o.element as HTMLOptionElement).value)
+    expect(values).toEqual(['multiple_choice', 'multi_answer', 'free_text'])
+  })
+
+  it('shows no expected-answer field on a free_text question', async () => {
+    const wrapper = await mountSurveyWith([
+      { question_text: 'Any comment?', question_type: 'free_text', options: [], correct_answer: '' },
+    ])
+    expect(wrapper.find('#q-0-correct').exists()).toBe(false)
+  })
+
+  it('saves without any correct option marked, and never sends a correct answer', async () => {
+    const wrapper = await mountSurveyWith([
+      choice(''),
+      { question_text: 'Pick some', question_type: 'multi_answer', options: ['A', 'B', 'C'], correct_answer: '[0]' },
+      { question_text: 'Any comment?', question_type: 'free_text', options: [], correct_answer: 'leftover' },
+    ])
+    expect(wrapper.text()).not.toContain('Mark at least one correct option.')
+    expect(wrapper.find('.field-error').exists()).toBe(false)
+    expect(saveButton(wrapper).attributes('disabled')).toBeUndefined()
+
+    await saveButton(wrapper).trigger('click')
+    const saved = wrapper.emitted('save')?.[0]?.[0] as any
+    expect(saved.questions.map((q: any) => q.correct_answer)).toEqual(['', '', ''])
+  })
+
+  it('still refuses a choice question with a single option', async () => {
+    const wrapper = await mountSurveyWith([
+      { question_text: 'How was it?', question_type: 'multiple_choice', options: ['Only'], correct_answer: '' },
+    ])
+    expect(wrapper.find('.field-error').text()).toContain('A question needs at least 2 options.')
+    expect(wrapper.text()).not.toContain('Mark at least one correct option.')
+  })
+})

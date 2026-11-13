@@ -227,6 +227,13 @@ describe('useScenarioSession', () => {
       expect(c.resolvedStepType.value).toBe('quiz')
     })
 
+    it('maps step_type survey to survey', async () => {
+      mockGetCurrentStep.mockResolvedValue(makeStep({ step_type: 'survey' }))
+      const c = setupComposable()
+      await c.loadStepData()
+      expect(c.resolvedStepType.value).toBe('survey')
+    })
+
     it('falls back to flag when step_type is empty and has_flag is true', async () => {
       mockGetCurrentStep.mockResolvedValue(makeStep({ step_type: '', has_flag: true }))
       const c = setupComposable()

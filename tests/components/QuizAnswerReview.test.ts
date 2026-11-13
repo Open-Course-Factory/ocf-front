@@ -65,9 +65,9 @@ function makeStep(questions: any[], overrides: Record<string, any> = {}) {
   }
 }
 
-function mountReview(step: any) {
+function mountReview(step: any, extraProps: Record<string, any> = {}) {
   return mount(QuizAnswerReview, {
-    props: { step },
+    props: { step, ...extraProps },
     global: { plugins: [createTestI18n()] },
   })
 }
@@ -182,5 +182,61 @@ describe('QuizAnswerReview', () => {
     expect(items.length).toBe(2)
     expect(items[0].classes()).toContain('quiz-q-correct')
     expect(items[1].classes()).toContain('quiz-q-incorrect')
+  })
+  describe('survey prop (survey steps are never graded)', () => {
+    function surveyQuestion(overrides: Record<string, any> = {}) {
+      return makeQuestion({ correct_answer: '', is_correct: false, points: 0, ...overrides })
+    }
+    function mountSurvey(questions: any[]) {
+      return mountReview(
+        makeStep(questions, { step_type: 'survey', quiz_score: null }),
+        { survey: true },
+      )
+    }
+
+    it('shows the question, its options and the learner answer, with no correction at all', () => {
+      const wrapper = mountSurvey([
+        surveyQuestion({ id: 'a', student_answer: '2' }),
+        surveyQuestion({ id: 'b', question_type: 'free_text', options: '', question_text: 'Any comment?', student_answer: 'Loved it' }),
+      ])
+
+      expect(wrapper.text()).toContain('Pick the right one')
+      expect(wrapper.text()).toContain('Any comment?')
+      const options = wrapper.findAll('.quiz-question-option')
+      expect(options.map(o => o.text())).toEqual(['Alpha', 'Beta', 'Gamma'])
+      expect(wrapper.text()).toContain('Gamma')
+      expect(wrapper.text()).toContain('Loved it')
+
+      // No score summary, no correct/incorrect marks anywhere.
+      expect(wrapper.find('.quiz-questions-summary').exists()).toBe(false)
+      expect(wrapper.find('.quiz-question-indicator').exists()).toBe(false)
+      expect(wrapper.find('.quiz-option-tag').exists()).toBe(false)
+      expect(wrapper.find('.quiz-q-correct').exists()).toBe(false)
+      expect(wrapper.find('.quiz-q-incorrect').exists()).toBe(false)
+      expect(wrapper.find('.option-correct').exists()).toBe(false)
+      expect(wrapper.find('.option-student-wrong').exists()).toBe(false)
+      expect(wrapper.find('.option-student-correct').exists()).toBe(false)
+      expect(wrapper.find('.quiz-answer-wrong').exists()).toBe(false)
+      expect(wrapper.find('.quiz-answer-correct').exists()).toBe(false)
+      expect(wrapper.text()).not.toContain('Correct answer')
+      expect(wrapper.text()).not.toContain('Incorrect')
+    })
+
+    it('shows "No answer" for an empty free_text answer and an empty multi_answer "[]"', () => {
+      const wrapper = mountSurvey([
+        surveyQuestion({ id: 'a', question_type: 'free_text', options: '', student_answer: '' }),
+        surveyQuestion({
+          id: 'b',
+          question_type: 'multi_answer',
+          options: JSON.stringify(['One', 'Two']),
+          student_answer: '[]',
+        }),
+      ])
+      const items = wrapper.findAll('.quiz-question-item')
+      expect(items.length).toBe(2)
+      expect(items[0].text()).toContain('No answer')
+      expect(items[1].text()).toContain('No answer')
+      expect(wrapper.text()).not.toContain('[]')
+    })
   })
 })
