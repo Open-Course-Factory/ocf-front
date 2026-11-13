@@ -22,7 +22,7 @@
 -->
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
 import { useGroupMembers, type GroupMember } from '../../composables/useGroupMembers'
@@ -61,8 +61,27 @@ const { t } = useTranslations({
       searchMembers: 'Search members...',
       userEmailPlaceholder: 'Their full email address',
       memberEmail: 'Email',
-      memberJoinedAt: 'Joined',
       noMembers: 'No members in this group',
+      noMatch: 'No member matches this search',
+      memberName: 'Name',
+      memberRole: 'Role',
+      trainers: 'Trainers',
+      participants: 'Participants',
+      memberCountOne: '1 member',
+      memberCountMany: '{count} members',
+      memberCountFiltered: '{shown} of {total} members',
+      sortAsc: 'Name A–Z',
+      sortDesc: 'Name Z–A',
+      sortAscHint: 'Sorted by name, A to Z. Click to sort Z to A.',
+      sortDescHint: 'Sorted by name, Z to A. Click to sort A to Z.',
+      joinedOn: 'Joined on {date}',
+      selectMember: 'Select {name}',
+      selectionHint: 'Tick participants to regenerate their passwords.',
+      selectedCount: '{count} selected',
+      clearSelection: 'Clear selection',
+      removeMemberLabel: 'Remove {name} from the class',
+      removeMemberTitle: 'Remove a member',
+      removeMemberConfirm: '{name} will no longer be a member of {groupName}.',
 
       // Roles
       roleOwner: 'Owner',
@@ -75,7 +94,6 @@ const { t } = useTranslations({
       removeMember: 'Remove',
       startScenarioForClass: 'Start a scenario for the class',
       startScenarioForClassHint: 'Open the Scenarios tab, where an assigned scenario can be started for every member at once',
-      mainGroup: 'Main Group',
 
       // Modal
       addMemberTitle: 'Add Member to {groupName}',
@@ -86,10 +104,8 @@ const { t } = useTranslations({
       cancel: 'Cancel',
 
       // Password Regeneration
-      selectAll: 'Select All',
-      deselectAll: 'Deselect All',
+      selectAll: 'Select all participants',
       regeneratePasswords: 'Regenerate Passwords',
-      regeneratePasswordsCount: 'Regenerate Passwords ({count})',
       regeneratePasswordsConfirm: 'Are you sure you want to regenerate passwords for {count} member(s)? This will invalidate their current passwords.',
       regeneratePasswordsError: 'Failed to regenerate passwords',
       credentialsTitle: 'New Credentials',
@@ -111,8 +127,27 @@ const { t } = useTranslations({
       searchMembers: 'Rechercher des membres...',
       userEmailPlaceholder: 'Son adresse email complète',
       memberEmail: 'Email',
-      memberJoinedAt: 'Rejoint le',
       noMembers: 'Aucun membre dans ce groupe',
+      noMatch: 'Aucun membre ne correspond à cette recherche',
+      memberName: 'Nom',
+      memberRole: 'Rôle',
+      trainers: 'Formateurs',
+      participants: 'Participants',
+      memberCountOne: '1 membre',
+      memberCountMany: '{count} membres',
+      memberCountFiltered: '{shown} sur {total} membres',
+      sortAsc: 'Nom A–Z',
+      sortDesc: 'Nom Z–A',
+      sortAscHint: 'Trié par nom, de A à Z. Cliquez pour trier de Z à A.',
+      sortDescHint: 'Trié par nom, de Z à A. Cliquez pour trier de A à Z.',
+      joinedOn: 'Rejoint le {date}',
+      selectMember: 'Sélectionner {name}',
+      selectionHint: 'Cochez des participants pour régénérer leurs mots de passe.',
+      selectedCount: '{count} sélectionné(s)',
+      clearSelection: 'Désélectionner',
+      removeMemberLabel: 'Retirer {name} de la classe',
+      removeMemberTitle: 'Retirer un membre',
+      removeMemberConfirm: '{name} ne fera plus partie de {groupName}.',
 
       // Roles
       roleOwner: 'Propriétaire',
@@ -125,7 +160,6 @@ const { t } = useTranslations({
       removeMember: 'Retirer',
       startScenarioForClass: 'Lancer un scénario pour la classe',
       startScenarioForClassHint: 'Ouvre l\'onglet Scénarios, d\'où un scénario assigné peut être lancé pour tous les membres en une fois',
-      mainGroup: 'Groupe Principal',
 
       // Modal
       addMemberTitle: 'Ajouter un membre à {groupName}',
@@ -136,10 +170,8 @@ const { t } = useTranslations({
       cancel: 'Annuler',
 
       // Password Regeneration
-      selectAll: 'Tout sélectionner',
-      deselectAll: 'Tout désélectionner',
+      selectAll: 'Sélectionner tous les participants',
       regeneratePasswords: 'Régénérer les mots de passe',
-      regeneratePasswordsCount: 'Régénérer les mots de passe ({count})',
       regeneratePasswordsConfirm: 'Êtes-vous sûr de vouloir régénérer les mots de passe de {count} membre(s) ? Cela invalidera leurs mots de passe actuels.',
       regeneratePasswordsError: 'Échec de la régénération des mots de passe',
       credentialsTitle: 'Nouveaux identifiants',
@@ -167,7 +199,6 @@ const groupMembersComposable = useGroupMembers({
 })
 
 // Load members on mount
-import { onMounted } from 'vue'
 onMounted(async () => {
   await groupMembersComposable.loadMembers(true, props.subgroups)
 })
@@ -186,12 +217,54 @@ const userSearchResults = ref<User[]>([])
 const isSearchingUsers = ref(false)
 const showUserSearchDropdown = ref(false)
 
-// Selectable members (exclude owner)
-const selectableMembers = computed(() => {
-  return groupMembersComposable.sortedMembers.value.filter(
-    m => m.user_id !== props.group?.owner_user_id
-  )
+// Trainers (owners, managers) are pinned above the participants. Only
+// participants can be selected: a bulk password reset must never reach a
+// trainer's account.
+const trainers = computed(() =>
+  groupMembersComposable.sortedMembers.value.filter(m => m.role !== 'member')
+)
+const participants = computed(() =>
+  groupMembersComposable.sortedMembers.value.filter(m => m.role === 'member')
+)
+const selectableMembers = participants
+
+// A selection only holds rows the trainer can see: when the search hides a
+// row, it leaves the selection, so the bulk bar's count is the true count.
+// Sorting does not touch it.
+// Watches the ids, not the array: a removal splices the roster in place.
+watch(() => groupMembersComposable.filteredMembers.value.map(m => m.user_id), (ids) => {
+  const visibleIds = new Set(ids)
+  const kept = [...selectedMemberIds.value].filter(id => visibleIds.has(id))
+  if (kept.length !== selectedMemberIds.value.size) {
+    selectedMemberIds.value = new Set(kept)
+  }
 })
+
+const memberCountLabel = computed(() => {
+  const total = groupMembersComposable.members.value.length
+  const shown = groupMembersComposable.filteredMembers.value.length
+  if (shown !== total) return t('groupMembers.memberCountFiltered', { shown, total })
+  return total === 1 ? t('groupMembers.memberCountOne') : t('groupMembers.memberCountMany', { count: total })
+})
+
+const sortAscending = computed(() => groupMembersComposable.nameSortDirection.value === 'asc')
+
+function toggleNameSort() {
+  groupMembersComposable.nameSortDirection.value = sortAscending.value ? 'desc' : 'asc'
+}
+
+function memberName(member: GroupMember) {
+  return member.user?.display_name || member.user?.email || member.user_id
+}
+
+function roleLabel(role: GroupMember['role']) {
+  return t(`groupMembers.role${role.charAt(0).toUpperCase() + role.slice(1)}`)
+}
+
+const memberGroups = computed(() => [
+  { key: 'trainers', label: t('groupMembers.trainers'), members: trainers.value },
+  { key: 'participants', label: t('groupMembers.participants'), members: participants.value }
+].filter(g => g.members.length > 0))
 
 const allSelectableSelected = computed(() => {
   if (selectableMembers.value.length === 0) return false
@@ -335,9 +408,15 @@ function downloadCredentialsCsv() {
   URL.revokeObjectURL(url)
 }
 
-async function handleRemoveMember(member: GroupMember) {
-  await groupMembersComposable.removeMember(member)
-  emit('member-count-changed', -1)
+// Removing a member is one click away from every row: it asks first.
+const memberPendingRemoval = ref<GroupMember | null>(null)
+
+async function confirmRemoveMember() {
+  const member = memberPendingRemoval.value
+  if (!member) return
+  memberPendingRemoval.value = null
+  const removed = await groupMembersComposable.removeMember(member)
+  if (removed) emit('member-count-changed', -1)
 }
 </script>
 
@@ -350,24 +429,19 @@ async function handleRemoveMember(member: GroupMember) {
         :placeholder="t('groupMembers.searchMembers')"
         class="search-input"
       />
-      <label v-if="groupMembersComposable.canManageMembers.value && selectableMembers.length > 0" class="select-all-checkbox">
-        <input
-          type="checkbox"
-          :checked="allSelectableSelected"
-          @change="toggleSelectAll"
-        />
-        {{ allSelectableSelected ? t('groupMembers.deselectAll') : t('groupMembers.selectAll') }}
-      </label>
+      <button
+        type="button"
+        class="ocf-members-sort"
+        data-testid="members-sort"
+        :aria-label="sortAscending ? t('groupMembers.sortAscHint') : t('groupMembers.sortDescHint')"
+        :title="sortAscending ? t('groupMembers.sortAscHint') : t('groupMembers.sortDescHint')"
+        @click="toggleNameSort"
+      >
+        <i :class="['fas', sortAscending ? 'fa-arrow-down-a-z' : 'fa-arrow-down-z-a']" aria-hidden="true"></i>
+        {{ sortAscending ? t('groupMembers.sortAsc') : t('groupMembers.sortDesc') }}
+      </button>
+      <span class="ocf-members-count" aria-live="polite">{{ memberCountLabel }}</span>
       <div class="toolbar-actions">
-        <button
-          v-if="groupMembersComposable.canManageMembers.value && selectedCount > 0"
-          @click="handleRegeneratePasswords"
-          class="btn btn-warning"
-          :disabled="isRegenerating"
-        >
-          <i class="fas fa-key"></i>
-          {{ t('groupMembers.regeneratePasswordsCount', { count: selectedCount }) }}
-        </button>
         <!--
           Giving every member an environment happens on the Scenarios tab: a
           scenario is assigned to the group, then bulk-started for all members.
@@ -407,74 +481,134 @@ async function handleRemoveMember(member: GroupMember) {
       </div>
     </div>
 
-    <div v-if="groupMembersComposable.isLoading.value" class="loading-state">
+    <!-- Reserved slot: the bulk bar replaces the hint in place, the list never moves. -->
+    <div
+      v-if="groupMembersComposable.canManageMembers.value && selectableMembers.length > 0"
+      :class="['ocf-members-bulk', { 'ocf-members-bulk--active': selectedCount > 0 }]"
+      data-testid="members-bulk-bar"
+    >
+      <template v-if="selectedCount > 0">
+        <span class="ocf-members-bulk__count">{{ t('groupMembers.selectedCount', { count: selectedCount }) }}</span>
+        <button
+          type="button"
+          class="btn btn-sm btn-warning"
+          :disabled="isRegenerating"
+          data-testid="regenerate-passwords"
+          @click="handleRegeneratePasswords"
+        >
+          <i class="fas fa-key" aria-hidden="true"></i>
+          {{ t('groupMembers.regeneratePasswords') }}
+        </button>
+        <button type="button" class="ocf-members-bulk__clear" @click="selectedMemberIds = new Set()">
+          {{ t('groupMembers.clearSelection') }}
+        </button>
+      </template>
+      <span v-else class="ocf-members-bulk__hint">{{ t('groupMembers.selectionHint') }}</span>
+    </div>
+
+    <div v-if="groupMembersComposable.isLoading.value && groupMembersComposable.members.value.length === 0" class="loading-state">
       <i class="fas fa-spinner fa-spin"></i>
       <p>{{ t('groupMembers.loadingMembers') }}</p>
     </div>
 
     <div v-else-if="groupMembersComposable.sortedMembers.value.length === 0" class="empty-state">
       <i class="fas fa-users"></i>
-      <p>{{ t('groupMembers.noMembers') }}</p>
+      <p>{{ groupMembersComposable.members.value.length === 0 ? t('groupMembers.noMembers') : t('groupMembers.noMatch') }}</p>
     </div>
 
-    <div v-else class="members-list">
-      <div
-        v-for="member in groupMembersComposable.sortedMembers.value"
-        :key="member.id"
-        :class="['member-card', { 'member-selected': selectedMemberIds.has(member.user_id) }]"
-      >
-        <input
-          v-if="groupMembersComposable.canManageMembers.value && member.user_id !== group?.owner_user_id"
-          type="checkbox"
-          class="member-checkbox"
-          :checked="selectedMemberIds.has(member.user_id)"
-          @change="toggleMemberSelection(member.user_id)"
-        />
-        <div class="member-info">
-          <div class="member-avatar">
-            {{ (member.user?.display_name || member.user?.email || member.user_id).charAt(0).toUpperCase() }}
-          </div>
-          <div class="member-details">
-            <div class="member-name">{{ member.user?.display_name || member.user_id }}</div>
-            <div class="member-email" v-if="member.user?.email">{{ member.user.email }}</div>
-            <div class="member-meta">
-              <span :class="['role-badge', `role-${member.role}`]">
-                {{ t(`groupMembers.role${member.role.charAt(0).toUpperCase() + member.role.slice(1)}`) }}
-              </span>
-              <span v-if="member.source_group" class="source-group-badge">
-                <i class="fas fa-layer-group"></i>
-                {{ member.source_group.display_name }}
-              </span>
-              <span v-else class="source-group-badge main-group">
-                <i class="fas fa-star"></i>
-                {{ t('groupMembers.mainGroup') }}
-              </span>
-              <span v-if="member.joined_at" class="member-joined">
-                {{ t('groupMembers.memberJoinedAt') }}: {{ formatDate(member.joined_at) }}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div v-if="groupMembersComposable.canEditMember(member)" class="member-actions">
-          <select
-            v-model="member.role"
-            @change="groupMembersComposable.updateMemberRole(member)"
-            class="role-select"
-          >
-            <option v-if="isPlatformAdmin && !isOwner" value="owner">🛡️ {{ t('groupMembers.roleOwner') }}</option>
-            <option v-else-if="canNameOwner" value="owner">{{ t('groupMembers.roleOwner') }}</option>
-            <option value="manager">{{ t('groupMembers.roleManager') }}</option>
-            <option value="member">{{ t('groupMembers.roleMember') }}</option>
-          </select>
-          <button
-            v-if="groupMembersComposable.canRemoveMember(member)"
-            @click="handleRemoveMember(member)"
-            class="btn btn-sm btn-danger"
-          >
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
+    <div
+      v-else
+      :class="['ocf-members-table', { 'ocf-members-table--manage': groupMembersComposable.canManageMembers.value }]"
+      role="table"
+    >
+      <div class="ocf-members-head" role="row">
+        <span v-if="groupMembersComposable.canManageMembers.value" class="ocf-members-cell ocf-members-cell--check" role="columnheader">
+          <label v-if="selectableMembers.length > 0" class="select-all-checkbox" :title="t('groupMembers.selectAll')">
+            <input
+              type="checkbox"
+              :checked="allSelectableSelected"
+              :aria-label="t('groupMembers.selectAll')"
+              @change="toggleSelectAll"
+            />
+          </label>
+        </span>
+        <span class="ocf-members-cell ocf-members-cell--name" role="columnheader">{{ t('groupMembers.memberName') }}</span>
+        <span class="ocf-members-cell ocf-members-cell--email" role="columnheader">{{ t('groupMembers.memberEmail') }}</span>
+        <span class="ocf-members-cell ocf-members-cell--role" role="columnheader">{{ t('groupMembers.memberRole') }}</span>
+        <span v-if="groupMembersComposable.canManageMembers.value" class="ocf-members-cell ocf-members-cell--actions" role="columnheader"></span>
       </div>
+
+      <template v-for="memberGroup in memberGroups" :key="memberGroup.key">
+        <div class="ocf-members-group" role="row" :data-testid="`members-group-${memberGroup.key}`">
+          <span role="rowheader">
+            {{ memberGroup.label }}
+            <span class="ocf-members-group__count">{{ memberGroup.members.length }}</span>
+          </span>
+        </div>
+        <div
+          v-for="member in memberGroup.members"
+          :key="member.id"
+          :class="['ocf-member-row', { 'ocf-member-row--selected': selectedMemberIds.has(member.user_id) }]"
+          role="row"
+          data-testid="member-row"
+        >
+          <span v-if="groupMembersComposable.canManageMembers.value" class="ocf-members-cell ocf-members-cell--check" role="cell">
+            <input
+              v-if="member.role === 'member'"
+              type="checkbox"
+              class="member-checkbox"
+              :checked="selectedMemberIds.has(member.user_id)"
+              :aria-label="t('groupMembers.selectMember', { name: memberName(member) })"
+              @change="toggleMemberSelection(member.user_id)"
+            />
+          </span>
+          <span
+            class="ocf-members-cell ocf-members-cell--name ocf-member-row__name"
+            role="cell"
+            :title="member.joined_at ? t('groupMembers.joinedOn', { date: formatDate(member.joined_at) }) : undefined"
+          >
+            <span class="ocf-member-row__label">{{ memberName(member) }}</span>
+            <span v-if="member.source_group" class="ocf-member-row__source">
+              <i class="fas fa-layer-group" aria-hidden="true"></i>
+              {{ member.source_group.display_name }}
+            </span>
+          </span>
+          <span class="ocf-members-cell ocf-members-cell--email ocf-member-row__email" role="cell">
+            {{ member.user?.display_name ? member.user?.email : '' }}
+          </span>
+          <span class="ocf-members-cell ocf-members-cell--role ocf-member-row__role" role="cell">
+            <select
+              v-if="groupMembersComposable.canEditMember(member)"
+              v-model="member.role"
+              class="role-select"
+              :aria-label="t('groupMembers.memberRole')"
+              @change="groupMembersComposable.updateMemberRole(member)"
+            >
+              <option v-if="isPlatformAdmin && !isOwner" value="owner">🛡️ {{ t('groupMembers.roleOwner') }}</option>
+              <option v-else-if="canNameOwner" value="owner">{{ t('groupMembers.roleOwner') }}</option>
+              <option value="manager">{{ t('groupMembers.roleManager') }}</option>
+              <option value="member">{{ t('groupMembers.roleMember') }}</option>
+            </select>
+            <span v-else-if="member.role !== 'member'" :class="['ocf-member-row__role-text', `ocf-member-row__role-text--${member.role}`]">
+              {{ roleLabel(member.role) }}
+            </span>
+          </span>
+          <span v-if="groupMembersComposable.canManageMembers.value" class="ocf-members-cell ocf-members-cell--actions" role="cell">
+            <span v-if="groupMembersComposable.canRemoveMember(member)" class="member-actions">
+              <button
+                type="button"
+                class="ocf-member-remove"
+                data-testid="member-remove"
+                :aria-label="t('groupMembers.removeMemberLabel', { name: memberName(member) })"
+                :title="t('groupMembers.removeMemberLabel', { name: memberName(member) })"
+                @click="memberPendingRemoval = member"
+              >
+                <i class="fas fa-user-minus" aria-hidden="true"></i>
+              </button>
+            </span>
+          </span>
+        </div>
+      </template>
     </div>
 
     <!-- Add Member Modal -->
@@ -580,6 +714,26 @@ async function handleRemoveMember(member: GroupMember) {
         </button>
       </template>
     </BaseModal>
+
+    <!-- Remove Member Confirmation -->
+    <BaseModal
+      :visible="!!memberPendingRemoval"
+      :title="t('groupMembers.removeMemberTitle')"
+      size="small"
+      @close="memberPendingRemoval = null"
+    >
+      <p v-if="memberPendingRemoval" class="ocf-remove-confirm">
+        {{ t('groupMembers.removeMemberConfirm', { name: memberName(memberPendingRemoval), groupName: group?.display_name }) }}
+      </p>
+      <template #footer>
+        <button type="button" class="btn btn-danger" data-testid="member-remove-confirm" @click="confirmRemoveMember">
+          {{ t('groupMembers.removeMember') }}
+        </button>
+        <button type="button" class="btn btn-secondary" @click="memberPendingRemoval = null">
+          {{ t('groupMembers.cancel') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -587,17 +741,22 @@ async function handleRemoveMember(member: GroupMember) {
 /* Members Tab */
 .members-toolbar {
   display: flex;
+  align-items: center;
   gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
 }
 
 .toolbar-actions {
   display: flex;
+  align-items: center;
   gap: var(--spacing-sm);
+  margin-left: auto;
 }
 
 .search-input {
   flex: 1;
+  min-width: 10rem;
+  max-width: 24rem;
   padding: var(--spacing-sm) var(--spacing-md);
   border: 1px solid var(--color-border-medium);
   border-radius: var(--border-radius-md);
@@ -632,147 +791,279 @@ async function handleRemoveMember(member: GroupMember) {
   margin-bottom: var(--spacing-md);
 }
 
-.members-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.member-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-md);
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--border-radius-md);
+/* Member table: one grid shared by the header, the group captions and every
+   row, so each column lines up whatever a row holds. A row without a checkbox
+   or an action keeps an empty cell, never a missing one. */
+.ocf-members-table {
+  --ocf-members-cols: minmax(10rem, 1.1fr) minmax(12rem, 1.4fr) 9.5rem;
   border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  background-color: var(--color-bg-primary);
+  overflow: hidden;
 }
 
-.member-info {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
+.ocf-members-table--manage {
+  --ocf-members-cols: 2.25rem minmax(10rem, 1.1fr) minmax(12rem, 1.4fr) 9.5rem 2.5rem;
 }
 
-.member-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--border-radius-full);
-  background-color: var(--color-primary);
-  color: var(--color-white);
-  display: flex;
+.ocf-members-head,
+.ocf-member-row {
+  display: grid;
+  grid-template-columns: var(--ocf-members-cols);
   align-items: center;
-  justify-content: center;
+  column-gap: var(--spacing-sm);
+  padding: 0 var(--spacing-md);
+}
+
+.ocf-members-head {
+  min-height: 2.25rem;
+  background-color: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border-light);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
 }
 
-.member-details {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.member-name {
-  font-weight: var(--font-weight-medium);
+.ocf-members-group {
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
-  font-size: var(--font-size-md);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
-.member-email {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+.ocf-members-group__count {
+  margin-left: var(--spacing-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
-.member-meta {
+.ocf-member-row {
+  min-height: 2.5rem;
+  border-bottom: 1px solid var(--color-border-light);
+  box-shadow: inset 3px 0 0 transparent;
+  transition: background-color var(--transition-fast);
+}
+
+.ocf-member-row:last-child {
+  border-bottom: none;
+}
+
+.ocf-member-row:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+.ocf-member-row--selected,
+.ocf-member-row--selected:hover {
+  background-color: var(--color-primary-bg);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.ocf-members-cell {
+  min-width: 0;
+}
+
+.ocf-members-cell--check {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
 }
 
-.role-badge {
-  padding: 2px 8px;
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
+.ocf-members-cell--check input,
+.select-all-checkbox {
+  cursor: pointer;
+  margin: 0;
 }
 
-.role-badge.role-owner {
-  background-color: var(--color-warning-gold);
-  color: var(--color-black);
+.select-all-checkbox {
+  display: flex;
 }
 
-.role-badge.role-manager {
-  background-color: var(--color-primary);
-  color: var(--color-white);
+/* With a pointer, the per-row remove action waits for its row. Touch screens
+   have no hover: there it stays visible. */
+@media (hover: hover) {
+  .ocf-member-remove {
+    opacity: 0;
+  }
+
+  .ocf-member-row:hover .ocf-member-remove,
+  .ocf-member-remove:focus-visible {
+    opacity: 1;
+  }
 }
 
-.role-badge.role-member {
-  background-color: var(--color-gray-400);
-  color: var(--color-white);
+.ocf-members-cell--actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
-.source-group-badge {
-  padding: 2px 8px;
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  background-color: var(--color-info-bg);
-  color: var(--color-info);
-  border: 1px solid var(--color-info);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.source-group-badge.main-group {
-  background-color: var(--color-success-bg);
-  color: var(--color-success);
-  border-color: var(--color-success);
-}
-
-.source-group-badge i {
-  font-size: 10px;
-}
-
-.member-actions {
+.ocf-member-row__name {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
 }
 
-.role-select {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: 1px solid var(--color-border-medium);
+.ocf-member-row__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.ocf-member-row__source {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
   border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  background-color: var(--color-info-bg);
+  color: var(--color-info-text);
+}
+
+.ocf-member-row__email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Same box as the role select, so a role read and a role edited line up. */
+.ocf-member-row__role-text {
+  display: inline-block;
+  padding: 2px var(--spacing-sm);
+  border: 1px solid transparent;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.ocf-member-row__role-text--owner {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+/* Role saves on change: quiet until the pointer or focus reaches it. */
+.role-select {
+  width: 100%;
+  padding: 2px var(--spacing-sm);
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-sm);
+  background-color: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.role-select:hover,
+.role-select:focus {
+  appearance: auto;
+  border-color: var(--color-border-medium);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
 }
 
-/* Password Regeneration */
-.select-all-checkbox {
+.ocf-member-remove {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.ocf-member-remove:hover,
+.ocf-member-remove:focus-visible {
+  color: var(--color-danger);
+  background-color: var(--color-danger-bg);
+}
+
+.ocf-member-remove:focus-visible,
+.ocf-members-sort:focus-visible,
+.ocf-members-bulk__clear:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* Toolbar: sort + count */
+.ocf-members-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--border-radius-md);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ocf-members-sort:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+.ocf-members-count {
+  align-self: center;
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Bulk bar: a fixed-height slot, always there, so selecting never moves the list. */
+.ocf-members-bulk {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
+  gap: var(--spacing-md);
+  min-height: 2.75rem;
+  margin-bottom: var(--spacing-sm);
+  padding: 0 var(--spacing-md);
+  border: 1px dashed var(--color-border-light);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
 }
 
-.select-all-checkbox input[type="checkbox"] {
+.ocf-members-bulk--active {
+  border: 1px solid var(--color-primary-border);
+  background-color: var(--color-primary-bg);
+}
+
+.ocf-members-bulk__hint {
+  color: var(--color-text-muted);
+}
+
+.ocf-members-bulk__count {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.ocf-members-bulk__clear {
+  margin-left: auto;
+  border: none;
+  background: none;
+  padding: var(--spacing-xs);
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
   cursor: pointer;
 }
 
-.member-checkbox {
-  cursor: pointer;
-  margin-right: 0.75rem;
-  flex-shrink: 0;
+.ocf-members-bulk__clear:hover {
+  text-decoration: underline;
 }
 
-.member-card.member-selected {
-  background: var(--color-primary-light, rgba(var(--color-primary-rgb, 59, 130, 246), 0.08));
-  border-color: var(--color-primary);
+.ocf-remove-confirm {
+  margin: 0;
+  color: var(--color-text-primary);
 }
 
 .btn-warning {
@@ -948,21 +1239,73 @@ async function handleRemoveMember(member: GroupMember) {
   border: 1px solid var(--color-danger-border);
 }
 
-/* Responsive */
+/* Responsive: the email folds under the name, the column header keeps only
+   the select-all box. */
 @media (max-width: 768px) {
   .members-toolbar {
-    flex-direction: column;
+    flex-wrap: wrap;
   }
 
-  .member-card {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-md);
+  .search-input {
+    flex-basis: 100%;
+    max-width: none;
   }
 
-  .member-actions {
-    width: 100%;
-    justify-content: flex-end;
+  .toolbar-actions {
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    margin-left: 0;
+  }
+
+  /* The bar takes two lines on a phone (count and clear, then the action);
+     the slot reserves both in every state so selecting never moves the list. */
+  .ocf-members-bulk {
+    flex-wrap: wrap;
+    align-content: center;
+    row-gap: var(--spacing-xs);
+    min-height: 5.25rem;
+  }
+
+  .ocf-members-bulk .btn-warning {
+    order: 3;
+    white-space: nowrap;
+  }
+
+  /* Fixed areas: name over email, role and actions to the right. */
+  .ocf-members-head,
+  .ocf-member-row {
+    grid-template-columns: minmax(0, 1fr) 7.5rem;
+    grid-template-areas: "name role" "email role";
+    padding-top: var(--spacing-xs);
+    padding-bottom: var(--spacing-xs);
+  }
+
+  .ocf-members-table--manage .ocf-members-head,
+  .ocf-members-table--manage .ocf-member-row {
+    grid-template-columns: 2rem minmax(0, 1fr) 7.5rem 2.25rem;
+    grid-template-areas: "check name role actions" "check email role actions";
+  }
+
+  .ocf-members-cell--check { grid-area: check; }
+  .ocf-members-cell--name { grid-area: name; }
+  .ocf-members-cell--email { grid-area: email; }
+  .ocf-members-cell--role { grid-area: role; }
+  .ocf-members-cell--actions { grid-area: actions; }
+
+  .ocf-members-head {
+    grid-template-areas: "name role";
+  }
+
+  .ocf-members-table--manage .ocf-members-head {
+    grid-template-areas: "check name role actions";
+  }
+
+  .ocf-members-head .ocf-members-cell--email {
+    display: none;
+  }
+
+  .ocf-member-row__email {
+    font-size: var(--font-size-xs);
   }
 }
 </style>
