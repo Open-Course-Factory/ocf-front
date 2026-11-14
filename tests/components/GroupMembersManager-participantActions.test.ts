@@ -272,7 +272,8 @@ describe('GroupMembersManager — participant actions', () => {
 
     expect(axios.put).toHaveBeenCalledWith(
       `/class-groups/${GROUP_ID}/participants/u-karim/session-block`,
-      { blocked: true, reason: 'Exam in progress', stop_running: true }
+      { blocked: true, reason: 'Exam in progress', stop_running: true },
+      expect.objectContaining({ timeout: 120000 })
     )
   })
 
