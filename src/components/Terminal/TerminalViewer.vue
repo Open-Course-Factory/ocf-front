@@ -67,6 +67,7 @@
         :session-id="sessionInfo?.session_id"
         :is-active="isConnected"
         :has-network="hasNetwork"
+        :network-cut="sessionInfo?.network_disabled === true"
         />
 
       <RecordingIndicator :isRecording="isRecording" />
@@ -168,6 +169,7 @@
           :session-id="sessionInfo?.session_id"
           :is-active="isConnected"
           :has-network="hasNetwork"
+          :network-cut="sessionInfo?.network_disabled === true"
           />
         <RecordingIndicator :isRecording="isRecording" />
         <SessionCountdown
@@ -293,6 +295,8 @@ interface SessionInfo {
   // JSON string of enabled features (e.g. `{"network":true}`). Drives the
   // internet-access indicator via sessionHasNetwork().
   composed_features?: string
+  // A trainer cut the session's internet (#384).
+  network_disabled?: boolean
 }
 
 interface Props {

@@ -38,7 +38,7 @@
       type="button"
       class="ports-chip"
       :class="{ 'ports-chip-active': exposedPorts.length > 0, 'ports-chip-off': !hasNetwork }"
-      :title="hasNetwork ? t('exposedPorts.chipTitle') : t('exposedPorts.needsNetwork')"
+      :title="hasNetwork ? t('exposedPorts.chipTitle') : noNetworkText"
       :aria-expanded="open"
       data-testid="exposed-ports-chip"
       @click.stop="toggle"
@@ -55,7 +55,7 @@
       </div>
 
       <p v-if="!hasNetwork" class="ports-locked">
-        <i class="fas fa-lock"></i> {{ t('exposedPorts.needsNetwork') }}
+        <i class="fas fa-lock"></i> {{ noNetworkText }}
       </p>
 
       <form v-else class="ports-form" @submit.prevent="createExposure">
@@ -121,7 +121,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import Button from '../UI/Button.vue'
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import type { ExposedPort } from '../../types/terminal'
@@ -132,12 +132,15 @@ interface Props {
   sessionId?: string
   isActive?: boolean
   hasNetwork?: boolean
+  /** The session had internet and the training team cut it (#384). */
+  networkCut?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   sessionId: undefined,
   isActive: false,
-  hasNetwork: false
+  hasNetwork: false,
+  networkCut: false
 })
 
 const { t } = useTranslations({
@@ -149,6 +152,7 @@ const { t } = useTranslations({
       hint: 'A public URL to a port of this session, to look at your work — it dies after a short while or with the session.',
       expiresAt: 'Expires at {time}',
       needsNetwork: 'Start a session with internet access to expose a port.',
+      networkCut: 'The training team turned internet off for this session: no port can be exposed until it is back on.',
       portPlaceholder: 'Port (e.g. 8000)',
       forward: 'Expose',
       loading: 'Loading…',
@@ -173,6 +177,7 @@ const { t } = useTranslations({
       hint: 'Une URL publique vers un port de cette session, pour voir votre travail — elle meurt au bout d’un moment ou avec la session.',
       expiresAt: 'Expire à {time}',
       needsNetwork: 'Démarrez une session avec accès internet pour exposer un port.',
+      networkCut: 'L’équipe pédagogique a coupé internet pour cette session : aucun port ne peut être exposé avant son rétablissement.',
       portPlaceholder: 'Port (ex : 8000)',
       forward: 'Exposer',
       loading: 'Chargement…',
@@ -192,6 +197,11 @@ const { t } = useTranslations({
 })
 
 const { showSuccess, showError: showErrorNotification } = useNotification()
+
+// Why no port can be exposed: a cut by the training team, or a session started without internet.
+const noNetworkText = computed(() =>
+  props.networkCut ? t('exposedPorts.networkCut') : t('exposedPorts.needsNetwork')
+)
 
 const rootRef = ref<HTMLElement | null>(null)
 const open = ref(false)
