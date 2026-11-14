@@ -40,13 +40,13 @@ export function useParticipantControls(groupIdSource: MaybeRefOrGetter<string>) 
     en: {
       participantControls: {
         done: 'Done.',
-        partial: 'Done for some sessions only. Check the participant’s sessions.',
+        partial: 'Done for some sessions only. Check their sessions.',
         failed: 'The action failed. Please try again.',
         codes: {
           feature_not_in_session: 'This session was started without internet access.',
           session_not_running: 'The session is not running.',
           vm_not_supported: 'This action is not available on a virtual machine.',
-          network_renew_failed: 'Internet was restored but the session could not get a new address. Restart the session.',
+          network_renew_failed: 'Internet was restored but the session could not get a new address: ask the learner to restart it.',
           network_still_present: 'Internet could not be cut on this session.',
           state_not_recorded: 'The change was applied but could not be saved. Please try again.'
         }
@@ -55,13 +55,13 @@ export function useParticipantControls(groupIdSource: MaybeRefOrGetter<string>) 
     fr: {
       participantControls: {
         done: 'C’est fait.',
-        partial: 'Fait pour une partie des sessions seulement. Vérifiez les sessions du participant.',
+        partial: 'Fait pour une partie des sessions seulement. Vérifiez ses sessions.',
         failed: 'L’action a échoué. Veuillez réessayer.',
         codes: {
           feature_not_in_session: 'Cette session a été lancée sans accès à internet.',
           session_not_running: 'La session n’est pas en cours.',
           vm_not_supported: 'Cette action n’est pas disponible sur une machine virtuelle.',
-          network_renew_failed: 'Internet est rétabli, mais la session n’a pas obtenu de nouvelle adresse. Redémarrez la session.',
+          network_renew_failed: 'Internet est rétabli, mais la session n’a pas obtenu de nouvelle adresse : demandez à la personne en formation de redémarrer la session.',
           network_still_present: 'Internet n’a pas pu être coupé sur cette session.',
           state_not_recorded: 'Le changement est appliqué mais n’a pas pu être enregistré. Veuillez réessayer.'
         }
@@ -92,16 +92,18 @@ export function useParticipantControls(groupIdSource: MaybeRefOrGetter<string>) 
       : t('participantControls.failed')
   }
 
-  // A skipped session (nothing to do on it) counts as done. No results — a
-  // block — is a success.
+  // A skipped session (nothing to do on it) counts as done, and stays out of
+  // a partial result. No results — a block, a cut with no session — is a
+  // success.
   function report(response: ParticipantActionResponse | undefined) {
     const results = response?.results ?? []
-    if (results.every(r => r.ok)) {
+    const attempted = results.filter(r => !r.skipped)
+    if (attempted.every(r => r.ok)) {
       toast.success(t('participantControls.done'))
-    } else if (results.some(r => r.ok)) {
+    } else if (attempted.some(r => r.ok)) {
       toast.warning(t('participantControls.partial'))
     } else {
-      toast.error(messageForCode(results.find(r => r.code)?.code))
+      toast.error(messageForCode(attempted.find(r => r.code)?.code))
     }
   }
 
