@@ -267,3 +267,21 @@ describe('ClassLiveView — landing on the right view', () => {
     expect(wrapper.find('.ocf-prog-table').exists()).toBe(true)
   })
 })
+
+describe('ClassLiveView — a link to one learner’s screen (#384)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    getGroupLiveProgress.mockResolvedValue([learnerRow()])
+  })
+
+  // The members list's "Watch screen" links to `?view=wall&focus=<sessionId>`:
+  // the wall opens on that learner's tile, as the progression's eye button does.
+  it('opens the wall on the learner the link names', async () => {
+    const wrapper = await mountLiveView(createTestRouter(), '/class-groups/g-1?tab=live&view=wall&focus=sess-42')
+
+    const wall = wrapper.find('.wall-stub')
+    expect(wall.exists()).toBe(true)
+    expect(wall.attributes('data-focus')).toBe('sess-42')
+  })
+})

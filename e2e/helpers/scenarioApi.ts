@@ -363,3 +363,21 @@ export async function cleanupScenarioSession(session: ApiSession, scenarioId: st
     }
   }
 }
+
+/**
+ * Sets or lifts a learner's session block in a class (ocf-core #580) — teardown
+ * only, so a failed run never leaves the persona blocked. Never throws.
+ */
+export async function setClassSessionBlock(
+  session: ApiSession,
+  groupId: string,
+  userId: string,
+  body: { blocked: boolean; reason?: string; stop_running?: boolean }
+): Promise<void> {
+  await session.api
+    .put(`${API_BASE}/class-groups/${groupId}/participants/${userId}/session-block`, {
+      headers: authHeaders(session),
+      data: body,
+    })
+    .catch(() => {});
+}

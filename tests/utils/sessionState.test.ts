@@ -319,3 +319,13 @@ describe('sessionHasNetwork', () => {
     expect(sessionHasNetwork(undefined)).toBe(false)
   })
 })
+
+describe('sessionHasNetwork — internet cut by a trainer (#384)', () => {
+  it('reads false when the session has internet but a trainer cut it', () => {
+    expect(sessionHasNetwork({ composed_features: '{"network":true}', network_disabled: true })).toBe(false)
+  })
+
+  it('reads true when the cut is lifted', () => {
+    expect(sessionHasNetwork({ composed_features: '{"network":true}', network_disabled: false })).toBe(true)
+  })
+})
