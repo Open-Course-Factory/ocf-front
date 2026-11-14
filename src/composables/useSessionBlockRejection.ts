@@ -25,7 +25,7 @@ export function useSessionBlockRejection() {
   const { t } = useTranslations({
     en: {
       sessionBlock: {
-        group: 'Your trainer has blocked new sessions for you in this class.',
+        group: 'The training team has blocked new sessions for you in this class.',
         org: 'Your organisation has blocked new sessions for you.',
         global: 'The platform has blocked new sessions for your account.',
         reason: 'Reason: {reason}'
@@ -33,7 +33,7 @@ export function useSessionBlockRejection() {
     },
     fr: {
       sessionBlock: {
-        group: 'Votre formateur a bloqué le lancement de sessions pour vous dans cette classe.',
+        group: 'L’équipe pédagogique a bloqué le lancement de sessions pour vous dans cette classe.',
         org: 'Votre organisation a bloqué le lancement de sessions pour vous.',
         global: 'La plateforme a bloqué le lancement de sessions pour votre compte.',
         reason: 'Motif : {reason}'
