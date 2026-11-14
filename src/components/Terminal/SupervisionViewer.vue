@@ -40,6 +40,8 @@
       </div>
 
       <div class="supervision-viewer-status">
+        <!-- The host's status marks (non-interactive), ahead of the viewer's own. -->
+        <slot name="status" />
         <span
           v-if="hasControl"
           class="supervision-chip supervision-chip-danger"

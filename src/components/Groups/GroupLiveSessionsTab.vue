@@ -104,7 +104,8 @@
           :data-session-id="session.session_id"
           :class="{
             'live-sessions-tile-active': activeTiles.has(session.session_id),
-            'live-sessions-tile-dragging': draggingId === session.session_id
+            'live-sessions-tile-dragging': draggingId === session.session_id,
+            'live-sessions-tile--actions': !!viewer
           }"
           :title="t('liveSessions.reorderHint')"
           role="group"
@@ -127,15 +128,19 @@
             :learner-name="learnerLabel(session)"
             @expand="focusedSessionId = session.session_id"
             @activity="markActivity(session.session_id)"
-          />
-          <!-- A sibling of the viewer, laid over the tile's header: a click on
-               it never reaches the viewer's click-to-focus surface. -->
+          >
+            <template v-if="viewer" #status>
+              <ParticipantStatusChips icon-only :participant="participantControls.participantFor(session.user_id)" />
+            </template>
+          </SupervisionViewer>
+          <!-- A sibling of the viewer, pinned to the right end of its header
+               (reserved by --actions): a click on it never reaches the viewer's
+               click-to-focus surface, and it never spills over the terminal. -->
           <div
             v-if="viewer && participantControls.participantFor(session.user_id)"
             class="live-sessions-tile-actions"
             data-testid="tile-participant-actions"
           >
-            <ParticipantStatusChips icon-only :participant="participantControls.participantFor(session.user_id)" />
             <ParticipantActionsMenu
               v-bind="menuProps(session)"
               context="wall"
@@ -415,18 +420,23 @@ onUnmounted(() => {
   gap: var(--spacing-sm);
 }
 
-/* Laid over the right end of the tile's header (the compact viewer shows no
-   control there): no layout shift, and the tile keeps its click-to-focus. */
+/* With a viewer, the header keeps its right end for the ⋯ trigger (one
+   .btn-icon wide, plus a gap) and is at least one trigger tall. */
+.live-sessions-tile--actions :deep(.supervision-viewer-header) {
+  min-height: var(--spacing-xl);
+  padding-right: calc(var(--spacing-xl) + var(--spacing-sm));
+}
+
+/* Pinned to that reserved end of the header box, above its bottom border:
+   no layout shift, and the tile keeps its click-to-focus. */
 .live-sessions-tile-actions {
   position: absolute;
-  top: var(--spacing-xs);
-  right: var(--spacing-xs);
+  top: 0;
+  right: 0;
+  height: calc(var(--spacing-xl) - var(--border-width-thin));
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  padding: 0 var(--spacing-xs);
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--border-radius-sm);
+  padding-right: var(--spacing-xs);
   cursor: default;
 }
 
