@@ -68,9 +68,9 @@ const basicRoutes = [
     path: '/pricing',
     component: { render: () => null },
     meta: { requiresAuth: false },
+    // Let the navigation through so the app's first navigation still completes.
     beforeEnter: () => {
       window.location.replace(`${COMPANY.website}/tarifs`);
-      return false;
     }
   },
   {
