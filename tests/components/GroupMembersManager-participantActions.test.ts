@@ -75,14 +75,14 @@ const ROSTER = [
 ]
 
 const CONTROLS = [
-  { user_id: 'u-marc', user_name: 'Marc', role: 'owner', class_block: null, org_block: null, global_block: false, sessions: [] },
-  { user_id: 'u-sophie', user_name: 'Sophie', role: 'manager', class_block: null, org_block: null, global_block: false,
-    sessions: [{ session_id: 's-sophie', state: 'running', network_feature: true, network_disabled: false }] },
-  { user_id: 'u-karim', user_name: 'Karim', role: 'member', class_block: null, org_block: null, global_block: false,
-    sessions: [{ session_id: 's-karim', state: 'running', network_feature: true, network_disabled: true }] },
+  { user_id: 'u-marc', user_name: 'Marc', role: 'owner', class_block: null, org_blocked: false, global_block: false, network_cut: false, sessions: [] },
+  { user_id: 'u-sophie', user_name: 'Sophie', role: 'manager', class_block: null, org_blocked: false, global_block: false, network_cut: false,
+    sessions: [{ session_id: 's-sophie', state: 'running', network_feature: true, network_disabled: false, persistence_mode: 'persistent' }] },
+  { user_id: 'u-karim', user_name: 'Karim', role: 'member', class_block: null, org_blocked: false, global_block: false, network_cut: true,
+    sessions: [{ session_id: 's-karim', state: 'running', network_feature: true, network_disabled: true, persistence_mode: 'persistent' }] },
   { user_id: 'u-lea', user_name: 'Lea', role: 'member',
-    class_block: { reason: 'Exam', blocked_by: 'u-marc', created_at: '2026-11-14T10:00:00Z' },
-    org_block: null, global_block: false, sessions: [] }
+    class_block: { reason: 'Exam' },
+    org_blocked: false, global_block: false, network_cut: false, sessions: [] }
 ]
 
 function routeGets() {
@@ -135,7 +135,8 @@ async function mountList(props: Record<string, unknown> = {}) {
         BaseModal: {
           name: 'BaseModal',
           props: ['visible', 'title', 'size', 'isLoading', 'showDefaultFooter', 'confirmText', 'cancelText'],
-          template: '<div v-if="visible" class="base-modal-stub"><div class="base-modal-title">{{ title }}</div><slot /><div class="base-modal-footer"><slot name="footer" /></div></div>'
+          emits: ['close', 'confirm'],
+          template: '<div v-if="visible" class="base-modal-stub"><div class="base-modal-title">{{ title }}</div><slot /><div class="base-modal-footer"><slot name="footer"><button v-if="showDefaultFooter && confirmText" type="button" class="base-modal-confirm" @click="$emit(\'confirm\')">{{ confirmText }}</button><button v-if="showDefaultFooter && cancelText" type="button" class="base-modal-cancel" @click="$emit(\'close\')">{{ cancelText }}</button></slot></div></div>'
         },
         AdminBadge: { name: 'AdminBadge', template: '<span class="admin-badge-stub" />', props: ['iconOnly', 'tooltip'] }
       }
@@ -210,6 +211,38 @@ describe('GroupMembersManager — participant actions', () => {
     expect(leaName.querySelector('[data-testid="participant-chip-blocked-class"]')).not.toBeNull()
   })
 
+  it('reserves the chips slot in every name cell before the controls arrive, and keeps it after', async () => {
+    let release!: () => void
+    const controlsArrive = new Promise<void>(resolve => { release = resolve })
+    vi.mocked(axios.get).mockImplementation(async (url: string) => {
+      if (url === '/group-members') return { data: { data: ROSTER } }
+      if (url === CONTROLS_URL) {
+        await controlsArrive
+        return { data: CONTROLS }
+      }
+      return { data: {} }
+    })
+
+    const wrapper = await mountList()
+
+    for (const name of ['Marc', 'Sophie', 'Karim', 'Lea']) {
+      const cell = row(wrapper, name).find('.ocf-member-row__name').element.parentElement!
+      const slot = cell.querySelector('[data-testid="participant-chips-slot"]')
+      expect(slot, `${name}'s name cell reserves the chips slot before the read resolves`).not.toBeNull()
+      expect(slot!.querySelector('[data-testid^="participant-chip-"]')).toBeNull()
+    }
+    const karimSlotBefore = row(wrapper, 'Karim').find('[data-testid="participant-chips-slot"]').element
+    const classBefore = karimSlotBefore.className
+
+    release()
+    await flushPromises()
+
+    const karimSlot = row(wrapper, 'Karim').find('[data-testid="participant-chips-slot"]')
+    expect(karimSlot.exists()).toBe(true)
+    expect(karimSlot.element.className, 'same box, empty or filled').toBe(classBefore)
+    expect(karimSlot.find('[data-testid="participant-chip-internet-off"]').exists()).toBe(true)
+  })
+
   it('stops a participant’s session after a confirmation, then reads the list again', async () => {
     const wrapper = await mountList()
     const karim = await openRowMenu(wrapper, 'Karim')
@@ -218,7 +251,7 @@ describe('GroupMembersManager — participant actions', () => {
     await flushPromises()
     expect(axios.post).not.toHaveBeenCalled()
 
-    await wrapper.find('[data-testid="participant-confirm"]').trigger('click')
+    await wrapper.find('.base-modal-confirm').trigger('click')
     await flushPromises()
 
     expect(axios.post).toHaveBeenCalledTimes(1)
@@ -234,7 +267,7 @@ describe('GroupMembersManager — participant actions', () => {
     await karim.find('[data-testid="participant-action-block-class"]').trigger('click')
     await flushPromises()
     await wrapper.find('[data-testid="participant-block-reason"]').setValue('Exam in progress')
-    await wrapper.find('[data-testid="participant-confirm"]').trigger('click')
+    await wrapper.find('.base-modal-confirm').trigger('click')
     await flushPromises()
 
     expect(axios.put).toHaveBeenCalledWith(

@@ -30,6 +30,7 @@ type Session = {
   state: string
   network_feature: boolean
   network_disabled: boolean
+  persistence_mode: 'persistent' | 'ephemeral'
 }
 
 function participant(overrides: Record<string, unknown> = {}, sessions: Session[] = []) {
@@ -38,8 +39,9 @@ function participant(overrides: Record<string, unknown> = {}, sessions: Session[
     user_name: 'Karim',
     role: 'member',
     class_block: null,
-    org_block: null,
+    org_blocked: false,
     global_block: false,
+    network_cut: false,
     sessions,
     ...overrides
   }
@@ -50,6 +52,7 @@ const running = (overrides: Partial<Session> = {}): Session => ({
   state: 'running',
   network_feature: true,
   network_disabled: false,
+  persistence_mode: 'persistent',
   ...overrides
 })
 
@@ -79,11 +82,12 @@ function createTestRouter() {
   })
 }
 
+// Mirrors BaseModal: its default footer (confirm + cancel) unless a footer slot replaces it.
 const BaseModalStub = {
   name: 'BaseModal',
-  props: ['visible', 'title', 'size'],
-  emits: ['close'],
-  template: '<div v-if="visible" class="base-modal-stub"><div class="base-modal-title">{{ title }}</div><slot /><div class="base-modal-footer"><slot name="footer" /></div></div>'
+  props: ['visible', 'title', 'size', 'showDefaultFooter', 'confirmText', 'cancelText'],
+  emits: ['close', 'confirm'],
+  template: '<div v-if="visible" class="base-modal-stub"><div class="base-modal-title">{{ title }}</div><slot /><div class="base-modal-footer"><slot name="footer"><button v-if="showDefaultFooter && confirmText" type="button" class="base-modal-confirm" @click="$emit(\'confirm\')">{{ confirmText }}</button><button v-if="showDefaultFooter && cancelText" type="button" class="base-modal-cancel" @click="$emit(\'close\')">{{ cancelText }}</button></slot></div></div>'
 }
 
 const AdminBadgeStub = {
@@ -143,8 +147,8 @@ function modal(wrapper: VueWrapper) {
 }
 
 async function confirm(wrapper: VueWrapper) {
-  const button = wrapper.find('[data-testid="participant-confirm"]')
-  expect(button.exists(), 'the dialog has a confirm button').toBe(true)
+  const button = wrapper.find('.base-modal-confirm')
+  expect(button.exists(), 'the dialog confirms through BaseModal’s own footer').toBe(true)
   await button.trigger('click')
   await flushPromises()
 }
@@ -168,21 +172,47 @@ describe('ParticipantActionsMenu', () => {
       expect(offeredActions(wrapper)).toEqual(['cut-internet', 'stop', 'block-class'])
     })
 
-    it('offers restore, not cut, once internet is off', async () => {
-      const wrapper = await mountMenu({ participant: participant({}, [running({ network_disabled: true })]) })
+    it('offers restore, not cut, once the participant’s internet is cut', async () => {
+      const wrapper = await mountMenu({
+        participant: participant({ network_cut: true }, [running({ network_disabled: true })])
+      })
       await openMenu(wrapper)
 
       expect(item(wrapper, 'restore-internet').exists()).toBe(true)
       expect(item(wrapper, 'cut-internet').exists()).toBe(false)
     })
 
-    it('offers no internet item on a session without the internet feature', async () => {
+    it('offers both when one session is cut but the participant is not', async () => {
+      const wrapper = await mountMenu({ participant: participant({}, [running({ network_disabled: true })]) })
+      await openMenu(wrapper)
+
+      expect(item(wrapper, 'restore-internet').exists()).toBe(true)
+      expect(item(wrapper, 'cut-internet').exists()).toBe(true)
+    })
+
+    it('offers the cut on a session without the internet feature: it holds for their next sessions', async () => {
       const wrapper = await mountMenu({ participant: participant({}, [running({ network_feature: false })]) })
       await openMenu(wrapper)
 
-      expect(item(wrapper, 'cut-internet').exists()).toBe(false)
+      expect(item(wrapper, 'cut-internet').exists()).toBe(true)
       expect(item(wrapper, 'restore-internet').exists()).toBe(false)
       expect(item(wrapper, 'stop').exists()).toBe(true)
+    })
+
+    it('offers the cut to a participant with no session at all', async () => {
+      const wrapper = await mountMenu({ participant: participant({}, []) })
+      await clickItem(wrapper, 'cut-internet')
+      await confirm(wrapper)
+
+      expect(wrapper.emitted('set-network')).toEqual([['u-karim', false]])
+    })
+
+    it('offers restore to a participant cut with no session at all', async () => {
+      const wrapper = await mountMenu({ participant: participant({ network_cut: true }, []) })
+      await openMenu(wrapper)
+
+      expect(item(wrapper, 'restore-internet').exists()).toBe(true)
+      expect(item(wrapper, 'cut-internet').exists()).toBe(false)
     })
 
     it('offers internet but not stop on a stopped session', async () => {
@@ -197,14 +227,14 @@ describe('ParticipantActionsMenu', () => {
       const wrapper = await mountMenu({ participant: participant({}, [running({ state: 'deleted' })]) })
       await openMenu(wrapper)
 
-      expect(offeredActions(wrapper)).toEqual(['block-class'])
+      expect(offeredActions(wrapper)).toEqual(['cut-internet', 'block-class'])
       expect(item(wrapper, 'watch').exists()).toBe(false)
       expect(item(wrapper, 'open-session').exists()).toBe(false)
     })
 
     it('offers unblock, not block, when the participant is blocked in the class', async () => {
       const wrapper = await mountMenu({
-        participant: participant({ class_block: { reason: 'Exam', blocked_by: 'u-marc', created_at: '2026-11-14T10:00:00Z' } })
+        participant: participant({ class_block: { reason: 'Exam' } })
       })
       await openMenu(wrapper)
 
@@ -225,7 +255,7 @@ describe('ParticipantActionsMenu', () => {
     it('shows a class manager an organisation block read-only', async () => {
       const wrapper = await mountMenu({
         viewer: CLASS_MANAGER,
-        participant: participant({ org_block: { reason: 'Unpaid', blocked_by: 'u-nadia', created_at: '2026-11-14T10:00:00Z' } })
+        participant: participant({ org_blocked: true })
       })
       await openMenu(wrapper)
 
@@ -233,7 +263,22 @@ describe('ParticipantActionsMenu', () => {
       expect(readOnly.exists()).toBe(true)
       expect(readOnly.text()).toMatch(/organi[sz]ation/i)
       expect(readOnly.element.tagName).not.toBe('BUTTON')
+      expect(readOnly.attributes('title')).toBeUndefined()
       expect(item(wrapper, 'unblock-org').exists()).toBe(false)
+    })
+
+    it('shows a class manager no organisation note when the organisation has not blocked them', async () => {
+      const wrapper = await mountMenu({ viewer: CLASS_MANAGER, participant: participant({ org_blocked: false }, [running()]) })
+      await openMenu(wrapper)
+
+      expect(wrapper.find('[data-testid="participant-org-block-readonly"]').exists()).toBe(false)
+    })
+
+    it('lifts the organisation block from the flag alone', async () => {
+      const wrapper = await mountMenu({ viewer: ORG_MANAGER, participant: participant({ org_blocked: true }, [running()]) })
+      await clickItem(wrapper, 'unblock-org')
+
+      expect(wrapper.emitted('set-org-block')).toEqual([['u-karim', { blocked: false }]])
     })
 
     it('gives an organisation manager the organisation block, without the admin badge', async () => {
@@ -247,7 +292,7 @@ describe('ParticipantActionsMenu', () => {
     it('lets an organisation manager lift an organisation block', async () => {
       const wrapper = await mountMenu({
         viewer: ORG_MANAGER,
-        participant: participant({ org_block: { reason: 'Unpaid', blocked_by: 'u-nadia', created_at: '2026-11-14T10:00:00Z' } })
+        participant: participant({ org_blocked: true })
       })
       await openMenu(wrapper)
 
@@ -344,7 +389,7 @@ describe('ParticipantActionsMenu', () => {
       const wrapper = await mountMenu({})
       await clickItem(wrapper, 'stop')
 
-      await wrapper.find('[data-testid="participant-cancel"]').trigger('click')
+      await wrapper.find('.base-modal-cancel').trigger('click')
       await flushPromises()
 
       expect(wrapper.emitted('stop-sessions')).toBeUndefined()
@@ -362,8 +407,75 @@ describe('ParticipantActionsMenu', () => {
       expect(wrapper.emitted('set-network')).toEqual([['u-karim', false]])
     })
 
+    it('says the cut holds for their current and new sessions in the organisation, until restored', async () => {
+      const wrapper = await mountMenu({})
+      await clickItem(wrapper, 'cut-internet')
+      const text = modal(wrapper).text()
+
+      expect(text).toMatch(/current/i)
+      expect(text).toMatch(/new/i)
+      expect(text).toMatch(/organi[sz]ation/i)
+      expect(text).toMatch(/until/i)
+      expect(text).toMatch(/restore/i)
+      expect(text).toMatch(/port/i)
+    })
+
+    it('says the same in French', async () => {
+      const wrapper = await mountMenu({}, { locale: 'fr' })
+      await clickItem(wrapper, 'cut-internet')
+      const text = modal(wrapper).text()
+
+      expect(text).toMatch(/en cours/i)
+      expect(text).toMatch(/nouvelles/i)
+      expect(text).toMatch(/organisation/i)
+      expect(text).toMatch(/rétabli/i)
+      expect(text).toMatch(/port/i)
+    })
+
+    it('warns before stopping a temporary session that it is deleted and its work lost', async () => {
+      const wrapper = await mountMenu({ participant: participant({}, [running({ persistence_mode: 'ephemeral' })]) })
+      await clickItem(wrapper, 'stop')
+      const text = modal(wrapper).text()
+
+      expect(text).toMatch(/delet/i)
+      expect(text).toMatch(/lost/i)
+      expect(text).not.toMatch(/kept/i)
+    })
+
+    it('warns in French too', async () => {
+      const wrapper = await mountMenu(
+        { participant: participant({}, [running({ persistence_mode: 'ephemeral' })]) },
+        { locale: 'fr' }
+      )
+      await clickItem(wrapper, 'stop')
+      const text = modal(wrapper).text()
+
+      expect(text).toMatch(/supprim/i)
+      expect(text).toMatch(/perdu/i)
+    })
+
+    it('says the work is kept when every running session is persistent', async () => {
+      const wrapper = await mountMenu({
+        participant: participant({}, [running(), running({ session_id: 's-2' })])
+      })
+      await clickItem(wrapper, 'stop')
+      const text = modal(wrapper).text()
+
+      expect(text).toMatch(/kept/i)
+      expect(text).not.toMatch(/lost/i)
+    })
+
+    it('warns about the temporary one among persistent sessions', async () => {
+      const wrapper = await mountMenu({
+        participant: participant({}, [running(), running({ session_id: 's-tmp', persistence_mode: 'ephemeral' })])
+      })
+      await clickItem(wrapper, 'stop')
+
+      expect(modal(wrapper).text()).toMatch(/lost/i)
+    })
+
     it('restores internet straight away', async () => {
-      const wrapper = await mountMenu({ participant: participant({}, [running({ network_disabled: true })]) })
+      const wrapper = await mountMenu({ participant: participant({ network_cut: true }, [running({ network_disabled: true })]) })
       await clickItem(wrapper, 'restore-internet')
 
       expect(wrapper.emitted('set-network')).toEqual([['u-karim', true]])
@@ -371,7 +483,7 @@ describe('ParticipantActionsMenu', () => {
 
     it('unblocks straight away', async () => {
       const wrapper = await mountMenu({
-        participant: participant({ class_block: { reason: 'Exam', blocked_by: 'u-marc', created_at: '2026-11-14T10:00:00Z' } })
+        participant: participant({ class_block: { reason: 'Exam' } })
       })
       await clickItem(wrapper, 'unblock-class')
 
@@ -388,6 +500,35 @@ describe('ParticipantActionsMenu', () => {
       await clickItem(fr, 'stop')
 
       expect(modal(fr).text()).not.toBe(enText)
+    })
+  })
+
+  describe('the dialog footer', () => {
+    it.each([
+      ['stop', 'Stop'],
+      ['cut-internet', 'Cut internet'],
+      ['block-class', 'Block']
+    ])('uses BaseModal’s own footer for %s, no hand-rolled one', async (action, confirmText) => {
+      const wrapper = await mountMenu({})
+      await clickItem(wrapper, action)
+
+      const baseModal = wrapper.findComponent({ name: 'BaseModal' })
+      expect(baseModal.props('showDefaultFooter')).toBe(true)
+      expect(baseModal.props('confirmText')).toBe(confirmText)
+      expect(baseModal.props('cancelText')).toBe('Cancel')
+      const footerButtons = modal(wrapper).findAll('.base-modal-footer button')
+      expect(footerButtons.map(b => b.classes().find(c => c.startsWith('base-modal-')))).toEqual(['base-modal-confirm', 'base-modal-cancel'])
+    })
+
+    it('closes on BaseModal’s close (overlay, ✕) without emitting', async () => {
+      const wrapper = await mountMenu({})
+      await clickItem(wrapper, 'stop')
+
+      wrapper.findComponent({ name: 'BaseModal' }).vm.$emit('close')
+      await flushPromises()
+
+      expect(modal(wrapper).exists()).toBe(false)
+      expect(wrapper.emitted('stop-sessions')).toBeUndefined()
     })
   })
 
@@ -432,6 +573,34 @@ describe('ParticipantActionsMenu', () => {
       expect(wrapper.find('[data-testid="participant-block-reason-count"]').text()).toMatch(/10\s*\/\s*500/)
     })
 
+    it('warns that a temporary running session is lost while "also stop" is ticked', async () => {
+      const wrapper = await mountMenu({ participant: participant({}, [running({ persistence_mode: 'ephemeral' })]) })
+      await clickItem(wrapper, 'block-class')
+
+      expect(modal(wrapper).text()).toMatch(/lost/i)
+
+      await wrapper.find('[data-testid="participant-block-stop-running"]').setValue(false)
+      expect(modal(wrapper).text()).not.toMatch(/lost/i)
+    })
+
+    it('warns in French in the block dialog too', async () => {
+      const wrapper = await mountMenu(
+        { participant: participant({}, [running({ persistence_mode: 'ephemeral' })]) },
+        { locale: 'fr' }
+      )
+      await clickItem(wrapper, 'block-class')
+
+      expect(modal(wrapper).text()).toMatch(/perdu/i)
+    })
+
+    it('says the work is kept in the block dialog when the running sessions are persistent', async () => {
+      const wrapper = await mountMenu({})
+      await clickItem(wrapper, 'block-class')
+
+      expect(modal(wrapper).text()).toMatch(/kept/i)
+      expect(modal(wrapper).text()).not.toMatch(/lost/i)
+    })
+
     it('blocks in the organisation through the same dialog', async () => {
       const wrapper = await mountMenu({ viewer: ORG_MANAGER })
       await clickItem(wrapper, 'block-org')
@@ -443,6 +612,29 @@ describe('ParticipantActionsMenu', () => {
         ['u-karim', { blocked: true, reason: 'Unpaid', stop_running: true }]
       ])
       expect(wrapper.emitted('set-class-block')).toBeUndefined()
+    })
+  })
+
+  describe('neutral French', () => {
+    const GENDERED = /Bloqué |débloqué|Votre formateur/
+
+    it('words the dialogs without gendered forms', async () => {
+      for (const action of ['stop', 'cut-internet', 'block-class', 'block-org']) {
+        const wrapper = await mountMenu({ viewer: ORG_MANAGER }, { locale: 'fr' })
+        await clickItem(wrapper, action)
+        expect(modal(wrapper).text(), `${action} dialog`).not.toMatch(GENDERED)
+        wrapper.unmount()
+      }
+    })
+
+    it('words the read-only organisation note without gendered forms', async () => {
+      const wrapper = await mountMenu(
+        { viewer: CLASS_MANAGER, participant: participant({ org_blocked: true }, [running()]) },
+        { locale: 'fr' }
+      )
+      await openMenu(wrapper)
+
+      expect(wrapper.find('[data-testid="participant-org-block-readonly"]').text()).not.toMatch(GENDERED)
     })
   })
 

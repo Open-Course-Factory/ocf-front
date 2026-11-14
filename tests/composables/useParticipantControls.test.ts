@@ -46,6 +46,8 @@ import { useParticipantControls } from '../../src/composables/useParticipantCont
 const GROUP_ID = 'grp-1'
 const ORG_ID = 'org-1'
 const KARIM = 'u-karim'
+/** Each action can take ~25 s per session server-side: the calls wait 2 minutes. */
+const LONG_TIMEOUT = expect.objectContaining({ timeout: 120000 })
 
 const ROWS = [
   {
@@ -53,19 +55,21 @@ const ROWS = [
     user_name: 'Karim',
     role: 'member',
     class_block: null,
-    org_block: null,
+    org_blocked: false,
     global_block: false,
+    network_cut: false,
     sessions: [
-      { session_id: 's-1', state: 'running', network_feature: true, network_disabled: false }
+      { session_id: 's-1', state: 'running', network_feature: true, network_disabled: false, persistence_mode: 'persistent' }
     ]
   },
   {
     user_id: 'u-lea',
     user_name: 'Lea',
     role: 'member',
-    class_block: { reason: 'Exam', blocked_by: 'u-marc', created_at: '2026-11-14T10:00:00Z' },
-    org_block: null,
+    class_block: { reason: 'Exam' },
+    org_blocked: false,
     global_block: false,
+    network_cut: true,
     sessions: []
   }
 ]
@@ -159,7 +163,8 @@ describe('useParticipantControls', () => {
 
       expect(axiosPost).toHaveBeenCalledWith(
         `/class-groups/${GROUP_ID}/participants/${KARIM}/stop-sessions`,
-        { session_ids: ['s-1'] }
+        { session_ids: ['s-1'] },
+        LONG_TIMEOUT
       )
     })
 
@@ -172,12 +177,14 @@ describe('useParticipantControls', () => {
       expect(axiosPut).toHaveBeenNthCalledWith(
         1,
         `/class-groups/${GROUP_ID}/participants/${KARIM}/network`,
-        { enabled: false }
+        { enabled: false },
+        LONG_TIMEOUT
       )
       expect(axiosPut).toHaveBeenNthCalledWith(
         2,
         `/class-groups/${GROUP_ID}/participants/${KARIM}/network`,
-        { enabled: true, session_ids: ['s-1'] }
+        { enabled: true, session_ids: ['s-1'] },
+        LONG_TIMEOUT
       )
     })
 
@@ -189,7 +196,8 @@ describe('useParticipantControls', () => {
 
       expect(axiosPut).toHaveBeenCalledWith(
         `/class-groups/${GROUP_ID}/participants/${KARIM}/session-block`,
-        { blocked: true, reason: 'Exam in progress', stop_running: true }
+        { blocked: true, reason: 'Exam in progress', stop_running: true },
+        LONG_TIMEOUT
       )
     })
 
@@ -201,7 +209,8 @@ describe('useParticipantControls', () => {
 
       expect(axiosPut).toHaveBeenCalledWith(
         `/class-groups/${GROUP_ID}/participants/${KARIM}/session-block`,
-        { blocked: false }
+        { blocked: false },
+        LONG_TIMEOUT
       )
     })
 
@@ -213,8 +222,63 @@ describe('useParticipantControls', () => {
 
       expect(axiosPut).toHaveBeenCalledWith(
         `/organizations/${ORG_ID}/members/${KARIM}/session-block`,
-        { blocked: true, reason: 'Unpaid', stop_running: false }
+        { blocked: true, reason: 'Unpaid', stop_running: false },
+        LONG_TIMEOUT
       )
+    })
+  })
+
+  describe('the actions wait for slow sessions', () => {
+    it('gives the stop two minutes', async () => {
+      const controls = setup()
+
+      await controls.stopSessions(KARIM)
+
+      expect(axiosPost.mock.calls[0][2]).toEqual(LONG_TIMEOUT)
+    })
+
+    it('gives the internet cut two minutes', async () => {
+      const controls = setup()
+
+      await controls.setNetwork(KARIM, false)
+
+      expect(axiosPut.mock.calls[0][2]).toEqual(LONG_TIMEOUT)
+    })
+
+    it('gives both blocks two minutes', async () => {
+      axiosPut.mockResolvedValue({ data: {} })
+      const controls = setup()
+
+      await controls.setClassBlock(KARIM, { blocked: true, stop_running: true })
+      await controls.setOrgBlock(ORG_ID, KARIM, { blocked: true, stop_running: true })
+
+      expect(axiosPut.mock.calls[0][2]).toEqual(LONG_TIMEOUT)
+      expect(axiosPut.mock.calls[1][2]).toEqual(LONG_TIMEOUT)
+    })
+  })
+
+  describe('the sticky internet cut', () => {
+    it('cuts a participant with no session at all, without naming sessions', async () => {
+      axiosPut.mockResolvedValueOnce({ data: { results: [] } })
+      const controls = setup()
+
+      await controls.setNetwork('u-lea', false)
+
+      expect(axiosPut).toHaveBeenCalledWith(
+        `/class-groups/${GROUP_ID}/participants/u-lea/network`,
+        { enabled: false },
+        LONG_TIMEOUT
+      )
+      expect(toastSuccess).toHaveBeenCalledTimes(1)
+    })
+
+    it('reads the cut from the bulk read', async () => {
+      const controls = setup()
+
+      await controls.load()
+
+      expect(controls.participantFor('u-lea')?.network_cut).toBe(true)
+      expect(controls.participantFor(KARIM)?.network_cut).toBe(false)
     })
   })
 
@@ -260,7 +324,7 @@ describe('useParticipantControls', () => {
 
     it('counts a skipped session as done, not as a failure', async () => {
       axiosPut.mockResolvedValueOnce({
-        data: { results: [{ session_id: 's-1', ok: true }, { session_id: 's-2', ok: true, skipped: true }] }
+        data: { results: [{ session_id: 's-1', ok: true }, { session_id: 's-2', ok: false, skipped: true }] }
       })
       const controls = setup()
 
@@ -286,6 +350,54 @@ describe('useParticipantControls', () => {
       expect(toastWarning).toHaveBeenCalledTimes(1)
       expect(toastSuccess).not.toHaveBeenCalled()
       expect(toastError).not.toHaveBeenCalled()
+    })
+
+    it('counts an all-skipped result as done', async () => {
+      axiosPost.mockResolvedValueOnce({
+        data: { results: [{ session_id: 's-1', ok: false, skipped: true }, { session_id: 's-2', ok: false, skipped: true }] }
+      })
+      const controls = setup()
+
+      await controls.stopSessions(KARIM)
+
+      expect(toastSuccess).toHaveBeenCalledTimes(1)
+      expect(toastWarning).not.toHaveBeenCalled()
+      expect(toastError).not.toHaveBeenCalled()
+    })
+
+    it('leaves skipped sessions out of a partial result', async () => {
+      axiosPut.mockResolvedValueOnce({
+        data: {
+          results: [
+            { session_id: 's-1', ok: false, skipped: true },
+            { session_id: 's-2', ok: false, code: 'vm_not_supported' }
+          ]
+        }
+      })
+      const controls = setup()
+
+      await controls.setNetwork(KARIM, false)
+
+      expect(toastError).toHaveBeenCalledTimes(1)
+      expect(toastWarning).not.toHaveBeenCalled()
+      expect(toastSuccess).not.toHaveBeenCalled()
+    })
+
+    it('reports a partial result when one session worked, one was skipped and one failed', async () => {
+      axiosPut.mockResolvedValueOnce({
+        data: {
+          results: [
+            { session_id: 's-1', ok: true },
+            { session_id: 's-2', ok: false, skipped: true },
+            { session_id: 's-3', ok: false, code: 'vm_not_supported' }
+          ]
+        }
+      })
+      const controls = setup()
+
+      await controls.setNetwork(KARIM, false)
+
+      expect(toastWarning).toHaveBeenCalledTimes(1)
     })
 
     const CODES = [
@@ -338,6 +450,35 @@ describe('useParticipantControls', () => {
 
       expect(toastError).toHaveBeenCalledTimes(1)
       expect(toastSuccess).not.toHaveBeenCalled()
+    })
+
+    it('asks the trainer to have the learner restart the session when the address renewal fails', async () => {
+      const en = await errorMessageFor('network_renew_failed', 'en')
+      const fr = await errorMessageFor('network_renew_failed', 'fr')
+
+      expect(en).toMatch(/ask/i)
+      expect(en).toMatch(/restart/i)
+      expect(en).not.toMatch(/(^|\.\s+)Restart the session/)
+      expect(fr).toMatch(/demande/i)
+      expect(fr).toMatch(/redémarr/i)
+      expect(fr).not.toMatch(/Redémarrez la session/)
+    })
+
+    it('words every French toast without gendered forms', async () => {
+      const messages: string[] = []
+      for (const code of [...CODES, 'some_future_code']) messages.push(await errorMessageFor(code, 'fr'))
+      toastSuccess.mockClear()
+      toastWarning.mockClear()
+      axiosPut.mockResolvedValueOnce({ data: { results: [{ session_id: 's-1', ok: true }, { session_id: 's-2', ok: false, code: 'vm_not_supported' }] } })
+      const controls = setup('fr')
+      await controls.setNetwork(KARIM, false)
+      await controls.stopSessions(KARIM)
+      messages.push(...toastWarning.mock.calls.map(c => String(c[0])), ...toastSuccess.mock.calls.map(c => String(c[0])))
+
+      expect(messages.length).toBe(CODES.length + 3)
+      for (const message of messages) {
+        expect(message).not.toMatch(/Bloqué |débloqué|Votre formateur/)
+      }
     })
 
     it('reports a block as a success', async () => {

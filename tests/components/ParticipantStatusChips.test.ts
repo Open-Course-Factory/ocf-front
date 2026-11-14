@@ -11,7 +11,8 @@ import { createI18n } from 'vue-i18n'
 
 import ParticipantStatusChips from '../../src/components/Groups/ParticipantStatusChips.vue'
 
-const BLOCK = { reason: 'Exam', blocked_by: 'u-marc', created_at: '2026-11-14T10:00:00Z' }
+/** The class block as the bulk read carries it: the reason only. */
+const BLOCK = { reason: 'Exam' }
 
 function participant(overrides: Record<string, unknown> = {}) {
   return {
@@ -19,8 +20,9 @@ function participant(overrides: Record<string, unknown> = {}) {
     user_name: 'Karim',
     role: 'member',
     class_block: null,
-    org_block: null,
+    org_blocked: false,
     global_block: false,
+    network_cut: false,
     sessions: [],
     ...overrides
   }
@@ -69,7 +71,7 @@ describe('ParticipantStatusChips', () => {
   })
 
   it('names each block by its scope', () => {
-    const wrapper = mountChips(participant({ class_block: BLOCK, org_block: BLOCK, global_block: true }))
+    const wrapper = mountChips(participant({ class_block: BLOCK, org_blocked: true, global_block: true }))
 
     expect(chips(wrapper)).toEqual(['blocked-class', 'blocked-org', 'blocked-platform'])
     expect(wrapper.find('[data-testid="participant-chip-blocked-class"]').text()).toMatch(/class/i)
@@ -81,6 +83,30 @@ describe('ParticipantStatusChips', () => {
     const wrapper = mountChips(participant({ class_block: BLOCK }))
 
     expect(wrapper.find('[data-testid="participant-chip-blocked-class"]').attributes('title')).toContain('Exam')
+  })
+
+  it('says internet is off when the participant’s internet is cut, even with no session', () => {
+    const wrapper = mountChips(participant({ network_cut: true }))
+
+    expect(chips(wrapper)).toEqual(['internet-off'])
+  })
+
+  it('shows the organisation block from the flag, with neither reason nor author', () => {
+    const wrapper = mountChips(participant({ org_blocked: true }))
+
+    expect(chips(wrapper)).toEqual(['blocked-org'])
+    const chip = wrapper.find('[data-testid="participant-chip-blocked-org"]')
+    expect(chip.attributes('title')).toBe(chip.text())
+  })
+
+  it('words the French chips without gendered forms', () => {
+    const wrapper = mountChips(participant({ network_cut: true, class_block: BLOCK, org_blocked: true, global_block: true }), 'fr')
+
+    expect(chips(wrapper)).toEqual(['internet-off', 'blocked-class', 'blocked-org', 'blocked-platform'])
+    for (const name of CHIPS) {
+      const chip = wrapper.find(`[data-testid="participant-chip-${name}"]`)
+      expect(`${chip.text()} ${chip.attributes('title')}`).not.toMatch(/Bloqué |débloqué|Votre formateur/)
+    }
   })
 
   it('speaks French', () => {

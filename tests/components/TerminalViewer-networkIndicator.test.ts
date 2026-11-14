@@ -152,3 +152,43 @@ describe('TerminalViewer — internet-access indicator', () => {
     })
   })
 })
+
+describe('TerminalViewer — internet cut by a trainer (#384)', () => {
+  const ExposedPortsChipStub = {
+    name: 'ExposedPortsChip',
+    props: ['sessionId', 'isActive', 'hasNetwork'],
+    template: '<div class="exposed-ports-chip-stub" />'
+  }
+
+  function mountWithPorts(sessionInfo: Record<string, unknown>) {
+    setActivePinia(createPinia())
+    return mount(TerminalViewer, {
+      props: { sessionInfo, autoConnect: false, exposedPortsEnabled: true },
+      global: {
+        plugins: [createTestI18n()],
+        stubs: {
+          Button: true,
+          RecordingIndicator: true,
+          SessionCountdown: true,
+          TerminalEndStateOverlay: true,
+          ExposedPortsChip: ExposedPortsChipStub
+        }
+      }
+    })
+  }
+
+  it('shows internet off and locks port exposure when a trainer cut the session’s internet', () => {
+    const wrapper = mountWithPorts({ session_id: 'sess-test', composed_features: '{"network":true}', network_disabled: true })
+
+    expect(wrapper.find('.network-indicator').classes()).toContain('network-off')
+    const chip = wrapper.findComponent({ name: 'ExposedPortsChip' })
+    expect(chip.exists()).toBe(true)
+    expect(chip.props('hasNetwork')).toBe(false)
+  })
+
+  it('offers port exposure again once internet is restored', () => {
+    const wrapper = mountWithPorts({ session_id: 'sess-test', composed_features: '{"network":true}', network_disabled: false })
+
+    expect(wrapper.findComponent({ name: 'ExposedPortsChip' }).props('hasNetwork')).toBe(true)
+  })
+})

@@ -65,14 +65,14 @@ const LIVE = [
 ]
 
 const CONTROLS = [
-  { user_id: 'u-karim', user_name: 'Karim', role: 'member', class_block: null, org_block: null, global_block: false,
-    sessions: [{ session_id: 's-karim', state: 'running', network_feature: true, network_disabled: true }] },
+  { user_id: 'u-karim', user_name: 'Karim', role: 'member', class_block: null, org_blocked: false, global_block: false, network_cut: false,
+    sessions: [{ session_id: 's-karim', state: 'running', network_feature: true, network_disabled: true, persistence_mode: 'persistent' }] },
   { user_id: 'u-lea', user_name: 'Lea', role: 'member',
-    class_block: { reason: 'Exam', blocked_by: 'u-marc', created_at: '2026-11-14T10:00:00Z' },
-    org_block: null, global_block: false,
-    sessions: [{ session_id: 's-lea', state: 'running', network_feature: false, network_disabled: false }] },
-  { user_id: 'u-marc', user_name: 'Marc', role: 'owner', class_block: null, org_block: null, global_block: false,
-    sessions: [{ session_id: 's-marc', state: 'running', network_feature: false, network_disabled: false }] }
+    class_block: { reason: 'Exam' },
+    org_blocked: false, global_block: false, network_cut: false,
+    sessions: [{ session_id: 's-lea', state: 'running', network_feature: false, network_disabled: false, persistence_mode: 'persistent' }] },
+  { user_id: 'u-marc', user_name: 'Marc', role: 'owner', class_block: null, org_blocked: false, global_block: false, network_cut: false,
+    sessions: [{ session_id: 's-marc', state: 'running', network_feature: false, network_disabled: false, persistence_mode: 'persistent' }] }
 ]
 
 async function mountWall(props: Record<string, unknown> = {}) {
@@ -95,8 +95,9 @@ async function mountWall(props: Record<string, unknown> = {}) {
         SupervisionViewer: SupervisionViewerStub,
         BaseModal: {
           name: 'BaseModal',
-          props: ['visible', 'title', 'size'],
-          template: '<div v-if="visible" class="base-modal-stub"><slot /><div class="base-modal-footer"><slot name="footer" /></div></div>'
+          props: ['visible', 'title', 'size', 'showDefaultFooter', 'confirmText', 'cancelText'],
+          emits: ['close', 'confirm'],
+          template: '<div v-if="visible" class="base-modal-stub"><slot /><div class="base-modal-footer"><slot name="footer"><button v-if="showDefaultFooter && confirmText" type="button" class="base-modal-confirm" @click="$emit(\'confirm\')">{{ confirmText }}</button><button v-if="showDefaultFooter && cancelText" type="button" class="base-modal-cancel" @click="$emit(\'close\')">{{ cancelText }}</button></slot></div></div>'
         },
         AdminBadge: { name: 'AdminBadge', template: '<span />', props: ['iconOnly', 'tooltip'] }
       }
@@ -196,7 +197,7 @@ describe('GroupLiveSessionsTab — participant actions', () => {
 
     await karim.find('[data-testid="participant-action-stop"]').trigger('click')
     await flushPromises()
-    await wrapper.find('[data-testid="participant-confirm"]').trigger('click')
+    await wrapper.find('.base-modal-confirm').trigger('click')
     await flushPromises()
 
     expect(stopSessions).toHaveBeenCalledTimes(1)

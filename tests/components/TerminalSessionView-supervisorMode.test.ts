@@ -101,14 +101,14 @@ function controlSession(overrides: Record<string, unknown> = {}) {
     network_feature: false,
     network_disabled: false,
     scenario_session_id: 'ss-1',
-    scenario_title: 'Docker basics',
+    persistence_mode: 'persistent',
     ...overrides
   }
 }
 
 /** Karim's older terminal, which carries an older run: never this page's. */
 const olderTerminal = controlSession({
-  session_id: 'sess-old', state: 'stopped', scenario_session_id: 'ss-done', scenario_title: 'Git basics'
+  session_id: 'sess-old', state: 'stopped', scenario_session_id: 'ss-done'
 })
 
 function karim(sessions: unknown[]) {
@@ -116,16 +116,17 @@ function karim(sessions: unknown[]) {
     user_id: LEARNER_ID,
     user_name: LEARNER_NAME,
     class_block: null,
-    org_block: null,
-    global_block: null,
+    org_blocked: false,
+    global_block: false,
+    network_cut: false,
     sessions
   }
 }
 
 /** Another learner of the class, so the page must pick the right participant. */
 const lea = {
-  user_id: 'u-lea', user_name: 'Lea Other', class_block: null, org_block: null, global_block: null,
-  sessions: [controlSession({ session_id: 'sess-lea', scenario_session_id: 'ss-lea', scenario_title: 'Lea run' })]
+  user_id: 'u-lea', user_name: 'Lea Other', class_block: null, org_blocked: false, global_block: false, network_cut: false,
+  sessions: [controlSession({ session_id: 'sess-lea', scenario_session_id: 'ss-lea' })]
 }
 
 /** The trainer's own terminals: what the self-scoped listing answers. */

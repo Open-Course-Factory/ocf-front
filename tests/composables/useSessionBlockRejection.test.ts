@@ -79,4 +79,10 @@ describe('getSessionBlockMessage', () => {
 
     expect(getSessionBlockMessage(blocked(scope, 'Examen'))).toMatch(word)
   })
+
+  it.each(['group', 'org', 'global'])('words the French %s refusal without gendered forms', (scope) => {
+    const { getSessionBlockMessage } = runInSetup(() => useSessionBlockRejection(), 'fr')
+
+    expect(getSessionBlockMessage(blocked(scope, 'Examen'))).not.toMatch(/Bloqué |débloqué|Votre formateur/)
+  })
 })
