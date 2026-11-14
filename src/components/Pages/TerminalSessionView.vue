@@ -59,6 +59,7 @@
               :class="['supervisor-step', `supervisor-step-${step.status}`]"
             >
               <i :class="stepStatusIcon(step.status)" aria-hidden="true"></i>
+              <span class="ocf-sr-only">{{ stepStatusWord(step.status) }}</span>
               {{ step.step_title }}
             </li>
           </ol>
@@ -405,6 +406,9 @@ const { t } = useTranslations({
       loading: 'Loading session...',
       backToSessions: 'Back to My Sessions',
       backToClass: 'Back to class',
+      stepCompleted: 'Done:',
+      stepActive: 'In progress:',
+      stepLocked: 'Not started:',
       supervisedNotRunning: 'This terminal is not running.',
       back: 'Back',
       abandonScenario: 'Abandon Scenario',
@@ -460,6 +464,9 @@ const { t } = useTranslations({
       loading: 'Chargement de la session...',
       backToSessions: 'Retour aux sessions',
       backToClass: 'Retour à la classe',
+      stepCompleted: 'Terminée :',
+      stepActive: 'En cours :',
+      stepLocked: 'Pas commencée :',
       supervisedNotRunning: 'Ce terminal n\'est pas démarré.',
       back: 'Retour',
       abandonScenario: 'Abandonner le scénario',
@@ -561,6 +568,13 @@ async function loadSupervisorMode() {
   // Any refusal reads as a miss: the backend's wording is not shown.
   if (!await loadSupervisedSession()) error.value = t('sessionView.errorNotFound')
   isLoading.value = false
+}
+
+// What the icon and colour say, for a screen reader.
+function stepStatusWord(status: string): string {
+  if (status === 'completed') return t('sessionView.stepCompleted')
+  if (status === 'active' || status === 'in_progress') return t('sessionView.stepActive')
+  return t('sessionView.stepLocked')
 }
 
 function stepStatusIcon(status: string): string {
@@ -1452,7 +1466,7 @@ onBeforeUnmount(() => {
 
 .supervisor-step-completed i { color: var(--color-success); }
 .supervisor-step-active,
-.supervisor-step-in_progress { color: var(--color-text-primary); font-weight: 600; }
+.supervisor-step-in_progress { color: var(--color-text-primary); font-weight: var(--font-weight-semibold); }
 .supervisor-step-active i,
 .supervisor-step-in_progress i { color: var(--color-primary); }
 
