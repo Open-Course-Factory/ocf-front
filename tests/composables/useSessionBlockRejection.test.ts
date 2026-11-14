@@ -93,4 +93,19 @@ describe('getSessionBlockMessage', () => {
       expect(getSessionBlockMessage(blocked('group', reason))).toContain(reason)
     }
   })
+
+  it.each(['group', 'org', 'global'])('ends the %s refusal with a next step', (scope) => {
+    const en = runInSetup(() => useSessionBlockRejection(), 'en').getSessionBlockMessage(blocked(scope))
+    const fr = runInSetup(() => useSessionBlockRejection(), 'fr').getSessionBlockMessage(blocked(scope))
+
+    expect(en).toMatch(/Contact the training team\.$/)
+    expect(fr).toMatch(/Contactez l[’']équipe pédagogique\.$/)
+  })
+
+  it('keeps the next step when a reason is given', () => {
+    const en = runInSetup(() => useSessionBlockRejection(), 'en').getSessionBlockMessage(blocked('group', 'Exam'))
+
+    expect(en).toContain('Exam')
+    expect(en).toContain('Contact the training team.')
+  })
 })

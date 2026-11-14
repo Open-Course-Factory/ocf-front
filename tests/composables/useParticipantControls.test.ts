@@ -493,6 +493,41 @@ describe('useParticipantControls', () => {
       }
     })
 
+    describe('a success names the action and the participant', () => {
+      type Act = (c: ReturnType<typeof useParticipantControls>) => Promise<void>
+      const ACTS: Array<[string, Act, RegExp, RegExp]> = [
+        ['cut', c => c.setNetwork(KARIM, false), /^Internet cut for Karim\.$/, /coupé/i],
+        ['restore', c => c.setNetwork(KARIM, true), /^Internet restored for Karim\.$/, /rétabli/i],
+        ['stop', c => c.stopSessions(KARIM), /^Karim[’']s sessions stopped\.$/, /arrêt/i],
+        ['class block', c => c.setClassBlock(KARIM, { blocked: true, stop_running: true }), /^Karim is blocked\.$/, /bloqu/i],
+        ['class unblock', c => c.setClassBlock(KARIM, { blocked: false }), /^Karim is unblocked\.$/, /levé/i],
+        ['org block', c => c.setOrgBlock(ORG_ID, KARIM, { blocked: true }), /^Karim is blocked\.$/, /bloqu/i],
+        ['org unblock', c => c.setOrgBlock(ORG_ID, KARIM, { blocked: false }), /^Karim is unblocked\.$/, /levé/i]
+      ]
+
+      async function successFor(act: Act, locale: 'en' | 'fr'): Promise<string> {
+        toastSuccess.mockClear()
+        axiosPut.mockResolvedValueOnce({ data: { results: [{ session_id: 's-1', ok: true }] } })
+        const controls = setup(locale)
+        await controls.load()
+        await act(controls)
+        expect(toastSuccess).toHaveBeenCalledTimes(1)
+        return String(toastSuccess.mock.calls[0][0])
+      }
+
+      it.each(ACTS)('in English for the %s', async (_label, act, en) => {
+        expect(await successFor(act, 'en')).toMatch(en)
+      })
+
+      it.each(ACTS)('in neutral French for the %s', async (_label, act, _en, fr) => {
+        const message = await successFor(act, 'fr')
+
+        expect(message).toContain('Karim')
+        expect(message).toMatch(fr)
+        expect(message).not.toMatch(/Bloqué |débloqué|Votre formateur|du participant| est bloqué| est débloqué/)
+      })
+    })
+
     it('reports a block as a success', async () => {
       axiosPut.mockResolvedValueOnce({ data: {} })
       const controls = setup()

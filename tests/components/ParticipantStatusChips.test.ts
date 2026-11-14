@@ -93,6 +93,12 @@ describe('ParticipantStatusChips', () => {
     expect(chips(wrapper)).toEqual(['internet-off'])
   })
 
+  it('words the organisation chip as a session-start block, like the French', () => {
+    const wrapper = mountChips(participant({ org_blocked: true }))
+
+    expect(wrapper.find('[data-testid="participant-chip-blocked-org"]').text()).toBe('Session start blocked by the organisation')
+  })
+
   it('shows the organisation block from the flag, with neither reason nor author', () => {
     const wrapper = mountChips(participant({ org_blocked: true }))
 
@@ -138,9 +144,10 @@ describe('ParticipantStatusChips', () => {
       expect(mountChips(participant({ network_cut: true })).find('[data-testid="participant-chips-slot"]').classes()).toContain('ocf-participant-chips')
     })
 
-    it('defines the badge height as a shared token', () => {
+    it('defines the badge height as a shared token, without forcing it on every badge', () => {
       expect(variablesCss).toMatch(/--badge-min-height\s*:/)
-      expect(rule(componentsCss, '.badge')).toMatch(/min-height:\s*var\(--badge-min-height\)/)
+      // Decision change: badges elsewhere keep their natural height.
+      expect(rule(componentsCss, '.badge')).not.toMatch(/min-height/)
     })
 
     it('gives the slot that same min-height', () => {

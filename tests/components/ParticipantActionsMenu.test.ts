@@ -97,7 +97,10 @@ const AdminBadgeStub = {
   template: '<span class="admin-badge-stub" />'
 }
 
-async function mountMenu(props: Record<string, unknown>, options: { slot?: string; locale?: 'en' | 'fr' } = {}) {
+async function mountMenu(
+  props: Record<string, unknown>,
+  options: { slot?: string; locale?: 'en' | 'fr'; host?: HTMLElement } = {}
+) {
   const router = createTestRouter()
   await router.push('/')
   await router.isReady()
@@ -112,7 +115,7 @@ async function mountMenu(props: Record<string, unknown>, options: { slot?: strin
       ...props
     },
     slots: options.slot ? { default: options.slot } : undefined,
-    attachTo: document.body,
+    attachTo: options.host ?? document.body,
     global: {
       plugins: [createTestI18n(options.locale), router],
       stubs: { BaseModal: BaseModalStub, AdminBadge: AdminBadgeStub }
@@ -143,12 +146,20 @@ async function clickItem(wrapper: VueWrapper, name: string) {
   await flushPromises()
 }
 
+/**
+ * The confirmation dialog, wherever it renders: BaseModal is teleported to
+ * <body>, out of the menu's host, so it is found through the component.
+ */
+function dialog(wrapper: VueWrapper) {
+  return wrapper.findComponent({ name: 'BaseModal' })
+}
+
 function modal(wrapper: VueWrapper) {
-  return wrapper.find('.base-modal-stub')
+  return dialog(wrapper).find('.base-modal-stub')
 }
 
 async function confirm(wrapper: VueWrapper) {
-  const button = wrapper.find('[data-testid="participant-confirm"]')
+  const button = dialog(wrapper).find('[data-testid="participant-confirm"]')
   expect(button.exists(), 'the dialog has a confirm button').toBe(true)
   await button.trigger('click')
   await flushPromises()
@@ -266,6 +277,16 @@ describe('ParticipantActionsMenu', () => {
       expect(readOnly.element.tagName).not.toBe('BUTTON')
       expect(readOnly.attributes('title')).toBeUndefined()
       expect(item(wrapper, 'unblock-org').exists()).toBe(false)
+    })
+
+    it('words the organisation note as a session-start block, like the French', async () => {
+      const wrapper = await mountMenu({
+        viewer: CLASS_MANAGER,
+        participant: participant({ org_blocked: true })
+      })
+      await openMenu(wrapper)
+
+      expect(wrapper.find('[data-testid="participant-org-block-readonly"]').text()).toBe('Session start blocked by the organisation')
     })
 
     it('shows a class manager no organisation note when the organisation has not blocked them', async () => {
@@ -390,7 +411,7 @@ describe('ParticipantActionsMenu', () => {
       const wrapper = await mountMenu({})
       await clickItem(wrapper, 'stop')
 
-      await wrapper.find('[data-testid="participant-cancel"]').trigger('click')
+      await dialog(wrapper).find('[data-testid="participant-cancel"]').trigger('click')
       await flushPromises()
 
       expect(wrapper.emitted('stop-sessions')).toBeUndefined()
@@ -504,6 +525,20 @@ describe('ParticipantActionsMenu', () => {
     })
   })
 
+  describe('the dialog leaves the menu’s host', () => {
+    it('teleports the dialog to <body>, out of the element hosting the menu', async () => {
+      const host = document.createElement('div')
+      host.className = 'menu-host'
+      document.body.appendChild(host)
+      const wrapper = await mountMenu({}, { host })
+      await clickItem(wrapper, 'block-class')
+
+      expect(document.body.querySelector('.base-modal-stub'), 'the dialog is in the document').not.toBeNull()
+      expect(host.querySelector('.base-modal-stub'), 'the dialog is not inside the menu’s host').toBeNull()
+      expect(host.querySelector('[data-testid="participant-block-reason"]')).toBeNull()
+    })
+  })
+
   describe('the dialog footer', () => {
     it.each([
       ['stop', 'Stop'],
@@ -544,7 +579,7 @@ describe('ParticipantActionsMenu', () => {
       const wrapper = await mountMenu({})
       await clickItem(wrapper, 'block-class')
 
-      const stopRunning = wrapper.find('[data-testid="participant-block-stop-running"]')
+      const stopRunning = dialog(wrapper).find('[data-testid="participant-block-stop-running"]')
       expect(stopRunning.exists()).toBe(true)
       expect((stopRunning.element as HTMLInputElement).checked).toBe(true)
 
@@ -560,8 +595,8 @@ describe('ParticipantActionsMenu', () => {
       const wrapper = await mountMenu({})
       await clickItem(wrapper, 'block-class')
 
-      await wrapper.find('[data-testid="participant-block-reason"]').setValue('  Exam in progress ')
-      await wrapper.find('[data-testid="participant-block-stop-running"]').setValue(false)
+      await dialog(wrapper).find('[data-testid="participant-block-reason"]').setValue('  Exam in progress ')
+      await dialog(wrapper).find('[data-testid="participant-block-stop-running"]').setValue(false)
       await confirm(wrapper)
 
       expect(wrapper.emitted('set-class-block')).toEqual([
@@ -573,11 +608,11 @@ describe('ParticipantActionsMenu', () => {
       const wrapper = await mountMenu({})
       await clickItem(wrapper, 'block-class')
 
-      const reason = wrapper.find('[data-testid="participant-block-reason"]')
+      const reason = dialog(wrapper).find('[data-testid="participant-block-reason"]')
       expect(reason.attributes('maxlength')).toBe('500')
 
       await reason.setValue('Exam start')
-      expect(wrapper.find('[data-testid="participant-block-reason-count"]').text()).toMatch(/10\s*\/\s*500/)
+      expect(dialog(wrapper).find('[data-testid="participant-block-reason-count"]').text()).toMatch(/10\s*\/\s*500/)
     })
 
     // ocf-core's stop deletes every session that is not 'persistent'.
@@ -610,7 +645,7 @@ describe('ParticipantActionsMenu', () => {
 
       expect(modal(wrapper).text()).toMatch(/lost/i)
 
-      await wrapper.find('[data-testid="participant-block-stop-running"]').setValue(false)
+      await dialog(wrapper).find('[data-testid="participant-block-stop-running"]').setValue(false)
       expect(modal(wrapper).text()).not.toMatch(/lost/i)
     })
 
@@ -632,11 +667,24 @@ describe('ParticipantActionsMenu', () => {
       expect(modal(wrapper).text()).not.toMatch(/lost/i)
     })
 
+    it.each([
+      ['no session', []],
+      ['only a stopped session', [{ session_id: 's-old', state: 'stopped', network_feature: true, network_disabled: false, persistence_mode: 'persistent' }]]
+    ])('hides "also stop" and its note for a participant with %s running', async (_label, sessions) => {
+      const wrapper = await mountMenu({ participant: participant({}, sessions as Session[]) })
+      await clickItem(wrapper, 'block-class')
+
+      expect(modal(wrapper).exists()).toBe(true)
+      expect(dialog(wrapper).find('[data-testid="participant-block-stop-running"]').exists()).toBe(false)
+      expect(dialog(wrapper).find('[data-testid="participant-block-running-note"]').exists()).toBe(false)
+      expect(modal(wrapper).text()).not.toMatch(/also stop|kept|lost|keep running/i)
+    })
+
     it('blocks in the organisation through the same dialog', async () => {
       const wrapper = await mountMenu({ viewer: ORG_MANAGER })
       await clickItem(wrapper, 'block-org')
 
-      await wrapper.find('[data-testid="participant-block-reason"]').setValue('Unpaid')
+      await dialog(wrapper).find('[data-testid="participant-block-reason"]').setValue('Unpaid')
       await confirm(wrapper)
 
       expect(wrapper.emitted('set-org-block')).toEqual([
@@ -662,7 +710,7 @@ describe('ParticipantActionsMenu', () => {
       const wrapper = await mountMenu({}, { locale: 'fr' })
       await clickItem(wrapper, 'block-class')
 
-      const label = wrapper.find('label[for="participant-block-reason"]')
+      const label = dialog(wrapper).find('label[for="participant-block-reason"]')
       expect(label.exists()).toBe(true)
       expect(label.text()).not.toMatch(/l[’']apprenant|du participant/i)
     })

@@ -146,7 +146,7 @@ describe('DropdownMenu', () => {
     expect(left.find('.ocf-dropdown-menu').classes()).toContain('ocf-dropdown-menu--left')
   })
 
-  it('names the default trigger with triggerLabel and reports its open state, without claiming a menu popup', async () => {
+  it('names the default trigger with triggerLabel, announces a menu popup and reports its open state', async () => {
     const wrapper = mount(DropdownMenu, {
       props: { triggerLabel: 'Actions for Alice' },
       slots: { default: '<button class="ocf-dropdown-item">X</button>' },
@@ -155,8 +155,8 @@ describe('DropdownMenu', () => {
 
     expect(trigger.attributes('aria-label')).toBe('Actions for Alice')
     expect(trigger.attributes('title')).toBe('Actions for Alice')
-    // No aria-haspopup: the items are plain buttons, not a role="menu".
-    expect(trigger.attributes('aria-haspopup')).toBeUndefined()
+    // Decision change (UX review): the trigger announces the menu it opens.
+    expect(trigger.attributes('aria-haspopup')).toBe('menu')
     expect(trigger.attributes('aria-expanded')).toBe('false')
 
     await trigger.trigger('click')
@@ -178,5 +178,24 @@ describe('DropdownMenu', () => {
 
     await trigger.trigger('click')
     expect(wrapper.find('.ocf-dropdown-menu').exists()).toBe(true)
+  })
+
+  it('closes on Escape and gives the focus back to the trigger', async () => {
+    const wrapper = mount(DropdownMenu, {
+      props: { triggerLabel: 'Actions for Alice' },
+      slots: { default: '<button class="ocf-dropdown-item">X</button>' },
+      attachTo: document.body,
+    })
+    const trigger = wrapper.find('.btn-icon')
+    await trigger.trigger('click')
+    const menuItem = wrapper.find('.ocf-dropdown-item')
+    ;(menuItem.element as HTMLElement).focus()
+
+    await menuItem.trigger('keydown', { key: 'Escape' })
+
+    expect(wrapper.find('.ocf-dropdown-menu').exists()).toBe(false)
+    expect(document.activeElement).toBe(trigger.element)
+    expect(trigger.attributes('aria-expanded')).toBe('false')
+    wrapper.unmount()
   })
 })

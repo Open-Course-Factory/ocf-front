@@ -87,10 +87,11 @@ function createTestI18n() {
   })
 }
 
-async function mountViewer() {
+async function mountViewer(slots: Record<string, string> = {}) {
   setActivePinia(createPinia())
   const wrapper = mount(SupervisionViewer, {
     props: { sessionId: 'sess-1', autoConnect: true },
+    slots,
     global: { plugins: [createTestI18n()] }
   })
   // onMounted lazily imports the (mocked) xterm modules, THEN opens the socket. That
@@ -159,5 +160,12 @@ describe('SupervisionViewer — observer-count chip', () => {
     const chip = wrapper.find('.supervision-chip-info')
     expect(chip.exists()).toBe(true)
     expect(chip.text()).toContain('3')
+  })
+
+  it('renders the host’s #status slot inside its header status area', async () => {
+    const wrapper = await mountViewer({ status: '<span class="host-chip">Internet off</span>' })
+
+    const status = wrapper.find('.supervision-viewer-header .supervision-viewer-status')
+    expect(status.find('.host-chip').exists()).toBe(true)
   })
 })

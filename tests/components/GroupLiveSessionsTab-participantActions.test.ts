@@ -55,7 +55,8 @@ const SupervisionViewerStub = {
   name: 'SupervisionViewer',
   props: ['sessionId', 'learnerName', 'compact'],
   emits: ['expand', 'activity'],
-  template: '<div class="viewer-stub" role="button" :data-session-id="sessionId" @click="$emit(\'expand\')">{{ learnerName }}</div>'
+  // Mirrors SupervisionViewer's header: a non-interactive #status slot.
+  template: '<div class="viewer-stub" role="button" :data-session-id="sessionId" @click="$emit(\'expand\')">{{ learnerName }}<div class="viewer-stub-status"><slot name="status" /></div></div>'
 }
 
 const LIVE = [
@@ -117,6 +118,19 @@ async function openTileMenu(wrapper: VueWrapper, sessionId: string) {
   await overlay.find('.ocf-dropdown .dropdown-trigger').trigger('click')
   await flushPromises()
   return tile(wrapper, sessionId)
+}
+
+
+/**
+ * The open participant dialog: its BaseModal is teleported to <body>, so it is
+ * reached through the component rather than the page's DOM.
+ */
+function participantDialog(wrapper: VueWrapper) {
+  const open = wrapper
+    .findAllComponents({ name: 'BaseModal' })
+    .find(m => m.find('[data-testid="participant-confirm"]').exists())
+  expect(open, 'a participant dialog is open').toBeTruthy()
+  return open!
 }
 
 describe('GroupLiveSessionsTab — participant actions', () => {
@@ -197,7 +211,7 @@ describe('GroupLiveSessionsTab — participant actions', () => {
 
     await karim.find('[data-testid="participant-action-stop"]').trigger('click')
     await flushPromises()
-    await wrapper.find('[data-testid="participant-confirm"]').trigger('click')
+    await participantDialog(wrapper).find('[data-testid="participant-confirm"]').trigger('click')
     await flushPromises()
 
     expect(stopSessions).toHaveBeenCalledTimes(1)
@@ -216,6 +230,56 @@ describe('GroupLiveSessionsTab — participant actions', () => {
     expect(header.find('[data-testid="participant-action-stop"]').exists()).toBe(true)
     // Already watching, and the page link is the header's own button.
     expect(header.find('[data-testid="participant-action-watch"]').exists()).toBe(false)
+  })
+
+  describe('the tile header', () => {
+    it('reserves the header’s right end for the menu when there is a viewer', async () => {
+      const wrapper = await mountWall()
+
+      for (const id of ['s-karim', 's-lea', 's-marc']) {
+        expect(tile(wrapper, id).classes(), `${id} reserves the header padding`).toContain('live-sessions-tile--actions')
+      }
+    })
+
+    it('reserves nothing without a viewer', async () => {
+      const wrapper = await mountWall({ viewer: undefined })
+
+      expect(tile(wrapper, 's-karim').classes()).not.toContain('live-sessions-tile--actions')
+    })
+
+    it('keeps only the menu trigger in the overlay', async () => {
+      const wrapper = await mountWall()
+
+      const overlay = tile(wrapper, 's-karim').find('[data-testid="tile-participant-actions"]')
+      expect(overlay.find('.ocf-dropdown .dropdown-trigger').exists()).toBe(true)
+      expect(overlay.find('[data-testid="participant-chips-slot"]').exists()).toBe(false)
+      expect(overlay.find('[data-testid^="participant-chip-"]').exists()).toBe(false)
+    })
+
+    it('puts the chips in the viewer’s status area', async () => {
+      const wrapper = await mountWall()
+
+      const karimStatus = tile(wrapper, 's-karim').find('.viewer-stub-status')
+      expect(karimStatus.find('[data-testid="participant-chip-internet-off"]').exists()).toBe(true)
+      const leaStatus = tile(wrapper, 's-lea').find('.viewer-stub-status')
+      expect(leaStatus.find('[data-testid="participant-chip-blocked-class"]').exists()).toBe(true)
+    })
+  })
+
+  it('keeps the dialog’s keys away from the tile: Ctrl+ArrowRight in the reason does not move the tile', async () => {
+    const wrapper = await mountWall()
+    const order = () => wrapper.findAll('.live-sessions-tile').map(t => t.attributes('data-session-id'))
+    const before = order()
+    const karim = await openTileMenu(wrapper, 's-karim')
+
+    await karim.find('[data-testid="participant-action-block-class"]').trigger('click')
+    await flushPromises()
+    const reason = participantDialog(wrapper).find('[data-testid="participant-block-reason"]')
+    expect(reason.exists()).toBe(true)
+    await reason.trigger('keydown', { key: 'ArrowRight', ctrlKey: true })
+    await flushPromises()
+
+    expect(order()).toEqual(before)
   })
 
   it('without a viewer, shows no menu and makes no read', async () => {

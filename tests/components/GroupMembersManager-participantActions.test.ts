@@ -160,6 +160,19 @@ async function openRowMenu(wrapper: VueWrapper, name: string) {
   return row(wrapper, name)
 }
 
+
+/**
+ * The open participant dialog: its BaseModal is teleported to <body>, so it is
+ * reached through the component rather than the page's DOM.
+ */
+function participantDialog(wrapper: VueWrapper) {
+  const open = wrapper
+    .findAllComponents({ name: 'BaseModal' })
+    .find(m => m.find('[data-testid="participant-confirm"]').exists())
+  expect(open, 'a participant dialog is open').toBeTruthy()
+  return open!
+}
+
 describe('GroupMembersManager — participant actions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -251,7 +264,7 @@ describe('GroupMembersManager — participant actions', () => {
     await flushPromises()
     expect(axios.post).not.toHaveBeenCalled()
 
-    await wrapper.find('[data-testid="participant-confirm"]').trigger('click')
+    await participantDialog(wrapper).find('[data-testid="participant-confirm"]').trigger('click')
     await flushPromises()
 
     expect(axios.post).toHaveBeenCalledTimes(1)
@@ -266,8 +279,8 @@ describe('GroupMembersManager — participant actions', () => {
 
     await karim.find('[data-testid="participant-action-block-class"]').trigger('click')
     await flushPromises()
-    await wrapper.find('[data-testid="participant-block-reason"]').setValue('Exam in progress')
-    await wrapper.find('[data-testid="participant-confirm"]').trigger('click')
+    await participantDialog(wrapper).find('[data-testid="participant-block-reason"]').setValue('Exam in progress')
+    await participantDialog(wrapper).find('[data-testid="participant-confirm"]').trigger('click')
     await flushPromises()
 
     expect(axios.put).toHaveBeenCalledWith(
