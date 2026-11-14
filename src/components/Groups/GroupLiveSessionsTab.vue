@@ -38,6 +38,15 @@
           <i class="fas fa-external-link-alt"></i>
           {{ t('liveSessions.openSessionPage') }}
         </router-link>
+        <template v-if="viewer">
+          <ParticipantStatusChips :participant="participantControls.participantFor(focusedSession.user_id)" />
+          <ParticipantActionsMenu
+            v-if="participantControls.participantFor(focusedSession.user_id)"
+            v-bind="menuProps(focusedSession)"
+            context="focused"
+            v-on="menuListeners"
+          />
+        </template>
       </div>
       <SupervisionViewer
         :key="focusedSession.session_id"
@@ -119,6 +128,20 @@
             @expand="focusedSessionId = session.session_id"
             @activity="markActivity(session.session_id)"
           />
+          <!-- A sibling of the viewer, laid over the tile's header: a click on
+               it never reaches the viewer's click-to-focus surface. -->
+          <div
+            v-if="viewer && participantControls.participantFor(session.user_id)"
+            class="live-sessions-tile-actions"
+            data-testid="tile-participant-actions"
+          >
+            <ParticipantStatusChips icon-only :participant="participantControls.participantFor(session.user_id)" />
+            <ParticipantActionsMenu
+              v-bind="menuProps(session)"
+              context="wall"
+              v-on="menuListeners"
+            />
+          </div>
         </div>
       </div>
     </template>
@@ -131,7 +154,11 @@ import { useTranslations } from '../../composables/useTranslations'
 import { supervisionService, type LiveSession } from '../../services/domain/terminal/supervisionService'
 import { useWallOrder } from '../../composables/useWallOrder'
 import { useActivityHighlight } from '../../composables/useActivityHighlight'
+import { useParticipantControls } from '../../composables/useParticipantControls'
+import type { BlockChange } from '../../services/domain/terminal/participantControlsService'
 import SupervisionViewer from '../Terminal/SupervisionViewer.vue'
+import ParticipantActionsMenu, { type ParticipantActionsViewer } from './ParticipantActionsMenu.vue'
+import ParticipantStatusChips from './ParticipantStatusChips.vue'
 
 const props = defineProps<{
   groupId: string
@@ -143,6 +170,13 @@ const props = defineProps<{
    * a two-way binding.
    */
   initialFocusSessionId?: string
+  /** The class's organisation, for the organisation block. */
+  organizationId?: string
+  /**
+   * Who is looking, for the participant actions (#384). Without it the wall
+   * shows no actions and makes no participant read.
+   */
+  viewer?: ParticipantActionsViewer
 }>()
 
 const { t } = useTranslations({
@@ -215,11 +249,38 @@ function onTileKeydown(sessionId: string, event: KeyboardEvent) {
   moveBy(sessionId, event.key === 'ArrowRight' ? 1 : -1)
 }
 
+// The participants' terminals and blocks: one read per poll, whatever the
+// number of tiles.
+const participantControls = useParticipantControls(() => props.groupId)
+
+function menuProps(session: LiveSession) {
+  const participant = participantControls.participantFor(session.user_id)
+  return {
+    groupId: props.groupId,
+    organizationId: props.organizationId,
+    participant,
+    participantRole: participant?.role ?? 'member',
+    viewer: props.viewer!,
+    busy: participantControls.pendingUserId.value === session.user_id
+  }
+}
+
+const menuListeners = {
+  'stop-sessions': (userId: string) => participantControls.stopSessions(userId),
+  'set-network': (userId: string, enabled: boolean) => participantControls.setNetwork(userId, enabled),
+  'set-class-block': (userId: string, change: BlockChange) => participantControls.setClassBlock(userId, change),
+  'set-org-block': (userId: string, change: BlockChange) => {
+    if (props.organizationId) participantControls.setOrgBlock(props.organizationId, userId, change)
+  },
+  'watch-screen': (sessionId: string) => { focusedSessionId.value = sessionId }
+}
+
 async function loadSessions() {
   if (!props.canSupervise) {
     error.value = t('liveSessions.permissionError')
     return
   }
+  if (props.viewer) participantControls.load()
   isLoading.value = true
   error.value = ''
   try {
@@ -316,6 +377,7 @@ onUnmounted(() => {
 }
 
 .live-sessions-tile {
+  position: relative;
   border-radius: var(--border-radius-md);
   transition: box-shadow var(--transition-base), opacity var(--transition-fast);
   cursor: grab;
@@ -349,7 +411,23 @@ onUnmounted(() => {
 .live-sessions-focused-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--spacing-sm);
+}
+
+/* Laid over the right end of the tile's header (the compact viewer shows no
+   control there): no layout shift, and the tile keeps its click-to-focus. */
+.live-sessions-tile-actions {
+  position: absolute;
+  top: var(--spacing-xs);
+  right: var(--spacing-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 0 var(--spacing-xs);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-sm);
+  cursor: default;
 }
 
 .live-sessions-focused-viewer {

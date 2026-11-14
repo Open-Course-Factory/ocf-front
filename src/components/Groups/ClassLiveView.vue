@@ -46,10 +46,14 @@ import {
 } from '../../composables/useClassLiveViewPreference'
 import ClassProgressionView from './ClassProgressionView.vue'
 import GroupLiveSessionsTab from './GroupLiveSessionsTab.vue'
+import type { ParticipantActionsViewer } from './ParticipantActionsMenu.vue'
 
 const props = defineProps<{
   groupId: string
   canSupervise: boolean
+  /** The class's organisation and the viewer, for the wall's participant actions. */
+  organizationId?: string
+  viewer?: ParticipantActionsViewer
 }>()
 
 const { t } = useTranslations({
@@ -83,11 +87,13 @@ const activeView = ref<ClassLiveViewMode>(
 )
 
 /**
- * The learner tile to open the wall on, set by the eye button on a row. Cleared
- * on the way back to the table so a later visit to the wall opens on the wall
- * itself rather than on whoever was watched last.
+ * The learner tile to open the wall on, set by the eye button on a row or by
+ * `?focus=<sessionId>` (the members list's "Watch screen"). Cleared on the way
+ * back to the table so a later visit to the wall opens on the wall itself
+ * rather than on whoever was watched last.
  */
-const focusSessionId = ref<string | null>(null)
+const queryFocus = route.query.focus
+const focusSessionId = ref<string | null>(typeof queryFocus === 'string' && queryFocus ? queryFocus : null)
 
 const { tabProps, panelProps, onKeydown } = useTabList(activeView, 'class-live')
 
@@ -167,6 +173,8 @@ watch(() => route.query.view, view => {
         :group-id="groupId"
         :can-supervise="canSupervise"
         :initial-focus-session-id="focusSessionId ?? undefined"
+        :organization-id="organizationId"
+        :viewer="viewer"
       />
     </div>
   </div>

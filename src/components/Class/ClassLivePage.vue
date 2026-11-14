@@ -22,14 +22,31 @@
 -->
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useClassContext } from '../../composables/useClassContext'
+import { useCurrentUserStore } from '../../stores/currentUser'
 import ClassLiveView from '../Groups/ClassLiveView.vue'
+import type { ParticipantActionsViewer } from '../Groups/ParticipantActionsMenu.vue'
 
 // The live view keeps its own representation switch: `?view=wall` opens the wall
 // of tiles, anything else the progression table.
-const { groupId, canManageClass } = useClassContext()
+const { groupId, group, canManageClass, isPlatformAdmin, isOwner, isManager, isOrgManager } = useClassContext()
+const currentUser = useCurrentUserStore()
+
+// Who acts on the wall's participants (#384).
+const viewer = computed<ParticipantActionsViewer>(() => ({
+  userId: currentUser.userId,
+  isPlatformAdmin: isPlatformAdmin.value,
+  managesClass: isOwner.value || isManager.value || isOrgManager.value,
+  managesOrg: isOrgManager.value
+}))
 </script>
 
 <template>
-  <ClassLiveView :group-id="groupId" :can-supervise="canManageClass" />
+  <ClassLiveView
+    :group-id="groupId"
+    :can-supervise="canManageClass"
+    :organization-id="group?.organization_id"
+    :viewer="viewer"
+  />
 </template>

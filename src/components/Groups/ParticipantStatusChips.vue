@@ -33,6 +33,8 @@ import type { ParticipantBlock, ParticipantControls } from '../../services/domai
 
 const props = defineProps<{
   participant: ParticipantControls | null
+  /** Icons only, the words in the tooltip — for the wall's narrow tiles. */
+  iconOnly?: boolean
 }>()
 
 const { t } = useTranslations({
@@ -72,36 +74,44 @@ function blockTitle(label: string, block: ParticipantBlock | null | undefined): 
       class="badge badge-warning"
       data-testid="participant-chip-internet-off"
       :title="t('participantChips.internetOff')"
+      :role="iconOnly ? 'img' : undefined"
+      :aria-label="iconOnly ? t('participantChips.internetOff') : undefined"
     >
       <i class="fas fa-plug-circle-xmark" aria-hidden="true"></i>
-      {{ t('participantChips.internetOff') }}
+      <span v-if="!iconOnly">{{ t('participantChips.internetOff') }}</span>
     </span>
     <span
       v-if="participant.class_block"
       class="badge badge-danger"
       data-testid="participant-chip-blocked-class"
       :title="blockTitle(t('participantChips.blockedClass'), participant.class_block)"
+      :role="iconOnly ? 'img' : undefined"
+      :aria-label="iconOnly ? blockTitle(t('participantChips.blockedClass'), participant.class_block) : undefined"
     >
       <i class="fas fa-ban" aria-hidden="true"></i>
-      {{ t('participantChips.blockedClass') }}
+      <span v-if="!iconOnly">{{ t('participantChips.blockedClass') }}</span>
     </span>
     <span
       v-if="participant.org_block"
       class="badge badge-danger"
       data-testid="participant-chip-blocked-org"
       :title="blockTitle(t('participantChips.blockedOrg'), participant.org_block)"
+      :role="iconOnly ? 'img' : undefined"
+      :aria-label="iconOnly ? blockTitle(t('participantChips.blockedOrg'), participant.org_block) : undefined"
     >
       <i class="fas fa-building-lock" aria-hidden="true"></i>
-      {{ t('participantChips.blockedOrg') }}
+      <span v-if="!iconOnly">{{ t('participantChips.blockedOrg') }}</span>
     </span>
     <span
       v-if="participant.global_block"
       class="badge badge-danger"
       data-testid="participant-chip-blocked-platform"
       :title="t('participantChips.blockedPlatform')"
+      :role="iconOnly ? 'img' : undefined"
+      :aria-label="iconOnly ? t('participantChips.blockedPlatform') : undefined"
     >
       <i class="fas fa-shield-halved" aria-hidden="true"></i>
-      {{ t('participantChips.blockedPlatform') }}
+      <span v-if="!iconOnly">{{ t('participantChips.blockedPlatform') }}</span>
     </span>
   </span>
 </template>
