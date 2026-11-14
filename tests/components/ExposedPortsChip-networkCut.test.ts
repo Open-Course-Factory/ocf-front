@@ -55,7 +55,8 @@ describe('ExposedPortsChip — internet cut by the training team', () => {
 
     const notice = wrapper.find('.ports-locked')
     expect(notice.exists()).toBe(true)
-    expect(notice.text()).toMatch(/training team/i)
+    expect(notice.text()).toMatch(/training team cut internet/i)
+    expect(notice.text()).not.toMatch(/turned .* off/i)
     expect(notice.text()).not.toMatch(/Start a session/i)
     expect(wrapper.find('[data-testid="exposed-ports-chip"]').attributes('title')).toBe(notice.text())
     expect(wrapper.find('.ports-form').exists()).toBe(false)

@@ -30,7 +30,7 @@ type Session = {
   state: string
   network_feature: boolean
   network_disabled: boolean
-  persistence_mode: 'persistent' | 'ephemeral'
+  persistence_mode?: string | null
 }
 
 function participant(overrides: Record<string, unknown> = {}, sessions: Session[] = []) {
@@ -578,6 +578,30 @@ describe('ParticipantActionsMenu', () => {
 
       await reason.setValue('Exam start')
       expect(wrapper.find('[data-testid="participant-block-reason-count"]').text()).toMatch(/10\s*\/\s*500/)
+    })
+
+    // ocf-core's stop deletes every session that is not 'persistent'.
+    const NOT_PERSISTENT: Array<[string, Partial<Session>]> = [
+      ['empty', { persistence_mode: '' }],
+      ['null', { persistence_mode: null }],
+      ['missing', { persistence_mode: undefined }],
+      ['unknown', { persistence_mode: 'scratch' }]
+    ]
+
+    it.each(NOT_PERSISTENT)('treats a running session with a %s mode as temporary in the stop confirm', async (_label, mode) => {
+      const wrapper = await mountMenu({ participant: participant({}, [running(mode)]) })
+      await clickItem(wrapper, 'stop')
+
+      expect(modal(wrapper).text()).toMatch(/lost/i)
+      expect(modal(wrapper).text()).not.toMatch(/kept/i)
+    })
+
+    it.each(NOT_PERSISTENT)('treats a running session with a %s mode as temporary in the block dialog', async (_label, mode) => {
+      const wrapper = await mountMenu({ participant: participant({}, [running(mode)]) })
+      await clickItem(wrapper, 'block-class')
+
+      expect(modal(wrapper).text()).toMatch(/lost/i)
+      expect(modal(wrapper).text()).not.toMatch(/kept/i)
     })
 
     it('warns that a temporary running session is lost while "also stop" is ticked', async () => {

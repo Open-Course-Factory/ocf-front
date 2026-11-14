@@ -85,4 +85,12 @@ describe('getSessionBlockMessage', () => {
 
     expect(getSessionBlockMessage(blocked(scope, 'Examen'))).not.toMatch(/Bloqué |débloqué|Votre formateur/)
   })
+
+  it.each(['a {b} c', '{reason}'])('shows the reason %s literally, never re-interpolated', (reason) => {
+    for (const locale of ['en', 'fr'] as const) {
+      const { getSessionBlockMessage } = runInSetup(() => useSessionBlockRejection(), locale)
+
+      expect(getSessionBlockMessage(blocked('group', reason))).toContain(reason)
+    }
+  })
 })

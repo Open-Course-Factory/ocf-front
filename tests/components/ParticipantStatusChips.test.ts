@@ -6,6 +6,8 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 
@@ -107,6 +109,43 @@ describe('ParticipantStatusChips', () => {
       const chip = wrapper.find(`[data-testid="participant-chip-${name}"]`)
       expect(`${chip.text()} ${chip.attributes('title')}`).not.toMatch(/Bloqué |débloqué|Votre formateur/)
     }
+  })
+
+  it('shows a reason that looks like a placeholder literally in the chip title', () => {
+    for (const reason of ['a {b} c', '{reason}']) {
+      const wrapper = mountChips(participant({ class_block: { reason } }))
+
+      expect(wrapper.find('[data-testid="participant-chip-blocked-class"]').attributes('title')).toContain(reason)
+    }
+  })
+
+  describe('the reserved slot', () => {
+    // The slot holds one badge's height, empty or filled, so the row does not
+    // grow when the bulk read answers. The height is one shared token, used by
+    // the badge and by the slot.
+    const componentsCss = readFileSync(resolve(__dirname, '../../src/assets/styles/components.css'), 'utf8')
+    const chipsSfc = readFileSync(resolve(__dirname, '../../src/components/Groups/ParticipantStatusChips.vue'), 'utf8')
+    const variablesCss = readFileSync(resolve(__dirname, '../../src/assets/styles/variables.css'), 'utf8')
+
+    function rule(css: string, selector: string): string {
+      const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const match = css.match(new RegExp(`(^|\\n)\\s*${escaped}\\s*\\{([^}]*)\\}`))
+      return match ? match[2] : ''
+    }
+
+    it('carries the slot class before and after the read', () => {
+      expect(mountChips(null).find('[data-testid="participant-chips-slot"]').classes()).toContain('ocf-participant-chips')
+      expect(mountChips(participant({ network_cut: true })).find('[data-testid="participant-chips-slot"]').classes()).toContain('ocf-participant-chips')
+    })
+
+    it('defines the badge height as a shared token', () => {
+      expect(variablesCss).toMatch(/--badge-min-height\s*:/)
+      expect(rule(componentsCss, '.badge')).toMatch(/min-height:\s*var\(--badge-min-height\)/)
+    })
+
+    it('gives the slot that same min-height', () => {
+      expect(rule(chipsSfc, '.ocf-participant-chips')).toMatch(/min-height:\s*var\(--badge-min-height\)/)
+    })
   })
 
   it('speaks French', () => {
