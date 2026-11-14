@@ -24,7 +24,11 @@ import {
 // class; marc opens the class's live wall, focuses karim's tile, and follows
 // "Open session page" to karim's full session page in supervisor mode
 // (/terminal-session/<id>?group=<classId>): karim's screen in the supervision
-// viewer, karim's name in the header, and the run's progress.
+// viewer, karim's name in the header, and the run's progress. "Back to class"
+// then returns him to the wall.
+//
+// The page reads the class through GET /class-groups/:id/participant-controls
+// (ocf-core #580): this spec needs a core that serves it.
 //
 // Fixture setup mirrors scenario-teacher.spec.ts: a per-run scenario assigned
 // to marc's class, karim made a member of marc's org for the run (adding him to
@@ -134,4 +138,11 @@ test("the trainer opens a learner's session page from the live wall and watches 
   await expect(page.getByTestId('scenario-abandon-btn')).toHaveCount(0);
   // The learner console (stop / delete / extend / sharing / ports) is not mounted.
   await expect(page.locator('.terminal-session-panel')).toHaveCount(0);
+
+  // The way back leads to the class's wall, not to the trainer's own sessions.
+  await page.getByRole('link', { name: /retour à la classe|back to class/i }).click();
+  await expect(page).toHaveURL(new RegExp(`/classes/${groupId}/live\\?view=wall$`), { timeout: 20_000 });
+  await expect(page.locator(`.live-sessions-tile[data-session-id="${learnerTerminalId}"]`)).toBeVisible({
+    timeout: 60_000,
+  });
 });
