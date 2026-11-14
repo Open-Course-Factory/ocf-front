@@ -25,6 +25,47 @@
       </div>
     </div>
 
+    <!-- Supervisor mode: a class manager watching a learner's terminal -->
+    <template v-else-if="supervisorGroup">
+      <div class="session-view-nav">
+        <router-link :to="backTarget" class="back-link">
+          <i class="fas fa-arrow-left"></i>
+          {{ backLabel }}
+        </router-link>
+      </div>
+      <h2 class="supervisor-learner-name" data-testid="supervisor-learner-name">
+        <i class="fas fa-user-graduate" aria-hidden="true"></i>
+        {{ supervisedLearnerName }}
+      </h2>
+      <div class="supervisor-layout">
+        <SupervisionViewer
+          v-if="supervisedTerminalState === 'running'"
+          :session-id="sessionId"
+          :learner-name="supervisedLearnerName"
+          class="supervisor-viewer"
+        />
+        <div v-else class="session-expired-notice">
+          <i class="fas fa-pause-circle" aria-hidden="true"></i>
+          <span>{{ t('sessionView.supervisedNotRunning') }}</span>
+        </div>
+        <section v-if="supervisedProgress" class="card supervisor-progress" data-testid="supervisor-progress">
+          <div class="card-header">
+            <h3>{{ supervisedProgress.scenario_title }}</h3>
+          </div>
+          <ol class="card-body supervisor-steps">
+            <li
+              v-for="step in supervisedProgress.steps"
+              :key="step.step_order"
+              :class="['supervisor-step', `supervisor-step-${step.status}`]"
+            >
+              <i :class="stepStatusIcon(step.status)" aria-hidden="true"></i>
+              {{ step.step_title }}
+            </li>
+          </ol>
+        </section>
+      </div>
+    </template>
+
     <!-- Session content -->
     <template v-else-if="sessionInfo">
       <!-- Back link, and at the far right the page-level controls: the
@@ -331,6 +372,8 @@ import SessionPausedBanner from '../Terminal/SessionPausedBanner.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
 import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
+import SupervisionViewer from '../Terminal/SupervisionViewer.vue'
+import { useSupervisorSession } from '../../composables/useSupervisorSession'
 import BaseModal from '../Modals/BaseModal.vue'
 import { getEffectiveSessionState } from '../../utils/sessionState'
 import { showsValidatedFlags } from '../../utils/scenarioDisplay'
@@ -343,8 +386,16 @@ const router = useRouter()
 // scenario editor's preview) names its own page in `returnTo`; only an
 // in-app path is honoured.
 const returnTo = computed(() => inAppPath(route.query.returnTo))
-const backTarget = computed(() => returnTo.value ?? { name: 'TerminalSessions' })
-const backLabel = computed(() => t(returnTo.value ? 'sessionView.back' : 'sessionView.backToSessions'))
+// Supervisor mode: a class manager opened a learner's terminal from the class.
+const supervisorGroup = typeof route.query.group === 'string' && route.query.group ? route.query.group : null
+const backTarget = computed(() => {
+  if (supervisorGroup) return `/classes/${supervisorGroup}/live?view=wall`
+  return returnTo.value ?? { name: 'TerminalSessions' }
+})
+const backLabel = computed(() => {
+  if (supervisorGroup) return t('sessionView.backToClass')
+  return t(returnTo.value ? 'sessionView.back' : 'sessionView.backToSessions')
+})
 const { showSuccess, showWarning, showError: showErrorNotification, showInfo, showConfirm } = useNotification()
 
 const { t } = useTranslations({
@@ -352,6 +403,8 @@ const { t } = useTranslations({
     sessionView: {
       loading: 'Loading session...',
       backToSessions: 'Back to My Sessions',
+      backToClass: 'Back to class',
+      supervisedNotRunning: 'This terminal is not running.',
       back: 'Back',
       abandonScenario: 'Abandon Scenario',
       errorLoading: 'Unable to load session information.',
@@ -405,6 +458,8 @@ const { t } = useTranslations({
     sessionView: {
       loading: 'Chargement de la session...',
       backToSessions: 'Retour aux sessions',
+      backToClass: 'Retour à la classe',
+      supervisedNotRunning: 'Ce terminal n\'est pas démarré.',
       back: 'Retour',
       abandonScenario: 'Abandonner le scénario',
       errorLoading: 'Impossible de charger les informations de la session.',
@@ -491,6 +546,27 @@ function dismissRecordingNotice() {
 
 // Get session ID from route
 const sessionId = route.params.sessionId as string
+
+// Supervisor mode reads the class, never the learner's own session list.
+const {
+  learnerName: supervisedLearnerName,
+  terminalState: supervisedTerminalState,
+  progress: supervisedProgress,
+  load: loadSupervisedSession
+} = useSupervisorSession(supervisorGroup ?? '', sessionId)
+
+async function loadSupervisorMode() {
+  isLoading.value = true
+  // Any refusal reads as a miss: the backend's wording is not shown.
+  if (!await loadSupervisedSession()) error.value = t('sessionView.errorNotFound')
+  isLoading.value = false
+}
+
+function stepStatusIcon(status: string): string {
+  if (status === 'completed') return 'fas fa-check-circle'
+  if (status === 'active' || status === 'in_progress') return 'fas fa-play-circle'
+  return 'far fa-circle'
+}
 
 // Scenario briefing (modal, opened once at the start of a run)
 const scenarioBriefing = ref<ScenarioInfo | null>(null)
@@ -1263,7 +1339,8 @@ function startPopupDrag(event: PointerEvent) {
 }
 
 onMounted(() => {
-  loadSession()
+  if (supervisorGroup) loadSupervisorMode()
+  else loadSession()
 })
 
 onBeforeUnmount(() => {
@@ -1321,6 +1398,61 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: center;
   gap: var(--spacing-md);
+}
+
+/* Supervisor mode: the learner's screen, with their run's steps beside it.
+   The progress box is the shared .card; only the layout is set here. */
+.supervisor-learner-name {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin: 0 0 var(--spacing-md);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+}
+
+.supervisor-layout {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: flex-start;
+}
+
+.supervisor-viewer {
+  flex: 1;
+  min-width: 0;
+  height: 70vh;
+}
+
+.supervisor-progress {
+  width: 320px;
+  flex-shrink: 0;
+}
+
+.supervisor-steps {
+  list-style: none;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.supervisor-step {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  color: var(--color-text-muted);
+}
+
+.supervisor-step-completed i { color: var(--color-success); }
+.supervisor-step-active,
+.supervisor-step-in_progress { color: var(--color-text-primary); font-weight: 600; }
+.supervisor-step-active i,
+.supervisor-step-in_progress i { color: var(--color-primary); }
+
+@media (max-width: 768px) {
+  .supervisor-layout { flex-direction: column; align-items: stretch; }
+  .supervisor-progress { width: auto; }
+  .supervisor-viewer { height: 60vh; }
 }
 
 /* Its own band between the app bar and the content, with the controls centred
