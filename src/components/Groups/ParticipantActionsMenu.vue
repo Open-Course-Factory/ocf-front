@@ -169,9 +169,10 @@ const canRestoreInternet = computed(() =>
   !!props.participant?.network_cut || liveSessions.value.some(s => s.network_disabled)
 )
 const runningSession = computed(() => liveSessions.value.find(s => s.state === 'running') ?? null)
-// Stopping a temporary session deletes it: its work is lost.
+// Stopping a temporary session deletes it: its work is lost. Only a session
+// known to be persistent keeps its work — any other mode warns.
 const stopLosesWork = computed(() =>
-  liveSessions.value.some(s => s.state === 'running' && s.persistence_mode === 'ephemeral')
+  liveSessions.value.some(s => s.state === 'running' && s.persistence_mode !== 'persistent')
 )
 const openableSession = computed(() =>
   runningSession.value ?? liveSessions.value.find(s => s.state === 'stopped') ?? null
