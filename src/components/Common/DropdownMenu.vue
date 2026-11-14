@@ -35,6 +35,7 @@ withDefaults(defineProps<Props>(), {
 })
 
 const containerRef = ref<HTMLElement | null>(null)
+const triggerRef = ref<HTMLElement | null>(null)
 const open = ref(false)
 
 function toggle() {
@@ -43,6 +44,14 @@ function toggle() {
 
 function close() {
   open.value = false
+}
+
+// Escape closes the open menu and gives the focus back to its trigger.
+function onKeydown(e: KeyboardEvent) {
+  if (e.key !== 'Escape' || !open.value) return
+  e.stopPropagation()
+  open.value = false
+  triggerRef.value?.querySelector<HTMLElement>('button, [tabindex], a[href]')?.focus()
 }
 
 function onDocClick(e: MouseEvent) {
@@ -61,13 +70,14 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="containerRef" class="ocf-dropdown">
+  <div ref="containerRef" class="ocf-dropdown" @keydown="onKeydown">
     <!-- Trigger: custom #trigger slot, or the default .btn-icon ⋯ button. -->
-    <div class="dropdown-trigger" @click.stop="toggle">
+    <div ref="triggerRef" class="dropdown-trigger" @click.stop="toggle">
       <slot name="trigger">
         <button
           class="btn-icon"
           type="button"
+          aria-haspopup="menu"
           :aria-expanded="open"
           :aria-label="triggerLabel"
           :title="triggerLabel"
