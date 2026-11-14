@@ -126,6 +126,7 @@ function blockTitle(label: string, block: ParticipantBlock | null | undefined): 
   display: inline-flex;
   flex-wrap: wrap;
   gap: var(--spacing-xs);
+  min-height: var(--badge-min-height);
   vertical-align: middle;
 }
 

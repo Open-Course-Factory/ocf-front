@@ -296,6 +296,7 @@ button.ocf-btn-outline:disabled {
   display: inline-flex;
   align-items: center;
   padding: 4px 8px;
+  min-height: var(--badge-min-height);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   border-radius: var(--border-radius-full);

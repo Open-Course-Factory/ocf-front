@@ -133,6 +133,10 @@
   --font-size-3xl: 1.875rem;  /* 30px */
   --font-size-4xl: 2.25rem;   /* 36px */
 
+  /* A .badge's natural height: 12px text at line-height 1 + 4px padding top and
+     bottom. Also reserves a badge row before its badges arrive. */
+  --badge-min-height: 20px;
+
   /* Font Weights */
   --font-weight-normal: 400;
   --font-weight-medium: 500;
@@ -369,6 +373,7 @@
   --input-padding: 8px 12px;
 
   --font-size-xs: 0.7rem;
+  --badge-min-height: 19px; /* 11.2px text + 8px padding */
   --font-size-sm: 0.8rem;
   --font-size-base: 0.9rem;
   --font-size-md: 0.95rem;
