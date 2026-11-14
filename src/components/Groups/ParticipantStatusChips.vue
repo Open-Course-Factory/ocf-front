@@ -42,7 +42,7 @@ const { t } = useTranslations({
     participantChips: {
       internetOff: 'Internet off',
       blockedClass: 'Blocked in the class',
-      blockedOrg: 'Blocked by the organisation',
+      blockedOrg: 'Session start blocked by the organisation',
       blockedPlatform: 'Blocked by the platform',
       reason: 'Reason: {reason}'
     }

@@ -100,7 +100,7 @@ const { t } = useTranslations({
       unblockClass: 'Unblock in this class',
       blockOrg: 'Block in the organisation',
       unblockOrg: 'Unblock in the organisation',
-      orgBlocked: 'Blocked by the organisation',
+      orgBlocked: 'Session start blocked by the organisation',
       stopTitle: 'Stop sessions',
       stopBody: 'Stop {name}’s running sessions? Their work is kept on disk: they can resume later.',
       stopBodyTemporary: 'Stop {name}’s running sessions? A temporary session is deleted when it stops: its work is lost.',
@@ -440,41 +440,46 @@ function unblockOrg() {
     </div>
   </DropdownMenu>
 
-  <!-- Outside the menu: the menu closes on the click that opens the dialog. -->
-  <BaseModal
-    :visible="!!dialog"
-    :title="dialog?.title"
-    size="small"
-    :show-default-footer="true"
-    :confirm-text="dialog?.confirm"
-    :cancel-text="t('participantActions.cancel')"
-    confirm-variant="danger"
-    confirm-test-id="participant-confirm"
-    cancel-test-id="participant-cancel"
-    @confirm="confirmPending"
-    @close="cancel"
-  >
-    <p class="ocf-participant-actions__body">{{ dialog?.body }}</p>
-    <template v-if="isBlockDialog">
-      <div class="form-group">
-        <label for="participant-block-reason">{{ t('participantActions.reasonLabel') }}</label>
-        <textarea
-          id="participant-block-reason"
-          v-model="reason"
-          class="form-control"
-          rows="3"
-          :maxlength="REASON_MAX"
-          data-testid="participant-block-reason"
-        ></textarea>
-        <small class="form-text" data-testid="participant-block-reason-count">{{ reason.length }}/{{ REASON_MAX }}</small>
-      </div>
-      <label class="checkbox-label">
-        <input v-model="stopRunning" type="checkbox" data-testid="participant-block-stop-running" />
-        {{ t('participantActions.stopRunning') }}
-      </label>
-      <p v-if="runningNote" class="form-text" data-testid="participant-block-running-note">{{ runningNote }}</p>
-    </template>
-  </BaseModal>
+  <!-- Outside the menu (it closes on the click that opens the dialog), and out
+       of the host: a wall tile's keys and clicks never see the dialog's. -->
+  <Teleport to="body">
+    <BaseModal
+      :visible="!!dialog"
+      :title="dialog?.title"
+      size="small"
+      :show-default-footer="true"
+      :confirm-text="dialog?.confirm"
+      :cancel-text="t('participantActions.cancel')"
+      confirm-variant="danger"
+      confirm-test-id="participant-confirm"
+      cancel-test-id="participant-cancel"
+      @confirm="confirmPending"
+      @close="cancel"
+    >
+      <p class="ocf-participant-actions__body">{{ dialog?.body }}</p>
+      <template v-if="isBlockDialog">
+        <div class="form-group">
+          <label for="participant-block-reason">{{ t('participantActions.reasonLabel') }}</label>
+          <textarea
+            id="participant-block-reason"
+            v-model="reason"
+            class="form-control"
+            rows="3"
+            :maxlength="REASON_MAX"
+            data-testid="participant-block-reason"
+          ></textarea>
+          <small class="form-text" data-testid="participant-block-reason-count">{{ reason.length }}/{{ REASON_MAX }}</small>
+        </div>
+        <template v-if="runningSession">
+          <label class="checkbox-label">
+            <input v-model="stopRunning" type="checkbox" data-testid="participant-block-stop-running" />
+            {{ t('participantActions.stopRunning') }}
+          </label>
+          <p class="form-text" data-testid="participant-block-running-note">{{ runningNote }}</p>
+        </template>
+      </template>
+    </BaseModal>
+  </Teleport>
 </template>
 
 <style scoped>
