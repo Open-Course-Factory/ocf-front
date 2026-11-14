@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Browser, type Page } from '@playwright/test';
 import { loginFresh, switchToOrg } from './helpers/auth';
 import { dismissVerificationBanner, navigateViaMenuCategory } from './helpers/ui';
 import {
@@ -24,8 +24,10 @@ import {
 //
 // marc teaches a class karim belongs to; karim is at work on the class's
 // scenario. From the members list, marc stops karim's session, then blocks
-// karim in the class with a reason. karim's launch of the assigned scenario is
-// refused with that reason. marc unblocks karim and the block chip goes away.
+// karim in the class with a reason: karim's catalogue no longer lists the
+// scenario assigned through that class (the product rule for a class-blocked
+// learner; the refusal message of a direct launch is unit-tested). marc
+// unblocks karim: the chip goes away and the card is back in the catalogue.
 //
 // Needs a core serving ocf-core #580 (participant controls) and #579 (blocks).
 // Fixture setup mirrors supervisor-session-page.spec.ts; setup and teardown go
@@ -78,6 +80,28 @@ async function openRowMenu(page: Page, name: string): Promise<void> {
   await expect(learnerRow(page, name).locator('.ocf-dropdown-menu')).toBeVisible();
 }
 
+/**
+ * Whether karim's catalogue lists the class scenario, read in a fresh learner
+ * login once the catalogue has loaded (so an absent card is a real absence,
+ * not a page still loading).
+ */
+async function learnerCatalogueListsFixture(browser: Browser): Promise<boolean> {
+  const learnerContext = await browser.newContext();
+  const learnerPage = await learnerContext.newPage();
+  try {
+    await loginFresh(learnerPage, LEARNER_EMAIL, PASSWORD);
+    await dismissVerificationBanner(learnerPage);
+    await switchToOrg(learnerPage, orgDisplayName);
+    await navigateViaMenuCategory(learnerPage, 'scenarios', '/scenarios');
+    await expect(learnerPage.locator('.loading-section')).toHaveCount(0, { timeout: 20_000 });
+    await expect(learnerPage.locator('.error-section')).toHaveCount(0);
+    await expect(learnerPage.locator('.scenario-grid, .empty-section').first()).toBeVisible({ timeout: 20_000 });
+    return (await learnerPage.getByTestId('scenario-card').filter({ hasText: FIXTURE_TITLE }).count()) > 0;
+  } finally {
+    await learnerContext.close();
+  }
+}
+
 test.beforeAll(async () => {
   trainer = await apiLogin(TRAINER_EMAIL, PASSWORD);
   learner = await apiLogin(LEARNER_EMAIL, PASSWORD);
@@ -115,7 +139,7 @@ test.afterAll(async () => {
   await learner?.api.dispose();
 });
 
-test('a trainer stops and blocks a learner from the members list; the learner is told why', async ({ page, browser }) => {
+test('a trainer stops and blocks a learner from the members list; the class scenario leaves and returns to their catalogue', async ({ page, browser }) => {
   test.skip(!groupId, `${TRAINER_EMAIL} teaches no class with learners — seed the dev personas first`);
   test.skip(!learnerTerminalId, 'the learner run could not be provisioned — likely host capacity');
   test.setTimeout(300_000);
@@ -144,34 +168,12 @@ test('a trainer stops and blocks a learner from the members list; the learner is
   await page.getByTestId('participant-confirm').click();
   await expect(row.getByTestId('participant-chip-blocked-class')).toBeVisible({ timeout: 30_000 });
 
-  // 3. karim's launch of the assigned scenario is refused, with the reason.
-  const learnerContext = await browser.newContext();
-  const learnerPage = await learnerContext.newPage();
-  try {
-    await loginFresh(learnerPage, LEARNER_EMAIL, PASSWORD);
-    await dismissVerificationBanner(learnerPage);
-    await switchToOrg(learnerPage, orgDisplayName);
-    await navigateViaMenuCategory(learnerPage, 'scenarios', '/scenarios');
-    const card = learnerPage.getByTestId('scenario-card').filter({ hasText: FIXTURE_TITLE });
-    await expect(card).toBeVisible({ timeout: 20_000 });
-    await card
-      .getByTestId('scenario-launch-btn')
-      .or(card.getByTestId('scenario-resume-btn'))
-      .or(card.getByTestId('scenario-relaunch-btn'))
-      .first()
-      .click();
-    const refusal = learnerPage.locator('.el-notification');
-    await expect(refusal).toContainText(BLOCK_REASON, { timeout: 30_000 });
-    await expect(refusal).toContainText(/classe|class/i);
-    await expect(refusal).not.toContainText('session_start_blocked');
-    // Still on the launcher: nothing was started.
-    await expect(learnerPage).toHaveURL(/\/scenarios/);
-  } finally {
-    await learnerContext.close();
-  }
+  // 3. Blocked in the class, karim no longer sees the class's scenario.
+  expect(await learnerCatalogueListsFixture(browser), 'the class scenario is gone from the blocked learner’s catalogue').toBe(false);
 
-  // 4. marc unblocks karim; the chip goes away.
+  // 4. marc unblocks karim; the chip goes away and the card is back.
   await openRowMenu(page, learnerName);
   await page.getByTestId('participant-action-unblock-class').click();
   await expect(row.getByTestId('participant-chip-blocked-class')).toHaveCount(0, { timeout: 30_000 });
+  expect(await learnerCatalogueListsFixture(browser), 'the class scenario is back once the block is lifted').toBe(true);
 });
