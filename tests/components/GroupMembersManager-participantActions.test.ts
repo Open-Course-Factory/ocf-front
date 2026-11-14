@@ -134,9 +134,9 @@ async function mountList(props: Record<string, unknown> = {}) {
       stubs: {
         BaseModal: {
           name: 'BaseModal',
-          props: ['visible', 'title', 'size', 'isLoading', 'showDefaultFooter', 'confirmText', 'cancelText'],
+          props: ['visible', 'title', 'size', 'isLoading', 'showDefaultFooter', 'confirmText', 'cancelText', 'confirmVariant', 'confirmTestId', 'cancelTestId'],
           emits: ['close', 'confirm'],
-          template: '<div v-if="visible" class="base-modal-stub"><div class="base-modal-title">{{ title }}</div><slot /><div class="base-modal-footer"><slot name="footer"><button v-if="showDefaultFooter && confirmText" type="button" class="base-modal-confirm" @click="$emit(\'confirm\')">{{ confirmText }}</button><button v-if="showDefaultFooter && cancelText" type="button" class="base-modal-cancel" @click="$emit(\'close\')">{{ cancelText }}</button></slot></div></div>'
+          template: '<div v-if="visible" class="base-modal-stub"><div class="base-modal-title">{{ title }}</div><slot /><div class="base-modal-footer"><slot name="footer"><button v-if="showDefaultFooter && confirmText" type="button" :class="[\'base-modal-confirm\', confirmVariant === \'danger\' ? \'btn-danger\' : \'btn-primary\']" :data-testid="confirmTestId" @click="$emit(\'confirm\')">{{ confirmText }}</button><button v-if="showDefaultFooter && cancelText" type="button" class="base-modal-cancel" :data-testid="cancelTestId" @click="$emit(\'close\')">{{ cancelText }}</button></slot></div></div>'
         },
         AdminBadge: { name: 'AdminBadge', template: '<span class="admin-badge-stub" />', props: ['iconOnly', 'tooltip'] }
       }
@@ -251,7 +251,7 @@ describe('GroupMembersManager — participant actions', () => {
     await flushPromises()
     expect(axios.post).not.toHaveBeenCalled()
 
-    await wrapper.find('.base-modal-confirm').trigger('click')
+    await wrapper.find('[data-testid="participant-confirm"]').trigger('click')
     await flushPromises()
 
     expect(axios.post).toHaveBeenCalledTimes(1)
@@ -267,7 +267,7 @@ describe('GroupMembersManager — participant actions', () => {
     await karim.find('[data-testid="participant-action-block-class"]').trigger('click')
     await flushPromises()
     await wrapper.find('[data-testid="participant-block-reason"]').setValue('Exam in progress')
-    await wrapper.find('.base-modal-confirm').trigger('click')
+    await wrapper.find('[data-testid="participant-confirm"]').trigger('click')
     await flushPromises()
 
     expect(axios.put).toHaveBeenCalledWith(

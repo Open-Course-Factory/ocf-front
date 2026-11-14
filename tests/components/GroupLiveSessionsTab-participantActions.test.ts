@@ -95,9 +95,9 @@ async function mountWall(props: Record<string, unknown> = {}) {
         SupervisionViewer: SupervisionViewerStub,
         BaseModal: {
           name: 'BaseModal',
-          props: ['visible', 'title', 'size', 'showDefaultFooter', 'confirmText', 'cancelText'],
+          props: ['visible', 'title', 'size', 'showDefaultFooter', 'confirmText', 'cancelText', 'confirmVariant', 'confirmTestId', 'cancelTestId'],
           emits: ['close', 'confirm'],
-          template: '<div v-if="visible" class="base-modal-stub"><slot /><div class="base-modal-footer"><slot name="footer"><button v-if="showDefaultFooter && confirmText" type="button" class="base-modal-confirm" @click="$emit(\'confirm\')">{{ confirmText }}</button><button v-if="showDefaultFooter && cancelText" type="button" class="base-modal-cancel" @click="$emit(\'close\')">{{ cancelText }}</button></slot></div></div>'
+          template: '<div v-if="visible" class="base-modal-stub"><slot /><div class="base-modal-footer"><slot name="footer"><button v-if="showDefaultFooter && confirmText" type="button" :class="[\'base-modal-confirm\', confirmVariant === \'danger\' ? \'btn-danger\' : \'btn-primary\']" :data-testid="confirmTestId" @click="$emit(\'confirm\')">{{ confirmText }}</button><button v-if="showDefaultFooter && cancelText" type="button" class="base-modal-cancel" :data-testid="cancelTestId" @click="$emit(\'close\')">{{ cancelText }}</button></slot></div></div>'
         },
         AdminBadge: { name: 'AdminBadge', template: '<span />', props: ['iconOnly', 'tooltip'] }
       }
@@ -197,7 +197,7 @@ describe('GroupLiveSessionsTab — participant actions', () => {
 
     await karim.find('[data-testid="participant-action-stop"]').trigger('click')
     await flushPromises()
-    await wrapper.find('.base-modal-confirm').trigger('click')
+    await wrapper.find('[data-testid="participant-confirm"]').trigger('click')
     await flushPromises()
 
     expect(stopSessions).toHaveBeenCalledTimes(1)

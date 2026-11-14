@@ -464,6 +464,18 @@ describe('useParticipantControls', () => {
       expect(fr).not.toMatch(/Redémarrez la session/)
     })
 
+    it('words the French partial result without "du participant"', async () => {
+      axiosPut.mockResolvedValueOnce({
+        data: { results: [{ session_id: 's-1', ok: true }, { session_id: 's-2', ok: false, code: 'vm_not_supported' }] }
+      })
+      const controls = setup('fr')
+
+      await controls.setNetwork(KARIM, false)
+
+      expect(toastWarning).toHaveBeenCalledTimes(1)
+      expect(String(toastWarning.mock.calls[0][0])).not.toMatch(/du participant/i)
+    })
+
     it('words every French toast without gendered forms', async () => {
       const messages: string[] = []
       for (const code of [...CODES, 'some_future_code']) messages.push(await errorMessageFor(code, 'fr'))
@@ -477,7 +489,7 @@ describe('useParticipantControls', () => {
 
       expect(messages.length).toBe(CODES.length + 3)
       for (const message of messages) {
-        expect(message).not.toMatch(/Bloqué |débloqué|Votre formateur/)
+        expect(message).not.toMatch(/Bloqué |débloqué|Votre formateur|du participant/)
       }
     })
 

@@ -82,12 +82,13 @@ function createTestRouter() {
   })
 }
 
-// Mirrors BaseModal: its default footer (confirm + cancel) unless a footer slot replaces it.
+// Mirrors BaseModal: its default footer (confirm in its variant, cancel, their
+// test ids) unless a footer slot replaces it.
 const BaseModalStub = {
   name: 'BaseModal',
-  props: ['visible', 'title', 'size', 'showDefaultFooter', 'confirmText', 'cancelText'],
+  props: ['visible', 'title', 'size', 'showDefaultFooter', 'confirmText', 'cancelText', 'confirmVariant', 'confirmTestId', 'cancelTestId'],
   emits: ['close', 'confirm'],
-  template: '<div v-if="visible" class="base-modal-stub"><div class="base-modal-title">{{ title }}</div><slot /><div class="base-modal-footer"><slot name="footer"><button v-if="showDefaultFooter && confirmText" type="button" class="base-modal-confirm" @click="$emit(\'confirm\')">{{ confirmText }}</button><button v-if="showDefaultFooter && cancelText" type="button" class="base-modal-cancel" @click="$emit(\'close\')">{{ cancelText }}</button></slot></div></div>'
+  template: '<div v-if="visible" class="base-modal-stub"><div class="base-modal-title">{{ title }}</div><slot /><div class="base-modal-footer"><slot name="footer"><button v-if="showDefaultFooter && confirmText" type="button" :class="[\'base-modal-confirm\', confirmVariant === \'danger\' ? \'btn-danger\' : \'btn-primary\']" :data-testid="confirmTestId" @click="$emit(\'confirm\')">{{ confirmText }}</button><button v-if="showDefaultFooter && cancelText" type="button" class="base-modal-cancel" :data-testid="cancelTestId" @click="$emit(\'close\')">{{ cancelText }}</button></slot></div></div>'
 }
 
 const AdminBadgeStub = {
@@ -147,8 +148,8 @@ function modal(wrapper: VueWrapper) {
 }
 
 async function confirm(wrapper: VueWrapper) {
-  const button = wrapper.find('.base-modal-confirm')
-  expect(button.exists(), 'the dialog confirms through BaseModal’s own footer').toBe(true)
+  const button = wrapper.find('[data-testid="participant-confirm"]')
+  expect(button.exists(), 'the dialog has a confirm button').toBe(true)
   await button.trigger('click')
   await flushPromises()
 }
@@ -389,7 +390,7 @@ describe('ParticipantActionsMenu', () => {
       const wrapper = await mountMenu({})
       await clickItem(wrapper, 'stop')
 
-      await wrapper.find('.base-modal-cancel').trigger('click')
+      await wrapper.find('[data-testid="participant-cancel"]').trigger('click')
       await flushPromises()
 
       expect(wrapper.emitted('stop-sessions')).toBeUndefined()
@@ -507,17 +508,23 @@ describe('ParticipantActionsMenu', () => {
     it.each([
       ['stop', 'Stop'],
       ['cut-internet', 'Cut internet'],
-      ['block-class', 'Block']
-    ])('uses BaseModal’s own footer for %s, no hand-rolled one', async (action, confirmText) => {
-      const wrapper = await mountMenu({})
+      ['block-class', 'Block'],
+      ['block-org', 'Block']
+    ])('uses BaseModal’s own danger footer for %s, no hand-rolled one', async (action, confirmText) => {
+      const wrapper = await mountMenu({ viewer: ORG_MANAGER })
       await clickItem(wrapper, action)
 
       const baseModal = wrapper.findComponent({ name: 'BaseModal' })
       expect(baseModal.props('showDefaultFooter')).toBe(true)
       expect(baseModal.props('confirmText')).toBe(confirmText)
       expect(baseModal.props('cancelText')).toBe('Cancel')
+      expect(baseModal.props('confirmVariant')).toBe('danger')
+      expect(baseModal.props('confirmTestId')).toBe('participant-confirm')
+      expect(baseModal.props('cancelTestId')).toBe('participant-cancel')
       const footerButtons = modal(wrapper).findAll('.base-modal-footer button')
-      expect(footerButtons.map(b => b.classes().find(c => c.startsWith('base-modal-')))).toEqual(['base-modal-confirm', 'base-modal-cancel'])
+      expect(footerButtons.map(b => b.attributes('data-testid'))).toEqual(['participant-confirm', 'participant-cancel'])
+      expect(footerButtons[0].classes()).toContain('base-modal-confirm')
+      expect(footerButtons[0].classes()).toContain('btn-danger')
     })
 
     it('closes on BaseModal’s close (overlay, ✕) without emitting', async () => {
@@ -625,6 +632,15 @@ describe('ParticipantActionsMenu', () => {
         expect(modal(wrapper).text(), `${action} dialog`).not.toMatch(GENDERED)
         wrapper.unmount()
       }
+    })
+
+    it('labels the block reason without naming the learner by a gendered noun', async () => {
+      const wrapper = await mountMenu({}, { locale: 'fr' })
+      await clickItem(wrapper, 'block-class')
+
+      const label = wrapper.find('label[for="participant-block-reason"]')
+      expect(label.exists()).toBe(true)
+      expect(label.text()).not.toMatch(/l[’']apprenant|du participant/i)
     })
 
     it('words the read-only organisation note without gendered forms', async () => {

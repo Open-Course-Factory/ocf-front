@@ -156,7 +156,7 @@ describe('TerminalViewer — internet-access indicator', () => {
 describe('TerminalViewer — internet cut by a trainer (#384)', () => {
   const ExposedPortsChipStub = {
     name: 'ExposedPortsChip',
-    props: ['sessionId', 'isActive', 'hasNetwork'],
+    props: ['sessionId', 'isActive', 'hasNetwork', 'networkCut'],
     template: '<div class="exposed-ports-chip-stub" />'
   }
 
@@ -184,6 +184,13 @@ describe('TerminalViewer — internet cut by a trainer (#384)', () => {
     const chip = wrapper.findComponent({ name: 'ExposedPortsChip' })
     expect(chip.exists()).toBe(true)
     expect(chip.props('hasNetwork')).toBe(false)
+    expect(chip.props('networkCut'), 'the chip is told the training team cut it').toBe(true)
+  })
+
+  it('does not call a session started without internet "cut"', () => {
+    const wrapper = mountWithPorts({ session_id: 'sess-test', composed_features: '{"docker":true}' })
+
+    expect(wrapper.findComponent({ name: 'ExposedPortsChip' }).props('networkCut')).toBeFalsy()
   })
 
   it('offers port exposure again once internet is restored', () => {

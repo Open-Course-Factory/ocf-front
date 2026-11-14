@@ -276,6 +276,48 @@ describe('BaseModal', () => {
     })
   })
 
+  describe('confirm variant and test ids', () => {
+    const footer = { showDefaultFooter: true, confirmText: 'Confirm', cancelText: 'Cancel' }
+
+    it('keeps the primary confirm by default', () => {
+      const wrapper = mountModal(footer)
+      const confirm = wrapper.find('.base-modal-footer .btn')
+      expect(confirm.text()).toBe('Confirm')
+      expect(confirm.classes()).toContain('btn-primary')
+      expect(confirm.classes()).not.toContain('btn-danger')
+    })
+
+    it('renders a danger confirm with the shared danger button class', () => {
+      const wrapper = mountModal({ ...footer, confirmVariant: 'danger' })
+      const confirm = wrapper.find('.base-modal-footer .btn')
+      expect(confirm.text()).toBe('Confirm')
+      expect(confirm.classes()).toEqual(expect.arrayContaining(['btn', 'btn-danger']))
+      expect(confirm.classes()).not.toContain('btn-primary')
+    })
+
+    it('puts the test ids on the default footer buttons', async () => {
+      const wrapper = mountModal({ ...footer, confirmTestId: 'my-confirm', cancelTestId: 'my-cancel' })
+
+      const confirm = wrapper.find('[data-testid="my-confirm"]')
+      const cancel = wrapper.find('[data-testid="my-cancel"]')
+      expect(confirm.exists()).toBe(true)
+      expect(confirm.element.tagName).toBe('BUTTON')
+      expect(confirm.text()).toBe('Confirm')
+      expect(cancel.element.tagName).toBe('BUTTON')
+      expect(cancel.text()).toBe('Cancel')
+
+      await confirm.trigger('click')
+      await cancel.trigger('click')
+      expect(wrapper.emitted('confirm')).toHaveLength(1)
+      expect(wrapper.emitted('close')).toHaveLength(1)
+    })
+
+    it('sets no test id when none is given', () => {
+      const wrapper = mountModal(footer)
+      expect(wrapper.find('.base-modal-footer [data-testid]').exists()).toBe(false)
+    })
+  })
+
   describe('slots', () => {
     it('renders default slot content', () => {
       const wrapper = mountModal({}, { default: '<p class="custom-content">Hello World</p>' })
