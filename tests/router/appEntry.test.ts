@@ -65,6 +65,21 @@ describe('the public pricing page', () => {
 
       expect(replace).toHaveBeenCalledWith(`${COMPANY.website}/tarifs`)
     })
+
+    // A hard load of /pricing is the router's first navigation: main.ts awaits
+    // router.isReady() before mounting, so that navigation must not fail.
+    it('still lets the app start when it is the first page loaded', async () => {
+      const replace = vi.fn()
+      vi.stubGlobal('location', { ...window.location, replace })
+      vi.resetModules()
+      const { default: freshRouter } = await import('../../src/router')
+
+      const ready = freshRouter.isReady()
+      await freshRouter.push('/pricing').catch(() => undefined)
+
+      expect(replace).toHaveBeenCalledWith(`${COMPANY.website}/tarifs`)
+      await expect(ready).resolves.toBeUndefined()
+    })
   })
 
   it('leaves the authenticated purchase flow in place', () => {

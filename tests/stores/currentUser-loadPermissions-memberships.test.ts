@@ -44,6 +44,7 @@ vi.mock('../../src/router', () => ({
 }))
 
 import axios from 'axios'
+import router from '../../src/router'
 import { useCurrentUserStore } from '../../src/stores/currentUser'
 import { useUserMembershipsStore } from '../../src/stores/userMemberships'
 
@@ -85,5 +86,25 @@ describe('currentUser.loadPermissions — memberships ride along', () => {
     // caller (the editor's route guard) asks again instead of locking out.
     expect(useUserMembershipsStore().isLoaded).toBe(false)
     expect(useUserMembershipsStore().getOrgRole('org-1')).toBeNull()
+  })
+})
+
+// Signing out, by hand or because the session expired, ends on the login form.
+describe('currentUser — where signing out lands', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('sends logout() to the Login page', async () => {
+    await useCurrentUserStore().logout()
+
+    expect(router.push).toHaveBeenCalledWith({ name: 'Login' })
+  })
+
+  it('sends autoLogout() from a protected page to the Login page', () => {
+    useCurrentUserStore().autoLogout()
+
+    expect(router.push).toHaveBeenCalledWith({ name: 'Login' })
   })
 })
