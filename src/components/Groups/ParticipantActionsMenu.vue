@@ -103,14 +103,18 @@ const { t } = useTranslations({
       orgBlocked: 'Blocked by the organisation',
       stopTitle: 'Stop sessions',
       stopBody: 'Stop {name}’s running sessions? Their work is kept on disk: they can resume later.',
+      stopBodyTemporary: 'Stop {name}’s running sessions? A temporary session is deleted when it stops: its work is lost.',
       cutTitle: 'Cut internet',
-      cutBody: 'Cut internet on {name}’s sessions? Their exposed ports stop answering too, until you restore internet.',
+      cutBody: 'Cut internet for {name}? The cut holds for their current sessions and the new ones they start in this class’s organisation, until you restore it. Their exposed ports stop answering too.',
       blockClassTitle: 'Block in this class',
       blockClassBody: '{name} will not be able to start or resume a session in this class until you unblock them.',
       blockOrgTitle: 'Block in the organisation',
       blockOrgBody: '{name} will not be able to start or resume a session anywhere in the organisation until it is lifted.',
       reasonLabel: 'Reason (optional, shown to the learner)',
       stopRunning: 'Also stop their running sessions',
+      runningKept: 'Their running sessions stop; their work is kept on disk.',
+      runningLost: 'A temporary session is deleted when it stops: its work is lost.',
+      runningContinue: 'Their running sessions keep running.',
       confirmStop: 'Stop',
       confirmCut: 'Cut internet',
       confirmBlock: 'Block',
@@ -129,17 +133,21 @@ const { t } = useTranslations({
       unblockClass: 'Débloquer dans cette classe',
       blockOrg: 'Bloquer dans l’organisation',
       unblockOrg: 'Débloquer dans l’organisation',
-      orgBlocked: 'Bloqué par l’organisation',
+      orgBlocked: 'Démarrage bloqué par l’organisation',
       stopTitle: 'Arrêter les sessions',
-      stopBody: 'Arrêter les sessions en cours de {name} ? Son travail est conservé sur le disque : la session pourra reprendre plus tard.',
+      stopBody: 'Arrêter les sessions en cours de {name} ? Le travail est conservé sur le disque : les sessions pourront reprendre plus tard.',
+      stopBodyTemporary: 'Arrêter les sessions en cours de {name} ? Une session temporaire est supprimée à l’arrêt : son travail est perdu.',
       cutTitle: 'Couper internet',
-      cutBody: 'Couper internet sur les sessions de {name} ? Ses ports exposés ne répondront plus non plus, jusqu’au rétablissement d’internet.',
+      cutBody: 'Couper internet pour {name} ? La coupure vaut pour ses sessions en cours et les nouvelles sessions lancées dans l’organisation de cette classe, jusqu’à ce qu’internet soit rétabli. Ses ports exposés ne répondent plus non plus.',
       blockClassTitle: 'Bloquer dans cette classe',
-      blockClassBody: '{name} ne pourra plus lancer ni reprendre de session dans cette classe tant que vous ne l’aurez pas débloqué.',
+      blockClassBody: '{name} ne pourra plus lancer ni reprendre de session dans cette classe tant que le blocage n’est pas levé.',
       blockOrgTitle: 'Bloquer dans l’organisation',
       blockOrgBody: '{name} ne pourra plus lancer ni reprendre de session dans toute l’organisation tant que le blocage n’est pas levé.',
-      reasonLabel: 'Motif (facultatif, affiché à l’apprenant)',
+      reasonLabel: 'Motif (facultatif, visible par la personne concernée)',
       stopRunning: 'Arrêter aussi ses sessions en cours',
+      runningKept: 'Ses sessions en cours s’arrêtent ; le travail est conservé sur le disque.',
+      runningLost: 'Une session temporaire est supprimée à l’arrêt : son travail est perdu.',
+      runningContinue: 'Ses sessions en cours continuent de tourner.',
       confirmStop: 'Arrêter',
       confirmCut: 'Couper internet',
       confirmBlock: 'Bloquer',
@@ -153,12 +161,18 @@ const { t } = useTranslations({
 const liveSessions = computed(() =>
   (props.participant?.sessions ?? []).filter(s => s.state !== 'deleted')
 )
-const networkSessions = computed(() =>
-  liveSessions.value.filter(s => s.network_feature && (s.state === 'running' || s.state === 'stopped'))
+// The cut sticks to the participant — their current and next sessions — so it
+// is offered until it is set, sessions or not. Restore also lifts a session
+// still cut on its own.
+const canCutInternet = computed(() => !props.participant?.network_cut)
+const canRestoreInternet = computed(() =>
+  !!props.participant?.network_cut || liveSessions.value.some(s => s.network_disabled)
 )
-const canCutInternet = computed(() => networkSessions.value.some(s => !s.network_disabled))
-const canRestoreInternet = computed(() => networkSessions.value.some(s => s.network_disabled))
 const runningSession = computed(() => liveSessions.value.find(s => s.state === 'running') ?? null)
+// Stopping a temporary session deletes it: its work is lost.
+const stopLosesWork = computed(() =>
+  liveSessions.value.some(s => s.state === 'running' && s.persistence_mode === 'ephemeral')
+)
 const openableSession = computed(() =>
   runningSession.value ?? liveSessions.value.find(s => s.state === 'stopped') ?? null
 )
@@ -186,7 +200,7 @@ const orgBadge = computed(() =>
   props.viewer.isPlatformAdmin && (!props.viewer.managesOrg || !isParticipant.value)
 )
 const orgBlockReadOnly = computed(() =>
-  classActions.value && !orgActions.value && !!props.participant?.org_block
+  classActions.value && !orgActions.value && !!props.participant?.org_blocked
 )
 
 const watchLink = computed(() =>
@@ -222,7 +236,11 @@ const dialog = computed(() => {
   const name = participantName.value
   switch (pending.value) {
     case 'stop':
-      return { title: t('participantActions.stopTitle'), body: t('participantActions.stopBody', { name }), confirm: t('participantActions.confirmStop') }
+      return {
+        title: t('participantActions.stopTitle'),
+        body: t(stopLosesWork.value ? 'participantActions.stopBodyTemporary' : 'participantActions.stopBody', { name }),
+        confirm: t('participantActions.confirmStop')
+      }
     case 'cut':
       return { title: t('participantActions.cutTitle'), body: t('participantActions.cutBody', { name }), confirm: t('participantActions.confirmCut') }
     case 'block-class':
@@ -232,6 +250,13 @@ const dialog = computed(() => {
     default:
       return null
   }
+})
+
+// What "also stop" does to the running sessions, in the block dialog.
+const runningNote = computed(() => {
+  if (!runningSession.value) return ''
+  if (!stopRunning.value) return t('participantActions.runningContinue')
+  return t(stopLosesWork.value ? 'participantActions.runningLost' : 'participantActions.runningKept')
 })
 
 function ask(action: PendingAction) {
@@ -378,7 +403,7 @@ function unblockOrg() {
 
     <template v-if="orgActions">
       <button
-        v-if="participant?.org_block"
+        v-if="participant?.org_blocked"
         type="button"
         class="ocf-dropdown-item"
         data-testid="participant-action-unblock-org"
@@ -407,7 +432,6 @@ function unblockOrg() {
       class="ocf-dropdown-item ocf-participant-actions__note"
       role="note"
       data-testid="participant-org-block-readonly"
-      :title="participant?.org_block?.reason || undefined"
       @click.stop
     >
       <i class="fas fa-building-lock"></i>
@@ -420,6 +444,13 @@ function unblockOrg() {
     :visible="!!dialog"
     :title="dialog?.title"
     size="small"
+    :show-default-footer="true"
+    :confirm-text="dialog?.confirm"
+    :cancel-text="t('participantActions.cancel')"
+    confirm-variant="danger"
+    confirm-test-id="participant-confirm"
+    cancel-test-id="participant-cancel"
+    @confirm="confirmPending"
     @close="cancel"
   >
     <p class="ocf-participant-actions__body">{{ dialog?.body }}</p>
@@ -440,14 +471,7 @@ function unblockOrg() {
         <input v-model="stopRunning" type="checkbox" data-testid="participant-block-stop-running" />
         {{ t('participantActions.stopRunning') }}
       </label>
-    </template>
-    <template #footer>
-      <button type="button" class="btn btn-danger" data-testid="participant-confirm" @click="confirmPending">
-        {{ dialog?.confirm }}
-      </button>
-      <button type="button" class="btn btn-secondary" data-testid="participant-cancel" @click="cancel">
-        {{ t('participantActions.cancel') }}
-      </button>
+      <p v-if="runningNote" class="form-text" data-testid="participant-block-running-note">{{ runningNote }}</p>
     </template>
   </BaseModal>
 </template>

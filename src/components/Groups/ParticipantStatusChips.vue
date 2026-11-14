@@ -50,15 +50,17 @@ const { t } = useTranslations({
   fr: {
     participantChips: {
       internetOff: 'Internet coupé',
-      blockedClass: 'Bloqué dans la classe',
-      blockedOrg: 'Bloqué par l’organisation',
-      blockedPlatform: 'Bloqué par la plateforme',
+      blockedClass: 'Démarrage bloqué dans la classe',
+      blockedOrg: 'Démarrage bloqué par l’organisation',
+      blockedPlatform: 'Démarrage bloqué par la plateforme',
       reason: 'Motif : {reason}'
     }
   }
 })
 
+// The sticky cut, or a session still cut on its own.
 const internetOff = computed(() =>
+  !!props.participant?.network_cut ||
   (props.participant?.sessions ?? []).some(s => s.state !== 'deleted' && s.network_feature && s.network_disabled)
 )
 
@@ -68,51 +70,54 @@ function blockTitle(label: string, block: ParticipantBlock | null | undefined): 
 </script>
 
 <template>
-  <span v-if="participant" class="ocf-participant-chips">
-    <span
-      v-if="internetOff"
-      class="badge badge-warning"
-      data-testid="participant-chip-internet-off"
-      :title="t('participantChips.internetOff')"
-      :role="iconOnly ? 'img' : undefined"
-      :aria-label="iconOnly ? t('participantChips.internetOff') : undefined"
-    >
-      <i class="fas fa-plug-circle-xmark" aria-hidden="true"></i>
-      <span v-if="!iconOnly">{{ t('participantChips.internetOff') }}</span>
-    </span>
-    <span
-      v-if="participant.class_block"
-      class="badge badge-danger"
-      data-testid="participant-chip-blocked-class"
-      :title="blockTitle(t('participantChips.blockedClass'), participant.class_block)"
-      :role="iconOnly ? 'img' : undefined"
-      :aria-label="iconOnly ? blockTitle(t('participantChips.blockedClass'), participant.class_block) : undefined"
-    >
-      <i class="fas fa-ban" aria-hidden="true"></i>
-      <span v-if="!iconOnly">{{ t('participantChips.blockedClass') }}</span>
-    </span>
-    <span
-      v-if="participant.org_block"
-      class="badge badge-danger"
-      data-testid="participant-chip-blocked-org"
-      :title="blockTitle(t('participantChips.blockedOrg'), participant.org_block)"
-      :role="iconOnly ? 'img' : undefined"
-      :aria-label="iconOnly ? blockTitle(t('participantChips.blockedOrg'), participant.org_block) : undefined"
-    >
-      <i class="fas fa-building-lock" aria-hidden="true"></i>
-      <span v-if="!iconOnly">{{ t('participantChips.blockedOrg') }}</span>
-    </span>
-    <span
-      v-if="participant.global_block"
-      class="badge badge-danger"
-      data-testid="participant-chip-blocked-platform"
-      :title="t('participantChips.blockedPlatform')"
-      :role="iconOnly ? 'img' : undefined"
-      :aria-label="iconOnly ? t('participantChips.blockedPlatform') : undefined"
-    >
-      <i class="fas fa-shield-halved" aria-hidden="true"></i>
-      <span v-if="!iconOnly">{{ t('participantChips.blockedPlatform') }}</span>
-    </span>
+  <!-- Always rendered: the slot holds its place before the bulk read answers. -->
+  <span class="ocf-participant-chips" data-testid="participant-chips-slot">
+    <template v-if="participant">
+      <span
+        v-if="internetOff"
+        class="badge badge-warning"
+        data-testid="participant-chip-internet-off"
+        :title="t('participantChips.internetOff')"
+        :role="iconOnly ? 'img' : undefined"
+        :aria-label="iconOnly ? t('participantChips.internetOff') : undefined"
+      >
+        <i class="fas fa-plug-circle-xmark" aria-hidden="true"></i>
+        <span v-if="!iconOnly">{{ t('participantChips.internetOff') }}</span>
+      </span>
+      <span
+        v-if="participant.class_block"
+        class="badge badge-danger"
+        data-testid="participant-chip-blocked-class"
+        :title="blockTitle(t('participantChips.blockedClass'), participant.class_block)"
+        :role="iconOnly ? 'img' : undefined"
+        :aria-label="iconOnly ? blockTitle(t('participantChips.blockedClass'), participant.class_block) : undefined"
+      >
+        <i class="fas fa-ban" aria-hidden="true"></i>
+        <span v-if="!iconOnly">{{ t('participantChips.blockedClass') }}</span>
+      </span>
+      <span
+        v-if="participant.org_blocked"
+        class="badge badge-danger"
+        data-testid="participant-chip-blocked-org"
+        :title="t('participantChips.blockedOrg')"
+        :role="iconOnly ? 'img' : undefined"
+        :aria-label="iconOnly ? t('participantChips.blockedOrg') : undefined"
+      >
+        <i class="fas fa-building-lock" aria-hidden="true"></i>
+        <span v-if="!iconOnly">{{ t('participantChips.blockedOrg') }}</span>
+      </span>
+      <span
+        v-if="participant.global_block"
+        class="badge badge-danger"
+        data-testid="participant-chip-blocked-platform"
+        :title="t('participantChips.blockedPlatform')"
+        :role="iconOnly ? 'img' : undefined"
+        :aria-label="iconOnly ? t('participantChips.blockedPlatform') : undefined"
+      >
+        <i class="fas fa-shield-halved" aria-hidden="true"></i>
+        <span v-if="!iconOnly">{{ t('participantChips.blockedPlatform') }}</span>
+      </span>
+    </template>
   </span>
 </template>
 
