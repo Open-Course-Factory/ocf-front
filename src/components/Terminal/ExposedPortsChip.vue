@@ -152,7 +152,7 @@ const { t } = useTranslations({
       hint: 'A public URL to a port of this session, to look at your work — it dies after a short while or with the session.',
       expiresAt: 'Expires at {time}',
       needsNetwork: 'Start a session with internet access to expose a port.',
-      networkCut: 'The training team turned internet off for this session: no port can be exposed until it is back on.',
+      networkCut: 'The training team cut internet for this session: no port can be exposed until it is restored.',
       portPlaceholder: 'Port (e.g. 8000)',
       forward: 'Expose',
       loading: 'Loading…',
