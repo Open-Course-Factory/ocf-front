@@ -45,17 +45,29 @@
       </div>
     </div>
     <!-- RGPD transparency notice -->
-    <div v-show="!isCollapsed" class="recording-notice">
-      <span class="recording-notice-summary">
-        <i class="fas fa-shield-alt recording-notice-icon"></i>
-        {{ t('notice.summary') }}
+    <div v-if="!isCollapsed" class="recording-notice" data-testid="recording-notice">
+      <div class="recording-notice-summary">
+        <i class="fas fa-shield-alt recording-notice-icon" aria-hidden="true"></i>
+        <span class="recording-notice-label">{{ t('notice.label') }}</span>
         <button
+          type="button"
           class="recording-notice-toggle"
+          data-testid="recording-notice-toggle"
+          :aria-controls="noticeDetailsId"
+          :aria-expanded="noticeExpanded ? 'true' : 'false'"
           @click="noticeExpanded = !noticeExpanded"
-          :aria-expanded="noticeExpanded"
-        >{{ noticeExpanded ? '▲' : '▼' }} {{ t('notice.learnMore') }}</button>
-      </span>
-      <div v-if="noticeExpanded" class="recording-notice-details">
+        >
+          {{ t('notice.toggle') }}
+          <i :class="['fas', noticeExpanded ? 'fa-chevron-up' : 'fa-chevron-down']" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div
+        v-if="noticeExpanded"
+        :id="noticeDetailsId"
+        class="recording-notice-details"
+        data-testid="recording-notice-details"
+      >
+        <p>{{ t('notice.summary') }}</p>
         <p>{{ t('notice.details') }}</p>
         <router-link to="/privacy" class="recording-notice-privacy-link">
           <i class="fas fa-external-link-alt"></i> {{ t('notice.privacyLink') }}
@@ -118,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onBeforeUnmount, onMounted, nextTick } from 'vue'
+import { ref, computed, watch, onBeforeUnmount, onMounted, nextTick, useId } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
@@ -149,7 +161,8 @@ const { t } = useTranslations({
   en: {
     notice: {
       summary: 'Terminal commands are recorded for security auditing and pedagogy. Retention follows your subscription plan.',
-      learnMore: 'Learn more',
+      label: 'Commands are recorded',
+      toggle: 'Details',
       details: 'Recording serves two purposes: security auditing (if a container is misused, logs allow investigation) and pedagogy (trainers can review progress). Data is retained according to your subscription plan and is governed by our privacy policy.',
       privacyLink: 'Privacy policy'
     },
@@ -184,7 +197,8 @@ const { t } = useTranslations({
   fr: {
     notice: {
       summary: 'Les commandes saisies dans le terminal sont enregistrées à des fins de sécurité et de pédagogie. La durée de conservation dépend de votre plan.',
-      learnMore: 'En savoir plus',
+      label: 'Commandes enregistrées',
+      toggle: 'Détails',
       details: 'L\'enregistrement remplit deux objectifs : la sécurité (en cas de mauvaise utilisation d\'un conteneur, les journaux permettent une investigation) et la pédagogie (les formateurs peuvent suivre la progression). Les données sont conservées conformément à votre plan d\'abonnement et sont régies par notre politique de confidentialité.',
       privacyLink: 'Politique de confidentialité'
     },
@@ -250,6 +264,7 @@ function toggleCollapse() {
 }
 
 const noticeExpanded = ref(false)
+const noticeDetailsId = useId()
 const commands = ref<CommandEntry[]>([])
 const isLoading = ref(false)
 const recordingDisabled = ref(false)
@@ -771,28 +786,40 @@ onBeforeUnmount(() => {
 
 /* RGPD recording notice */
 .recording-notice {
-  padding: var(--spacing-xs) var(--spacing-md);
+  padding: calc(var(--spacing-xs) / 2) var(--spacing-sm);
   background-color: var(--color-info-bg);
   border-bottom: var(--border-width-thin) solid var(--color-info-border);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   color: var(--color-info-text);
 }
 
 .recording-notice-summary {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: var(--spacing-xs);
   line-height: 1.4;
+  min-width: 0;
+}
+
+.recording-notice-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .recording-notice-icon {
   flex-shrink: 0;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   color: var(--color-info);
 }
 
 .recording-notice-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
   background: none;
   border: none;
   cursor: pointer;
@@ -804,6 +831,11 @@ onBeforeUnmount(() => {
   text-decoration: underline;
   white-space: nowrap;
   transition: color var(--transition-fast);
+}
+
+.recording-notice-toggle:focus-visible {
+  outline: 2px solid var(--color-info);
+  outline-offset: 1px;
 }
 
 .recording-notice-toggle:hover {
