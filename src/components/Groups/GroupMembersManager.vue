@@ -27,13 +27,17 @@ import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
 import { useGroupMembers, type GroupMember } from '../../composables/useGroupMembers'
 import { CLASS_PAGE_NAMES } from '../../router/classPages'
+import { isRoleAtLeast } from '../../utils/roles'
 import { formatDate } from '../../utils/formatters'
 import { userService, type User } from '../../services/domain/user'
 import { bulkImportService, type UserCredential } from '../../services/domain/bulkImport'
 import type { ClassGroup } from '../../types'
+import type { BlockChange } from '../../services/domain/terminal/participantControlsService'
 import BaseModal from '../Modals/BaseModal.vue'
 import AdminBadge from '../Common/AdminBadge.vue'
-import DropdownMenu from '../Common/DropdownMenu.vue'
+import ParticipantActionsMenu, { type ParticipantActionsViewer } from './ParticipantActionsMenu.vue'
+import ParticipantStatusChips from './ParticipantStatusChips.vue'
+import { useParticipantControls } from '../../composables/useParticipantControls'
 
 const props = defineProps<{
   groupId: string
@@ -45,6 +49,8 @@ const props = defineProps<{
    */
   canNameOwner: boolean
   isOwner: boolean
+  /** Manages the class's organisation: may block a member organisation-wide. */
+  isOrgManager?: boolean
   isPlatformAdmin: boolean
   subgroups: ClassGroup[]
 }>()
@@ -203,10 +209,34 @@ const groupMembersComposable = useGroupMembers({
   canManageMembers: computed(() => props.canEditGroup)
 })
 
+// The participants' terminals and blocks (#384): one read for the whole list,
+// for the class's managers only.
+const participantControls = useParticipantControls(() => props.groupId)
+
 // Load members on mount
 onMounted(async () => {
   await groupMembersComposable.loadMembers(true, props.subgroups)
+  if (props.canEditGroup) await participantControls.load()
 })
+
+// The right to manage can resolve after mount (the roster tells a co-trainer).
+watch(() => props.canEditGroup, (canEdit) => {
+  if (canEdit) participantControls.load()
+})
+
+const participantViewer = computed<ParticipantActionsViewer>(() => {
+  const ownRole = groupMembersComposable.members.value.find(m => m.user_id === currentUser.userId)?.role
+  return {
+    userId: currentUser.userId,
+    isPlatformAdmin: props.isPlatformAdmin,
+    managesClass: props.isOwner || props.isOrgManager || isRoleAtLeast(ownRole, 'manager'),
+    managesOrg: props.isOrgManager
+  }
+})
+
+function setOrgBlock(userId: string, change: BlockChange) {
+  if (props.group?.organization_id) participantControls.setOrgBlock(props.group.organization_id, userId, change)
+}
 
 // State
 const showAddMemberModal = ref(false)
@@ -608,6 +638,10 @@ async function confirmRemoveMember() {
           </td>
           <td :title="member.joined_at ? t('groupMembers.joinedOn', { date: formatDate(member.joined_at) }) : undefined">
             <span class="ocf-member-row__name">{{ memberName(member) }}</span>
+            <ParticipantStatusChips
+              v-if="groupMembersComposable.canManageMembers.value"
+              :participant="participantControls.participantFor(member.user_id)"
+            />
             <span v-if="member.source_group" class="badge badge-secondary ocf-member-row__source">
               <i class="fas fa-layer-group" aria-hidden="true"></i>
               {{ member.source_group.display_name }}
@@ -636,33 +670,45 @@ async function confirmRemoveMember() {
             </span>
           </td>
           <td v-if="groupMembersComposable.canManageMembers.value" class="ocf-members-col-actions">
-            <span
-              v-if="member.role === 'member' || groupMembersComposable.canRemoveMember(member)"
-              class="member-actions"
-            >
-              <DropdownMenu :trigger-label="t('groupMembers.memberActions', { name: memberName(member) })">
-                <button
-                  v-if="member.role === 'member'"
-                  type="button"
-                  class="ocf-dropdown-item"
-                  data-testid="member-regenerate-password"
-                  :disabled="isRegenerating"
-                  @click="askRegeneratePasswords([member.user_id], false)"
-                >
-                  <i class="fas fa-key"></i>
-                  <span>{{ t('groupMembers.regeneratePassword') }}</span>
-                </button>
-                <button
-                  v-if="groupMembersComposable.canRemoveMember(member)"
-                  type="button"
-                  class="ocf-dropdown-item ocf-dropdown-item--danger"
-                  data-testid="member-remove"
-                  @click="memberPendingRemoval = member"
-                >
-                  <i class="fas fa-user-minus"></i>
-                  <span>{{ t('groupMembers.removeMemberLabel') }}</span>
-                </button>
-              </DropdownMenu>
+            <span class="member-actions">
+              <ParticipantActionsMenu
+                :group-id="groupId"
+                :organization-id="group.organization_id"
+                :participant="participantControls.participantFor(member.user_id)"
+                :participant-role="member.role"
+                :viewer="participantViewer"
+                context="members"
+                :busy="participantControls.pendingUserId.value === member.user_id"
+                :trigger-label="t('groupMembers.memberActions', { name: memberName(member) })"
+                @stop-sessions="participantControls.stopSessions($event)"
+                @set-network="(userId, enabled) => participantControls.setNetwork(userId, enabled)"
+                @set-class-block="(userId, change) => participantControls.setClassBlock(userId, change)"
+                @set-org-block="setOrgBlock"
+              >
+                <template v-if="member.role === 'member' || groupMembersComposable.canRemoveMember(member)" #default>
+                  <button
+                    v-if="member.role === 'member'"
+                    type="button"
+                    class="ocf-dropdown-item"
+                    data-testid="member-regenerate-password"
+                    :disabled="isRegenerating"
+                    @click="askRegeneratePasswords([member.user_id], false)"
+                  >
+                    <i class="fas fa-key"></i>
+                    <span>{{ t('groupMembers.regeneratePassword') }}</span>
+                  </button>
+                  <button
+                    v-if="groupMembersComposable.canRemoveMember(member)"
+                    type="button"
+                    class="ocf-dropdown-item ocf-dropdown-item--danger"
+                    data-testid="member-remove"
+                    @click="memberPendingRemoval = member"
+                  >
+                    <i class="fas fa-user-minus"></i>
+                    <span>{{ t('groupMembers.removeMemberLabel') }}</span>
+                  </button>
+                </template>
+              </ParticipantActionsMenu>
             </span>
           </td>
         </tr>

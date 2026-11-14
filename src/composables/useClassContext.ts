@@ -47,6 +47,8 @@ export interface ClassContext {
   isPlatformAdmin: Ref<boolean>
   isOwner: Ref<boolean>
   isManager: Ref<boolean>
+  /** Manages the class's organisation (manager or owner there). */
+  isOrgManager: Ref<boolean>
   /** Owner, manager or platform admin: may open the teaching pages. */
   canManageClass: Ref<boolean>
   /**

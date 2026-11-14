@@ -305,6 +305,7 @@ provideClassContext({
   isPlatformAdmin,
   isOwner,
   isManager,
+  isOrgManager,
   canManageClass,
   canDeleteClass,
   reload,
