@@ -161,9 +161,10 @@ test('a trainer stops and blocks a learner from the members list; the class scen
   await openRowMenu(page, learnerName);
   await expect(page.getByTestId('participant-action-stop')).toHaveCount(0);
 
-  // 2. Block karim in the class, with a reason; "also stop" is ticked by default.
+  // 2. Block karim in the class, with a reason. Nothing of karim's runs any
+  //    more, so the dialog offers no "also stop" option.
   await page.getByTestId('participant-action-block-class').click();
-  await expect(page.getByTestId('participant-block-stop-running')).toBeChecked();
+  await expect(page.getByTestId('participant-block-stop-running')).toHaveCount(0);
   await page.getByTestId('participant-block-reason').fill(BLOCK_REASON);
   await page.getByTestId('participant-confirm').click();
   await expect(row.getByTestId('participant-chip-blocked-class')).toBeVisible({ timeout: 30_000 });
