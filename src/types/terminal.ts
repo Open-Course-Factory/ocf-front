@@ -41,6 +41,8 @@ export interface TerminalSession extends BaseEntity {
   // JSON string of the features enabled at composition time, e.g. `{"network":true}`.
   // Omitted/empty for legacy sessions created before the composed-feature model.
   composed_features?: string
+  // A trainer cut this session's internet (#384); the feature stays composed.
+  network_disabled?: boolean
   // Whether this machine takes CPU/RAM from the plan's quota right now (only
   // while running or starting). Decided by ocf-core — read it, never re-derive
   // it from `state`.

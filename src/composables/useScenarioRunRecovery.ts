@@ -16,6 +16,7 @@ import { useTranslations } from './useTranslations'
 import { useNotification } from './useNotification'
 import { useDunningRejection } from './useDunningRejection'
 import { isBudgetRejection, isQuotaFullRejection, useBudgetRejection } from './useBudgetRejection'
+import { isSessionBlockRejection, useSessionBlockRejection } from './useSessionBlockRejection'
 import { scenarioSessionService } from '../services/domain/scenario'
 
 // The backend's 409 on launching, relaunching or abandoning a run of an exam
@@ -29,6 +30,7 @@ export function useScenarioRunRecovery() {
   const { showError, showConfirm } = useNotification()
   const { isDunningRejection, getDunningCopy } = useDunningRejection()
   const { getResumeQuotaFullMessage } = useBudgetRejection()
+  const { getSessionBlockMessage } = useSessionBlockRejection()
   const { t } = useTranslations({
     en: {
       runRecovery: {
@@ -108,6 +110,10 @@ export function useScenarioRunRecovery() {
       return
     }
     if (err?.response?.data?.reason === 'resume_in_progress') return
+    if (isSessionBlockRejection(err)) {
+      showError(getSessionBlockMessage(err))
+      return
+    }
     if (action === 'resume' && isQuotaFullRejection(err)) {
       showError(`${await getResumeQuotaFullMessage()} ${t('runRecovery.progressKept')}`)
       return

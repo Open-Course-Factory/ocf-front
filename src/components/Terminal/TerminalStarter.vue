@@ -143,6 +143,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useComposeErrorMessage } from '../../composables/useComposeErrorMessage'
 import { useDunningRejection } from '../../composables/useDunningRejection'
 import { isBudgetRejection } from '../../composables/useBudgetRejection'
+import { isSessionBlockRejection, useSessionBlockRejection } from '../../composables/useSessionBlockRejection'
 
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
@@ -277,6 +278,7 @@ const { t } = useTranslations({
 const { showConfirm, showError: showErrorNotification } = useNotification()
 const router = useRouter()
 const { isDunningRejection, getDunningCopy } = useDunningRejection()
+const { getSessionBlockMessage } = useSessionBlockRejection()
 
 // Panel state
 const showDebug = ref(false)
@@ -782,6 +784,10 @@ async function startNewSession() {
       // Handled FIRST so the dedicated "settle your invoice" treatment wins
       // over the generic budget/limit branches, routing to the dashboard.
       await handleDunningRejection()
+    } else if (isSessionBlockRejection(error)) {
+      // Blocked by a trainer, the organisation or the platform (#384): say
+      // who, and why, instead of the raw code.
+      showErrorNotification(getSessionBlockMessage(error), t('terminalStarter.errorStarting'))
     } else if (isBudgetRejection(error)) {
       // Budget-mode rejection (CPU/RAM budget exhausted, or plan-restricted
       // size in advanced mode). Handled here BEFORE the generic 403/limit

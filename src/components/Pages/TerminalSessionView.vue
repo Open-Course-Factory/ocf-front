@@ -367,6 +367,7 @@ import { useLimitReachedMessage } from '../../composables/useLimitReachedMessage
 import { useScenarioRunRecovery } from '../../composables/useScenarioRunRecovery'
 import { useDunningRejection } from '../../composables/useDunningRejection'
 import { isQuotaFullRejection, useBudgetRejection } from '../../composables/useBudgetRejection'
+import { isSessionBlockRejection, useSessionBlockRejection } from '../../composables/useSessionBlockRejection'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import SessionPausedBanner from '../Terminal/SessionPausedBanner.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
@@ -731,6 +732,7 @@ const { getLimitReachedMessage } = useLimitReachedMessage()
 // Dunning (past-due) rejection detection + copy, shared across terminal flows.
 const { isDunningRejection, getDunningCopy } = useDunningRejection()
 const { getResumeQuotaFullMessage } = useBudgetRejection()
+const { getSessionBlockMessage } = useSessionBlockRejection()
 
 const activeEndBanner = computed(() => {
   const reason = terminalEndReason.value
@@ -869,6 +871,11 @@ async function resumeSession() {
     // Quota full: only running machines use it, so name the ones to stop.
     if (isQuotaFullRejection(err)) {
       showErrorNotification(await getResumeQuotaFullMessage(sessionInfo.value?.organization_id))
+      return
+    }
+    // Blocked by a trainer, the organisation or the platform (#384).
+    if (isSessionBlockRejection(err)) {
+      showErrorNotification(getSessionBlockMessage(err))
       return
     }
     // Localize quota-class 403s using the `source` returned by the backend.

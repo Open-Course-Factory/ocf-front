@@ -117,10 +117,12 @@ export function canConnectToTerminal(
  * `composed_features` and therefore display as off (acceptable by design).
  */
 export function sessionHasNetwork(
-  session: { composed_features?: string | null } | null | undefined
+  session: { composed_features?: string | null; network_disabled?: boolean } | null | undefined
 ): boolean {
   const raw = session?.composed_features
   if (!raw) return false
+  // A trainer cut the session's internet (#384): the feature is there, off.
+  if (session?.network_disabled === true) return false
   try {
     const parsed = JSON.parse(raw)
     return parsed?.network === true
