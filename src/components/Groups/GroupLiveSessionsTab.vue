@@ -25,10 +25,20 @@
   <div class="live-sessions-tab">
     <!-- Focused viewer: one learner session, full-size, with the take-hand button -->
     <div v-if="focusedSession" class="live-sessions-focused">
-      <button class="ocf-btn ocf-btn-secondary live-sessions-back" @click="focusedSessionId = null">
-        <i class="fas fa-arrow-left"></i>
-        {{ t('liveSessions.backToWall') }}
-      </button>
+      <div class="live-sessions-focused-actions">
+        <button class="ocf-btn ocf-btn-secondary" @click="focusedSessionId = null">
+          <i class="fas fa-arrow-left"></i>
+          {{ t('liveSessions.backToWall') }}
+        </button>
+        <router-link
+          :to="{ path: `/terminal-session/${focusedSession.session_id}`, query: { group: groupId } }"
+          class="ocf-btn ocf-btn-secondary"
+          data-testid="open-session-page"
+        >
+          <i class="fas fa-external-link-alt"></i>
+          {{ t('liveSessions.openSessionPage') }}
+        </router-link>
+      </div>
       <SupervisionViewer
         :key="focusedSession.session_id"
         :session-id="focusedSession.session_id"
@@ -145,6 +155,7 @@ const { t } = useTranslations({
       refresh: 'Refresh',
       retry: 'Retry',
       backToWall: 'Back to the wall',
+      openSessionPage: 'Open session page',
       unknownLearner: 'Learner',
       reorderHint: 'Drag, or press Ctrl + Left / Right, to rearrange the wall',
       tileLabel: '{name} — tile {position} of {total}. Ctrl + Left or Right moves it.',
@@ -162,6 +173,7 @@ const { t } = useTranslations({
       refresh: 'Actualiser',
       retry: 'Réessayer',
       backToWall: 'Retour au mur',
+      openSessionPage: 'Ouvrir la page de la session',
       unknownLearner: 'Apprenant',
       reorderHint: 'Glisser, ou appuyer sur Ctrl + Gauche / Droite, pour réorganiser le mur',
       tileLabel: '{name} — vignette {position} sur {total}. Ctrl + Gauche ou Droite la déplace.',
@@ -334,8 +346,10 @@ onUnmounted(() => {
   gap: var(--spacing-md);
 }
 
-.live-sessions-back {
-  align-self: flex-start;
+.live-sessions-focused-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
 }
 
 .live-sessions-focused-viewer {
