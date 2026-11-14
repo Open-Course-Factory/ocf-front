@@ -39,7 +39,13 @@ export function useParticipantControls(groupIdSource: MaybeRefOrGetter<string>) 
   const { t } = useTranslations({
     en: {
       participantControls: {
-        done: 'Done.',
+        done: {
+          cut: 'Internet cut for {name}.',
+          restore: 'Internet restored for {name}.',
+          stop: '{name}’s sessions stopped.',
+          block: '{name} is blocked.',
+          unblock: '{name} is unblocked.'
+        },
         partial: 'Done for some sessions only. Check their sessions.',
         failed: 'The action failed. Please try again.',
         codes: {
@@ -54,7 +60,13 @@ export function useParticipantControls(groupIdSource: MaybeRefOrGetter<string>) 
     },
     fr: {
       participantControls: {
-        done: 'C’est fait.',
+        done: {
+          cut: 'Internet coupé pour {name}.',
+          restore: 'Internet rétabli pour {name}.',
+          stop: 'Sessions de {name} arrêtées.',
+          block: 'Démarrage des sessions bloqué pour {name}.',
+          unblock: 'Blocage levé pour {name}.'
+        },
         partial: 'Fait pour une partie des sessions seulement. Vérifiez ses sessions.',
         failed: 'L’action a échoué. Veuillez réessayer.',
         codes: {
@@ -95,11 +107,11 @@ export function useParticipantControls(groupIdSource: MaybeRefOrGetter<string>) 
   // A skipped session (nothing to do on it) counts as done, and stays out of
   // a partial result. No results — a block, a cut with no session — is a
   // success.
-  function report(response: ParticipantActionResponse | undefined) {
+  function report(response: ParticipantActionResponse | undefined, success: string) {
     const results = response?.results ?? []
     const attempted = results.filter(r => !r.skipped)
     if (attempted.every(r => r.ok)) {
-      toast.success(t('participantControls.done'))
+      toast.success(success)
     } else if (attempted.some(r => r.ok)) {
       toast.warning(t('participantControls.partial'))
     } else {
@@ -107,7 +119,11 @@ export function useParticipantControls(groupIdSource: MaybeRefOrGetter<string>) 
     }
   }
 
-  async function run(userId: string, action: () => Promise<ParticipantActionResponse>): Promise<void> {
+  type Done = 'cut' | 'restore' | 'stop' | 'block' | 'unblock'
+
+  async function run(userId: string, done: Done, action: () => Promise<ParticipantActionResponse>): Promise<void> {
+    // The name is read before the reload, which may drop the participant.
+    const name = participantFor(userId)?.user_name || userId
     pendingUserId.value = userId
     let response: ParticipantActionResponse | undefined
     let failure: unknown = null
@@ -121,21 +137,21 @@ export function useParticipantControls(groupIdSource: MaybeRefOrGetter<string>) 
     if (failure) {
       toast.error(messageForCode((failure as any)?.response?.data?.code))
     } else {
-      report(response)
+      report(response, t(`participantControls.done.${done}`, { name }))
     }
   }
 
   const stopSessions = (userId: string, sessionIds?: string[]) =>
-    run(userId, () => participantControlsService.stopSessions(toValue(groupIdSource), userId, sessionIds))
+    run(userId, 'stop', () => participantControlsService.stopSessions(toValue(groupIdSource), userId, sessionIds))
 
   const setNetwork = (userId: string, enabled: boolean, sessionIds?: string[]) =>
-    run(userId, () => participantControlsService.setNetwork(toValue(groupIdSource), userId, enabled, sessionIds))
+    run(userId, enabled ? 'restore' : 'cut', () => participantControlsService.setNetwork(toValue(groupIdSource), userId, enabled, sessionIds))
 
   const setClassBlock = (userId: string, change: BlockChange) =>
-    run(userId, () => participantControlsService.setClassBlock(toValue(groupIdSource), userId, change))
+    run(userId, change.blocked ? 'block' : 'unblock', () => participantControlsService.setClassBlock(toValue(groupIdSource), userId, change))
 
   const setOrgBlock = (orgId: string, userId: string, change: BlockChange) =>
-    run(userId, () => participantControlsService.setOrgBlock(orgId, userId, change))
+    run(userId, change.blocked ? 'block' : 'unblock', () => participantControlsService.setOrgBlock(orgId, userId, change))
 
   return { participants, participantFor, pendingUserId, load, stopSessions, setNetwork, setClassBlock, setOrgBlock }
 }
