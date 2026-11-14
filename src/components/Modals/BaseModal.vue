@@ -54,7 +54,8 @@
         <slot name="footer">
           <button
             v-if="showDefaultFooter && confirmText"
-            class="btn btn-primary"
+            :class="['btn', confirmVariant === 'danger' ? 'btn-danger' : 'btn-primary']"
+            :data-testid="confirmTestId || undefined"
             @click="handleConfirm"
             :disabled="confirmDisabled"
           >
@@ -64,6 +65,7 @@
           <button
             v-if="showDefaultFooter && cancelText"
             class="btn btn-secondary"
+            :data-testid="cancelTestId || undefined"
             @click="closeModal"
           >
             <i v-if="cancelIcon" :class="cancelIcon"></i>
@@ -96,6 +98,10 @@ interface Props {
   confirmDisabled?: boolean
   cancelText?: string
   cancelIcon?: string
+  /** `danger` for a confirm that disrupts or destroys something. */
+  confirmVariant?: 'primary' | 'danger'
+  confirmTestId?: string
+  cancelTestId?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -115,7 +121,10 @@ const props = withDefaults(defineProps<Props>(), {
   confirmIcon: '',
   confirmDisabled: false,
   cancelText: '',
-  cancelIcon: ''
+  cancelIcon: '',
+  confirmVariant: 'primary',
+  confirmTestId: '',
+  cancelTestId: ''
 });
 
 const emit = defineEmits<{
