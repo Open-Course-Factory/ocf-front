@@ -785,3 +785,142 @@ describe('GroupMembersManager regeneration wording', () => {
     expect(bulkBarText(wrapper)).not.toContain('(s)')
   })
 })
+
+describe('GroupMembersManager large class pagination', () => {
+  // A 47-participant class used to show only the first 20 members the API
+  // returned. Every member is loaded; search and sort apply to the whole list;
+  // participants are then shown 25 per page, trainers always pinned on top.
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const PARTICIPANT_COUNT = 47
+  const bigRoster = [
+    { id: 'gm-owner', user_id: 'owner-1', role: 'owner', user: { id: 'owner-1', email: 'owner@example.com', display_name: 'Creator' } },
+    // Shuffled so the order shown comes from the sort, not from the API.
+    ...Array.from({ length: PARTICIPANT_COUNT }, (_, i) => (i * 13) % PARTICIPANT_COUNT + 1).map(n => ({
+      id: `gm-p${pad(n)}`,
+      user_id: `p-${pad(n)}`,
+      role: 'member',
+      user: { id: `p-${pad(n)}`, email: `p${pad(n)}@example.com`, display_name: `Participant ${pad(n)}` }
+    })),
+    { id: 'gm-mgr', user_id: 'mgr-1', role: 'manager', user: { id: 'mgr-1', email: 'mgr@example.com', display_name: 'Manny Manager' } }
+  ]
+
+  async function mountBigClass() {
+    vi.mocked(axios.get).mockResolvedValueOnce({ data: { data: structuredClone(bigRoster) } })
+    const wrapper = mountComponent({ canEditGroup: true, canNameOwner: true, isOwner: true })
+    await flushPromises()
+    return wrapper
+  }
+
+  function names(wrapper: VueWrapper, group: 'trainers' | 'participants') {
+    return wrapper
+      .find(`[data-testid="members-group-${group}"]`)
+      .findAll('[data-testid="member-row"] .ocf-member-row__name')
+      .map(n => n.text())
+  }
+
+  const participantNames = (wrapper: VueWrapper) => names(wrapper, 'participants')
+  const range = (from: number, to: number) =>
+    Array.from({ length: to - from + 1 }, (_, i) => `Participant ${pad(from + i)}`)
+
+  function participantsCount(wrapper: VueWrapper) {
+    return wrapper.find('[data-testid="members-group-participants"] .ocf-members-group__count').text()
+  }
+
+  async function nextPage(wrapper: VueWrapper) {
+    await wrapper.find('[data-testid="members-page-next"]').trigger('click')
+    await flushPromises()
+  }
+
+  it('shows the first 25 participants, A to Z, under the pinned trainers', async () => {
+    const wrapper = await mountBigClass()
+
+    expect(names(wrapper, 'trainers').sort()).toEqual(['Creator', 'Manny Manager'])
+    expect(participantNames(wrapper)).toEqual(range(1, 25))
+    expect(wrapper.findAll('[data-testid="member-row"]')).toHaveLength(27)
+  })
+
+  it('counts every participant in the group heading, not just the page', async () => {
+    const wrapper = await mountBigClass()
+
+    expect(participantsCount(wrapper)).toBe(String(PARTICIPANT_COUNT))
+  })
+
+  it('pages to the remaining 22 participants, keeping the trainers shown', async () => {
+    const wrapper = await mountBigClass()
+    expect(wrapper.find('[data-testid="members-page-indicator"]').text()).toContain('1 / 2')
+    expect(wrapper.find('[data-testid="members-page-prev"]').exists()).toBe(true)
+
+    await nextPage(wrapper)
+
+    expect(participantNames(wrapper)).toEqual(range(26, 47))
+    expect(names(wrapper, 'trainers').sort()).toEqual(['Creator', 'Manny Manager'])
+    expect(wrapper.find('[data-testid="members-page-indicator"]').text()).toContain('2 / 2')
+    expect(participantsCount(wrapper)).toBe(String(PARTICIPANT_COUNT))
+
+    await wrapper.find('[data-testid="members-page-prev"]').trigger('click')
+    await flushPromises()
+    expect(participantNames(wrapper)).toEqual(range(1, 25))
+  })
+
+  it('sorts the whole class, not just the page, and returns to page 1 on a sort change', async () => {
+    const wrapper = await mountBigClass()
+    await nextPage(wrapper)
+
+    await wrapper.find('[data-testid="members-sort"]').trigger('click')
+    await flushPromises()
+
+    expect(participantNames(wrapper)).toEqual(range(23, 47).reverse())
+    expect(wrapper.find('[data-testid="members-page-indicator"]').text()).toContain('1 / 2')
+  })
+
+  it('searches the whole class and returns to page 1 on a new search', async () => {
+    const wrapper = await mountBigClass()
+    await nextPage(wrapper)
+
+    await wrapper.find('input.search-input').setValue('Participant 0')
+    await flushPromises()
+
+    expect(participantNames(wrapper)).toEqual(range(1, 9))
+    expect(participantsCount(wrapper)).toBe('9')
+    // A single page needs no pager.
+    expect(wrapper.find('[data-testid="members-page-next"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="members-page-indicator"]').exists()).toBe(false)
+  })
+
+  it('finds a participant who is not on the first page', async () => {
+    const wrapper = await mountBigClass()
+
+    await wrapper.find('input.search-input').setValue('Participant 4')
+    await flushPromises()
+
+    expect(participantNames(wrapper)).toEqual(range(40, 47))
+  })
+
+  it('select-all ticks only the 25 participants on the page', async () => {
+    const wrapper = await mountBigClass()
+
+    await wrapper.find('.select-all-checkbox input').setValue(true)
+
+    expect(bulkBarText(wrapper)).toContain('25 selected')
+  })
+
+  it('drops the selection when the page changes, so it only holds visible participants', async () => {
+    const wrapper = await mountBigClass()
+    await wrapper.find('.select-all-checkbox input').setValue(true)
+    expect(bulkBarText(wrapper)).toContain('25 selected')
+
+    await nextPage(wrapper)
+
+    expect(bulkBarText(wrapper)).toContain('0 selected')
+    expect(wrapper.findAll('input.member-checkbox').some(c => (c.element as HTMLInputElement).checked)).toBe(false)
+    expect((wrapper.find('.select-all-checkbox input').element as HTMLInputElement).checked).toBe(false)
+  })
+
+  it('shows no pager for a class that fits on one page', async () => {
+    const wrapper = await mountRoster()
+
+    expect(wrapper.find('[data-testid="members-page-prev"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="members-page-next"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="members-page-indicator"]').exists()).toBe(false)
+  })
+})

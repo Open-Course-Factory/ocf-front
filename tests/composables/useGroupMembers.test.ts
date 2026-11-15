@@ -32,7 +32,8 @@ vi.mock('../../src/services/core/error', () => ({
   handleStoreError: (err: any, fallbackKey: string) => fallbackKey
 }))
 
-import { useGroupMembers, type GroupMember } from '../../src/composables/useGroupMembers'
+import axios from 'axios'
+import { useGroupMembers, fetchGroupMembers, type GroupMember } from '../../src/composables/useGroupMembers'
 
 function createMember(overrides: Partial<GroupMember> = {}): GroupMember {
   return {
@@ -323,5 +324,83 @@ describe('useGroupMembers', () => {
       expect(sorted[0].role).toBe('owner')
       expect(sorted[1].role).toBe('manager')
     })
+  })
+})
+
+describe('fetchGroupMembers loads every page', () => {
+  // ocf-core's generic list is offset-paginated (default 20, max 100): a single
+  // request only returned the first page, so a 47-member class showed 20.
+  function rosterOf(count: number): GroupMember[] {
+    return Array.from({ length: count }, (_, i) =>
+      createMember({ id: `gm-${i}`, user_id: `u-${i}` })
+    )
+  }
+
+  // Answers like ocf-core: slices the roster by the `page` and `size` params.
+  function serve(all: GroupMember[]) {
+    vi.mocked(axios.get).mockReset()
+    vi.mocked(axios.get).mockImplementation(async (_url: string, config?: any) => {
+      const size = config?.params?.size ?? 20
+      const page = config?.params?.page ?? 1
+      const data = all.slice((page - 1) * size, page * size)
+      const totalPages = Math.max(1, Math.ceil(all.length / size))
+      return {
+        data: {
+          data,
+          total: all.length,
+          currentPage: page,
+          pageSize: size,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      }
+    })
+  }
+
+  it('returns all 47 members of a class, not just the first page', async () => {
+    serve(rosterOf(47))
+
+    const members = await fetchGroupMembers('group-1')
+
+    expect(members).toHaveLength(47)
+    expect(new Set(members.map(m => m.id)).size).toBe(47)
+  })
+
+  it('walks every page of a 147-member class with the largest page size', async () => {
+    serve(rosterOf(147))
+
+    const members = await fetchGroupMembers('group-1')
+
+    expect(members).toHaveLength(147)
+    const calls = vi.mocked(axios.get).mock.calls
+    expect(calls).toHaveLength(2)
+    for (const [url, config] of calls) {
+      expect(url).toBe('/group-members')
+      expect((config as any).params).toMatchObject({ group_id: 'group-1', size: 100 })
+    }
+    expect(calls.map(([, config]) => (config as any).params.page)).toEqual([1, 2])
+  })
+
+  it('stops on an empty page even if the server claims there is more', async () => {
+    vi.mocked(axios.get).mockReset()
+    vi.mocked(axios.get)
+      .mockResolvedValueOnce({ data: { data: rosterOf(3), hasNextPage: true } })
+      .mockResolvedValueOnce({ data: { data: [], hasNextPage: true } })
+      .mockResolvedValue({ data: { data: rosterOf(3), hasNextPage: true } })
+
+    const members = await fetchGroupMembers('group-1')
+
+    expect(members).toHaveLength(3)
+    expect(vi.mocked(axios.get).mock.calls.length).toBeLessThanOrEqual(2)
+  })
+
+  it('still accepts a plain array response', async () => {
+    vi.mocked(axios.get).mockReset()
+    vi.mocked(axios.get).mockResolvedValue({ data: rosterOf(5) })
+
+    const members = await fetchGroupMembers('group-1')
+
+    expect(members).toHaveLength(5)
   })
 })
