@@ -64,8 +64,18 @@ export interface UseGroupMembersOptions {
  * envelope unwrapping.
  */
 export async function fetchGroupMembers(groupId: string): Promise<GroupMember[]> {
-  const response = await axios.get('/group-members', { params: { group_id: groupId } })
-  return response.data?.data || response.data || []
+  // The generic list is paginated (20 by default, 100 at most): walk every
+  // page, or a class larger than one page loses its last members.
+  const size = 100
+  const members: GroupMember[] = []
+  for (let page = 1; ; page++) {
+    const response = await axios.get('/group-members', { params: { group_id: groupId, page, size } })
+    const body = response.data
+    if (Array.isArray(body)) return body
+    const rows: GroupMember[] = body?.data || []
+    members.push(...rows)
+    if (rows.length === 0 || !body?.hasNextPage) return members
+  }
 }
 
 export function useGroupMembers({ groupId, currentUserId, canManageMembers }: UseGroupMembersOptions) {

@@ -38,6 +38,8 @@ import AdminBadge from '../Common/AdminBadge.vue'
 import ParticipantActionsMenu, { type ParticipantActionsViewer } from './ParticipantActionsMenu.vue'
 import ParticipantStatusChips from './ParticipantStatusChips.vue'
 import { useParticipantControls } from '../../composables/useParticipantControls'
+import { useClientPagination } from '../../composables/useClientPagination'
+import ClientPager from '../Common/ClientPager.vue'
 
 const props = defineProps<{
   groupId: string
@@ -261,12 +263,24 @@ const trainers = computed(() =>
 const participants = computed(() =>
   groupMembersComposable.sortedMembers.value.filter(m => m.role === 'member')
 )
-const selectableMembers = participants
+
+// Search and sort apply to the whole class (useGroupMembers); the participants
+// are then paged, so the pager has no search of its own. Trainers are not paged.
+const participantPages = useClientPagination({
+  items: participants,
+  searchFields: [],
+  pageSize: 25
+})
+watch(
+  [groupMembersComposable.memberSearchQuery, groupMembersComposable.nameSortDirection],
+  () => participantPages.goToPage(1)
+)
+const selectableMembers = participantPages.paginatedItems
 
 // A selection only holds participants the trainer can see: a row the search
-// hides, or a participant promoted to trainer, leaves it, so the bulk bar's
-// count is the true count and a bulk reset never reaches a trainer.
-// Sorting does not touch it.
+// hides, a row on another page, or a participant promoted to trainer, leaves
+// it, so the bulk bar's count is the true count and a bulk reset never
+// reaches a trainer. A sort keeps the rows of the page it lands on.
 // Watches the ids, not the array: a removal splices the roster in place.
 watch(() => selectableMembers.value.map(m => m.user_id), (ids) => {
   const visibleIds = new Set(ids)
@@ -306,9 +320,9 @@ function roleLabel(role: GroupMember['role']) {
 const columnCount = computed(() => (groupMembersComposable.canManageMembers.value ? 5 : 3))
 
 const memberGroups = computed(() => [
-  { key: 'trainers', label: t('groupMembers.trainers'), members: trainers.value },
-  { key: 'participants', label: t('groupMembers.participants'), members: participants.value }
-].filter(g => g.members.length > 0))
+  { key: 'trainers', label: t('groupMembers.trainers'), members: trainers.value, count: trainers.value.length },
+  { key: 'participants', label: t('groupMembers.participants'), members: selectableMembers.value, count: participants.value.length }
+].filter(g => g.count > 0))
 
 const allSelectableSelected = computed(() => {
   if (selectableMembers.value.length === 0) return false
@@ -617,7 +631,7 @@ async function confirmRemoveMember() {
         <tr class="ocf-members-group">
           <th :colspan="columnCount" scope="rowgroup">
             {{ memberGroup.label }}
-            <span class="ocf-members-group__count">{{ memberGroup.members.length }}</span>
+            <span class="ocf-members-group__count">{{ memberGroup.count }}</span>
           </th>
         </tr>
         <tr
@@ -714,6 +728,18 @@ async function confirmRemoveMember() {
         </tr>
       </tbody>
     </table>
+
+    <!-- Below the table: paging never moves the rows above. -->
+    <ClientPager
+      :current-page="participantPages.currentPage.value"
+      :total-pages="participantPages.totalPages.value"
+      :total-items="participantPages.totalItems.value"
+      :showing-from="participantPages.showingFrom.value"
+      :showing-to="participantPages.showingTo.value"
+      testid-prefix="members"
+      @previous="participantPages.previousPage"
+      @next="participantPages.nextPage"
+    />
 
     <!-- Add Member Modal -->
     <BaseModal
