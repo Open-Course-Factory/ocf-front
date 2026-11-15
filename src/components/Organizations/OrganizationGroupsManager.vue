@@ -128,31 +128,17 @@
       </div>
     </div>
 
-    <!-- Pagination Controls -->
-    <div v-if="!isLoading && !error && groups.length > 0 && totalPages > 1" class="pagination-controls">
-      <span class="pagination-info">
-        {{ t('groups.showing', { from: showingFrom, to: showingTo, total: filteredCount }) }}
-      </span>
-      <div class="pagination-buttons">
-        <button
-          class="btn btn-sm btn-secondary"
-          :disabled="!hasPrevious"
-          @click="previousPage"
-        >
-          <i class="fas fa-chevron-left"></i>
-          {{ t('groups.previous') }}
-        </button>
-        <span class="page-indicator">{{ currentPage }} / {{ totalPages }}</span>
-        <button
-          class="btn btn-sm btn-secondary"
-          :disabled="!hasNext"
-          @click="nextPage"
-        >
-          {{ t('groups.next') }}
-          <i class="fas fa-chevron-right"></i>
-        </button>
-      </div>
-    </div>
+    <ClientPager
+      v-if="!isLoading && !error && groups.length > 0"
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :total-items="filteredCount"
+      :showing-from="showingFrom"
+      :showing-to="showingTo"
+      testid-prefix="org-groups"
+      @previous="previousPage"
+      @next="nextPage"
+    />
 
     <!-- Empty State -->
     <div v-if="!isLoading && !error && groups.length === 0" class="empty-state">
@@ -173,6 +159,7 @@ import { CLASS_PAGE_NAMES } from '../../router/classPages'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFormatters } from '../../composables/useFormatters'
 import { useClientPagination } from '../../composables/useClientPagination'
+import ClientPager from '../Common/ClientPager.vue'
 import type { OrganizationGroup } from '../../types'
 
 interface Props {
@@ -209,9 +196,6 @@ const { t } = useTranslations({
       full: 'Full',
       viewGroup: 'View details',
       searchPlaceholder: 'Search groups...',
-      showing: 'Showing {from}-{to} of {total}',
-      previous: 'Previous',
-      next: 'Next',
       noResults: 'No groups match your search'
     }
   },
@@ -234,9 +218,6 @@ const { t } = useTranslations({
       full: 'Complet',
       viewGroup: 'Voir les détails',
       searchPlaceholder: 'Rechercher des groupes...',
-      showing: 'Affichage {from}-{to} sur {total}',
-      previous: 'Précédent',
-      next: 'Suivant',
       noResults: 'Aucun groupe ne correspond à votre recherche'
     }
   }
@@ -264,8 +245,6 @@ const {
   currentPage,
   showingFrom,
   showingTo,
-  hasPrevious,
-  hasNext,
   previousPage,
   nextPage
 } = useClientPagination({
@@ -622,31 +601,5 @@ const navigateToGroup = (groupId: string) => {
 .search-input:focus {
   outline: none;
   border-color: var(--color-primary);
-}
-
-.pagination-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-border-light);
-}
-
-.pagination-info {
-  font-size: 0.8125rem;
-  color: var(--color-text-secondary);
-}
-
-.pagination-buttons {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.page-indicator {
-  font-size: 0.8125rem;
-  color: var(--color-text-secondary);
-  font-weight: 500;
 }
 </style>

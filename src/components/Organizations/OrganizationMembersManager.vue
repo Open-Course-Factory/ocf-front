@@ -161,31 +161,17 @@
       </div>
     </div>
 
-    <!-- Pagination Controls -->
-    <div v-if="!isLoading && !error && members.length > 0 && totalPages > 1" class="pagination-controls">
-      <span class="pagination-info">
-        {{ t('members.showing', { from: showingFrom, to: showingTo, total: filteredCount }) }}
-      </span>
-      <div class="pagination-buttons">
-        <button
-          class="btn btn-sm btn-secondary"
-          :disabled="!hasPrevious"
-          @click="previousPage"
-        >
-          <i class="fas fa-chevron-left"></i>
-          {{ t('members.previous') }}
-        </button>
-        <span class="page-indicator">{{ currentPage }} / {{ totalPages }}</span>
-        <button
-          class="btn btn-sm btn-secondary"
-          :disabled="!hasNext"
-          @click="nextPage"
-        >
-          {{ t('members.next') }}
-          <i class="fas fa-chevron-right"></i>
-        </button>
-      </div>
-    </div>
+    <ClientPager
+      v-if="!isLoading && !error && members.length > 0"
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :total-items="filteredCount"
+      :showing-from="showingFrom"
+      :showing-to="showingTo"
+      testid-prefix="org-members"
+      @previous="previousPage"
+      @next="nextPage"
+    />
 
     <!-- Empty State -->
     <div v-if="!isLoading && !error && members.length === 0" class="empty-state">
@@ -327,6 +313,7 @@ import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useTranslations } from '../../composables/useTranslations'
 import { useFormatters } from '../../composables/useFormatters'
 import { useClientPagination } from '../../composables/useClientPagination'
+import ClientPager from '../Common/ClientPager.vue'
 import { useToast } from '../../composables/useToast'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { usePermissionsStore } from '../../stores/permissions'
@@ -384,9 +371,6 @@ const { t } = useTranslations({
       memberAdded: 'Member added successfully',
       rolesHelp: 'Learn about roles',
       searchPlaceholder: 'Search members...',
-      showing: 'Showing {from}-{to} of {total}',
-      previous: 'Previous',
-      next: 'Next',
       noResults: 'No members match your search',
       stateActive: 'Active',
       stateOffboarded: 'Offboarded',
@@ -434,9 +418,6 @@ const { t } = useTranslations({
       memberAdded: 'Membre ajouté avec succès',
       rolesHelp: 'En savoir plus sur les rôles',
       searchPlaceholder: 'Rechercher des membres...',
-      showing: 'Affichage {from}-{to} sur {total}',
-      previous: 'Précédent',
-      next: 'Suivant',
       noResults: 'Aucun membre ne correspond à votre recherche',
       stateActive: 'Actif',
       stateOffboarded: 'Désinscrit',
@@ -467,8 +448,6 @@ const {
   currentPage,
   showingFrom,
   showingTo,
-  hasPrevious,
-  hasNext,
   previousPage,
   nextPage
 } = useClientPagination({
@@ -1088,32 +1067,6 @@ const goToRolesHelp = () => {
 .search-input:focus {
   outline: none;
   border-color: var(--color-primary);
-}
-
-.pagination-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-border-light);
-}
-
-.pagination-info {
-  font-size: 0.8125rem;
-  color: var(--color-text-secondary);
-}
-
-.pagination-buttons {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.page-indicator {
-  font-size: 0.8125rem;
-  color: var(--color-text-secondary);
-  font-weight: 500;
 }
 
 .btn-secondary:disabled {
