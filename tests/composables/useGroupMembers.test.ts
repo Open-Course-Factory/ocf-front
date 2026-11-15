@@ -392,7 +392,17 @@ describe('fetchGroupMembers loads every page', () => {
     const members = await fetchGroupMembers('group-1')
 
     expect(members).toHaveLength(3)
-    expect(vi.mocked(axios.get).mock.calls.length).toBeLessThanOrEqual(2)
+    expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
+  })
+
+  it('rejects when a later page fails, rather than returning a partial roster', async () => {
+    vi.mocked(axios.get).mockReset()
+    vi.mocked(axios.get)
+      .mockResolvedValueOnce({ data: { data: rosterOf(100), hasNextPage: true } })
+      .mockRejectedValueOnce(new Error('page 2 failed'))
+
+    await expect(fetchGroupMembers('group-1')).rejects.toThrow('page 2 failed')
+    expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
   })
 
   it('still accepts a plain array response', async () => {
