@@ -551,25 +551,6 @@ const navigateToGroup = (groupId: string) => {
   color: white;
 }
 
-.btn-sm {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-}
-
-.btn-secondary {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--color-bg-quaternary);
-}
-
-.btn-secondary:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
 .search-bar {
   margin-bottom: 1.5rem;
 }

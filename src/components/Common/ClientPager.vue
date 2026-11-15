@@ -28,17 +28,15 @@
 <script setup lang="ts">
 import { useTranslations } from '../../composables/useTranslations'
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
   currentPage: number
   totalPages: number
   totalItems: number
   showingFrom: number
   showingTo: number
   /** data-testid prefix: `<prefix>-page-prev`, `-page-next`, `-page-indicator` */
-  testidPrefix?: string
-}>(), {
-  testidPrefix: 'list'
-})
+  testidPrefix: string
+}>()
 
 const emit = defineEmits<{
   previous: []
@@ -48,14 +46,18 @@ const emit = defineEmits<{
 const { t } = useTranslations({
   en: {
     clientPager: {
+      label: 'Pagination',
       showing: 'Showing {from}-{to} of {total}',
+      pageOf: 'Page {page} of {total}',
       previous: 'Previous',
       next: 'Next'
     }
   },
   fr: {
     clientPager: {
+      label: 'Pagination',
       showing: 'Affichage {from}-{to} sur {total}',
+      pageOf: 'Page {page} sur {total}',
       previous: 'Précédent',
       next: 'Suivant'
     }
@@ -64,7 +66,7 @@ const { t } = useTranslations({
 </script>
 
 <template>
-  <div v-if="props.totalPages > 1" class="ocf-client-pager">
+  <nav v-if="props.totalPages > 1" class="ocf-client-pager" :aria-label="t('clientPager.label')">
     <span class="ocf-client-pager__info">
       {{ t('clientPager.showing', { from: props.showingFrom, to: props.showingTo, total: props.totalItems }) }}
     </span>
@@ -79,7 +81,12 @@ const { t } = useTranslations({
         <i class="fas fa-chevron-left" aria-hidden="true"></i>
         {{ t('clientPager.previous') }}
       </button>
-      <span class="ocf-client-pager__indicator" :data-testid="`${props.testidPrefix}-page-indicator`">
+      <span
+        class="ocf-client-pager__indicator"
+        :data-testid="`${props.testidPrefix}-page-indicator`"
+        :aria-label="t('clientPager.pageOf', { page: props.currentPage, total: props.totalPages })"
+        role="status"
+      >
         {{ props.currentPage }} / {{ props.totalPages }}
       </span>
       <button
@@ -93,7 +100,7 @@ const { t } = useTranslations({
         <i class="fas fa-chevron-right" aria-hidden="true"></i>
       </button>
     </div>
-  </div>
+  </nav>
 </template>
 
 <style scoped>
@@ -120,6 +127,15 @@ const { t } = useTranslations({
 
 .ocf-client-pager__indicator {
   font-weight: 500;
+}
+
+.ocf-client-pager .btn {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.ocf-client-pager .btn:hover:not(:disabled) {
+  background: var(--color-bg-quaternary);
 }
 
 .ocf-client-pager .btn:disabled {
