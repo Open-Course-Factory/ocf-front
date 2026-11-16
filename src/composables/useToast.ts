@@ -13,6 +13,7 @@ interface ToastAction {
 interface Toast {
   id: number
   message: string
+  title?: string
   type: 'success' | 'error' | 'info' | 'warning'
   duration: number
   persistent: boolean
@@ -27,11 +28,11 @@ export function useToast() {
     message: string,
     type: 'success' | 'error' | 'info' | 'warning' = 'info',
     duration = 3000,
-    options?: { persistent?: boolean; action?: ToastAction }
+    options?: { persistent?: boolean; action?: ToastAction; title?: string }
   ) {
     const id = nextId++
     const persistent = options?.persistent ?? false
-    const toast: Toast = { id, message, type, duration, persistent, action: options?.action }
+    const toast: Toast = { id, message, title: options?.title, type, duration, persistent, action: options?.action }
 
     toasts.value.push(toast)
 

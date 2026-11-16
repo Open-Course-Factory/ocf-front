@@ -113,7 +113,7 @@ const SCREENS: Screen[] = [
           await page.locator('.ports-form button[type="submit"]').click();
           await entries.first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
           // The success toast sits over the header; let it go before the shot.
-          await page.locator('.el-notification').waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
+          await page.locator('.ocf-toast').waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
         }
       }
       await acknowledgeRecordingNotice(page);

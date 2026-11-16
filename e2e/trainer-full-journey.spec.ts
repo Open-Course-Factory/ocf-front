@@ -208,7 +208,7 @@ async function launchScenario(page: Page, title: string): Promise<boolean> {
   await demoPause(page);
   await card.getByTestId('scenario-launch-btn').click();
 
-  const errorToast = page.locator('.el-notification');
+  const errorToast = page.locator('.ocf-toast');
   await Promise.race([
     page.waitForURL(/\/terminal-session\//, { timeout: 240_000 }),
     errorToast.waitFor({ state: 'visible', timeout: 240_000 }),
@@ -615,7 +615,7 @@ test.describe('Trainer full journey', () => {
 
           const launched = await launchScenario(learnerPage, SCENARIO_TITLE);
           if (!launched) {
-            const toast = await page.locator('.el-notification').innerText().catch(() => '');
+            const toast = await page.locator('.ocf-toast').innerText().catch(() => '');
             test.skip(
               true,
               `launch refused by the backend (likely host capacity): ${toast.slice(0, 120)}`

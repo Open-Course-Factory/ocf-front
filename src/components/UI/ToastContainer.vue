@@ -6,15 +6,20 @@
 -->
 
 <template>
-  <div class="toast-container">
+  <!-- ocf- prefix: Bootstrap's .toast/.toast-container (loaded from index.html) would hide and restyle these -->
+  <div class="ocf-toast-container">
     <TransitionGroup name="toast">
       <div
         v-for="toast in toasts"
         :key="toast.id"
-        :class="['toast', `toast-${toast.type}`]"
+        :class="['ocf-toast', `toast-${toast.type}`]"
+        :role="toast.type === 'error' ? 'alert' : 'status'"
       >
         <i :class="getIcon(toast.type)"></i>
-        <span class="toast-message">{{ toast.message }}</span>
+        <div class="toast-text">
+          <strong v-if="toast.title" class="toast-title">{{ toast.title }}</strong>
+          <span class="toast-message">{{ toast.message }}</span>
+        </div>
         <button
           v-if="toast.action"
           class="toast-action"
@@ -22,8 +27,8 @@
         >
           {{ toast.action.label }}
         </button>
-        <button class="toast-close" @click="remove(toast.id)">
-          <i class="fas fa-times"></i>
+        <button class="toast-close" :aria-label="t('toast.close')" @click="remove(toast.id)">
+          <i class="fas fa-times" aria-hidden="true"></i>
         </button>
       </div>
     </TransitionGroup>
@@ -32,8 +37,13 @@
 
 <script setup lang="ts">
 import { useToast } from '../../composables/useToast'
+import { useTranslations } from '../../composables/useTranslations'
 
 const { toasts, remove } = useToast()
+const { t } = useTranslations({
+  en: { toast: { close: 'Close notification' } },
+  fr: { toast: { close: 'Fermer la notification' } },
+})
 
 function getIcon(type: string): string {
   switch (type) {
@@ -51,7 +61,7 @@ function getIcon(type: string): string {
 </script>
 
 <style scoped>
-.toast-container {
+.ocf-toast-container {
   position: fixed;
   bottom: var(--spacing-lg);
   right: var(--spacing-lg);
@@ -62,7 +72,7 @@ function getIcon(type: string): string {
   max-width: 400px;
 }
 
-.toast {
+.ocf-toast {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
@@ -75,13 +85,22 @@ function getIcon(type: string): string {
   animation: slideInRight var(--transition-slow);
 }
 
-.toast i:first-child {
+.ocf-toast > i:first-child {
   font-size: var(--font-size-xl);
   flex-shrink: 0;
 }
 
-.toast-message {
+.toast-text {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  overflow-wrap: anywhere;
+}
+
+.toast-title {
+  font-weight: var(--font-weight-semibold);
 }
 
 .toast-action {
@@ -171,13 +190,13 @@ function getIcon(type: string): string {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .toast-container {
+  .ocf-toast-container {
     left: var(--spacing-lg);
     right: var(--spacing-lg);
     max-width: none;
   }
 
-  .toast {
+  .ocf-toast {
     min-width: auto;
   }
 }

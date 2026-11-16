@@ -159,7 +159,7 @@ test('the learner works through the whole scenario in the real container', async
   await expect(card).toBeVisible({ timeout: 15_000 });
   await card.getByTestId('scenario-launch-btn').click();
 
-  const errorToast = page.locator('.el-notification');
+  const errorToast = page.locator('.ocf-toast');
   await Promise.race([
     page.waitForURL(/\/terminal-session\//, { timeout: 240_000 }),
     errorToast.waitFor({ state: 'visible', timeout: 240_000 }),

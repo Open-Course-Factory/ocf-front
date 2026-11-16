@@ -118,7 +118,7 @@ async function launchAndPauseAtFlagStep(page: Page): Promise<{ flagBefore: strin
   // A card whose previous run was abandoned offers Relaunch instead of Launch.
   await card.getByTestId('scenario-launch-btn').or(card.getByTestId('scenario-relaunch-btn')).click();
 
-  const errorToast = page.locator('.el-notification');
+  const errorToast = page.locator('.ocf-toast');
   await Promise.race([
     page.waitForURL(/\/terminal-session\//, { timeout: 240_000 }),
     errorToast.waitFor({ state: 'visible', timeout: 240_000 }),

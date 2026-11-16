@@ -27,6 +27,7 @@ import { useRoute } from 'vue-router'
 import { useTheme } from './composables/useTheme'
 import { useUserSettingsStore } from './stores/userSettings'
 import { useCurrentUserStore } from './stores/currentUser'
+import ToastContainer from './components/UI/ToastContainer.vue'
 
 const route = useRoute()
 const { initTheme, setTheme } = useTheme()
@@ -75,8 +76,9 @@ onMounted(async () => {
 </script>
 
 <template>
-
   <router-view></router-view>
+  <!-- At the root so toasts show on routes outside Layout (terminal pages) -->
+  <ToastContainer />
 </template>
 
 <style scoped>

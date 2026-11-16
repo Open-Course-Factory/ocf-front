@@ -169,7 +169,7 @@ test('the trainer rehearsal opens a session the class results do not count', asy
   const refused = await Promise.race([
     stepTitle.waitFor({ state: 'visible', timeout: 240_000 }).then(() => false),
     page
-      .locator('.el-notification')
+      .locator('.ocf-toast')
       .waitFor({ state: 'visible', timeout: 240_000 })
       .then(() => true),
   ]);
