@@ -22,7 +22,7 @@
 -->
 
 <template>
-  <div class="top-menu">
+  <div class="top-menu" :class="{ 'user-menu-open': isUserMenuOpen }">
     <div class="left-controls">
       <button class="menu-toggle" @click="toggleMenu">
         <i class="fas fa-bars"></i>
@@ -351,6 +351,12 @@ onUnmounted(() => {
   padding: 0 var(--spacing-lg);
   box-shadow: var(--shadow-sm);
   animation: slideDown var(--transition-slow) ease-in-out;
+}
+
+/* The bar is the user dropdown's stacking context: while it is open, lift the bar
+   above the toast stack (ToastContainer, 3000) so a toast cannot cover the menu. */
+.top-menu.user-menu-open {
+  z-index: 3001;
 }
 
 .left-controls {
