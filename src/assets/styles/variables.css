@@ -77,6 +77,7 @@
   --color-gray-900: #212529;
 
   /* Text Colors */
+  --color-code: #d63384;
   --color-text-primary: #333333;
   --color-text-secondary: #555555;
   --color-text-muted: #6c757d;
@@ -121,6 +122,8 @@
   /* Font Families */
   --font-family-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-family-monospace: 'Courier New', monospace;
+  /* Inline code, pre, kbd: the stack the pages have always rendered code with. */
+  --font-family-code: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
   /* Font Sizes */
   --font-size-xs: 0.75rem;    /* 12px */
@@ -275,6 +278,10 @@
 
 /* === DARK THEME VARIABLES === */
 [data-theme="dark"] {
+  /* Native controls (checkboxes, selects, date pickers, scrollbars) follow the theme. */
+  color-scheme: dark;
+  --color-code: #e685b5;
+
   --color-bg-primary: #1a1a1a;
   --color-bg-secondary: #2d2d2d;
   --color-bg-tertiary: #3a3a3a;
@@ -544,15 +551,4 @@
 
   --overlay-bg: rgba(0, 0, 0, 0.7);
   --shadow-modal: 0 20px 40px rgba(0, 0, 0, 0.5);
-}
-
-/* === BOOTSTRAP INTEROP ===
-   Bootstrap is loaded globally, and its utilities resolve their own variables:
-   .text-muted is `color: var(--bs-secondary-color) !important`, which no
-   component rule can override. Its default is light-mode only, so muted text
-   stayed near-black on dark backgrounds. Point Bootstrap's variables at our
-   tokens instead — one source of truth for the color, and it follows the theme
-   without any !important. */
-:root {
-  --bs-secondary-color: var(--color-text-muted);
 }

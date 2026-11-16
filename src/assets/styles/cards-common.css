@@ -9,7 +9,13 @@
 /* === CARD BASE STYLES === */
 
 .card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  word-wrap: break-word;
   background-color: var(--color-bg-primary);
+  border: var(--border-width-thin) solid var(--color-border-light);
   border-radius: var(--card-border-radius);
   box-shadow: var(--card-shadow);
   overflow: hidden;
@@ -17,6 +23,7 @@
 }
 
 .card-header {
+  margin-bottom: 0;
   padding: var(--card-header-padding);
   border-bottom: var(--border-width-thin) solid var(--color-border-light);
   background-color: var(--color-bg-secondary);
@@ -38,6 +45,7 @@
 }
 
 .card-body {
+  flex: 1 1 auto;
   padding: var(--card-padding);
   color: var(--color-text-primary);
 }

@@ -22,7 +22,9 @@
 
 /* === GLOBAL STYLES === */
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -74,6 +76,167 @@ a {
 a:hover {
   color: var(--color-primary-hover);
   text-decoration: underline;
+}
+
+/* === BASE ELEMENTS ===
+   Element defaults the pages were built on (formerly Bootstrap's reboot). */
+
+ol,
+ul {
+  padding-left: var(--spacing-xl);
+}
+
+ol,
+ul,
+dl,
+blockquote,
+figure {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+}
+
+ol ol,
+ul ul,
+ol ul,
+ul ol {
+  margin-bottom: 0;
+}
+
+blockquote,
+figure {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+dt {
+  font-weight: var(--font-weight-bold);
+}
+
+dd {
+  margin-bottom: var(--spacing-sm);
+  margin-left: 0;
+}
+
+small {
+  font-size: 0.875em;
+}
+
+pre,
+code,
+kbd,
+samp {
+  font-family: var(--font-family-code);
+  font-size: 1em;
+}
+
+pre {
+  display: block;
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  overflow: auto;
+  font-size: 0.875em;
+}
+
+code {
+  font-size: 0.875em;
+  color: var(--color-code);
+  word-wrap: break-word;
+}
+
+pre code {
+  font-size: inherit;
+  color: inherit;
+  word-break: normal;
+}
+
+a > code {
+  color: inherit;
+}
+
+hr {
+  margin: var(--spacing-md) 0;
+  color: inherit;
+  border: 0;
+  border-top: var(--border-width-thin) solid;
+  opacity: 0.25;
+}
+
+img,
+svg {
+  vertical-align: middle;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+th {
+  text-align: inherit;
+  text-align: -webkit-match-parent;
+}
+
+label {
+  display: inline-block;
+}
+
+input,
+button,
+select,
+optgroup,
+textarea {
+  margin: 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+button {
+  border-radius: 0;
+}
+
+button:focus:not(:focus-visible) {
+  outline: 0;
+}
+
+button:not(:disabled),
+[type="button"]:not(:disabled),
+[type="reset"]:not(:disabled),
+[type="submit"]:not(:disabled),
+[role="button"],
+summary {
+  cursor: pointer;
+}
+
+textarea {
+  resize: vertical;
+}
+
+iframe {
+  border: 0;
+}
+
+fieldset {
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-size-2xl);
+  line-height: inherit;
+}
+
+legend + * {
+  clear: left;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 /* === SCROLLBARS === */
