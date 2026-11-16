@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest'
 // A var() on an undefined custom property drops the declaration (no fallback)
 // or always resolves to the fallback, i.e. a hardcoded value posing as a token.
 // No third-party exclusions today: nothing in src reads --el-*, --vf-* or xterm vars.
+// Blind spots: var() inside .ts strings is not scanned; a `--x:` inside a CSS comment counts as defined.
+// The lookbehind keeps BEM modifiers (`.badge--remove:hover`) from counting as definitions.
 
 const root = resolve(__dirname, '../..')
 const src = join(root, 'src')
@@ -21,7 +23,7 @@ const sources = files.map((f) => ({ file: relative(root, f), text: readFileSync(
 // `--x:` in CSS and inline styles, `'--x': …` in :style bindings, setProperty('--x', …) in scripts.
 const defined = new Set<string>()
 for (const { text } of sources) {
-  for (const m of text.matchAll(/(--[\w-]+)['"`]?\s*:/g)) defined.add(m[1])
+  for (const m of text.matchAll(/(?<![\w-])(--[\w-]+)['"`]?\s*:/g)) defined.add(m[1])
   for (const m of text.matchAll(/setProperty\(\s*['"`](--[\w-]+)/g)) defined.add(m[1])
 }
 
