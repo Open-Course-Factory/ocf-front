@@ -1,5 +1,5 @@
 /**
- * RED — #389: store error fallback keys must be translated.
+ * Store error fallback keys must be translated.
  *
  * When the backend answers without a message (e.g. a 502 with an HTML or empty
  * body), withAsync stored the raw fallback key (e.g. 'subscriptions.loadError')
