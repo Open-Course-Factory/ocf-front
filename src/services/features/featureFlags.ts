@@ -555,7 +555,7 @@ export class FeatureFlagService {
       const oldEnabled = this.flags[flagName].enabled
 
       this.flags[flagName] = { ...this.flags[flagName], ...config }
-  
+
       // Persist to localStorage (local override)
       this.saveToLocalStorage()
 

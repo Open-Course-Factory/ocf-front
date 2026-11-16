@@ -685,7 +685,6 @@ function validateRequestedPage() {
   // Use computed total pages
   const totalPagesCount = totalPages.value;
 
-
   if (requestedPage > totalPagesCount && totalPagesCount > 0) {
     // Requested page doesn't exist, redirect to last page
 
@@ -722,7 +721,6 @@ async function navigateToPageSequentially(targetPage: number) {
     return;
   }
 
-
   // Set navigation flag to hide intermediate states
   isSequentialNavigating.value = true;
   targetPageForNavigation.value = targetPage;
@@ -753,7 +751,6 @@ async function navigateToPageSequentially(targetPage: number) {
     }
   }
 
-
   } finally {
     // Clear navigation flag to show final result
     isSequentialNavigating.value = false;
@@ -780,7 +777,6 @@ function jumpToPage() {
 
   const targetPage = parseInt(pageJumpInput.value);
 
-
   if (isNaN(targetPage) || targetPage < 1) {
     showError(t('pagination.invalidPage'), t('pagination.error'));
     return;
@@ -797,11 +793,9 @@ function jumpToPage() {
     return;
   }
 
-
   // Update URL to trigger navigation
   const newQuery = { ...route.query };
   newQuery.page = targetPage.toString();
-
 
   router.push({
     path: route.path,
@@ -926,7 +920,6 @@ watch(() => route.query, (newQuery, oldQuery) => {
     return;
   }
 
-
   // Reset pagination state
   resetPagination();
 
@@ -1018,14 +1011,6 @@ async function getEntitiesWithCursor(entityName: string, store: any, cursor: str
     totalItems.value = 0;
     hasNextPage.value = false;
     hasPreviousPage.value = false;
-    switch (error.response?.status) {
-      case 404:
-        break;
-      case 401:
-        break;
-      default:
-        break;
-    }
   } finally {
     isLoadingEntities.value = false;
   }
@@ -1154,7 +1139,6 @@ function goToPreviousPage() {
     // Get the cursor for the previous page
     const previousPageData = pageHistory.value[currentPageIndex.value];
     currentCursor.value = previousPageData?.cursor || null;
-
 
     // Update URL with new page
     updateURL();

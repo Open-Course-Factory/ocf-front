@@ -169,12 +169,11 @@ onMounted(async () => {
 
 // Force reactivity by computing a summary
 const flagSummary = computed(() => {
-  const summary = Object.entries(flags.value).map(([name, config]) => ({
+  return Object.entries(flags.value).map(([name, config]) => ({
     name,
     enabled: config.enabled,
     userCanAccess: isEnabled(name)
   }))
-  return summary
 })
 
 async function toggleFlag(flagName: string, event: Event) {

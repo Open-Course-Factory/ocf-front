@@ -206,7 +206,6 @@ export const useCoursesStore = defineStore('courses', () => {
             const includeList = [...base.includeParams.children, ...base.includeParams.parents]
             const includeParam = includeList.length > 0 ? `?include=${includeList.join(',')}` : ''
 
-
             // Try with include parameter first
             let response;
             try {

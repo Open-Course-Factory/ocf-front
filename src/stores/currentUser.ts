@@ -195,7 +195,6 @@ export const useCurrentUserStore = defineStore('currentUser', {
                     }
                 }
 
-
                 // Populate user store from backend response
                 this.userId = userData.id || userData.user_id;
                 this.userName = userData.username || userData.user_name || userData.name || userData.email;
@@ -215,10 +214,9 @@ export const useCurrentUserStore = defineStore('currentUser', {
                         typeof role === 'string' ? role : role.name
                     );
                 } else {
-                    console.warn('⚠️ No roles found in user data! userData:', userData);
+                    console.warn('⚠️ No roles found in user data!');
                     this.userRoles = [];
                 }
-
 
                 // Sync impersonation state from the same /auth/me payload so
                 // the impersonation banner reflects the authoritative server
@@ -258,7 +256,6 @@ export const useCurrentUserStore = defineStore('currentUser', {
         transformResourcePermissions(backendData: any): string[] {
             const permissions = new Set<string>();
             const resourcePermissions = backendData.permissions || [];
-
 
             resourcePermissions.forEach((perm: any) => {
                 const resource = perm.resource || '';
@@ -306,7 +303,6 @@ export const useCurrentUserStore = defineStore('currentUser', {
 
                 const response = await axios.get('/auth/permissions');
 
-
                 // Extract user ID if not already set
                 if (response.data.user_id && !this.userId) {
                     this.userId = response.data.user_id;
@@ -326,7 +322,6 @@ export const useCurrentUserStore = defineStore('currentUser', {
 
                 // Transform resource permissions to action permissions
                 this.permissions = this.transformResourcePermissions(response.data);
-
 
                 // Eager-load memberships so the scenario-editor gate (#213) and
                 // any other surface reading /me/memberships gets a stable

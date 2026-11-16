@@ -199,7 +199,6 @@ export const useGenerationsStore = defineStore('generations', () => {
             if (response.status === 200) {
                 const statusData = response.data;
                 
-                
                 // Trouver l'index de l'entité
                 const entityIndex = base.entities.findIndex(e => e.id === generationId);
                 if (entityIndex !== -1) {
@@ -274,7 +273,6 @@ export const useGenerationsStore = defineStore('generations', () => {
                 format: parseInt(originalData.format) || 0,
                 generationId: entity.id
             };
-
 
             const generateResponse = await axios.post('/courses/generate', generatePayload, {
                 headers: {

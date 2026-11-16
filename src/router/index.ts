@@ -568,15 +568,8 @@ router.beforeEach(async (to, from) => {
       currentUserStore.permissions.includes(permission)
     );
 
-
     if (!hasAnyPermission) {
       console.warn(`❌ Access denied to ${to.path}: Missing required permissions`, requiredPermissions);
-      console.warn(`❌ User permissions:`, currentUserStore.permissions);
-      console.warn(`❌ User info:`, {
-        userId: currentUserStore.userId,
-        userName: currentUserStore.userName,
-        roles: currentUserStore.userRoles
-      });
       // Redirect to dashboard or home
       return {
         name: 'TerminalSessions', // Default page for authenticated users
