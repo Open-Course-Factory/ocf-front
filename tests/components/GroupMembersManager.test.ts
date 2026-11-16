@@ -291,6 +291,8 @@ describe('GroupMembersManager', () => {
       await input.trigger('focus')
       await input.setValue(query)
       await input.trigger('input')
+      // Past the search debounce, so the search has completed.
+      await new Promise(resolve => setTimeout(resolve, 350))
       await flushPromises()
       return wrapper
     }
