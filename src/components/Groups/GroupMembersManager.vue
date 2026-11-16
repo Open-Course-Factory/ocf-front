@@ -28,7 +28,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useGroupMembers, type GroupMember } from '../../composables/useGroupMembers'
 import { CLASS_PAGE_NAMES } from '../../router/classPages'
 import { isRoleAtLeast } from '../../utils/roles'
-import { formatDate } from '../../utils/formatters'
+import { useFormatters } from '../../composables/useFormatters'
 import { sanitizeCSVField } from '../../utils/csv'
 import { downloadCsv } from '../../utils/download'
 import { bulkImportService, type UserCredential } from '../../services/domain/bulkImport'
@@ -42,6 +42,8 @@ import { useParticipantControls } from '../../composables/useParticipantControls
 import { useClientPagination } from '../../composables/useClientPagination'
 import ClientPager from '../Common/ClientPager.vue'
 import UserSearchInput from '../Common/UserSearchInput.vue'
+
+const { formatDate } = useFormatters()
 
 const props = defineProps<{
   groupId: string

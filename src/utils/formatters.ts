@@ -72,7 +72,7 @@ export function intlLocale(appLocale: string): string {
 export function formatCurrency(
   amount: number,
   currency: string = 'EUR',
-  locale: string = 'fr-FR'
+  locale: string
 ): string {
   // A default parameter only fires on `undefined`, so an empty string reached
   // Intl and threw RangeError — from inside a render function, which blanked a
@@ -100,7 +100,7 @@ export function formatCurrency(
  */
 export function formatDate(
   dateString: string | null | undefined,
-  locale: string = 'fr-FR',
+  locale: string,
   fallback: string = '-',
   timezone?: string
 ): string {
@@ -127,7 +127,7 @@ export function formatDate(
  */
 export function formatDateTime(
   dateString: string | null | undefined,
-  locale: string = 'fr-FR',
+  locale: string,
   fallback: string = '-',
   timezone?: string
 ): string {
@@ -249,7 +249,7 @@ export function effectiveCpuMcpu(size: { key: string; cpu_mcpu?: number }): numb
  * formatNumber(1234567) // "1 234 567" (fr-FR)
  * formatNumber(1234567, 'en-US') // "1,234,567"
  */
-export function formatNumber(value: number, locale: string = 'fr-FR'): string {
+export function formatNumber(value: number, locale: string): string {
   return value.toLocaleString(locale)
 }
 
@@ -267,7 +267,7 @@ export function formatNumber(value: number, locale: string = 'fr-FR'): string {
 export function formatPercentage(
   value: number,
   decimals: number = 0,
-  locale: string = 'fr-FR'
+  locale: string
 ): string {
   return new Intl.NumberFormat(locale, {
     style: 'percent',
