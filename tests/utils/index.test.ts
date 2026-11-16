@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import {
   kebabToCamel,
   getTranslationKey,
-  formatPrice,
   buildSelectData,
 } from '../../src/utils/index'
 
@@ -17,19 +16,6 @@ describe('kebabToCamel + getTranslationKey', () => {
   ])('"%s" → %s', (input, expected) => {
     expect(kebabToCamel(input)).toBe(expected)
     expect(getTranslationKey(input)).toBe(expected)
-  })
-})
-
-describe('formatPrice', () => {
-  it.each([
-    [1999, 'EUR', '19,99', '€'],
-    [1999, 'USD', '19,99', '$'],
-    [0, 'EUR', '0,00', '€'],
-    [1999, 'eur', '19,99', '€'],
-  ])('formatPrice(%i, %s) contains %s and %s', (amount, currency, expectedNum, expectedSymbol) => {
-    const result = formatPrice(amount, currency)
-    expect(result).toContain(expectedNum)
-    expect(result).toContain(expectedSymbol)
   })
 })
 

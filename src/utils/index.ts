@@ -36,28 +36,6 @@ export function getTranslationKey(entityName: string): string {
 }
 
 /**
- * Formate un prix en centimes vers une devise
- */
-export function formatPrice(amount: number, currency: string = 'EUR'): string {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: currency.toUpperCase(),
-  }).format(amount / 100);
-}
-
-/**
- * Formate une date pour l'affichage
- */
-export function formatDate(dateString: string): string {
-  if (!dateString) return '-';
-  try {
-    return new Date(dateString).toLocaleString('fr-FR');
-  } catch (e) {
-    return dateString;
-  }
-}
-
-/**
  * Build select data (options) from an array of entities
  * Provides consistent select option generation across stores
  *
