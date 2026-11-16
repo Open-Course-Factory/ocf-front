@@ -30,7 +30,7 @@ vi.mock('../../src/services/demo', () => ({
 
 const showError = vi.fn()
 vi.mock('../../src/composables/useNotification', () => ({
-  useNotification: () => ({ showError, showSuccess: vi.fn() }),
+  useNotification: () => ({ showError, showSuccess: vi.fn(), showConfirm: vi.fn().mockResolvedValue(true) }),
 }))
 
 const route = { params: {} as Record<string, string> }
@@ -126,7 +126,6 @@ describe('EmailTemplates page errors', () => {
     setActivePinia(createPinia())
     setLocale('en')
     vi.spyOn(console, 'error').mockImplementation(() => {})
-    vi.stubGlobal('confirm', () => true)
     mockGet.mockResolvedValue({ data: [] })
     route.params = {}
   })
