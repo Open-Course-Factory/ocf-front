@@ -9,7 +9,7 @@ import { request as playwrightRequest, type APIRequestContext } from '@playwrigh
  * re-runnable against a long-lived dev database.
  */
 
-const API_BASE = process.env.OCF_API_URL || 'http://localhost:8080/api/v1';
+export const API_BASE = process.env.OCF_API_URL || 'http://localhost:8080/api/v1';
 
 export interface ApiSession {
   api: APIRequestContext;
