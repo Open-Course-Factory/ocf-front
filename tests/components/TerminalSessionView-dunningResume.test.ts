@@ -202,4 +202,17 @@ describe('TerminalSessionView — dunning (past-due) resume handling', () => {
     expect(String(showErrorSpy.mock.calls[0][0]).toLowerCase()).toContain('organization')
     expect(mockRouterPush).not.toHaveBeenCalledWith('/subscription-dashboard')
   })
+
+  it('shows the translated fallback, not the English axios text, when the request never got a response', async () => {
+    await seedStoppedSession()
+    startSessionMock.mockRejectedValue(new Error('Network Error'))
+
+    const wrapper = mountView()
+    await flushPromises()
+    await clickResume(wrapper)
+
+    expect(showErrorSpy).toHaveBeenCalledTimes(1)
+    expect(showErrorSpy.mock.calls[0][0]).toBe('Resume failed')
+    expect(showErrorSpy.mock.calls[0][0]).not.toContain('Network Error')
+  })
 })

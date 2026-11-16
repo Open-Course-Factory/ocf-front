@@ -196,12 +196,13 @@ describe('TerminalMySessions — resume rejections', () => {
     expect(mockShowError).not.toHaveBeenCalled()
   })
 
-  it('shows the network error message when the request never got a response', async () => {
+  it('shows the translated fallback, not the English axios text, when the request never got a response', async () => {
     await resumeRejectedWithError(new Error('Network Error'))
 
     expect(mockShowConfirm).not.toHaveBeenCalled()
     expect(mockShowError).toHaveBeenCalledTimes(1)
-    expect(mockShowError.mock.calls[0][0]).toBe('Network Error')
+    expect(mockShowError.mock.calls[0][0]).toBe('Resume failed')
+    expect(mockShowError.mock.calls[0][0]).not.toContain('Network Error')
   })
 
   it('falls back to the page copy when the rejection carries no message', async () => {
