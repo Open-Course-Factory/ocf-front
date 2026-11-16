@@ -135,6 +135,60 @@
   color: var(--color-white);
 }
 
+.btn-outline-success {
+  background-color: transparent;
+  color: var(--color-success);
+}
+
+.btn-outline-success:hover:not(:disabled),
+.btn-outline-success:active {
+  background-color: var(--color-success);
+  color: var(--color-white);
+}
+
+.btn-outline-info {
+  background-color: transparent;
+  color: var(--color-info);
+}
+
+.btn-outline-info:hover:not(:disabled),
+.btn-outline-info:active {
+  background-color: var(--color-info);
+  color: var(--color-black);
+}
+
+.btn-link {
+  background-color: transparent;
+  color: var(--color-primary);
+}
+
+.btn-link:hover:not(:disabled),
+.btn-link:active {
+  color: var(--color-primary-hover);
+}
+
+/* Close (×) button: dimmed until hovered or focused. */
+.btn-close {
+  border-radius: var(--border-radius-md);
+  opacity: 0.5;
+}
+
+.btn-close:hover {
+  opacity: 0.75;
+}
+
+.btn-close:focus {
+  outline: 0;
+  box-shadow: var(--shadow-focus);
+  opacity: 1;
+}
+
+.btn-close:disabled {
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.25;
+}
+
 /* Square, transparent icon-only button (used by overflow menus / toolbars) */
 .btn-icon {
   display: inline-flex;
@@ -314,6 +368,14 @@ button.ocf-btn-outline:disabled {
   border-collapse: collapse;
 }
 
+.table > thead {
+  vertical-align: bottom;
+}
+
+.table > tbody {
+  vertical-align: inherit;
+}
+
 .table th,
 .table td {
   padding: var(--spacing-md);
@@ -350,6 +412,15 @@ button.ocf-btn-outline:disabled {
   white-space: nowrap;
   vertical-align: baseline;
   border-radius: var(--border-radius-full);
+}
+
+.badge:empty {
+  display: none;
+}
+
+.btn .badge {
+  position: relative;
+  top: -1px;
 }
 
 .badge-primary {
@@ -478,6 +549,76 @@ button.ocf-btn-outline:disabled {
 .p-2 { padding: var(--spacing-sm) !important; }
 .p-3 { padding: var(--spacing-md) !important; }
 .p-4 { padding: var(--spacing-lg) !important; }
+
+.d-block {
+  display: block !important;
+}
+
+.w-100 {
+  width: 100% !important;
+}
+
+.lead {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-light);
+}
+
+/* === LAYOUT === */
+
+/* Centred page column, widening with the viewport. */
+.container {
+  width: 100%;
+  padding-right: calc(var(--spacing-lg) / 2);
+  padding-left: calc(var(--spacing-lg) / 2);
+  margin-right: auto;
+  margin-left: auto;
+}
+
+@media (min-width: 576px) { .container { max-width: 540px; } }
+@media (min-width: 768px) { .container { max-width: 720px; } }
+@media (min-width: 992px) { .container { max-width: 960px; } }
+@media (min-width: 1200px) { .container { max-width: 1140px; } }
+@media (min-width: 1400px) { .container { max-width: 1320px; } }
+
+/* === DROPDOWNS === */
+
+.dropdown-menu {
+  margin: 0;
+  padding: var(--spacing-sm) 0;
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  text-align: left;
+  list-style: none;
+  background-clip: padding-box;
+}
+
+.dropdown-item {
+  clear: both;
+  font-weight: var(--font-weight-normal);
+  white-space: nowrap;
+}
+
+/* === PROGRESS === */
+
+.progress {
+  display: flex;
+  overflow: hidden;
+  font-size: var(--font-size-xs);
+}
+
+.progress-bar {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.progress > .progress-bar {
+  color: var(--color-white);
+  background-color: var(--color-primary);
+}
 
 /* === LOADING STATES === */
 

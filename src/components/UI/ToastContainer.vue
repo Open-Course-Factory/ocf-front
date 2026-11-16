@@ -60,6 +60,12 @@ function getIcon(type: string): string {
   flex-direction: column;
   gap: var(--spacing-md);
   max-width: 400px;
+  width: max-content;
+  pointer-events: none;
+}
+
+.toast-container > :not(:last-child) {
+  margin-bottom: var(--spacing-lg);
 }
 
 .toast {
@@ -67,6 +73,11 @@ function getIcon(type: string): string {
   align-items: center;
   gap: var(--spacing-md);
   padding: 12px 16px;
+  width: 350px;
+  max-width: 100%;
+  pointer-events: auto;
+  border: var(--border-width-thin) solid var(--color-border-light);
+  background-clip: padding-box;
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-lg);
   color: var(--color-white);
