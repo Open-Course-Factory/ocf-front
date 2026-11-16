@@ -21,6 +21,7 @@
 
 import { computed, ref, type ComputedRef, type Ref } from 'vue'
 import type { TableColumn } from '../utils/tableColumns'
+import { normalizeSearchText } from './useEntitySearch'
 
 export interface SortState {
   key: string
@@ -82,11 +83,9 @@ export function useClientTable<Row>(
 
   function matchesQuery(row: Row, needle: string): boolean {
     if (searchFilter) return searchFilter(row, needle)
-    const lowered = needle.toLowerCase()
+    const normalized = normalizeSearchText(needle)
     return columns.some((column) =>
-      String((row as Record<string, any>)[column.key] ?? '')
-        .toLowerCase()
-        .includes(lowered)
+      normalizeSearchText(String((row as Record<string, any>)[column.key] ?? '')).includes(normalized)
     )
   }
 
