@@ -29,8 +29,7 @@ import { teacherService } from '../../services/domain/scenario'
 import { downloadCsv, downloadJSON, downloadBlob } from '../../utils/download'
 import { buildSessionDetailCsv } from '../../utils/scenarioResultsCsv'
 import { useTerminalBackendsStore } from '../../stores/terminalBackends'
-import ScenarioUploadModal from '../Modals/ScenarioUploadModal.vue'
-import ScenarioJSONImportModal from '../Modals/ScenarioJSONImportModal.vue'
+import ScenarioImportModal from '../Modals/ScenarioImportModal.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 import RemoveAssignmentConfirmModal from './modals/RemoveAssignmentConfirmModal.vue'
 import ResetAssignmentModal from './modals/ResetAssignmentModal.vue'
@@ -183,8 +182,7 @@ const showBulkStartModal = ref(false)
 const assignmentToBulkStart = ref<ScenarioAssignment | null>(null)
 
 // Import modal state
-const showUploadModal = ref(false)
-const showJSONImportModal = ref(false)
+const importFormat = ref<'json' | 'archive' | null>(null)
 
 // Results view state + 30s polling + multi-select (composable-owned)
 const {
@@ -505,13 +503,8 @@ async function handleExportArchive(assignment: ScenarioAssignment) {
 }
 
 // Import handlers
-function handleImportUploaded() {
-  showUploadModal.value = false
-  loadAssignments()
-}
-
-function handleJSONImported() {
-  showJSONImportModal.value = false
+function handleImported() {
+  importFormat.value = null
   loadAssignments()
 }
 
@@ -541,11 +534,11 @@ onMounted(() => {
           <i class="fas fa-plus"></i>
           {{ t('groupScenarios.assignScenario') }}
         </button>
-        <button @click="showUploadModal = true" class="btn btn-sm btn-primary">
+        <button @click="importFormat = 'archive'" class="btn btn-sm btn-primary">
           <i class="fas fa-file-import"></i>
           {{ t('groupScenarios.importKillercoda') }}
         </button>
-        <button @click="showJSONImportModal = true" class="btn btn-sm btn-primary">
+        <button @click="importFormat = 'json'" class="btn btn-sm btn-primary">
           <i class="fas fa-file-code"></i>
           {{ t('groupScenarios.importJson') }}
         </button>
@@ -686,20 +679,12 @@ onMounted(() => {
       @close="showResetModal = false"
     />
 
-    <!-- KillerCoda Upload Modal -->
-    <ScenarioUploadModal
-      :visible="showUploadModal"
+    <ScenarioImportModal
+      :visible="importFormat !== null"
+      :format="importFormat ?? 'json'"
       :group-id="groupId"
-      @close="showUploadModal = false"
-      @uploaded="handleImportUploaded"
-    />
-
-    <!-- JSON Import Modal -->
-    <ScenarioJSONImportModal
-      :visible="showJSONImportModal"
-      :group-id="groupId"
-      @close="showJSONImportModal = false"
-      @imported="handleJSONImported"
+      @close="importFormat = null"
+      @imported="handleImported"
     />
   </div>
 </template>

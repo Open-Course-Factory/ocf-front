@@ -7,13 +7,11 @@ import { useScenariosStore } from '../../../stores/scenarios'
 import { useTranslations } from '../../../composables/useTranslations'
 import { useNotification } from '../../../composables/useNotification'
 import { teacherService } from '../../../services/domain/scenario'
-import ScenarioUploadModal from '../../Modals/ScenarioUploadModal.vue'
-import ScenarioJSONImportModal from '../../Modals/ScenarioJSONImportModal.vue'
+import ScenarioImportModal from '../../Modals/ScenarioImportModal.vue'
 
 const router = useRouter()
 const entityStore = useScenariosStore()
-const showUploadModal = ref(false)
-const showJSONImportModal = ref(false)
+const importFormat = ref<'json' | 'archive' | null>(null)
 
 const { showError: notifyError, showSuccess: notifySuccess } = useNotification()
 const isDuplicating = ref<string | null>(null)
@@ -52,13 +50,8 @@ const { t } = useTranslations({
   }
 })
 
-function handleUploaded() {
-  showUploadModal.value = false
-  entityStore.loadEntities('scenarios')
-}
-
-function handleJSONImported() {
-  showJSONImportModal.value = false
+function handleImported() {
+  importFormat.value = null
   entityStore.loadEntities('scenarios')
 }
 
@@ -134,11 +127,11 @@ async function duplicateScenario(entity: any) {
 <template>
   <Entity :entity-name="'scenarios'" :entity-store="entityStore">
     <template #toolbar-extra>
-      <button class="btn btn-secondary" @click="showUploadModal = true">
+      <button class="btn btn-secondary" @click="importFormat = 'archive'">
         <i class="fas fa-file-import"></i>
         {{ t('scenarios.importKillercoda') }}
       </button>
-      <button class="btn btn-secondary" @click="showJSONImportModal = true">
+      <button class="btn btn-secondary" @click="importFormat = 'json'">
         <i class="fas fa-file-code"></i>
         {{ t('scenarios.importJson') }}
       </button>
@@ -170,14 +163,10 @@ async function duplicateScenario(entity: any) {
       </button>
     </template>
   </Entity>
-  <ScenarioUploadModal
-    :visible="showUploadModal"
-    @close="showUploadModal = false"
-    @uploaded="handleUploaded"
-  />
-  <ScenarioJSONImportModal
-    :visible="showJSONImportModal"
-    @close="showJSONImportModal = false"
-    @imported="handleJSONImported"
+  <ScenarioImportModal
+    :visible="importFormat !== null"
+    :format="importFormat ?? 'json'"
+    @close="importFormat = null"
+    @imported="handleImported"
   />
 </template>

@@ -30,8 +30,7 @@ import { useScenarioEditorAccess } from '../../composables/useScenarioEditorAcce
 import { teacherService } from '../../services/domain/scenario'
 import { useScenariosStore } from '../../stores/scenarios'
 import BaseModal from '../Modals/BaseModal.vue'
-import ScenarioUploadModal from '../Modals/ScenarioUploadModal.vue'
-import ScenarioJSONImportModal from '../Modals/ScenarioJSONImportModal.vue'
+import ScenarioImportModal from '../Modals/ScenarioImportModal.vue'
 import AdminBadge from '../Common/AdminBadge.vue'
 import { formatMinutes } from '../../utils/formatters'
 
@@ -157,8 +156,7 @@ const showArchiveModal = ref(false)
 const scenarioToArchive = ref<OrgScenario | null>(null)
 
 // Import modal state
-const showUploadModal = ref(false)
-const showJSONImportModal = ref(false)
+const importFormat = ref<'json' | 'archive' | null>(null)
 
 // Archived scenarios stay in the library — the org still owns them and their
 // results — but out of the way until asked for.
@@ -274,8 +272,7 @@ function downloadBlob(blob: Blob, filename: string) {
 
 // Import handlers
 function handleImportSuccess() {
-  showUploadModal.value = false
-  showJSONImportModal.value = false
+  importFormat.value = null
   notifySuccess(t('orgScenarios.importSuccess'))
   loadScenarios()
 }
@@ -314,12 +311,12 @@ onMounted(() => {
     <div class="tab-header">
       <h3>{{ t('orgScenarios.title') }}</h3>
       <div class="tab-header-actions">
-        <button @click="showUploadModal = true" class="btn btn-sm btn-primary">
+        <button @click="importFormat = 'archive'" class="btn btn-sm btn-primary">
           <i class="fas fa-file-import"></i>
           {{ t('orgScenarios.importKillercoda') }}
           <AdminBadge v-if="isAdmin" icon-only />
         </button>
-        <button @click="showJSONImportModal = true" class="btn btn-sm btn-primary">
+        <button @click="importFormat = 'json'" class="btn btn-sm btn-primary">
           <i class="fas fa-file-code"></i>
           {{ t('orgScenarios.importJson') }}
           <AdminBadge v-if="isAdmin" icon-only />
@@ -476,19 +473,11 @@ onMounted(() => {
       <p>{{ t('orgScenarios.confirmArchive') }}</p>
     </BaseModal>
 
-    <!-- KillerCoda Upload Modal -->
-    <ScenarioUploadModal
-      :visible="showUploadModal"
+    <ScenarioImportModal
+      :visible="importFormat !== null"
+      :format="importFormat ?? 'json'"
       :organization-id="organizationId"
-      @close="showUploadModal = false"
-      @uploaded="handleImportSuccess"
-    />
-
-    <!-- JSON Import Modal -->
-    <ScenarioJSONImportModal
-      :visible="showJSONImportModal"
-      :organization-id="organizationId"
-      @close="showJSONImportModal = false"
+      @close="importFormat = null"
       @imported="handleImportSuccess"
     />
   </div>
