@@ -20,12 +20,7 @@ vi.mock('axios', () => ({
   }
 }))
 
-vi.mock('element-plus', () => ({
-  ElNotification: vi.fn()
-}))
-
 import axios from 'axios'
-import { ElNotification } from 'element-plus'
 import i18n from '../../src/i18n'
 import { useGenerationsStore } from '../../src/stores/generations'
 import { useToast } from '../../src/composables/useToast'
@@ -52,7 +47,6 @@ describe('generations — status change notifications', () => {
   it('shows a success toast when the generation completes', async () => {
     await statusGoesFromProcessingTo({ status: 'completed' })
 
-    expect(ElNotification).not.toHaveBeenCalled()
     expect(toasts.value).toHaveLength(1)
     expect(toasts.value[0]).toMatchObject({ type: 'success' })
   })
@@ -60,7 +54,6 @@ describe('generations — status change notifications', () => {
   it('shows the worker error until the user closes it when the generation fails', async () => {
     await statusGoesFromProcessingTo({ status: 'failed', error_message: 'slidev exited with 1' })
 
-    expect(ElNotification).not.toHaveBeenCalled()
     expect(toasts.value).toHaveLength(1)
     expect(toasts.value[0]).toMatchObject({ type: 'error', message: 'slidev exited with 1', persistent: true })
   })

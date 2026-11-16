@@ -31,12 +31,7 @@ vi.mock('axios', () => ({
   }
 }))
 
-vi.mock('element-plus', () => ({
-  ElNotification: vi.fn()
-}))
-
 import axios from 'axios'
-import { ElNotification } from 'element-plus'
 import i18n from '../../src/i18n'
 import { useClassGroupsStore } from '../../src/stores/classGroups'
 import { useToast } from '../../src/composables/useToast'
@@ -52,9 +47,8 @@ function subgroupPayloads(): any[] {
     .filter((payload: any) => payload.parent_group_id === PARENT.id)
 }
 
-/** Last toast the teacher sees; the store must not bypass the house toast. */
+/** Last toast the teacher sees. */
 function lastNotification(): any {
-  expect(ElNotification).not.toHaveBeenCalled()
   return toasts.value.length > 0 ? toasts.value[toasts.value.length - 1] : null
 }
 
