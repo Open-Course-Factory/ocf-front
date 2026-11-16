@@ -80,7 +80,7 @@ test('archiving the open scenario closes it and drops it from the picker', async
   ).toHaveCount(0);
   await page.locator('.base-modal-footer .btn-primary').click();
 
-  await expect(page.locator('.el-notification'), 'the toast says it worked').toBeVisible();
+  await expect(page.locator('.ocf-toast'), 'the toast says it worked').toBeVisible();
   await expect(page.getByTestId('editor-empty-state'), 'and the editor is back to empty').toBeVisible({ timeout: 15_000 });
   await expect(page.getByTestId('editor-archived-notice')).toHaveCount(0);
   await expect(

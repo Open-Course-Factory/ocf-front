@@ -169,7 +169,7 @@ test('a learner with a live session is offered Resume instead of a second Launch
 
   // A busy host refuses the launch with an error toast instead of navigating —
   // an environment condition, not a product defect.
-  const errorToast = page.locator('.el-notification');
+  const errorToast = page.locator('.ocf-toast');
   await Promise.race([
     page.waitForURL(/\/terminal-session\//, { timeout: 240_000 }),
     errorToast.waitFor({ state: 'visible', timeout: 240_000 }),

@@ -82,7 +82,7 @@ test('an author tests an unsaved check on a preview started from the editor', as
   await confirm.locator('.base-modal-footer .btn.btn-primary').click();
 
   const verdict = page.getByTestId('verify-test-verdict');
-  const refused = page.locator('.el-notification');
+  const refused = page.locator('.ocf-toast');
   await Promise.race([
     verdict.waitFor({ state: 'visible', timeout: 300_000 }),
     refused.waitFor({ state: 'visible', timeout: 300_000 }),

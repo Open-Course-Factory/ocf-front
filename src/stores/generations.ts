@@ -28,7 +28,7 @@ import { useCoursesStore } from "./courses";
 import { ref } from 'vue';
 import { nextTick } from 'vue';
 import axios from 'axios';
-import { ElNotification } from 'element-plus';
+import { useNotification } from '../composables/useNotification';
 import { field, buildFieldList } from '../utils/fieldBuilder';
 import { extractErrorMessage } from '../utils/formatters';
 
@@ -230,19 +230,13 @@ export const useGenerationsStore = defineStore('generations', () => {
                 const newStatus = statusData.status?.toLowerCase();
                 if (prevStatus && prevStatus !== newStatus) {
                     if (newStatus === 'completed') {
-                        ElNotification({
-                            title: t('generations.notifyCompletedTitle'),
-                            message: t('generations.notifyCompleted'),
-                            type: 'success',
-                            duration: 5000,
-                        });
+                        useNotification().showSuccess(t('generations.notifyCompleted'), t('generations.notifyCompletedTitle'));
                     } else if (['failed', 'client_error', 'tunnel_error'].includes(newStatus)) {
-                        ElNotification({
-                            title: t('generations.notifyFailedTitle'),
-                            message: statusData.error_message || t('generations.notifyFailed'),
-                            type: 'error',
-                            duration: 0, // persistent
-                        });
+                        useNotification().showError(
+                            statusData.error_message || t('generations.notifyFailed'),
+                            t('generations.notifyFailedTitle'),
+                            { persistent: true }
+                        );
                     }
                 }
                 previousStatuses.set(generationId, newStatus);

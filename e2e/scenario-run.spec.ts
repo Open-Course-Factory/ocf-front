@@ -127,7 +127,7 @@ test('learner launches, follows and completes a real scenario', async ({ page })
   // matters is landing in the player with the first step up. A busy host can
   // refuse the launch outright (503 "Server at capacity") — that is an
   // environment condition, not a product defect: skip instead of failing.
-  const errorToast = page.locator('.el-notification');
+  const errorToast = page.locator('.ocf-toast');
   await Promise.race([
     page.waitForURL(/\/terminal-session\//, { timeout: 240_000 }),
     errorToast.waitFor({ state: 'visible', timeout: 240_000 }),

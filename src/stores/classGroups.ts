@@ -21,7 +21,7 @@
 
 import { defineStore } from "pinia"
 import axios from "axios"
-import { ElNotification } from "element-plus"
+import { useNotification } from "../composables/useNotification"
 import { useBaseStore } from "./baseStore"
 import { useOrganizationsStore, isPersonalOrganizationRecord } from "./organizations"
 import { useStoreTranslations } from '../composables/useTranslations'
@@ -325,18 +325,17 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
         const names = failedNames.join(', ')
         const allFailed = failedNames.length === total
 
-        ElNotification({
-            title: t('classGroups.subgroupsFailedTitle'),
-            message: allFailed
-                ? t('classGroups.subgroupsAllFailed', { names })
-                : t('classGroups.subgroupsPartialFailure', {
-                    created: total - failedNames.length,
-                    total,
-                    names
-                }),
-            type: allFailed ? 'error' : 'warning',
-            duration: 0 // persistent: the teacher has to recreate them by hand
-        })
+        const message = allFailed
+            ? t('classGroups.subgroupsAllFailed', { names })
+            : t('classGroups.subgroupsPartialFailure', {
+                created: total - failedNames.length,
+                total,
+                names
+            })
+        const { showError, showWarning } = useNotification()
+        const notify = allFailed ? showError : showWarning
+        // persistent: the teacher has to recreate them by hand
+        notify(message, t('classGroups.subgroupsFailedTitle'), { persistent: true })
     }
 
     // Hook to create subgroups after parent group is created

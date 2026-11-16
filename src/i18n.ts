@@ -21,10 +21,7 @@ const i18n = createI18n({
             notification: {
                 confirm: 'Confirm',
                 cancel: 'Cancel',
-                ok: 'OK',
-                alertTitle: 'Alert',
                 confirmTitle: 'Confirm',
-                promptTitle: 'Input',
                 successTitle: 'Success',
                 errorTitle: 'Error',
                 warningTitle: 'Warning',
@@ -145,10 +142,7 @@ const i18n = createI18n({
             notification: {
                 confirm: 'Confirmer',
                 cancel: 'Annuler',
-                ok: 'OK',
-                alertTitle: 'Alerte',
                 confirmTitle: 'Confirmation',
-                promptTitle: 'Saisie',
                 successTitle: 'Succès',
                 errorTitle: 'Erreur',
                 warningTitle: 'Avertissement',

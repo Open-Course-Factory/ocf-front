@@ -78,7 +78,7 @@ async function startPlainSession(page: Page): Promise<string> {
   await expect(launch).toBeEnabled({ timeout: 10_000 });
   await launch.click();
 
-  const errorToast = page.locator('.el-notification');
+  const errorToast = page.locator('.ocf-toast');
   await Promise.race([
     page.waitForURL(/\/terminal-session\//, { timeout: 240_000 }),
     errorToast.waitFor({ state: 'visible', timeout: 240_000 }),

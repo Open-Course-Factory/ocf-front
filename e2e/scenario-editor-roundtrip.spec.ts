@@ -166,7 +166,7 @@ test('the learner plays the authored scenario through to completion', async ({ p
   await expect(card).toBeVisible({ timeout: 15_000 });
   await card.getByTestId('scenario-launch-btn').click();
 
-  const errorToast = page.locator('.el-notification');
+  const errorToast = page.locator('.ocf-toast');
   await Promise.race([
     page.waitForURL(/\/terminal-session\//, { timeout: 240_000 }),
     errorToast.waitFor({ state: 'visible', timeout: 240_000 }),
@@ -229,7 +229,7 @@ test('the author tests the scenario from its second step and lands on it', async
   await expect(confirm).toBeVisible({ timeout: 10_000 });
   await confirm.locator('.base-modal-footer .btn.btn-primary').click();
 
-  const errorToast = page.locator('.el-notification');
+  const errorToast = page.locator('.ocf-toast');
   await Promise.race([
     page.waitForURL(/\/terminal-session\//, { timeout: 240_000 }),
     errorToast.waitFor({ state: 'visible', timeout: 240_000 }),
