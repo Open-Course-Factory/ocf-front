@@ -103,7 +103,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
-import type { ScenarioLexicon, LexiconEntry } from '../../composables/useScenarioLexicon'
+import { languageName, type ScenarioLexicon, type LexiconEntry } from '../../composables/useScenarioLexicon'
 
 /**
  * The sentences a check prints when it refuses.
@@ -141,15 +141,6 @@ const shown = computed(() => {
     Object.values(entry.names).some(text => (text || '').toLocaleLowerCase().includes(needle))
   )
 })
-
-function languageName(locale: string): string {
-  try {
-    const name = new Intl.DisplayNames([locale], { type: 'language' }).of(locale) || locale
-    return name.charAt(0).toLocaleUpperCase(locale) + name.slice(1)
-  } catch {
-    return locale
-  }
-}
 
 function countSlots(text: string | undefined): number {
   return (text || '').split('%s').length - 1

@@ -91,8 +91,8 @@
           :default-locale="scenarioDefaultLocale"
           :translation="editingStepTranslation"
           :step-state="(editingStep.id && translationStates[editingStep.id]) || ''"
-          :locale-label="localeLabel(editingLocale)"
-          :default-locale-label="localeLabel(scenarioDefaultLocale)"
+          :locale-label="languageName(editingLocale)"
+          :default-locale-label="languageName(scenarioDefaultLocale)"
           :locales="scenarioLocales"
           :can-test-from-step="canPreviewScenario"
           :scenario-id="selectedScenarioId || ''"
@@ -171,8 +171,8 @@
       :locale="editingLocale"
       :default-locale="scenarioDefaultLocale"
       :translation="editingScenarioTranslation"
-      :locale-label="localeLabel(editingLocale)"
-      :default-locale-label="localeLabel(scenarioDefaultLocale)"
+      :locale-label="languageName(editingLocale)"
+      :default-locale-label="languageName(scenarioDefaultLocale)"
       @close="closeScenarioEditModal"
       @save="handleSaveScenario"
       @save-translation="handleSaveScenarioTranslation"
@@ -270,6 +270,7 @@ import { useScenariosStore } from '../../stores/scenarios'
 import { useScenarioStepsStore } from '../../stores/scenarioSteps'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
+import { languageName } from '../../composables/useScenarioLexicon'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import { useScenarioCreateScopes } from '../../composables/useScenarioCreateScopes'
 import { useNotification } from '../../composables/useNotification'
@@ -445,16 +446,6 @@ const translationStates = computed<Record<string, 'translated' | 'stale' | 'miss
   if (!found) return {}
   return Object.fromEntries(found.steps.map(s => [s.step_id, s.state]))
 })
-
-function localeLabel(locale: string): string {
-  if (!locale) return ''
-  try {
-    const name = new Intl.DisplayNames([locale], { type: 'language' }).of(locale) || locale
-    return name.charAt(0).toLocaleUpperCase(locale) + name.slice(1)
-  } catch {
-    return locale
-  }
-}
 
 /**
  * Refresh how much of each language is done. Re-read after every translation

@@ -782,6 +782,7 @@ import DropdownMenu from '../Common/DropdownMenu.vue'
 import VerifyScriptTester from './VerifyScriptTester.vue'
 import TranslationPane from './TranslationPane.vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { languageName } from '../../composables/useScenarioLexicon'
 import { BANNER_EFFECTS } from '../../utils/scenarioAiPrompt'
 import StepLearnerPreview from './StepLearnerPreview.vue'
 import { isPartialScoringMode, type QuizScoringMode } from '../../services/domain/scenario'
@@ -1174,15 +1175,6 @@ function requestLocale(locale: string) {
 function commitLocaleChange() {
   if (pendingLocaleChange.value) emit('update:locale', pendingLocaleChange.value)
   pendingLocaleChange.value = null
-}
-
-function languageName(locale: string): string {
-  try {
-    const name = new Intl.DisplayNames([locale], { type: 'language' }).of(locale) || locale
-    return name.charAt(0).toLocaleUpperCase(locale) + name.slice(1)
-  } catch {
-    return locale
-  }
 }
 
 /** The languages this step could be translated into, default excluded. */

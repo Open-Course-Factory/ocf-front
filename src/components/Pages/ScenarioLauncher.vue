@@ -301,6 +301,7 @@ import type { AvailableScenario } from '../../services/domain/scenario'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
+import { languageName } from '../../composables/useScenarioLexicon'
 import { useScenarioRunLabel, isPausedRun, isRebuildRun } from '../../composables/useScenarioRunLabel'
 import { useScenarioRunRecovery } from '../../composables/useScenarioRunRecovery'
 import AdminBadge from '../Common/AdminBadge.vue'
@@ -513,23 +514,6 @@ function cardTitle(scenario: any): string {
 
 function cardDescription(scenario: any): string {
   return cardText(scenario).description || scenario.description || ''
-}
-
-/**
- * A language's name in its own language — "Français", not "French".
- *
- * Capitalised on the way out: French does not capitalise its language names, so
- * Intl returns "français", which reads as a mistake sitting under a "Language"
- * label beside "English". The list is a set of labels here, not running prose.
- */
-function languageName(locale: string): string {
-  let name = locale
-  try {
-    name = new Intl.DisplayNames([locale], { type: 'language' }).of(locale) || locale
-  } catch {
-    return locale
-  }
-  return name.charAt(0).toLocaleUpperCase(locale) + name.slice(1)
 }
 
 const isLoading = ref(false)

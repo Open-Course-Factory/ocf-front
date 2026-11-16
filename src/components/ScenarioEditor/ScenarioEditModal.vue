@@ -517,7 +517,7 @@ import TabStrip from '../Common/TabStrip.vue'
 import TranslationPane from './TranslationPane.vue'
 import LexiconEditor from './LexiconEditor.vue'
 import MessageEditor from './MessageEditor.vue'
-import { useScenarioLexicon, type ScenarioLexicon } from '../../composables/useScenarioLexicon'
+import { useScenarioLexicon, languageName, type ScenarioLexicon } from '../../composables/useScenarioLexicon'
 import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 import type { Size } from '../../types/terminal'
 import { formatMcpuAsVcpu, effectiveCpuMcpu } from '../../utils/formatters'
@@ -680,15 +680,6 @@ watch(
   },
   { immediate: true }
 )
-
-function languageName(locale: string): string {
-  try {
-    const name = new Intl.DisplayNames([locale], { type: 'language' }).of(locale) || locale
-    return name.charAt(0).toLocaleUpperCase(locale) + name.slice(1)
-  } catch {
-    return locale
-  }
-}
 
 /**
  * Add or remove a language.
