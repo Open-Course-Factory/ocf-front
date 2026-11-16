@@ -82,7 +82,6 @@ function mountBulk() {
   return mount(BulkLicensePurchase, {
     global: {
       stubs: {
-        PricingCalculator: true,
         ErrorAlert: true,
         'router-link': { props: ['to'], template: '<a><slot /></a>' },
       },
