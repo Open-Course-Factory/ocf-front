@@ -327,6 +327,7 @@ async function handleImport() {
 }
 
 function handleClose() {
+  if (importSuccess.value) return handleSuccessClose()
   if (!isImporting.value) {
     resetState()
     emit('close')

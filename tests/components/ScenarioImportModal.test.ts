@@ -227,6 +227,17 @@ describe('ScenarioImportModal — closing', () => {
     expect(wrapper.find('.preview-info').exists()).toBe(false)
   })
 
+  it.each(['json', 'archive'] as const)('%s: closing the success step with the X still hands the scenario over', async (format) => {
+    postMock.mockReset()
+    postMock.mockResolvedValue({ data: { id: 'new-scenario' } })
+    const wrapper = mountModal(format)
+    await importFile(wrapper, validFile(format))
+
+    await wrapper.find('.base-modal-close').trigger('click')
+    expect(wrapper.emitted('imported')).toEqual([[{ id: 'new-scenario' }]])
+    expect(wrapper.emitted('close')).toBeUndefined()
+  })
+
   it.each(['json', 'archive'] as const)('%s: clearing the refused file clears its problems too', async (format) => {
     postMock.mockReset()
     postMock.mockRejectedValue({ response: { status: 400, data: { error_message: 'Refused', details: ['step 1: bad'] } } })
