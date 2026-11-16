@@ -29,6 +29,8 @@ import { useGroupMembers, type GroupMember } from '../../composables/useGroupMem
 import { CLASS_PAGE_NAMES } from '../../router/classPages'
 import { isRoleAtLeast } from '../../utils/roles'
 import { formatDate } from '../../utils/formatters'
+import { sanitizeCSVField } from '../../utils/csv'
+import { downloadCsv } from '../../utils/download'
 import { userService, type User } from '../../services/domain/user'
 import { bulkImportService, type UserCredential } from '../../services/domain/bulkImport'
 import type { ClassGroup } from '../../types'
@@ -468,17 +470,11 @@ async function confirmRegeneratePasswords() {
 
 function downloadCredentialsCsv() {
   const header = 'name,email,password\n'
-  const escape = (s: string) => s.replace(/"/g, '""')
   const rows = regeneratedCredentials.value
-    .map(c => `"${escape(c.name)}","${escape(c.email)}","${escape(c.password)}"`)
+    // No formula guard on the password: a prefix would hand out a wrong password.
+    .map(c => `${sanitizeCSVField(c.name)},${sanitizeCSVField(c.email)},"${c.password.replace(/"/g, '""')}"`)
     .join('\n')
-  const blob = new Blob([header + rows], { type: 'text/csv' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `credentials-${props.group?.display_name || 'group'}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
+  downloadCsv(header + rows, `credentials-${props.group?.display_name || 'group'}.csv`)
 }
 
 // Removing a member is one click away from every row: it asks first.

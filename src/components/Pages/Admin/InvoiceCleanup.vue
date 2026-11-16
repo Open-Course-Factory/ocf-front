@@ -349,6 +349,7 @@ import { ref, computed } from 'vue'
 import { useTranslations } from '../../../composables/useTranslations'
 import { useNotification } from '../../../composables/useNotification'
 import { formatCurrency, formatDateTime } from '../../../utils/formatters'
+import { sanitizeCSVField } from '../../../utils/csv'
 import axios from 'axios'
 
 const { t } = useTranslations({
@@ -736,19 +737,20 @@ const exportResults = () => {
     // Create CSV content
     const headers = ['Invoice ID', 'Invoice Number', 'Customer ID', 'Amount', 'Currency', 'Original Status', 'Action Taken', 'Created']
     const rows = filteredCleanedResults.value.map((item: any) => [
-      item.invoice_id,
-      item.invoice_number || '',
-      item.customer_id,
-      (item.amount / 100).toFixed(2),
-      item.currency,
-      item.original_status,
-      item.action_taken,
-      item.created_at
+      sanitizeCSVField(item.invoice_id),
+      sanitizeCSVField(item.invoice_number || ''),
+      sanitizeCSVField(item.customer_id),
+      // No formula guard on the amount: a negative amount must stay a number.
+      `"${(item.amount / 100).toFixed(2)}"`,
+      sanitizeCSVField(item.currency),
+      sanitizeCSVField(item.original_status),
+      sanitizeCSVField(item.action_taken),
+      sanitizeCSVField(item.created_at)
     ])
 
     const csvContent = [
       headers.join(','),
-      ...rows.map((row: any[]) => row.map(cell => `"${cell}"`).join(','))
+      ...rows.map((row: string[]) => row.join(','))
     ].join('\n')
 
     // Download file
