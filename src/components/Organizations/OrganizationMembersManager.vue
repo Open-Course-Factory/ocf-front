@@ -243,34 +243,7 @@
 
       <div class="form-group">
         <label>{{ t('members.searchUser') }}</label>
-        <div class="user-search-container">
-          <input
-            v-model="userSearchQuery"
-            type="text"
-            class="form-control"
-            :placeholder="t('members.searchUserPlaceholder')"
-            @input="onUserSearchInput"
-            @focus="showUserSearchDropdown = true"
-            @blur="onUserSearchBlur"
-          />
-          <div v-if="showUserSearchDropdown && (userSearchResults.length > 0 || isSearchingUsers)" class="search-dropdown">
-            <div v-if="isSearchingUsers" class="search-loading">
-              <i class="fas fa-spinner fa-spin"></i>
-              {{ t('members.searching') }}
-            </div>
-            <div
-              v-for="user in userSearchResults"
-              :key="user.id"
-              class="search-result"
-              @click="selectUser(user)"
-            >
-              <div class="user-info">
-                <div class="user-name">{{ user.display_name || user.name }}</div>
-                <div class="user-email" v-if="user.email">{{ user.email }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <UserSearchInput v-model="selectedUserId" :placeholder="t('members.searchUserPlaceholder')" />
         <small class="form-text text-muted">
           {{ t('members.searchUserHelp') }}
         </small>
@@ -314,10 +287,10 @@ import { useTranslations } from '../../composables/useTranslations'
 import { useFormatters } from '../../composables/useFormatters'
 import { useClientPagination } from '../../composables/useClientPagination'
 import ClientPager from '../Common/ClientPager.vue'
+import UserSearchInput from '../Common/UserSearchInput.vue'
 import { useToast } from '../../composables/useToast'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { usePermissionsStore } from '../../stores/permissions'
-import { userService, type User } from '../../services/domain/user'
 import { organizationService } from '../../services/domain/organization'
 import type { MemberRole, OrganizationMember } from '../../types'
 
@@ -359,7 +332,6 @@ const { t } = useTranslations({
       searchUser: 'Search User',
       searchUserPlaceholder: 'Their full email address',
       searchUserHelp: 'Type the full email address of the account to add to this organization',
-      searching: 'Searching...',
       role: 'Role',
       cancel: 'Cancel',
       adding: 'Adding...',
@@ -406,7 +378,6 @@ const { t } = useTranslations({
       searchUser: 'Rechercher un utilisateur',
       searchUserPlaceholder: 'Son adresse email complète',
       searchUserHelp: 'Saisissez l\'adresse email complète du compte à ajouter à cette organisation',
-      searching: 'Recherche...',
       role: 'Rôle',
       cancel: 'Annuler',
       adding: 'Ajout en cours...',
@@ -460,10 +431,6 @@ const addMemberRole = ref<MemberRole>('member')
 const isAddingMember = ref(false)
 const addMemberError = ref('')
 const selectedUserId = ref('')
-const userSearchQuery = ref('')
-const userSearchResults = ref<User[]>([])
-const isSearchingUsers = ref(false)
-const showUserSearchDropdown = ref(false)
 const showRemoveConfirm = ref(false)
 const memberToRemove = ref<OrganizationMember | null>(null)
 const isRemoving = ref(false)
@@ -500,8 +467,6 @@ const loadMembers = async () => {
 
 const openAddMemberModal = () => {
   selectedUserId.value = ''
-  userSearchQuery.value = ''
-  userSearchResults.value = []
   addMemberRole.value = 'member'
   addMemberError.value = ''
   showAddMemberModal.value = true
@@ -509,45 +474,6 @@ const openAddMemberModal = () => {
 
 const closeAddMemberModal = () => {
   showAddMemberModal.value = false
-}
-
-let searchTimeout: ReturnType<typeof setTimeout> | null = null
-
-const onUserSearchInput = () => {
-  selectedUserId.value = ''
-  showUserSearchDropdown.value = true
-
-  if (searchTimeout) clearTimeout(searchTimeout)
-
-  const query = userSearchQuery.value.trim()
-  if (query.length < 2) {
-    userSearchResults.value = []
-    return
-  }
-
-  searchTimeout = setTimeout(async () => {
-    isSearchingUsers.value = true
-    try {
-      userSearchResults.value = await userService.searchUsers(query)
-    } catch (err: any) {
-      console.error('Error searching users:', err)
-      userSearchResults.value = []
-    } finally {
-      isSearchingUsers.value = false
-    }
-  }, 300)
-}
-
-const selectUser = (user: User) => {
-  selectedUserId.value = user.id
-  userSearchQuery.value = `${user.display_name || user.name}${user.email ? ` (${user.email})` : ''}`
-  showUserSearchDropdown.value = false
-}
-
-const onUserSearchBlur = () => {
-  setTimeout(() => {
-    showUserSearchDropdown.value = false
-  }, 200)
 }
 
 const addMember = async () => {
@@ -1080,68 +1006,6 @@ const goToRolesHelp = () => {
   background: var(--color-bg-secondary);
   border-radius: 6px;
   color: var(--color-text-primary);
-}
-
-.user-search-container {
-  position: relative;
-}
-
-.search-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-top: none;
-  border-radius: 0 0 6px 6px;
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 1000;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.search-loading {
-  padding: 0.75rem 1rem;
-  text-align: center;
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-}
-
-.search-loading i {
-  margin-right: 0.5rem;
-}
-
-.search-result {
-  padding: 0.625rem 1rem;
-  cursor: pointer;
-  border-bottom: 1px solid var(--color-border);
-  transition: background-color 0.15s ease;
-}
-
-.search-result:hover {
-  background: var(--color-bg-secondary);
-}
-
-.search-result:last-child {
-  border-bottom: none;
-}
-
-.search-result .user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.search-result .user-name {
-  font-weight: 500;
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-}
-
-.search-result .user-email {
-  font-size: 0.75rem;
-  color: var(--color-text-tertiary);
 }
 
 .form-text {

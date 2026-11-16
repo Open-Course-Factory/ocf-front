@@ -29,7 +29,6 @@ import { useGroupMembers, type GroupMember } from '../../composables/useGroupMem
 import { CLASS_PAGE_NAMES } from '../../router/classPages'
 import { isRoleAtLeast } from '../../utils/roles'
 import { formatDate } from '../../utils/formatters'
-import { userService, type User } from '../../services/domain/user'
 import { bulkImportService, type UserCredential } from '../../services/domain/bulkImport'
 import type { ClassGroup } from '../../types'
 import type { BlockChange } from '../../services/domain/terminal/participantControlsService'
@@ -40,6 +39,7 @@ import ParticipantStatusChips from './ParticipantStatusChips.vue'
 import { useParticipantControls } from '../../composables/useParticipantControls'
 import { useClientPagination } from '../../composables/useClientPagination'
 import ClientPager from '../Common/ClientPager.vue'
+import UserSearchInput from '../Common/UserSearchInput.vue'
 
 const props = defineProps<{
   groupId: string
@@ -108,8 +108,6 @@ const { t } = useTranslations({
       // Modal
       addMemberTitle: 'Add Member to {groupName}',
       selectUser: 'User ID or Email',
-      searching: 'Searching...',
-      noUserFound: 'No user found',
       selectRole: 'Select Role',
       cancel: 'Cancel',
 
@@ -176,8 +174,6 @@ const { t } = useTranslations({
       // Modal
       addMemberTitle: 'Ajouter un membre à {groupName}',
       selectUser: 'ID utilisateur ou Email',
-      searching: 'Recherche...',
-      noUserFound: 'Aucun utilisateur trouvé',
       selectRole: 'Sélectionner un rôle',
       cancel: 'Annuler',
 
@@ -248,11 +244,10 @@ const showCredentialsModal = ref(false)
 const isRegenerating = ref(false)
 const error = ref('')
 
-// User search for Add Member modal
-const userSearchQuery = ref('')
-const userSearchResults = ref<User[]>([])
-const isSearchingUsers = ref(false)
-const showUserSearchDropdown = ref(false)
+// A user picked in a cancelled dialog must not be added by the next one.
+watch(showAddMemberModal, () => {
+  groupMembersComposable.newMemberData.value.user_id = ''
+})
 
 // Trainers (owners, managers) are pinned above the participants. Only
 // participants can be selected: a bulk password reset must never reach a
@@ -347,57 +342,7 @@ const handleAddMember = async () => {
   if (result) {
     emit('member-count-changed', 1)
     showAddMemberModal.value = false
-    userSearchQuery.value = ''
-    userSearchResults.value = []
   }
-}
-
-// Searches start at two characters; below that there is nothing to report.
-const USER_SEARCH_MIN_LENGTH = 2
-const isUserSearchActive = computed(() => userSearchQuery.value.trim().length >= USER_SEARCH_MIN_LENGTH)
-
-async function onUserSearchInput() {
-  const query = userSearchQuery.value.trim()
-
-  if (query.length < USER_SEARCH_MIN_LENGTH) {
-    userSearchResults.value = []
-    return
-  }
-
-  isSearchingUsers.value = true
-
-  try {
-    userSearchResults.value = await userService.searchUsers(query)
-  } catch (err: any) {
-    console.error('Error searching users:', err)
-    userSearchResults.value = []
-  } finally {
-    isSearchingUsers.value = false
-  }
-}
-
-function selectUser(user: User) {
-  groupMembersComposable.newMemberData.value.user_id = user.id
-  userSearchQuery.value = `${user.name}${user.email ? ` (${user.email})` : ''}`
-  showUserSearchDropdown.value = false
-}
-
-// The delay lets a click on a dropdown row land before the dropdown hides.
-// The timer MUST be cancelled on the next focus: it used to survive the modal
-// closing, and reopening within 200ms let the stale timer hide the dropdown
-// of a brand-new search.
-let hideDropdownTimer: ReturnType<typeof setTimeout> | undefined
-
-function onUserSearchFocus() {
-  clearTimeout(hideDropdownTimer)
-  showUserSearchDropdown.value = true
-}
-
-function onUserSearchBlur() {
-  clearTimeout(hideDropdownTimer)
-  hideDropdownTimer = setTimeout(() => {
-    showUserSearchDropdown.value = false
-  }, 200)
 }
 
 function toggleMemberSelection(userId: string) {
@@ -751,43 +696,15 @@ async function confirmRemoveMember() {
       :confirm-text="t('groupMembers.addMember')"
       :cancel-text="t('groupMembers.cancel')"
       @confirm="handleAddMember"
-      @close="showAddMemberModal = false; userSearchQuery = ''; userSearchResults = []"
+      @close="showAddMemberModal = false"
     >
       <form @submit.prevent="handleAddMember">
         <div class="form-group">
           <label>{{ t('groupMembers.selectUser') }}</label>
-          <div class="user-search-container">
-            <input
-              v-model="userSearchQuery"
-              type="text"
-              class="form-control"
-              :placeholder="t('groupMembers.userEmailPlaceholder')"
-              @input="onUserSearchInput"
-              @focus="onUserSearchFocus"
-              @blur="onUserSearchBlur"
-              required
-            />
-            <div v-if="showUserSearchDropdown && isUserSearchActive" class="search-dropdown">
-              <div v-if="isSearchingUsers" class="search-loading">
-                <i class="fas fa-spinner fa-spin"></i>
-                {{ t('groupMembers.searching') }}
-              </div>
-              <div v-else-if="userSearchResults.length === 0" class="search-empty">
-                {{ t('groupMembers.noUserFound') }}
-              </div>
-              <div
-                v-for="user in userSearchResults"
-                :key="user.id"
-                class="search-result"
-                @click="selectUser(user)"
-              >
-                <div class="user-info">
-                  <div class="user-name">{{ user.name }}</div>
-                  <div class="user-email" v-if="user.email">{{ user.email }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <UserSearchInput
+            v-model="groupMembersComposable.newMemberData.value.user_id"
+            :placeholder="t('groupMembers.userEmailPlaceholder')"
+          />
           <small class="form-text text-muted">
             Search and select the user to add to this group
           </small>
@@ -1198,65 +1115,6 @@ async function confirmRemoveMember() {
   border-radius: var(--border-radius-md);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
-}
-
-.user-search-container {
-  position: relative;
-}
-
-.search-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-medium);
-  border-top: none;
-  border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 1000;
-  box-shadow: var(--shadow-md);
-}
-
-.search-loading,
-.search-empty {
-  padding: var(--spacing-md);
-  text-align: center;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
-.search-result {
-  padding: var(--spacing-sm) var(--spacing-md);
-  cursor: pointer;
-  border-bottom: 1px solid var(--color-border-light);
-  transition: background-color var(--transition-fast);
-}
-
-.search-result:hover {
-  background-color: var(--color-bg-secondary);
-}
-
-.search-result:last-child {
-  border-bottom: none;
-}
-
-.search-result .user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.search-result .user-name {
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-}
-
-.search-result .user-email {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
 }
 
 .form-text {

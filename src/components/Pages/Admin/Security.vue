@@ -148,38 +148,12 @@
     <!-- Tab 2: User Permission Lookup -->
     <div v-else-if="activeTab === 'user'" class="tab-content">
       <div class="search-bar">
-        <div class="user-search-container">
-          <input
-            v-model="userSearchQuery"
-            type="text"
-            class="search-input"
-            :placeholder="t('securityAdmin.searchUser')"
-            @input="onUserSearchInput"
-            @focus="onUserSearchFocus"
-            @blur="onUserSearchBlur"
-            @keyup.enter="searchUserPermissions"
-          />
-          <div v-if="showUserSearchDropdown && (userSearchResults.length > 0 || isSearchingUsers || userSearchQuery.trim().length >= 2)" class="search-dropdown">
-            <div v-if="isSearchingUsers" class="search-loading">
-              <i class="fas fa-spinner fa-spin"></i>
-              {{ t('securityAdmin.searchingUsers') }}
-            </div>
-            <div v-else-if="userSearchResults.length === 0 && userSearchQuery.trim()" class="search-empty">
-              {{ t('securityAdmin.noUserFound') }}
-            </div>
-            <div
-              v-for="user in userSearchResults"
-              :key="user.id"
-              class="search-result"
-              @click="selectUser(user)"
-            >
-              <div class="user-info">
-                <div class="user-name">{{ user.name }}</div>
-                <div class="user-email" v-if="user.email">{{ user.email }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <UserSearchInput
+          v-model="userSearchId"
+          v-model:query="userSearchQuery"
+          :placeholder="t('securityAdmin.searchUser')"
+          @keyup.enter="searchUserPermissions"
+        />
         <Button variant="primary" @click="searchUserPermissions" :disabled="!userSearchId.trim() && !userSearchQuery.trim()">
           <i class="fas fa-search"></i>
           {{ t('securityAdmin.search') }}
@@ -338,12 +312,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSecurityAdminStore } from '../../../stores/securityAdmin'
-import { userService } from '../../../services/domain/user/userService'
-import type { User } from '../../../services/domain/user/userService'
 import Button from '../../UI/Button.vue'
+import UserSearchInput from '../../Common/UserSearchInput.vue'
 
 const { t } = useI18n()
 
@@ -351,9 +324,6 @@ const store = useSecurityAdminStore()
 const activeTab = ref<'policies' | 'user' | 'matrix' | 'health'>('policies')
 const userSearchId = ref('')
 const userSearchQuery = ref('')
-const userSearchResults = ref<User[]>([])
-const isSearchingUsers = ref(false)
-const showUserSearchDropdown = ref(false)
 const expandedSubjects = ref<Record<string, boolean>>({})
 
 const tabs = computed(() => [
@@ -404,54 +374,10 @@ function searchUserPermissions() {
   }
 }
 
-let searchTimeout: ReturnType<typeof setTimeout> | null = null
-
-async function onUserSearchInput() {
-  const query = userSearchQuery.value.trim()
-  userSearchId.value = ''
-
-  if (searchTimeout) {
-    clearTimeout(searchTimeout)
-  }
-
-  if (query.length < 2) {
-    userSearchResults.value = []
-    showUserSearchDropdown.value = false
-    return
-  }
-
-  showUserSearchDropdown.value = true
-  isSearchingUsers.value = true
-
-  searchTimeout = setTimeout(async () => {
-    try {
-      userSearchResults.value = await userService.searchUsers(query)
-    } catch {
-      userSearchResults.value = []
-    } finally {
-      isSearchingUsers.value = false
-    }
-  }, 300)
-}
-
-function selectUser(user: User) {
-  userSearchId.value = user.id
-  userSearchQuery.value = user.name + (user.email ? ' (' + user.email + ')' : '')
-  showUserSearchDropdown.value = false
-  searchUserPermissions()
-}
-
-function onUserSearchBlur() {
-  setTimeout(() => {
-    showUserSearchDropdown.value = false
-  }, 200)
-}
-
-function onUserSearchFocus() {
-  if (userSearchResults.value.length > 0) {
-    showUserSearchDropdown.value = true
-  }
-}
+// Picking a user looks their permissions up straight away.
+watch(userSearchId, (id) => {
+  if (id) searchUserPermissions()
+})
 
 function toggleSubject(key: string) {
   expandedSubjects.value[key] = !expandedSubjects.value[key]
@@ -469,10 +395,6 @@ function getMethodClass(method: string): string {
 
 onMounted(() => {
   store.fetchPolicyOverview()
-})
-
-onUnmounted(() => {
-  if (searchTimeout) clearTimeout(searchTimeout)
 })
 </script>
 
@@ -749,85 +671,10 @@ onUnmounted(() => {
   margin-bottom: var(--spacing-xl);
 }
 
-.search-input {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border-medium);
-  border-radius: var(--border-radius-md);
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-focus-primary);
-}
-
-.search-input::placeholder {
-  color: var(--color-text-secondary);
-}
-
-/* User Search Autocomplete */
+/* User Search Autocomplete: its width in the search bar */
 .user-search-container {
-  position: relative;
   flex: 1;
   max-width: 400px;
-}
-
-.search-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-medium);
-  border-top: none;
-  border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
-  max-height: 300px;
-  overflow-y: auto;
-  z-index: 10;
-  box-shadow: var(--shadow-md);
-}
-
-.search-loading,
-.search-empty {
-  padding: var(--spacing-md);
-  text-align: center;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.search-result {
-  padding: var(--spacing-sm) var(--spacing-md);
-  cursor: pointer;
-  border-bottom: 1px solid var(--color-border-light);
-}
-
-.search-result:hover {
-  background-color: var(--color-bg-secondary);
-}
-
-.search-result:last-child {
-  border-bottom: none;
-}
-
-.search-result .user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.search-result .user-name {
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-}
-
-.search-result .user-email {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
 }
 
 /* User Results */
