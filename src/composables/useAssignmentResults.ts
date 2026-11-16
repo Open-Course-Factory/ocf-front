@@ -62,7 +62,7 @@ export function useAssignmentResults(groupId: () => string, onError?: () => void
     // Start auto-refresh
     clearRefreshInterval()
     resultsRefreshInterval.value = setInterval(async () => {
-      if (!showResultsForAssignment.value) return
+      if (!showResultsForAssignment.value || document.hidden) return
       try {
         scenarioResults.value = await teacherService.getScenarioResults(
           groupId(),
