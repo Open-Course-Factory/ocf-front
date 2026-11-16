@@ -28,11 +28,15 @@
     <div class="audit-header">
       <h1><i class="fas fa-palette"></i> {{ t('designSystem.title') }}</h1>
       <div class="theme-toggle">
-        <button :class="{ active: currentTheme === 'light' }" @click="setTheme('light')">
-          <i class="fas fa-sun"></i> {{ t('designSystem.light') }}
-        </button>
-        <button :class="{ active: currentTheme === 'dark' }" @click="setTheme('dark')">
-          <i class="fas fa-moon"></i> {{ t('designSystem.dark') }}
+        <button
+          v-for="theme in (['light', 'dark'] as const)"
+          :key="theme"
+          type="button"
+          :class="{ active: currentTheme === theme }"
+          :aria-pressed="currentTheme === theme"
+          @click="setTheme(theme)"
+        >
+          <i :class="theme === 'light' ? 'fas fa-sun' : 'fas fa-moon'" aria-hidden="true"></i> {{ t(`designSystem.${theme}`) }}
         </button>
       </div>
     </div>
@@ -42,15 +46,14 @@
       <section class="audit-section audit-section--wide">
         <h2 class="section-title">{{ t('designSystem.tokens') }}</h2>
         <div class="section-body">
-          <div v-for="group in tokenGroups" :key="group.key" class="token-group">
-            <h3 class="caption">{{ t(`designSystem.${group.key}`) }}</h3>
+          <div v-for="group in tokenGroups" :key="group.prefix">
+            <h3 class="caption">{{ t(`designSystem.${group.label}`) }}</h3>
             <div class="token-list">
               <div v-for="token in group.tokens" :key="token" class="token">
                 <div class="token-swatch" :style="`${group.prop}: var(${token})`">
                   {{ group.prop === 'font-size' ? 'Aa' : '' }}
                 </div>
-                <!-- trailing space keeps token names separate words in the text content -->
-                <code>{{ `${token} ` }}</code>
+                <code>{{ token }}</code>
               </div>
             </div>
           </div>
@@ -62,10 +65,10 @@
         <h2 class="section-title">{{ t('designSystem.buttons') }}</h2>
         <div class="section-body">
           <h3 class="caption">UI/Button.vue</h3>
-          <div class="row">
+          <div class="dsa-row">
             <Button v-for="v in buttonVariants" :key="v" :variant="v" size="md">{{ v }}</Button>
           </div>
-          <div class="row">
+          <div class="dsa-row">
             <Button>{{ t('designSystem.noProps') }}</Button>
             <Button variant="primary" size="sm">sm</Button>
             <Button variant="primary" size="lg">lg</Button>
@@ -74,10 +77,10 @@
             <Button variant="primary" size="md" loading>loading</Button>
           </div>
           <h3 class="caption">.btn</h3>
-          <div class="row">
+          <div class="dsa-row">
             <button v-for="c in rawButtonClasses" :key="c" type="button" :class="['btn', c]">{{ c }}</button>
           </div>
-          <div class="row">
+          <div class="dsa-row">
             <button type="button" class="btn btn-primary btn-sm">btn-sm</button>
             <button type="button" class="btn btn-primary btn-lg">btn-lg</button>
             <button type="button" class="btn btn-primary"><i class="fas fa-plus"></i> icon</button>
@@ -137,7 +140,7 @@
         <h2 class="section-title">{{ t('designSystem.badges') }}</h2>
         <div class="section-body">
           <h3 class="caption">AdminBadge / BetaBadge</h3>
-          <div class="row">
+          <div class="dsa-row">
             <AdminBadge />
             <AdminBadge icon-only />
             <BetaBadge size="small" />
@@ -145,7 +148,7 @@
             <BetaBadge size="large" />
           </div>
           <h3 class="caption">.badge</h3>
-          <div class="row">
+          <div class="dsa-row">
             <span v-for="c in badgeClasses" :key="c" :class="['badge', c]">{{ c }}</span>
           </div>
         </div>
@@ -196,14 +199,12 @@
             </template>
           </EntityTable>
           <h3 class="caption">table.ocf-data-table</h3>
-          <div class="table-scroll">
-            <table class="ocf-data-table">
-              <thead><tr><th v-for="c in columns" :key="c.key">{{ c.label }}</th></tr></thead>
-              <tbody>
-                <tr v-for="r in rows" :key="r.id"><td>{{ r.name }}</td><td>{{ r.email }}</td><td>{{ r.role }}</td></tr>
-              </tbody>
-            </table>
-          </div>
+          <table class="ocf-data-table">
+            <thead><tr><th v-for="c in columns" :key="c.key">{{ c.label }}</th></tr></thead>
+            <tbody>
+              <tr v-for="r in rows" :key="r.id"><td>{{ r.name }}</td><td>{{ r.email }}</td><td>{{ r.role }}</td></tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -258,7 +259,7 @@
         <h2 class="section-title">{{ t('designSystem.modal') }}</h2>
         <div class="section-body">
           <h3 class="caption">Modals/BaseModal.vue</h3>
-          <div class="row">
+          <div class="dsa-row">
             <button v-for="s in modalSizes" :key="s" type="button" class="btn btn-secondary" @click="modalSize = s">{{ s }}</button>
           </div>
           <BaseModal
@@ -283,6 +284,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { useTheme } from '../../composables/useTheme'
+import vars from '../../assets/styles/variables.css?raw'
 import Button from '../UI/Button.vue'
 import FormGroup from '../UI/FormGroup.vue'
 import ErrorAlert from '../UI/ErrorAlert.vue'
@@ -392,37 +395,17 @@ const { t } = useTranslations({
   }
 })
 
-const currentTheme = ref(
-  document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'
-)
+const { currentTheme, setTheme } = useTheme()
 
-function setTheme(theme: 'light' | 'dark') {
-  currentTheme.value = theme
-  if (theme === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark')
-  } else {
-    document.documentElement.removeAttribute('data-theme')
-  }
-}
-
+// Every token declared in variables.css (redeclared in the dark block, hence the Set).
+const declaredTokens = [...new Set(vars.match(/--[\w-]+(?=\s*:)/g))]
 const tokenGroups = [
-  {
-    key: 'colors',
-    prop: 'background',
-    tokens: [
-      '--color-primary', '--color-primary-hover', '--color-secondary',
-      '--color-success', '--color-success-bg', '--color-warning', '--color-warning-bg',
-      '--color-danger', '--color-danger-bg', '--color-info', '--color-info-bg',
-      '--color-text-primary', '--color-text-secondary', '--color-text-muted',
-      '--color-background', '--color-bg-primary', '--color-bg-secondary', '--color-bg-tertiary',
-      '--color-surface', '--color-border', '--color-border-light', '--color-border-medium'
-    ]
-  },
-  { key: 'spacing', prop: 'width', tokens: ['--spacing-xs', '--spacing-sm', '--spacing-md', '--spacing-lg', '--spacing-xl', '--spacing-2xl'] },
-  { key: 'radius', prop: 'border-radius', tokens: ['--border-radius-sm', '--border-radius-md', '--border-radius-lg', '--border-radius-xl', '--border-radius-full'] },
-  { key: 'shadows', prop: 'box-shadow', tokens: ['--shadow-xs', '--shadow-sm', '--shadow-md', '--shadow-lg', '--shadow-xl'] },
-  { key: 'typography', prop: 'font-size', tokens: ['--font-size-xs', '--font-size-sm', '--font-size-base', '--font-size-lg', '--font-size-xl', '--font-size-2xl'] }
-]
+  { prefix: '--color-', prop: 'background', label: 'colors' },
+  { prefix: '--spacing-', prop: 'width', label: 'spacing' },
+  { prefix: '--border-radius-', prop: 'border-radius', label: 'radius' },
+  { prefix: '--shadow-', prop: 'box-shadow', label: 'shadows' },
+  { prefix: '--font-size-', prop: 'font-size', label: 'typography' }
+].map(group => ({ ...group, tokens: declaredTokens.filter(token => token.startsWith(group.prefix)) }))
 
 const buttonVariants = ['primary', 'secondary', 'danger', 'warning', 'info', 'outline-primary', 'outline-secondary'] as const
 const rawButtonClasses = ['btn-primary', 'btn-secondary', 'btn-danger', 'btn-success', 'btn-outline-primary', 'btn-outline-danger']
@@ -544,7 +527,7 @@ const modalSize = ref<(typeof modalSizes)[number] | null>(null)
   margin-top: 0;
 }
 
-.row {
+.dsa-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -580,9 +563,5 @@ const modalSize = ref<(typeof modalSizes)[number] | null>(null)
   border: var(--border-width-thin) solid var(--color-border-light);
   background: var(--color-bg-secondary);
   color: var(--color-text-primary);
-}
-
-.table-scroll {
-  overflow-x: auto;
 }
 </style>
