@@ -6,7 +6,6 @@
 -->
 
 <template>
-  <!-- ocf- prefix: Bootstrap's .toast/.toast-container (loaded from index.html) would hide and restyle these -->
   <!-- Persistent polite live region: a role on each inserted toast is often not announced -->
   <div class="ocf-toast-container" aria-live="polite">
     <TransitionGroup name="toast">
@@ -64,17 +63,20 @@ function getIcon(type: string): string {
 <style scoped>
 .ocf-toast-container {
   position: fixed;
-  /* the padding keeps the toasts' shadow inside the scroll box; toasts stay --spacing-lg from the edges */
-  top: 0;
+  /* below the top bar (and the impersonation banner) so its controls stay reachable;
+     routes without a bar just get a lower stack */
+  top: calc(var(--topbar-height) + var(--impersonation-banner-height, 0px));
   right: 0;
+  /* the padding keeps the toasts' shadow inside the scroll box; toasts stay --spacing-lg from the edges */
   padding: var(--spacing-lg);
-  z-index: var(--z-index-tooltip);
+  /* above Element Plus overlays (confirm box), whose z-index counts up from 2000 per opened overlay */
+  z-index: 3000;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
   max-width: calc(400px + 2 * var(--spacing-lg));
   /* persistent errors can pile up: scroll instead of running off-screen */
-  max-height: 100vh;
+  max-height: calc(100vh - var(--topbar-height) - var(--impersonation-banner-height, 0px));
   overflow-x: hidden;
   overflow-y: auto;
   /* the gaps between toasts must not swallow clicks on the page */
@@ -147,6 +149,9 @@ function getIcon(type: string): string {
   color: var(--color-white);
   cursor: pointer;
   padding: 0;
+  /* 24x24 minimum target (WCAG 2.5.8) */
+  min-width: 24px;
+  min-height: 24px;
   font-size: var(--font-size-md);
   opacity: 0.7;
   transition: opacity var(--transition-base);
