@@ -26,7 +26,7 @@ import { computed, ref } from 'vue'
 import { useClassContext } from '../../composables/useClassContext'
 import { useTranslations } from '../../composables/useTranslations'
 import { teacherService, type LearnerParticipation, type ParticipationDay, type ParticipationReport } from '../../services/domain/scenario/teacherService'
-import { formatDate, formatDateTime } from '../../utils/formatters'
+import { formatDate, formatDateTime, intlLocale } from '../../utils/formatters'
 import { downloadCsv } from '../../utils/download'
 import { buildParticipationCsv } from '../../utils/participationCsv'
 
@@ -266,15 +266,15 @@ function exportCsv(current: ParticipationReport): void {
 
 // The server sends days as plain dates: UTC keeps them on the same day everywhere.
 function formatReportDay(day: string): string {
-  return formatDate(day, locale.value, '-', 'UTC')
+  return formatDate(day, intlLocale(locale.value), '-', 'UTC')
 }
 
 function formatColumnDay(day: string): string {
-  return new Date(day).toLocaleDateString(locale.value, { day: '2-digit', month: '2-digit', timeZone: 'UTC' })
+  return new Date(day).toLocaleDateString(intlLocale(locale.value), { day: '2-digit', month: '2-digit', timeZone: 'UTC' })
 }
 
 function formatClockTime(at: string, timezone: string): string {
-  return new Date(at).toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit', timeZone: timezone })
+  return new Date(at).toLocaleTimeString(intlLocale(locale.value), { hour: '2-digit', minute: '2-digit', timeZone: timezone })
 }
 
 function statusLabel(status: string): string {

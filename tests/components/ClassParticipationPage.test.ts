@@ -122,7 +122,16 @@ describe('ClassParticipationPage', () => {
     expect(row.find('[data-test="participation-commands"]').text()).toBe('42')
     expect(wrapper.find('[data-test="participation-scenario"]').text()).toContain('Docker basics')
     // 08:05 UTC is 09:05 in Paris, whatever timezone the test machine is in.
-    expect(row.find('[data-test="participation-day"]').text()).toMatch(/09:05 AM.*05:30 PM/)
+    expect(row.find('[data-test="participation-day"]').text()).toMatch(/09:05.*17:30/)
+  })
+
+  it('writes dates day first in English, as everywhere else in the app', async () => {
+    const wrapper = mountPage()
+
+    await generate(wrapper)
+
+    expect(wrapper.find('[data-test="participation-day-column"]').text()).toBe('02/03')
+    expect(wrapper.text()).toContain('02/03/2026 – 06/03/2026')
   })
 
   it('keeps a learner with no activity in the report, stated plainly', async () => {
