@@ -80,7 +80,7 @@ const loadTemplate = async () => {
       is_active: template.is_active
     })
   } catch (err: any) {
-    showError(extractErrorMessage(err, 'Failed to load template'))
+    showError(extractErrorMessage(err, emailTemplatesStore.t('emailTemplates.loadError')))
     router.push({ name: 'EmailTemplates' })
   } finally {
     isLoading.value = false
@@ -101,7 +101,7 @@ const handleSave = async () => {
     }
     router.push({ name: 'EmailTemplates' })
   } catch (err: any) {
-    showError(extractErrorMessage(err, 'Failed to save template'))
+    showError(extractErrorMessage(err, emailTemplatesStore.t(isEdit.value ? 'emailTemplates.updateError' : 'emailTemplates.createError')))
   } finally {
     isSaving.value = false
   }

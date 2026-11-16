@@ -79,7 +79,7 @@ const handleDelete = async (template: EmailTemplate) => {
     showSuccess(emailTemplatesStore.t('emailTemplates.deleteSuccess'))
     await loadTemplates()
   } catch (err: any) {
-    showError(extractErrorMessage(err, 'Failed to delete template'))
+    showError(extractErrorMessage(err, emailTemplatesStore.t('emailTemplates.deleteFailed')))
   }
 }
 

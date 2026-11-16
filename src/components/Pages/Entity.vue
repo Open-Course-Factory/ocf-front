@@ -1219,7 +1219,7 @@ async function exportEntities() {
     showSuccess(t('exportSuccess'));
   } catch (error: any) {
     console.error('Export error:', error);
-    showError(extractErrorMessage(error, 'Export failed'));
+    showError(extractErrorMessage(error, t('exportError')));
   } finally {
     isExporting.value = false;
   }
