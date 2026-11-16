@@ -393,7 +393,7 @@ function statusLabel(status: string): string {
           <dd>{{ report.trainers.join(', ') }}</dd>
         </template>
         <dt>{{ t('classParticipation.generatedAt') }}</dt>
-        <dd>{{ formatDateTime(report.generated_at, locale, '-', report.timezone) }}</dd>
+        <dd>{{ formatDateTime(report.generated_at, intlLocale(locale), '-', report.timezone) }}</dd>
       </dl>
 
       <p class="ocf-participation-disclaimer" data-test="participation-disclaimer">

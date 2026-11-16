@@ -132,6 +132,8 @@ describe('ClassParticipationPage', () => {
 
     expect(wrapper.find('[data-test="participation-day-column"]').text()).toBe('02/03')
     expect(wrapper.text()).toContain('02/03/2026 – 06/03/2026')
+    // generated_at 10:00 UTC is 11:00 in the report's Paris time zone
+    expect(wrapper.text()).toContain('07/03/2026, 11:00')
   })
 
   it('keeps a learner with no activity in the report, stated plainly', async () => {
