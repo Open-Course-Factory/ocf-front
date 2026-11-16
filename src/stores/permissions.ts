@@ -4,15 +4,14 @@ import axios from 'axios'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { useCurrentUserStore } from './currentUser'
 import { isDemoMode, logDemoAction } from '../services/demo'
-import type { User, UserEffectiveFeatures } from '../types'
-import { isRoleAtLeast } from '../utils/roles'
+import { useUserMembershipsStore } from './userMemberships'
+import type { UserEffectiveFeatures } from '../types'
 
 // Never persisted: everything here is what the backend decides for the
 // signed-in user and is reloaded at boot. A restored `can_run_classrooms`
 // opened the Groups pages to a Découverte owner on a browser another account
 // had used.
 export const usePermissionsStore = defineStore('permissions', () => {
-  const currentUser = ref<User | null>(null)
   const effectiveFeatures = ref<UserEffectiveFeatures | null>(null)
   const allOrgFeatures = ref<UserEffectiveFeatures | null>(null)
   const isLoading = ref(false)
@@ -33,62 +32,6 @@ export const usePermissionsStore = defineStore('permissions', () => {
       }
     }
   })
-
-  // Load current user with memberships
-  const loadCurrentUser = async () => {
-    isLoading.value = true
-    error.value = ''
-    try {
-      if (isDemoMode()) {
-        logDemoAction('loadCurrentUser')
-        currentUser.value = {
-          id: 'demo-user-1',
-          email: 'demo@example.com',
-          username: 'demo',
-          display_name: 'Demo User',
-          roles: [{ id: 'role-1', name: 'member' }],
-          is_active: true,
-          organization_memberships: [
-            {
-              id: 'mem-1',
-              organization_id: 'demo-org-1',
-              user_id: 'demo-user-1',
-              role: 'owner',
-              joined_at: new Date().toISOString(),
-              is_active: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-            {
-              id: 'mem-2',
-              organization_id: 'demo-org-2',
-              user_id: 'demo-user-1',
-              role: 'member',
-              joined_at: new Date().toISOString(),
-              is_active: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            }
-          ],
-          group_memberships: [],
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }
-        return currentUser.value
-      }
-
-      const response = await axios.get('/users/me', {
-        params: { includes: 'organization_memberships,group_memberships' }
-      })
-      currentUser.value = response.data.data || response.data
-      return currentUser.value
-    } catch (err: any) {
-      error.value = err.response?.data?.error_message || err.message || t('permissions.loadError')
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
 
   /**
    * The one request that answers "what does this user get, and may they run
@@ -286,50 +229,16 @@ export const usePermissionsStore = defineStore('permissions', () => {
     return authStore.userRoles?.includes('administrator') ?? false
   })
 
-  const isMember = computed((): boolean => {
-    if (!currentUser.value) return false
-    return currentUser.value.roles?.some(role => role.name === 'member') ?? false
-  })
-
   // ==========================================
   // ORGANIZATION ROLE CHECKS
   // ==========================================
 
-  const isOrganizationOwner = (organizationId: string): boolean => {
-    if (isSystemAdmin.value) return true
-    if (!currentUser.value) return false
-    const membership = currentUser.value.organization_memberships?.find(
-      m => m.organization_id === organizationId
-    )
-    return membership?.role === 'owner'
-  }
+  // Memberships come from the store loaded at startup, the one every page has.
+  const isOrganizationOwner = (organizationId: string): boolean =>
+    isSystemAdmin.value || useUserMembershipsStore().getOrgRole(organizationId) === 'owner'
 
-  const canManageOrganization = (organizationId: string): boolean => {
-    if (isSystemAdmin.value) return true
-    if (!currentUser.value) return false
-    const membership = currentUser.value.organization_memberships?.find(
-      m => m.organization_id === organizationId
-    )
-    return isRoleAtLeast(membership?.role, 'manager')
-  }
-
-  const isOrganizationMember = (organizationId: string): boolean => {
-    if (!currentUser.value) return false
-    return currentUser.value.organization_memberships?.some(
-      m => m.organization_id === organizationId && m.is_active
-    ) ?? false
-  }
-
-  // ==========================================
-  // GROUP ROLE CHECKS
-  // ==========================================
-
-  const isGroupMember = (groupId: string): boolean => {
-    if (!currentUser.value) return false
-    return currentUser.value.group_memberships?.some(
-      m => m.group_id === groupId
-    ) ?? false
-  }
+  const canManageOrganization = (organizationId: string): boolean =>
+    isSystemAdmin.value || useUserMembershipsStore().canManageOrg(organizationId)
 
   // ==========================================
   // FEATURE CHECKS
@@ -365,10 +274,6 @@ export const usePermissionsStore = defineStore('permissions', () => {
     return isSystemAdmin.value || canManageOrganization(organizationId)
   }
 
-  const canViewOrganization = (organizationId: string): boolean => {
-    return isSystemAdmin.value || isOrganizationMember(organizationId)
-  }
-
   // ==========================================
   // OWNER-ONLY PERMISSION CHECKS
   // ==========================================
@@ -391,14 +296,12 @@ export const usePermissionsStore = defineStore('permissions', () => {
 
   return {
     // State
-    currentUser,
     effectiveFeatures,
     allOrgFeatures,
     isLoading,
     error,
 
     // Actions
-    loadCurrentUser,
     loadEffectiveFeatures,
     ensureEffectiveFeaturesLoaded,
     classroomVerdictFor,
@@ -408,15 +311,10 @@ export const usePermissionsStore = defineStore('permissions', () => {
 
     // System role checks
     isSystemAdmin,
-    isMember,
 
     // Organization role checks
     isOrganizationOwner,
     canManageOrganization,
-    isOrganizationMember,
-
-    // Group role checks
-    isGroupMember,
 
     // Feature checks
     hasFeature,
@@ -427,7 +325,6 @@ export const usePermissionsStore = defineStore('permissions', () => {
     // Combined permission checks
     canManageOrganizationBilling,
     canManageOrganizationMembers,
-    canViewOrganization,
 
     // Owner-only permission checks
     canDeleteOrganization,

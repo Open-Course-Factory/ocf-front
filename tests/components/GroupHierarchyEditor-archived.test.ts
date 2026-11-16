@@ -35,10 +35,14 @@ vi.mock('../../src/stores/organizations', () => ({
   })
 }))
 
-vi.mock('../../src/stores/permissions', () => ({
-  usePermissionsStore: () => ({
-    currentUser: { id: 'user-1', organization_memberships: [] },
-    loadCurrentUser: vi.fn().mockResolvedValue(undefined)
+vi.mock('../../src/stores/currentUser', () => ({
+  useCurrentUserStore: () => ({ userId: 'user-1' })
+}))
+
+vi.mock('../../src/stores/userMemberships', () => ({
+  useUserMembershipsStore: () => ({
+    getOrgRole: () => null,
+    ensureLoaded: vi.fn().mockResolvedValue(undefined)
   })
 }))
 

@@ -82,17 +82,20 @@ vi.mock('../../src/stores/currentUser', () => ({
   }),
 }))
 
-const loadCurrentUser = vi.fn()
 vi.mock('../../src/stores/permissions', () => ({
   usePermissionsStore: () => ({
     refreshEntitlements: vi.fn().mockResolvedValue(undefined),
     canManageOrganization: () => true,
-    loadCurrentUser,
     get effectiveFeatures() { return null },
     get allOrgFeatures() { return null },
     ensureEffectiveFeaturesLoaded: vi.fn().mockResolvedValue(null),
     loadEffectiveFeatures: vi.fn().mockResolvedValue(null),
   }),
+}))
+
+const ensureMembershipsLoaded = vi.fn()
+vi.mock('../../src/stores/userMemberships', () => ({
+  useUserMembershipsStore: () => ({ ensureLoaded: ensureMembershipsLoaded }),
 }))
 
 import i18n from '../../src/i18n'
@@ -158,7 +161,7 @@ describe('Organizations page — arriving to create', () => {
     canCreateOrganization.value = true
     loadPermissions.mockResolvedValue([])
     ensurePermissionsLoaded.mockResolvedValue([])
-    loadCurrentUser.mockResolvedValue(undefined)
+    ensureMembershipsLoaded.mockResolvedValue(undefined)
   })
 
   it('opens the creation form when asked to', async () => {
@@ -187,7 +190,7 @@ describe('Organizations page — arriving to create', () => {
     // The form was asked for; whether the user profile came back is a different
     // question, and losing the form to it would strand the teacher on a page
     // whose only route forward is the one they already took.
-    loadCurrentUser.mockRejectedValue(new Error('network'))
+    ensureMembershipsLoaded.mockRejectedValue(new Error('network'))
 
     const wrapper = await mountOrganizations({ create: '1' })
 
@@ -214,7 +217,7 @@ describe('Organizations page — refused by the plan gate', () => {
     canCreateOrganization.value = true
     loadPermissions.mockResolvedValue([])
     ensurePermissionsLoaded.mockResolvedValue([])
-    loadCurrentUser.mockResolvedValue(undefined)
+    ensureMembershipsLoaded.mockResolvedValue(undefined)
   })
 
   it('explains the refusal in the user’s language instead of echoing the API', async () => {

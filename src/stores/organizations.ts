@@ -4,6 +4,7 @@ import { useBaseStore } from './baseStore'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
 import { usePermissionsStore } from './permissions'
+import { useUserMembershipsStore } from './userMemberships'
 import axios from 'axios'
 import { isDemoMode } from '../services/demo'
 import { useSubscriptionsStore } from './subscriptions'
@@ -213,19 +214,19 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     const created = await base.createEntity(apiEndpoint, data)
 
     // Creating an organization enrols the creator as its owner, and every
-    // "may I manage this?" answer is read off `organization_memberships` in the
-    // user snapshot — which was taken at login and does not know about the
-    // membership that was just created. Without this refresh the owner is shown
-    // their own new organization with no Import and no Manage button, only
-    // "View", until something else happens to refetch the snapshot.
+    // "may I manage this?" answer is read off the memberships loaded at
+    // startup, which do not know about the membership that was just created.
+    // Without this refresh the owner is shown their own new organization with no
+    // Import and no Manage button, only "View", until something else reloads them.
     //
     // It belongs here rather than in the page: the membership is a consequence
     // of creating the organization, not of the screen that asked for one.
+    // A failed reload is a degraded menu, not a failed creation: the store
+    // swallows it and stays unloaded, so the next reader retries.
+    const memberships = useUserMembershipsStore()
+    memberships.reset()
+    await memberships.ensureLoaded()
     const permissionsStore = usePermissionsStore()
-    await permissionsStore.loadCurrentUser().catch(() => {
-      // A stale snapshot is a degraded menu, not a failed creation — the
-      // organization exists either way, and the next load will pick it up.
-    })
     // Same reasoning for the entitlements the navigation reads: the new owner
     // may now see the groups tab, and nothing else is going to re-ask.
     await permissionsStore.refreshEntitlements()

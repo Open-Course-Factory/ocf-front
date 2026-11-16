@@ -31,7 +31,6 @@ vi.mock('../../src/stores/organizations', () => ({
 
 vi.mock('../../src/stores/permissions', () => ({
   usePermissionsStore: () => ({
-    loadCurrentUser: vi.fn().mockResolvedValue(undefined),
     canManageOrganization: (id: string) => canManageOrganization(id),
     isOrganizationOwner: (id: string) => isOrganizationOwner(id),
     canDeleteOrganization: (id: string) => canDeleteOrganization(id),
@@ -41,7 +40,8 @@ vi.mock('../../src/stores/permissions', () => ({
 
 vi.mock('../../src/stores/userMemberships', () => ({
   useUserMembershipsStore: () => ({
-    canAuthorInOrg: (id: string) => canAuthorInOrg(id)
+    canAuthorInOrg: (id: string) => canAuthorInOrg(id),
+    ensureLoaded: vi.fn().mockResolvedValue(undefined)
   })
 }))
 

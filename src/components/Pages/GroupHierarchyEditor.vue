@@ -205,7 +205,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useOrganizationsStore } from '../../stores/organizations'
-import { usePermissionsStore } from '../../stores/permissions'
+import { useCurrentUserStore } from '../../stores/currentUser'
+import { useUserMembershipsStore } from '../../stores/userMemberships'
 import { useAdminViewMode } from '../../composables/useAdminViewMode'
 import AdminBadge from '../Common/AdminBadge.vue'
 import { useTranslations } from '../../composables/useTranslations'
@@ -218,7 +219,8 @@ import type { Organization, OrganizationGroup } from '../../types'
 
 const router = useRouter()
 const organizationsStore = useOrganizationsStore()
-const permissionsStore = usePermissionsStore()
+const currentUserStore = useCurrentUserStore()
+const membershipsStore = useUserMembershipsStore()
 const { isAdmin, shouldFilterAsStandardUser } = useAdminViewMode()
 const toast = useToast()
 
@@ -300,7 +302,7 @@ const organizations = computed(() => {
   // If not admin OR admin viewing as standard user
   if (!isAdmin.value || shouldFilterAsStandardUser.value) {
     // Show only organizations where the user is a member
-    const currentUserId = permissionsStore.currentUser?.id
+    const currentUserId = currentUserStore.userId
     if (!currentUserId) return []
 
     filtered = filtered.filter(org => {
@@ -308,10 +310,7 @@ const organizations = computed(() => {
       if (org.owner_user_id === currentUserId) return true
 
       // Show if user is a member
-      const userMemberships = permissionsStore.currentUser?.organization_memberships || []
-      return userMemberships.some(membership =>
-        membership.organization_id === org.id && membership.is_active
-      )
+      return membershipsStore.getOrgRole(org.id) !== null
     })
   }
 
@@ -526,7 +525,7 @@ const handleDrop = async (payload: { entity: TreeNode; target: TreeNode }) => {
 onMounted(async () => {
   await Promise.all([
     refreshHierarchy(),
-    permissionsStore.loadCurrentUser()
+    membershipsStore.ensureLoaded()
   ])
 })
 

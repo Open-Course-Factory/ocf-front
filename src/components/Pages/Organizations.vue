@@ -30,6 +30,7 @@ import { OrganizationsList, OrganizationModal } from '../Organizations'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { usePermissionsStore } from '../../stores/permissions'
 import { useCurrentUserStore } from '../../stores/currentUser'
+import { useUserMembershipsStore } from '../../stores/userMemberships'
 import { useClassroomEntitlement } from '../../composables/useClassroomEntitlement'
 import { useTranslations } from '../../composables/useTranslations'
 import type { Organization, CreateOrganizationRequest, UpdateOrganizationRequest } from '../../types'
@@ -74,7 +75,7 @@ onMounted(async () => {
   // form they asked for.
   await Promise.all([
     loadOrganizations(),
-    permissionsStore.loadCurrentUser().catch(() => null),
+    useUserMembershipsStore().ensureLoaded().catch(() => null),
     // Awaited rather than left to the entitlement composable's own mount, so the
     // decision below is made on a verdict rather than on its absence.
     currentUserStore.ensurePermissionsLoaded().catch(() => null)
