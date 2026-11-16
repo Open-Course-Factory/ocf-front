@@ -2,7 +2,9 @@
  * Tests for scenarioDisplay — pure, i18n-free display/parse helpers extracted
  * from GroupScenariosTab.vue (commit c1 of ocf-front #244).
  *
- * These are pure functions: no t(), no reactive refs, no service calls. Two
+ * These are pure functions (no t(), no reactive refs, no service calls),
+ * except formatDate and formatExecutedAt, which read the app language and the
+ * user's saved time zone. Two
  * helpers that referenced Date.now() in the component (the "active step,
  * open-ended window" case) are made pure here by INJECTING `now` as a
  * parameter — see commandsForStepFromList below and the purity notes in the
@@ -16,7 +18,9 @@
  * Assertions pin observable outputs, never reimplementations of the formula.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import i18n from '../../src/i18n'
 import {
   parseQuizOptions,
   optionRole,
@@ -325,17 +329,30 @@ describe('commandsForStepFromList (window filter, now injected)', () => {
   })
 })
 
+// An English user whose saved zone is Auckland, whatever the machine uses.
+function useEnglishInAuckland() {
+  const appLocale = i18n.global.locale.value
+  beforeEach(() => {
+    const pinia = createPinia()
+    pinia.state.value.UserSettings = { settings: { timezone: 'Pacific/Auckland' } }
+    setActivePinia(pinia)
+    i18n.global.locale.value = 'en'
+  })
+  afterEach(() => {
+    i18n.global.locale.value = appLocale
+  })
+}
+
 describe('formatExecutedAt', () => {
-  it('formats a unix-seconds timestamp into a non-empty locale string', () => {
-    // Pin a known instant; assert it produced the date's locale string for that ms value.
-    const unix = 1_700_000_000 // 2023-11-14T...
-    const expected = new Date(unix * 1000).toLocaleString()
-    expect(formatExecutedAt(unix)).toBe(expected)
-    expect(formatExecutedAt(unix)).not.toBe('')
+  useEnglishInAuckland()
+
+  it('formats a unix-seconds timestamp in the app language and the saved zone', () => {
+    // 2023-11-14T22:13:20Z is already the 15th in Auckland (UTC+13).
+    expect(formatExecutedAt(1_700_000_000)).toBe('15/11/2023, 11:13:20')
   })
 
   it('handles 0 (epoch) without throwing', () => {
-    expect(formatExecutedAt(0)).toBe(new Date(0).toLocaleString())
+    expect(formatExecutedAt(0)).toBe('01/01/1970, 12:00:00')
   })
 })
 
@@ -358,10 +375,15 @@ describe('formatDuration', () => {
 })
 
 describe('formatDate', () => {
-  it('formats an ISO string to a non-empty locale string', () => {
+  useEnglishInAuckland()
+
+  it('formats an ISO string in the app language and the saved zone', () => {
+    // Noon UTC is already midnight of the 11th in Auckland (UTC+12 in May).
     const iso = '2026-05-10T12:00:00.000Z'
-    expect(formatDate(iso)).toBe(new Date(iso).toLocaleString())
-    expect(formatDate(iso)).not.toBe('')
+    expect(formatDate(iso)).toBe('11/05/2026, 00:00:00')
+
+    i18n.global.locale.value = 'fr'
+    expect(formatDate(iso)).toBe('11/05/2026 00:00:00')
   })
 
   it('returns empty string for empty / null input', () => {
