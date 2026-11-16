@@ -42,7 +42,7 @@ const ASSIGNMENT = {
   scenario: { id: 'scn-1', name: 'lab', title: 'Lab', difficulty: 'beginner' },
 }
 
-async function mountTab(org: { organizationId?: string } = { organizationId: 'org-1' }) {
+async function mountTab(org: { organizationId?: string } = { organizationId: 'org-1' }, stubs: Record<string, boolean> = {}) {
   const wrapper = mount(GroupScenariosTab, {
     props: { groupId: 'g1', canEditGroup: true, ...org },
     global: {
@@ -50,7 +50,7 @@ async function mountTab(org: { organizationId?: string } = { organizationId: 'or
       stubs: {
         ScenarioUploadModal: true, ScenarioJSONImportModal: true, AssignScenarioModal: true,
         BulkStartScenarioModal: true, ScenarioAssignmentResultModal: true, RemoveAssignmentConfirmModal: true,
-        ResetAssignmentModal: true, SessionDetailModal: true,
+        ResetAssignmentModal: true, SessionDetailModal: true, ...stubs,
       },
     },
   })
@@ -93,5 +93,14 @@ describe('GroupScenariosTab — servers', () => {
     await flushPromises()
     expect(getBackends).not.toHaveBeenCalled()
     expect(wrapper.findComponent({ name: 'BulkStartScenarioModal' }).props('visible')).toBe(true)
+  })
+
+  it.each([
+    { button: 'Import JSON', accept: '.json' },
+    { button: 'Import KillerCoda', accept: '.zip,.tar.gz,.tgz' },
+  ])('"$button" opens the import dialog for that format', async ({ button, accept }) => {
+    const wrapper = await mountTab(undefined, { ScenarioUploadModal: false, ScenarioJSONImportModal: false })
+    await wrapper.findAll('.tab-header-actions button').find(b => b.text().includes(button))!.trigger('click')
+    expect(wrapper.findAll('input[type="file"]').map(i => i.attributes('accept'))).toEqual([accept])
   })
 })

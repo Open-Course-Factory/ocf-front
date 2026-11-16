@@ -217,3 +217,15 @@ describe('OrganizationScenariosTab — export follows can_run', () => {
   })
 })
 
+
+describe('OrganizationScenariosTab — import buttons', () => {
+  it.each([
+    { button: 'Import JSON', accept: '.json' },
+    { button: 'Import KillerCoda', accept: '.zip,.tar.gz,.tgz' }
+  ])('"$button" opens the import dialog for that format', async ({ button, accept }) => {
+    orgListScenariosMock.mockResolvedValue([])
+    const wrapper = await mountTab()
+    await wrapper.findAll('.tab-header-actions button').find(b => b.text().includes(button))!.trigger('click')
+    expect(wrapper.findAll('input[type="file"]').map(i => i.attributes('accept'))).toEqual([accept])
+  })
+})
