@@ -22,6 +22,7 @@ vi.mock('axios', () => ({
 }))
 
 import axios from 'axios'
+import i18n from '../../src/i18n'
 import { useCoursesStore } from '../../src/stores/courses'
 import { useChaptersStore } from '../../src/stores/chapters'
 import { useSectionsStore } from '../../src/stores/sections'
@@ -35,6 +36,8 @@ const cases = [
     store: () => useCoursesStore(),
     withInclude: '/courses/x1?include=chapters.sections.pages',
     bare: '/courses/x1',
+    notFound: 'Course version not found',
+    loadError: 'Error loading course version',
   },
   {
     name: 'chapters',
@@ -42,6 +45,8 @@ const cases = [
     store: () => useChaptersStore(),
     withInclude: '/chapters/x1?include=sections.pages,courses',
     bare: '/chapters/x1',
+    notFound: 'Chapter not found',
+    loadError: 'Error loading chapter',
   },
   {
     name: 'sections',
@@ -49,13 +54,16 @@ const cases = [
     store: () => useSectionsStore(),
     withInclude: '/sections/x1?include=pages,chapters.courses',
     bare: '/sections/x1',
+    notFound: 'Section not found',
+    loadError: 'Error loading section',
   },
 ]
 
 const httpError = (status: number, data: Record<string, unknown> = {}) => ({ response: { status, data } })
 
-describe.each(cases)('$name store — fetch by id', ({ fetch, store, withInclude, bare }) => {
+describe.each(cases)('$name store — fetch by id', ({ fetch, store, withInclude, bare, notFound, loadError }) => {
   beforeEach(() => {
+    i18n.global.locale.value = 'en'
     setActivePinia(createPinia())
     vi.clearAllMocks()
     vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -95,7 +103,7 @@ describe.each(cases)('$name store — fetch by id', ({ fetch, store, withInclude
 
     expect(mockGet).toHaveBeenCalledTimes(2)
     expect(result).toBeNull()
-    expect(store().error).toBeTruthy()
+    expect(store().error).toBe(notFound)
     expect(store().isLoading).toBe(false)
   })
 
@@ -117,8 +125,7 @@ describe.each(cases)('$name store — fetch by id', ({ fetch, store, withInclude
 
     mockGet.mockRejectedValueOnce(httpError(500))
     await fetch('x1')
-    expect(store().error).toBeTruthy()
-    expect(store().error).not.toBe('msg')
+    expect(store().error).toBe(loadError)
   })
 
   it('returns null with the retry error when the retry fails otherwise', async () => {

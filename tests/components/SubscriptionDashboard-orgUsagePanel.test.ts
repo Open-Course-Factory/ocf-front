@@ -22,11 +22,6 @@ vi.mock('axios', () => ({
   }
 }))
 
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: vi.fn(() => false),
-  logDemoAction: vi.fn()
-}))
-
 vi.mock('../../src/services/domain/terminal', () => ({
   terminalService: { getOrgTerminalUsage: vi.fn().mockResolvedValue(null) }
 }))

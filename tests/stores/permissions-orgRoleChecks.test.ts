@@ -28,11 +28,6 @@ vi.mock('../../src/composables/useTranslations', () => ({
   useStoreTranslations: () => ({ t: (key: string) => key, te: () => true, locale: ref('en') })
 }))
 
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: vi.fn(() => false),
-  logDemoAction: vi.fn()
-}))
-
 // The real store drags the router in; the checks only read the platform roles.
 const currentUserStub = { userRoles: ['member'] as string[] }
 vi.mock('../../src/stores/currentUser', () => ({

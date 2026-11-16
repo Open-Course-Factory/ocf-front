@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import { useVisiblePolling } from '../../src/composables/useVisiblePolling'
+import { setTabHidden } from '../helpers/tabVisibility'
 
 function mountPoller(poll: () => void, intervalMs = 30000) {
   const Host = defineComponent({
@@ -17,11 +18,6 @@ function mountPoller(poll: () => void, intervalMs = 30000) {
     },
   })
   return mount(Host)
-}
-
-function setTabHidden(hidden: boolean) {
-  Object.defineProperty(document, 'hidden', { value: hidden, configurable: true })
-  document.dispatchEvent(new Event('visibilitychange'))
 }
 
 describe('useVisiblePolling', () => {

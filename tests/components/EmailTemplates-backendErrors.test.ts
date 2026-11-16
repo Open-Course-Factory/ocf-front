@@ -22,12 +22,6 @@ vi.mock('axios', () => ({
   },
 }))
 
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: () => false,
-  logDemoAction: vi.fn(),
-  simulateDelay: () => Promise.resolve(),
-}))
-
 const showError = vi.fn()
 vi.mock('../../src/composables/useNotification', () => ({
   useNotification: () => ({ showError, showSuccess: vi.fn(), showConfirm: vi.fn().mockResolvedValue(true) }),

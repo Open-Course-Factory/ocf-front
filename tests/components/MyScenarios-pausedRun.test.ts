@@ -308,7 +308,6 @@ describe('MyScenarios — a run to rebuild', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.stubGlobal('confirm', vi.fn(() => true))
     getMySessionsMock.mockResolvedValue([REBUILD_RUN])
     abandonSessionMock.mockResolvedValue(undefined)
     pollProvisioningStatusMock.mockResolvedValue(undefined)

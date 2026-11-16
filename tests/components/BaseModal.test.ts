@@ -463,7 +463,8 @@ describe('BaseModal', () => {
       // A caller that focuses its own field after open (await nextTick(); el.focus()) keeps it.
       const first = wrapper.find('.first').element as HTMLInputElement
       first.focus()
-      await new Promise(resolve => setTimeout(resolve, 50))
+      await nextTick()
+      await nextTick()
       expect(document.activeElement).toBe(first)
       wrapper.unmount()
     })
@@ -489,7 +490,7 @@ describe('BaseModal', () => {
       await nextTick()
       opener.remove()
       show.value = false
-      await expect(nextTick()).resolves.not.toThrow()
+      await nextTick()
       expect(document.querySelector('.base-modal-container')).toBeNull()
       wrapper.unmount()
     })
