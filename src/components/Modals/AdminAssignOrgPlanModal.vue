@@ -521,6 +521,6 @@ select.form-control {
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: var(--color-secondary-dark, var(--color-secondary-hover));
+  background-color: var(--color-secondary-hover);
 }
 </style>

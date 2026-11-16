@@ -451,7 +451,7 @@ onUnmounted(() => {
 
 .exposed-port-number {
   flex-shrink: 0;
-  font-family: var(--font-family-mono, monospace);
+  font-family: var(--font-family-monospace);
   font-weight: var(--font-weight-semibold);
 }
 

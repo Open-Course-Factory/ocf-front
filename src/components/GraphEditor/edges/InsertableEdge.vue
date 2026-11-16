@@ -160,13 +160,13 @@ const handleRemove = () => {
 
 .insertable-edge-badge:hover {
   background: var(--color-primary, #3b82f6);
-  color: var(--color-text-inverse, #ffffff);
+  color: var(--color-white);
   transform: scale(1.1);
 }
 
 .insertable-edge-badge:focus-visible {
   background: var(--color-primary, #3b82f6);
-  color: var(--color-text-inverse, #ffffff);
+  color: var(--color-white);
   outline: 2px solid var(--color-primary, #3b82f6);
   outline-offset: 2px;
 }
@@ -180,7 +180,7 @@ const handleRemove = () => {
 
 .insertable-edge-badge--remove:hover {
   background: var(--color-danger, #dc2626);
-  color: var(--color-text-inverse, #ffffff);
+  color: var(--color-white);
 }
 
 .insertable-edge-badge--remove:focus-visible {

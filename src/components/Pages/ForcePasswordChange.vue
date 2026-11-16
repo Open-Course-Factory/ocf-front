@@ -223,7 +223,7 @@ async function handleLogout() {
   width: 100%;
   padding: 12px;
   background-color: var(--color-primary);
-  color: var(--color-text-on-primary, #fff);
+  color: var(--color-white);
   border: none;
   border-radius: 6px;
   font-size: 1rem;

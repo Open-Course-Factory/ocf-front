@@ -1135,7 +1135,7 @@ async function confirmRemoveMember() {
 .credentials-warning {
   background: var(--color-warning-light, rgba(245, 158, 11, 0.1));
   border: 1px solid var(--color-warning, #f59e0b);
-  border-radius: var(--border-radius, 6px);
+  border-radius: var(--border-radius-md);
   padding: 1rem;
   margin-bottom: 1rem;
   display: flex;

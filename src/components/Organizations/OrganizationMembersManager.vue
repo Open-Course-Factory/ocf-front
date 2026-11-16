@@ -959,12 +959,12 @@ const goToRolesHelp = () => {
 
 .btn-primary {
   background: var(--color-primary);
-  color: var(--color-text-on-primary, white);
+  color: var(--color-white);
 }
 
 .btn-primary:hover:not(:disabled) {
   background: var(--color-primary-hover, var(--color-primary));
-  color: var(--color-text-on-primary, white);
+  color: var(--color-white);
   filter: brightness(0.9);
 }
 

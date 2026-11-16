@@ -495,7 +495,7 @@ function formatFileSize(bytes: number): string {
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: var(--color-secondary-dark, var(--color-secondary-hover));
+  background-color: var(--color-secondary-hover);
 }
 
 .upload-success {

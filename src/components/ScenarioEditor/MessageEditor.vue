@@ -246,7 +246,7 @@ const { t } = useTranslations({
   border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 0.75rem;
-  background: var(--color-background-soft);
+  background: var(--color-background-secondary);
 }
 
 .ocf-message-head {
