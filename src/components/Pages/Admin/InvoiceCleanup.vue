@@ -190,7 +190,7 @@
               <i class="fas fa-dollar-sign"></i>
             </div>
             <div class="summary-content">
-              <div class="summary-value">{{ formatPrice(results.total_amount_cleaned / 100, results.currency) }}</div>
+              <div class="summary-value">{{ formatPrice(results.total_amount_cleaned, results.currency) }}</div>
               <div class="summary-label">{{ t('invoiceCleanup.totalAmount') }}</div>
             </div>
           </div>
@@ -222,7 +222,7 @@
             </div>
             <div class="stat-item">
               <span class="stat-label">{{ t('invoiceCleanup.selectedAmount') }}:</span>
-              <span class="stat-value">{{ formatPrice(selectedTotalAmount / 100, results.currency) }}</span>
+              <span class="stat-value">{{ formatPrice(selectedTotalAmount, results.currency) }}</span>
             </div>
           </div>
 
@@ -299,7 +299,7 @@
                     <span class="invoice-id">{{ item.invoice_id }}</span>
                   </td>
                   <td>{{ item.invoice_number || '-' }}</td>
-                  <td>{{ formatPrice(item.amount / 100, item.currency) }}</td>
+                  <td>{{ formatPrice(item.amount, item.currency) }}</td>
                   <td>
                     <span :class="['status-badge', `status-${item.original_status}`]">
                       {{ getStatusLabel(item.original_status) }}
@@ -661,7 +661,7 @@ const confirmExecuteSelected = () => {
   }
 
   const count = selectedInvoiceIds.value.length
-  const amount = formatPrice(selectedTotalAmount.value / 100, results.value.currency)
+  const amount = formatPrice(selectedTotalAmount.value, results.value.currency)
 
   const confirmMessage = t('invoiceCleanup.confirmExecution', {
     count,
