@@ -30,6 +30,8 @@ import { useStoreTranslations } from '../composables/useTranslations'
 export const usePaymentMethodsStore = defineStore('paymentMethods', () => {
 
     const base = useBaseStore();
+    // Cards are added through the Stripe portal; the backend has no generic create.
+    base.allowCreation.value = false
     const { t } = useStoreTranslations({
         en: {
             paymentMethods: {
