@@ -70,7 +70,7 @@ function mountAdmin() {
       plugins: [createI18n({ legacy: false, locale: 'en', fallbackLocale: 'en', messages: { en: {}, fr: {} }, missingWarn: false, fallbackWarn: false })],
       stubs: {
         Entity: { props: ['entityName', 'entityStore'], template: '<div class="entity-stub" />' },
-        AdminAssignOrgPlanModal: true, AdminAssignPlanModal: true, PlanConfigModal: true, AdminBadge: true, BaseModal: true,
+        AdminAssignPlanModal: true, PlanConfigModal: true, AdminBadge: true, BaseModal: true,
       },
     },
   })

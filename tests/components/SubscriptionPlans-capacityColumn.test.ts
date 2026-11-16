@@ -96,9 +96,7 @@ const messages = {
       unlistedPlan: 'Unlisted',
       catalogPlanDescription: 'Shown on the pricing page',
       unlistedPlanDescription: 'Custom plan, assigned by administrator',
-      assignToOrg: 'Assign to Organization',
       assignToUser: 'Assign to User',
-      assignOrgSuccess: 'Plan assigned to organization successfully',
       syncWithStripe: 'Sync with Stripe',
       syncing: 'Syncing...',
       syncDescription: 'Sync description',
@@ -164,7 +162,6 @@ function mountWithPlans(plans: any[]) {
             </div>
           `,
         },
-        AdminAssignOrgPlanModal: true,
         AdminAssignPlanModal: true,
         PlanConfigModal: true,
         AdminBadge: true,
