@@ -64,15 +64,17 @@ function getIcon(type: string): string {
 <style scoped>
 .ocf-toast-container {
   position: fixed;
-  top: var(--spacing-lg);
-  right: var(--spacing-lg);
+  /* the padding keeps the toasts' shadow inside the scroll box; toasts stay --spacing-lg from the edges */
+  top: 0;
+  right: 0;
+  padding: var(--spacing-lg);
   z-index: var(--z-index-tooltip);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
-  max-width: 400px;
+  max-width: calc(400px + 2 * var(--spacing-lg));
   /* persistent errors can pile up: scroll instead of running off-screen */
-  max-height: calc(100vh - 2 * var(--spacing-lg));
+  max-height: 100vh;
   overflow-x: hidden;
   overflow-y: auto;
   /* the gaps between toasts must not swallow clicks on the page */
@@ -199,8 +201,8 @@ function getIcon(type: string): string {
 /* Responsive */
 @media (max-width: 768px) {
   .ocf-toast-container {
-    left: var(--spacing-lg);
-    right: var(--spacing-lg);
+    left: 0;
+    right: 0;
     max-width: none;
   }
 
