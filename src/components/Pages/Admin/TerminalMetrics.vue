@@ -213,6 +213,7 @@
 </template>
 
 <script setup lang="ts">
+import { currentUserTimezone } from '../../../composables/useFormatters'
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTerminalMetricsStore, type TerminalMetrics } from '../../../stores/terminalMetrics'
@@ -222,7 +223,7 @@ import axios from 'axios'
 import Button from '../../UI/Button.vue'
 import { useVisiblePolling } from '../../../composables/useVisiblePolling'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 // Initialize store to register translations
 useTerminalMetricsStore()
 const backendsStore = useTerminalBackendsStore()
@@ -335,7 +336,7 @@ function getGaugeStyle(percentage: number) {
 
 function formatTimestamp(timestamp: number) {
   const date = new Date(timestamp)
-  return date.toLocaleString()
+  return date.toLocaleString(locale.value, { timeZone: currentUserTimezone() })
 }
 
 // Data fetching

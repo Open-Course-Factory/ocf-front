@@ -126,6 +126,7 @@
 </template>
 
 <script setup lang="ts">
+import { useFormatters } from '../../composables/useFormatters'
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
@@ -268,14 +269,7 @@ function formatPrice(amount: number, currency: string = 'EUR') {
   return subscriptionPlansStore.formatPrice(amount, currency)
 }
 
-function formatDate(dateString: string) {
-  if (!dateString) return '-'
-  try {
-    return new Date(dateString).toLocaleDateString('fr-FR')
-  } catch (e) {
-    return dateString
-  }
-}
+const { formatDate } = useFormatters()
 </script>
 
 <style scoped>

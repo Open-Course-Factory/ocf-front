@@ -165,6 +165,7 @@
 </template>
 
 <script setup lang="ts">
+import { useFormatters } from '../../composables/useFormatters'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import BaseModal from './BaseModal.vue'
@@ -348,13 +349,7 @@ const statusLabel = (status: string) => {
   return statusMap[status] || status
 }
 
-const formatDate = (dateStr: string) => {
-  try {
-    return new Date(dateStr).toLocaleDateString()
-  } catch {
-    return dateStr
-  }
-}
+const { formatDate } = useFormatters()
 
 onMounted(async () => {
   await plansStore.ensurePlansLoaded()

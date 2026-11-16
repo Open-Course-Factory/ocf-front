@@ -67,6 +67,7 @@
 </template>
 
 <script setup lang="ts">
+import { currentUserTimezone } from '../../composables/useFormatters'
 import { ref, computed, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import AdminBadge from '../Common/AdminBadge.vue'
@@ -94,7 +95,7 @@ const emit = defineEmits<{
   'delete-version': [courseId: string]
 }>()
 
-const { t } = useTranslations({
+const { t, locale } = useTranslations({
   en: {
     courses: {
       versionSelector: 'Version',
@@ -146,7 +147,8 @@ function formatDate(dateString?: string): string {
 
   try {
     const date = new Date(dateString)
-    return date.toLocaleDateString(undefined, {
+    return date.toLocaleDateString(locale.value, {
+      timeZone: currentUserTimezone(),
       year: 'numeric',
       month: 'short',
       day: 'numeric'

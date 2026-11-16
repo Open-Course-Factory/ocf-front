@@ -22,6 +22,7 @@
 -->
 
 <script setup lang="ts">
+import { useFormatters } from '../../composables/useFormatters'
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { useNotification } from '../../composables/useNotification';
@@ -128,10 +129,7 @@ async function regenerateKey() {
   });
 }
 
-function formatDate(dateString: string) {
-  if (!dateString) return '-';
-  return new Date(dateString).toLocaleString();
-}
+const { formatDateTime: formatDate } = useFormatters();
 </script>
 
 <template>

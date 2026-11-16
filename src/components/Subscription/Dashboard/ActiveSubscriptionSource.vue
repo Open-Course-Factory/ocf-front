@@ -158,6 +158,7 @@
 </template>
 
 <script setup lang="ts">
+import { useFormatters } from '../../../composables/useFormatters'
 import { computed } from 'vue'
 import { useTranslations } from '../../../composables/useTranslations'
 import { formatBudgetAsSizes, CANONICAL_SIZE_CATALOG } from '../../../utils/quotaFormatters'
@@ -329,14 +330,7 @@ const canStartPersonalSubscription = computed(() => {
 
 const currentPeriodEnd = computed(() => props.primarySubscription?.current_period_end ?? null)
 
-function formatDate(dateString: string | null): string {
-  if (!dateString) return '-'
-  try {
-    return new Date(dateString).toLocaleDateString('fr-FR')
-  } catch {
-    return dateString
-  }
-}
+const { formatDate } = useFormatters()
 </script>
 
 <style scoped>

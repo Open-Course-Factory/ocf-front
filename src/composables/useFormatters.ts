@@ -4,8 +4,8 @@
  */
 
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useUserSettingsStore } from '../stores/userSettings'
+import { getActivePinia } from 'pinia'
+import i18n from '../i18n'
 import {
   formatCurrency,
   formatDate as baseFormatDate,
@@ -18,12 +18,25 @@ import {
   getBrowserTimezone,
 } from '../utils/formatters'
 
-export function useFormatters() {
-  const { locale } = useI18n()
-  const settingsStore = useUserSettingsStore()
+/**
+ * The user's saved time zone, else the browser's. Read at call time, so stores
+ * and utils (outside component setup) follow a change made after they loaded.
+ * No saved preference means "show me my own clock", not UTC.
+ */
+export function currentUserTimezone(): string {
+  // The settings store's state, read by its id rather than through
+  // useUserSettingsStore(): that module pulls in the router, which formatting
+  // must not depend on. Layout loads it on every signed-in page; until then
+  // (or with no pinia at all), the browser zone applies.
+  return getActivePinia()?.state.value.UserSettings?.settings?.timezone || getBrowserTimezone()
+}
 
-  // No saved preference means "show me my own clock", not UTC.
-  const userTimezone = computed(() => settingsStore.settings.timezone || getBrowserTimezone())
+export function useFormatters() {
+  // The app's i18n instance: what a bare useI18n() returns in a component, minus
+  // the need for an installed plugin, and the same one stores and utils read.
+  const { locale } = i18n.global
+
+  const userTimezone = computed(currentUserTimezone)
 
   // Get user's locale from i18n
   const userLocale = computed(() => locale.value || 'fr-FR')

@@ -96,10 +96,10 @@
 </template>
 
 <script setup lang="ts">
+import { useFormatters } from '../../composables/useFormatters'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { formatDateTime } from '../../utils/formatters'
 import { CLASS_PAGE_NAMES } from '../../router/classPages'
 
 const { t } = useI18n()
@@ -147,9 +147,7 @@ function truncate(text: string, maxLength: number): string {
   return text.substring(0, maxLength) + '...'
 }
 
-function formatDate(dateString: string): string {
-  return formatDateTime(dateString)
-}
+const { formatDateTime: formatDate } = useFormatters()
 
 function navigateToDetail() {
   if (props.entity.id) {

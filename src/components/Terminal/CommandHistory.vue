@@ -130,6 +130,7 @@
 </template>
 
 <script setup lang="ts">
+import { currentUserTimezone } from '../../composables/useFormatters'
 import { ref, computed, watch, onBeforeUnmount, onMounted, nextTick, useId } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
@@ -157,7 +158,7 @@ const props = withDefaults(defineProps<Props>(), {
   isActive: false
 })
 
-const { t } = useTranslations({
+const { t, locale } = useTranslations({
   en: {
     notice: {
       summary: 'Terminal commands are recorded for security auditing and pedagogy. Retention follows your subscription plan.',
@@ -329,7 +330,8 @@ const IDLE_THRESHOLD = 30000
 function formatTime(unixSeconds: number): string {
   try {
     const date = new Date(unixSeconds * 1000)
-    return date.toLocaleTimeString(undefined, {
+    return date.toLocaleTimeString(locale.value, {
+      timeZone: currentUserTimezone(),
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'

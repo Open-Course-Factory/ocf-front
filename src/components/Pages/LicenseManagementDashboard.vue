@@ -227,12 +227,13 @@
 </template>
 
 <script setup lang="ts">
+import { useFormatters } from '../../composables/useFormatters'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
 import { useSubscriptionBatchesStore } from '../../stores/subscriptionBatches'
 import { useNotification } from '../../composables/useNotification'
-import { formatDateTime, extractErrorMessage } from '../../utils/formatters'
+import { extractErrorMessage } from '../../utils/formatters'
 import AddLicensesModal from '../Modals/AddLicensesModal.vue'
 import type { SubscriptionBatch } from '../../types/entities'
 
@@ -493,10 +494,7 @@ const getUsagePercentage = (batch: SubscriptionBatch): number => {
   return Math.round((batch.assigned_quantity / batch.total_quantity) * 100)
 }
 
-const formatDate = (dateString: string | undefined): string => {
-  if (!dateString) return '-'
-  return formatDateTime(dateString).split(' ')[0] // Only show date, not time
-}
+const { formatDate } = useFormatters()
 
 // Set on unmount so a poll in flight stops cleanly (no more loads, no ref
 // writes, no route replace against whatever page the user navigated to).

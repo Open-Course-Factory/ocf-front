@@ -41,6 +41,10 @@
  * ])
  */
 
+import i18n from '../i18n'
+import { formatDate, formatDateTime } from './formatters'
+import { currentUserTimezone } from '../composables/useFormatters'
+
 /**
  * Field configuration interface
  */
@@ -275,35 +279,19 @@ export class FieldBuilder {
   }
 
   /**
-   * Auto-format dates using the formatDate utility
-   * Automatically adds date formatting for date/datetime fields
+   * Show the date in the app language and the user's time zone, read when the
+   * value is displayed (a language switch applies without reloading the store).
    */
-  withDateFormat(locale: string = 'fr-FR'): this {
-    // Import is done dynamically to avoid circular dependencies
-    this.config.displayValue = (value: any) => {
-      if (!value) return '-'
-      try {
-        return new Date(value).toLocaleDateString(locale)
-      } catch (e) {
-        return value
-      }
-    }
+  withDateFormat(): this {
+    this.config.displayValue = (value: any) => formatDate(value, i18n.global.locale.value, '-', currentUserTimezone())
     return this
   }
 
   /**
-   * Auto-format datetime using the formatDateTime utility
-   * Automatically adds datetime formatting for datetime fields
+   * Same as withDateFormat, with the time.
    */
-  withDateTimeFormat(locale: string = 'fr-FR'): this {
-    this.config.displayValue = (value: any) => {
-      if (!value) return '-'
-      try {
-        return new Date(value).toLocaleString(locale)
-      } catch (e) {
-        return value
-      }
-    }
+  withDateTimeFormat(): this {
+    this.config.displayValue = (value: any) => formatDateTime(value, i18n.global.locale.value, '-', currentUserTimezone())
     return this
   }
 
