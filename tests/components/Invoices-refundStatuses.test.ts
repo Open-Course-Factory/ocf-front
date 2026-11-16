@@ -38,7 +38,7 @@ vi.mock('../../src/stores/invoices', () => ({
   useInvoicesStore: () => ({
     get entities() { return h.entities },
     isLoading: false,
-    formatAmount: (amount: number, currency = 'EUR') => formatCurrency(amount, currency),
+    formatAmount: (amount: number, currency = 'EUR') => formatCurrency(amount, currency, 'fr-FR'),
     formatDate: () => '-',
     isOverdue: () => false,
     getStatusClass: (s: string) => `class-${s}`,
