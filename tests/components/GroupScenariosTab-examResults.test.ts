@@ -60,8 +60,7 @@ async function mountTab() {
     global: {
       plugins: [createI18n({ legacy: false, locale: 'en', messages: { en: {}, fr: {} }, missingWarn: false, fallbackWarn: false })],
       stubs: {
-        ScenarioUploadModal: true,
-        ScenarioJSONImportModal: true,
+        ScenarioImportModal: true,
         AssignScenarioModal: true,
         BulkStartScenarioModal: true,
         ScenarioAssignmentResultModal: true,

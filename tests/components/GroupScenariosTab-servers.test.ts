@@ -48,7 +48,7 @@ async function mountTab(org: { organizationId?: string } = { organizationId: 'or
     global: {
       plugins: [createI18n({ legacy: false, locale: 'en', messages: { en: {}, fr: {} }, missingWarn: false, fallbackWarn: false })],
       stubs: {
-        ScenarioUploadModal: true, ScenarioJSONImportModal: true, AssignScenarioModal: true,
+        ScenarioImportModal: true, AssignScenarioModal: true,
         BulkStartScenarioModal: true, ScenarioAssignmentResultModal: true, RemoveAssignmentConfirmModal: true,
         ResetAssignmentModal: true, SessionDetailModal: true, ...stubs,
       },
@@ -99,7 +99,7 @@ describe('GroupScenariosTab — servers', () => {
     { button: 'Import JSON', accept: '.json' },
     { button: 'Import KillerCoda', accept: '.zip,.tar.gz,.tgz' },
   ])('"$button" opens the import dialog for that format', async ({ button, accept }) => {
-    const wrapper = await mountTab(undefined, { ScenarioUploadModal: false, ScenarioJSONImportModal: false })
+    const wrapper = await mountTab(undefined, { ScenarioImportModal: false })
     await wrapper.findAll('.tab-header-actions button').find(b => b.text().includes(button))!.trigger('click')
     expect(wrapper.findAll('input[type="file"]').map(i => i.attributes('accept'))).toEqual([accept])
   })

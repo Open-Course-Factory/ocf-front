@@ -67,18 +67,12 @@
     />
   </BaseModal>
 
-  <ScenarioUploadModal
-    :visible="showUploadModal"
+  <ScenarioImportModal
+    :visible="showFileModal"
+    :format="format === 'json' ? 'json' : 'archive'"
     :group-id="groupId"
     :organization-id="organizationId"
-    @close="showUploadModal = false"
-    @uploaded="onImported"
-  />
-  <ScenarioJSONImportModal
-    :visible="showJSONModal"
-    :group-id="groupId"
-    :organization-id="organizationId"
-    @close="showJSONModal = false"
+    @close="showFileModal = false"
     @imported="onImported"
   />
 </template>
@@ -86,8 +80,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import BaseModal from '../Modals/BaseModal.vue'
-import ScenarioUploadModal from '../Modals/ScenarioUploadModal.vue'
-import ScenarioJSONImportModal from '../Modals/ScenarioJSONImportModal.vue'
+import ScenarioImportModal from '../Modals/ScenarioImportModal.vue'
 import ScenarioScopeSelect from './ScenarioScopeSelect.vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useScenarioCreateScopes } from '../../composables/useScenarioCreateScopes'
@@ -139,8 +132,7 @@ const { t } = useTranslations({
 const { parseScopeKey, pickDefaultScopeKey, loadScopeSources } = useScenarioCreateScopes()
 
 const showChooser = ref(false)
-const showUploadModal = ref(false)
-const showJSONModal = ref(false)
+const showFileModal = ref(false)
 const isLoadingScopes = ref(false)
 const format = ref<'killercoda' | 'json'>('killercoda')
 const destinationKey = ref('')
@@ -166,15 +158,13 @@ async function openChooser(preset?: 'killercoda' | 'json') {
 function continueToUpload() {
   if (!destination.value) return
   showChooser.value = false
-  if (format.value === 'json') showJSONModal.value = true
-  else showUploadModal.value = true
+  showFileModal.value = true
 }
 
 defineExpose({ openChooser })
 
 function onImported(scenario: any) {
-  showUploadModal.value = false
-  showJSONModal.value = false
+  showFileModal.value = false
   emit('imported', scenario)
 }
 </script>
