@@ -249,48 +249,11 @@ export const usePermissionsStore = defineStore('permissions', () => {
     return effectiveFeatures.value.effective_features.features?.includes(featureName) ?? false
   }
 
-  const getMaxCourses = computed((): number => {
-    const val = effectiveFeatures.value?.effective_features?.max_courses ?? 0
-    return val === -1 ? Infinity : val
-  })
-
-  const getMaxSessionDuration = computed((): number => {
-    return effectiveFeatures.value?.effective_features?.max_session_duration_minutes ?? 60
-  })
-
-  const canExportCourses = computed((): boolean => {
-    return (effectiveFeatures.value?.effective_features as any)?.can_export_courses ?? false
-  })
-
-  // ==========================================
-  // COMBINED PERMISSION CHECKS
-  // ==========================================
-
-  const canManageOrganizationBilling = (organizationId: string): boolean => {
-    return isSystemAdmin.value || canManageOrganization(organizationId)
-  }
-
-  const canManageOrganizationMembers = (organizationId: string): boolean => {
-    return isSystemAdmin.value || canManageOrganization(organizationId)
-  }
-
   // ==========================================
   // OWNER-ONLY PERMISSION CHECKS
   // ==========================================
 
   const canDeleteOrganization = (organizationId: string): boolean => {
-    return isSystemAdmin.value || isOrganizationOwner(organizationId)
-  }
-
-  const canTransferOwnership = (organizationId: string): boolean => {
-    return isSystemAdmin.value || isOrganizationOwner(organizationId)
-  }
-
-  const canPromoteToOwner = (organizationId: string): boolean => {
-    return isSystemAdmin.value || isOrganizationOwner(organizationId)
-  }
-
-  const canConvertOrganizationType = (organizationId: string): boolean => {
     return isSystemAdmin.value || isOrganizationOwner(organizationId)
   }
 
@@ -318,19 +281,9 @@ export const usePermissionsStore = defineStore('permissions', () => {
 
     // Feature checks
     hasFeature,
-    getMaxCourses,
-    getMaxSessionDuration,
-    canExportCourses,
-
-    // Combined permission checks
-    canManageOrganizationBilling,
-    canManageOrganizationMembers,
 
     // Owner-only permission checks
     canDeleteOrganization,
-    canTransferOwnership,
-    canPromoteToOwner,
-    canConvertOrganizationType,
 
     // Translations
     t,
