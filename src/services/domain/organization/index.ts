@@ -4,5 +4,3 @@
  */
 
 export * from './organizationService'
-export * from './organizationSubscriptionService'
-export * from './userFeaturesService'
