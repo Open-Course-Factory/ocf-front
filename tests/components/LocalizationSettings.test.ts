@@ -41,8 +41,9 @@ describe('LocalizationSettings — time zone', () => {
   })
 
   it('shows the backend default UTC as Automatic', () => {
-    const select = timezoneSelect(mountSettings())
-    expect((select.element as HTMLSelectElement).value).toBe('')
+    const select = timezoneSelect(mountSettings()).element as HTMLSelectElement
+    // An unmatched value also reads '': check that the Automatic option is the one selected.
+    expect(select.selectedOptions[0]?.textContent ?? 'no option selected').toContain('timezoneAuto')
   })
 
   it('does not offer UTC, which dates would not honour', () => {
