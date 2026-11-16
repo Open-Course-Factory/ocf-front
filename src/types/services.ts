@@ -71,16 +71,6 @@ export interface LoggerConfig {
 }
 
 /**
- * Demo mode configuration
- */
-export interface DemoConfig {
-  enabled: boolean
-  simulateDelay?: boolean
-  delayMs?: number
-  logActions?: boolean
-}
-
-/**
  * Notification options
  */
 export interface NotificationOptions {

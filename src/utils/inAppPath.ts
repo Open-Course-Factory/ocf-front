@@ -2,7 +2,7 @@
  * Returns `raw` when it is a path inside this app, otherwise `null`.
  *
  * Pages that take a destination from the query string (login `redirect`,
- * demo `return_url`, verify-email `redirect`, session view `returnTo`) only
+ * verify-email `redirect`, session view `returnTo`) only
  * follow same-origin paths, so a query parameter can never send the browser
  * elsewhere. Backslashes, whitespace and control characters are refused
  * outright. A path whose normalised form starts with `//` is refused too,

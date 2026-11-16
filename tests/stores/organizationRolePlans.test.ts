@@ -28,7 +28,6 @@
  *   - create/update returning the *inner* response.data.data (base returns the
  *     whole response.data, and no consumer reads the value)
  *   - delete resolving `undefined` (base resolves `true`)
- *   - the demo-mode create payload id string (base mints `demo_<ts>`)
  *   - the store-specific `organizationRolePlans.loadError` fallback key (base uses
  *     its generic key; the axios `error_message` extraction still holds, so that
  *     is what we pin instead)
@@ -61,15 +60,7 @@ vi.mock('../../src/composables/useTranslations', () => ({
   useStoreTranslations: () => ({ t: (key: string) => key, te: () => true, locale: ref('en') })
 }))
 
-// isDemoMode default false → methods hit axios. Demo tests flip it on.
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: vi.fn(() => false),
-  logDemoAction: vi.fn(),
-  simulateDelay: vi.fn()
-}))
-
 import axios from 'axios'
-import { isDemoMode } from '../../src/services/demo'
 import { useOrganizationRolePlansStore } from '../../src/stores/organizationRolePlans'
 
 const mockedAxios = axios as unknown as {
@@ -78,7 +69,6 @@ const mockedAxios = axios as unknown as {
   patch: ReturnType<typeof vi.fn>
   delete: ReturnType<typeof vi.fn>
 }
-const mockedIsDemoMode = isDemoMode as unknown as ReturnType<typeof vi.fn>
 
 // A manually controlled promise, to observe isLoading mid-flight.
 function deferred<T>() {
@@ -95,7 +85,6 @@ describe('organizationRolePlans store (MR-5 base-store refactor)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    mockedIsDemoMode.mockReturnValue(false)
   })
 
   describe('loadOrganizationRolePlans', () => {
@@ -163,16 +152,6 @@ describe('organizationRolePlans store (MR-5 base-store refactor)', () => {
       await expect(store.loadOrganizationRolePlans('org-A')).rejects.toBeDefined()
       expect(store.error).toBe('load boom')
       expect(store.isLoading).toBe(false)
-    })
-
-    it('demo mode short-circuits without hitting axios and returns an empty list', async () => {
-      mockedIsDemoMode.mockReturnValue(true)
-      const store = useOrganizationRolePlansStore()
-
-      const result = await store.loadOrganizationRolePlans('org-A')
-
-      expect(mockedAxios.get).not.toHaveBeenCalled()
-      expect(result).toEqual([])
     })
   })
 

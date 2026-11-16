@@ -34,13 +34,6 @@ vi.mock('../../src/composables/useTranslations', () => ({
   useStoreTranslations: () => ({ t: (key: string) => key, te: () => true, locale: ref('en') })
 }))
 
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: vi.fn(() => false),
-  logDemoAction: vi.fn(),
-  simulateDelay: vi.fn(),
-  getDemoSubscriptionPlans: vi.fn(() => [])
-}))
-
 import { useBillingAddressesStore } from '../../src/stores/billingAddresses'
 import EntityModal from '../../src/components/Modals/EntityModal.vue'
 

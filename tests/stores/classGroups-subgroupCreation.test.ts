@@ -35,12 +35,6 @@ vi.mock('element-plus', () => ({
   ElNotification: vi.fn()
 }))
 
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: () => false,
-  logDemoAction: vi.fn(),
-  simulateDelay: () => Promise.resolve()
-}))
-
 import axios from 'axios'
 import { ElNotification } from 'element-plus'
 import i18n from '../../src/i18n'

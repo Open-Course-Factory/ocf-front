@@ -11,7 +11,7 @@ import { receivedScriptFields } from '../../../utils/scenarioStepPayload'
 
 // The backend stores a question's `options` as a JSON string (TEXT column); the
 // editor works on `string[]`. Tolerates payloads that already arrive as arrays
-// (demo mode) or invalid JSON.
+// or invalid JSON.
 export function deserializeQuestion(q: any) {
   const raw = q?.options
   let options: string[] = []

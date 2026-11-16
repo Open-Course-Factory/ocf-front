@@ -320,18 +320,6 @@ const basicRoutes = [
         meta: { requiresAuth: true }
       },
 
-      // Demo routes (for testing subscription flow)
-      {
-        path: 'demo-checkout',
-        name: 'DemoCheckout',
-        component: () => import('../components/Demo/DemoCheckout.vue')
-      },
-      {
-        path: 'demo-portal',
-        name: 'DemoPortal',
-        component: () => import('../components/Demo/DemoPortal.vue')
-      },
-
       // Debug routes (admin only)
       {
         path: 'debug/feature-flags',

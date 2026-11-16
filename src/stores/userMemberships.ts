@@ -22,7 +22,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import axios from 'axios'
-import { isDemoMode } from '../services/demo'
 import { isRoleAtLeast } from '../utils/roles'
 import type { MemberRole } from '../types/base'
 
@@ -61,17 +60,6 @@ export const useUserMembershipsStore = defineStore('userMemberships', () => {
   const error = ref('')
 
   const loadMemberships = async () => {
-    if (isDemoMode()) {
-      // Demo mode: synthesize a manager-of-everything view so the UI can be exercised
-      orgMemberships.value = [
-        { organization_id: 'demo-org-1', role: 'owner' },
-        { organization_id: 'demo-org-2', role: 'manager' },
-      ]
-      groupMemberships.value = []
-      isLoaded.value = true
-      return
-    }
-
     isLoading.value = true
     error.value = ''
     try {

@@ -2,7 +2,6 @@
   <div class="layout-root">
     <ImpersonationBanner />
     <div class="wrapper">
-    <DemoModeBanner />
     <AdminNavMenu
       v-if="isInAdmin"
       class="main-nav-menu"
@@ -43,7 +42,6 @@ import AdminNavMenu from './Menus/AdminNavMenu.vue'
 import MainNavMenu from './Menus/MainNavMenu.vue'
 import PreferencesNavMenu from './Menus/PreferencesNavMenu.vue'
 import TopMenu from './Menus/TopMenu.vue'
-import DemoModeBanner from './UI/DemoModeBanner.vue'
 import ImpersonationBanner from './UI/ImpersonationBanner.vue'
 import ToastContainer from './UI/ToastContainer.vue'
 import FeedbackButton from './Feedback/FeedbackButton.vue'

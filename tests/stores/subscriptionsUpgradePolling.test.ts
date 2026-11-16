@@ -44,20 +44,6 @@ vi.mock('../../src/stores/organizations', () => ({
   })
 }))
 
-const isDemoModeMock = vi.fn(() => false)
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: (...args: any[]) => isDemoModeMock(...args),
-  logDemoAction: vi.fn(),
-  simulateDelay: vi.fn(async () => {}),
-  demoPayments: {
-    createCheckoutSession: vi.fn(),
-    createPortalSession: vi.fn(),
-    checkUsageLimit: vi.fn()
-  },
-  getDemoCurrentSubscription: vi.fn(() => ({ id: 'demo-sub', subscription_plan_id: 'plan-new', status: 'active' })),
-  getDemoUsageMetrics: vi.fn(() => [])
-}))
-
 vi.mock('../../src/services/features', () => ({
   featureFlagService: {
     isMetricVisible: vi.fn(() => true)
@@ -92,7 +78,6 @@ describe('subscriptions store — upgradePlan polling', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    isDemoModeMock.mockReturnValue(false)
     vi.useFakeTimers()
   })
 
@@ -200,27 +185,5 @@ describe('subscriptions store — upgradePlan polling', () => {
     expect(store.error).toBe('')
     // Polling continued across the 502: at least 4 GETs to /current.
     expect(countCurrentGets()).toBeGreaterThanOrEqual(4)
-  })
-
-  it('does not poll in demo mode (short-circuits to simulated delay)', async () => {
-    isDemoModeMock.mockReturnValue(true)
-
-    // Even if axios is called by accident, return something harmless
-    mockedAxios.get.mockResolvedValue({ data: {} })
-    mockedAxios.post.mockResolvedValue({ data: {} })
-
-    const store = useSubscriptionsStore()
-    const upgradePromise = store.upgradePlan('plan-new')
-
-    await vi.advanceTimersByTimeAsync(5000)
-    const result = await upgradePromise
-
-    // Demo mode should not POST to the real upgrade endpoint
-    const upgradePosts = mockedAxios.post.mock.calls.filter(([url]) =>
-      typeof url === 'string' && url === '/user-subscriptions/upgrade'
-    )
-    expect(upgradePosts.length).toBe(0)
-    expect(result).toBeDefined()
-    expect((result as any).success).toBe(true)
   })
 })

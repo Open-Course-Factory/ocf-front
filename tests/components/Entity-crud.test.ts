@@ -4,7 +4,7 @@
  * MR-4 will delegate Entity.vue's raw axios calls to baseStore methods.
  * These tests PIN the observable HTTP contract (URL / verb / payload) and
  * the resulting store/DOM state for each write path, WITHOUT pinning which
- * internal path issues the call. Demo mode is mocked OFF.
+ * internal path issues the call.
  *
  * Covered call sites:
  *   create  → axios.post   /{entity}                (Entity.vue:1004)
@@ -43,12 +43,6 @@ vi.mock('axios', () => ({
       response: { use: vi.fn() }
     }
   }
-}))
-
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: () => false,
-  logDemoAction: vi.fn(),
-  simulateDelay: () => Promise.resolve()
 }))
 
 const mockRouterPush = vi.fn().mockResolvedValue(undefined)

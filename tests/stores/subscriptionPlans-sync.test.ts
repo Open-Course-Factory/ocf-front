@@ -26,13 +26,6 @@ vi.mock('../../src/composables/useTranslations', () => ({
   useStoreTranslations: () => ({ t: (key: string) => key, te: () => true, locale: ref('en') })
 }))
 
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: vi.fn(() => false),
-  logDemoAction: vi.fn(),
-  simulateDelay: vi.fn(),
-  getDemoSubscriptionPlans: vi.fn(() => [])
-}))
-
 import axios from 'axios'
 import { useSubscriptionPlansStore } from '../../src/stores/subscriptionPlans'
 
@@ -144,27 +137,5 @@ describe('subscriptionPlans store - syncAndLoadPlans (#sync-result-display)', ()
     })
     // Plan list still refreshed.
     expect(axios.get).toHaveBeenCalledWith('/subscription-plans')
-  })
-
-  it('returns a sync-result object in demo mode instead of the plans array', async () => {
-    // The demo branch used to return loadPlans() (an array), so the demo admin
-    // panel read `.success` off an array and showed the error branch.
-    const demo = await import('../../src/services/demo')
-    ;(demo.isDemoMode as any).mockReturnValue(true)
-    ;(demo.getDemoSubscriptionPlans as any).mockReturnValue(plansFixture)
-
-    const store = useSubscriptionPlansStore()
-    const result = await store.syncAndLoadPlans()
-
-    expect(Array.isArray(result)).toBe(false)
-    expect(result).toMatchObject({
-      success: true,
-      synced_count: 2,
-      skipped_count: 0,
-      failed_count: 0,
-      total_plans: 2,
-      details: { synced: ['Pro (p1)', 'School (p2)'], skipped: [], failed: [] }
-    })
-    expect(axios.post).not.toHaveBeenCalled()
   })
 })

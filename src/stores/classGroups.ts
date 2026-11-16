@@ -409,15 +409,14 @@ export const useClassGroupsStore = defineStore('classGroups', () => {
         endpoint: string,
         cursor?: string,
         limit: number = 20,
-        filters: Record<string, string> = {},
-        demoDataProvider?: () => any[]
+        filters: Record<string, string> = {}
     ) => {
         const currentOrganizationId = useOrganizationsStore().currentOrganization?.id
         const scopedFilters = currentOrganizationId
             ? { ...filters, organization_id: currentOrganizationId }
             : filters
 
-        return await base.loadEntitiesWithCursor(endpoint, cursor, limit, scopedFilters, demoDataProvider)
+        return await base.loadEntitiesWithCursor(endpoint, cursor, limit, scopedFilters)
     }
 
     // Override getOne to use correct endpoint with optional includes

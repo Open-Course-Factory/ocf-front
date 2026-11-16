@@ -33,12 +33,6 @@ vi.mock('../../src/composables/useToast', () => ({
   useToast: () => ({ showToast: vi.fn(), showError: vi.fn(), showSuccess: vi.fn() })
 }))
 
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: vi.fn(() => false),
-  logDemoAction: vi.fn(),
-  simulateDelay: vi.fn()
-}))
-
 vi.mock('../../src/router', () => ({
   default: { currentRoute: { value: { meta: {}, path: '/' } }, push: vi.fn() }
 }))

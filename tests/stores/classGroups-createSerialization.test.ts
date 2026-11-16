@@ -31,12 +31,6 @@ vi.mock('element-plus', () => ({
   ElNotification: vi.fn()
 }))
 
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: () => false,
-  logDemoAction: vi.fn(),
-  simulateDelay: () => Promise.resolve()
-}))
-
 import axios from 'axios'
 import { useClassGroupsStore } from '../../src/stores/classGroups'
 import { useTeacherGroupsStore } from '../../src/stores/teacherGroups'

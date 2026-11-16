@@ -41,7 +41,7 @@ export const useOrganizationRolePlansStore = defineStore('organizationRolePlans'
   // Role plan overrides are listed via an org-scoped endpoint but created,
   // updated, and deleted via the flat /organization-role-plans resource.
   const loadOrganizationRolePlans = (organizationId: string): Promise<OrganizationRolePlan[]> =>
-    base.loadEntities(`/organizations/${organizationId}/role-plans`, () => [])
+    base.loadEntities(`/organizations/${organizationId}/role-plans`)
 
   const createRolePlan = (data: {
     organization_id: string

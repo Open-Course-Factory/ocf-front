@@ -12,7 +12,6 @@
  *   - the error fallback landing in `error.value`
  *   - isLoading true during flight, false after BOTH success and failure
  *   - the subscribeOrganization "plan required" guard firing before any request
- *   - demo-mode short-circuit (no network, bespoke demo payload)
  *
  * Error shapes are chosen to describe the contract a correct refactor onto
  * handleStoreError preserves: an axios error carrying `error_message`, a native
@@ -56,15 +55,7 @@ vi.mock('../../src/composables/useTranslations', () => ({
   useStoreTranslations: () => ({ t: (key: string) => key, te: () => true, locale: ref('en') })
 }))
 
-// isDemoMode default false → methods hit axios. Individual tests flip it on.
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: vi.fn(() => false),
-  logDemoAction: vi.fn(),
-  simulateDelay: vi.fn()
-}))
-
 import axios from 'axios'
-import { isDemoMode } from '../../src/services/demo'
 import { useOrganizationSubscriptionsStore } from '../../src/stores/organizationSubscriptions'
 
 const mockedAxios = axios as unknown as {
@@ -73,7 +64,6 @@ const mockedAxios = axios as unknown as {
   patch: ReturnType<typeof vi.fn>
   delete: ReturnType<typeof vi.fn>
 }
-const mockedIsDemoMode = isDemoMode as unknown as ReturnType<typeof vi.fn>
 
 // A manually controlled promise, to observe isLoading mid-flight.
 function deferred<T>() {
@@ -90,7 +80,6 @@ describe('organizationSubscriptions store (characterization #267)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    mockedIsDemoMode.mockReturnValue(false)
   })
 
   describe('loadOrganizationSubscription', () => {
@@ -153,17 +142,6 @@ describe('organizationSubscriptions store (characterization #267)', () => {
 
       await expect(store.loadOrganizationSubscription('org-1')).rejects.toBeDefined()
       expect(store.isLoading).toBe(false)
-    })
-
-    it('demo mode short-circuits without hitting axios and returns a demo payload', async () => {
-      mockedIsDemoMode.mockReturnValue(true)
-      const store = useOrganizationSubscriptionsStore()
-
-      const result = await store.loadOrganizationSubscription('org-42')
-
-      expect(mockedAxios.get).not.toHaveBeenCalled()
-      expect(result.id).toBe('demo-org-sub-org-42')
-      expect(result.organization_id).toBe('org-42')
     })
   })
 
@@ -262,15 +240,6 @@ describe('organizationSubscriptions store (characterization #267)', () => {
       await expect(store.cancelOrganizationSubscription('org-1')).rejects.toBeDefined()
       expect(store.error).toBe('not allowed')
       expect(store.isLoading).toBe(false)
-    })
-
-    it('demo mode short-circuits without hitting axios', async () => {
-      mockedIsDemoMode.mockReturnValue(true)
-      const store = useOrganizationSubscriptionsStore()
-
-      await store.cancelOrganizationSubscription('org-1')
-
-      expect(mockedAxios.delete).not.toHaveBeenCalled()
     })
   })
 
