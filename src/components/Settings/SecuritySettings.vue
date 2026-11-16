@@ -149,6 +149,7 @@ import axios from 'axios'
 import { useUserSettingsStore } from '../../stores/userSettings'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { useFormatters } from '../../composables/useFormatters'
+import { extractErrorMessage } from '../../utils/formatters'
 import SettingsCard from '../UI/SettingsCard.vue'
 import BaseModal from '../Modals/BaseModal.vue'
 
@@ -208,7 +209,7 @@ async function handleChangePassword() {
       confirm_password: ''
     }
   } catch (error: any) {
-    errorMessage.value = error.response?.data?.message || t('userSettings.security.errorChangingPassword')
+    errorMessage.value = extractErrorMessage(error, t('userSettings.security.errorChangingPassword'))
   }
 }
 
@@ -232,12 +233,8 @@ async function handleDeleteAccount() {
     // Account deleted: clear auth state and redirect
     currentUserStore.logout()
   } catch (error: any) {
-    if (error.response?.status === 409) {
-      // Ownership conflict: show the API error message
-      deleteError.value = error.response.data?.message || error.response.data?.error_message || t('userSettings.deleteAccount.error')
-    } else {
-      deleteError.value = error.response?.data?.message || error.response?.data?.error_message || t('userSettings.deleteAccount.error')
-    }
+    // A 409 ownership conflict explains itself in the body
+    deleteError.value = extractErrorMessage(error, t('userSettings.deleteAccount.error'))
   } finally {
     isDeleting.value = false
   }

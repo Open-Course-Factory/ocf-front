@@ -25,6 +25,7 @@ import axios from "axios"
 import { useBaseStore } from "./baseStore"
 import { useChaptersStore } from "./chapters"
 import { useStoreTranslations } from '../composables/useTranslations'
+import { extractErrorMessage } from '../utils/formatters'
 import { field, buildFieldList } from '../utils/fieldBuilder'
 import type { Course } from '../types/entities'
 
@@ -213,9 +214,7 @@ export const useCoursesStore = defineStore('courses', () => {
             await axios.delete(`/courses/${courseId}`)
             return true
         } catch (err: any) {
-            base.error.value = err.response?.data?.error ||
-                              err.response?.data?.message ||
-                              t('courses.errorDeletingVersion')
+            base.error.value = extractErrorMessage(err, t('courses.errorDeletingVersion'))
             console.error('Error deleting course version:', err)
             return false
         } finally {

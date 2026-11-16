@@ -2,6 +2,7 @@ import { reactive, ref } from 'vue'
 import axios from 'axios'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
+import { extractErrorMessage } from '../utils/formatters'
 
 export const useBaseStore = () => {
     // Add common translations (shared by all entities)
@@ -562,9 +563,7 @@ export const useBaseStore = () => {
             if (err.response?.status === 404) {
                 error.value = notFoundMessage
             } else {
-                error.value = err.response?.data?.error ||
-                              err.response?.data?.message ||
-                              loadErrorMessage
+                error.value = extractErrorMessage(err, loadErrorMessage)
             }
             console.error(`Error fetching ${endpoint}/${entityId}:`, err)
             return null

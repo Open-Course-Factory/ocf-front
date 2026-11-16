@@ -30,6 +30,7 @@ import { nextTick } from 'vue';
 import axios from 'axios';
 import { ElNotification } from 'element-plus';
 import { field, buildFieldList } from '../utils/fieldBuilder';
+import { extractErrorMessage } from '../utils/formatters';
 
 export const useGenerationsStore = defineStore('generations', () => {
 
@@ -69,6 +70,7 @@ export const useGenerationsStore = defineStore('generations', () => {
                 notifyCompletedTitle: 'Generation Complete',
                 notifyFailed: 'Generation failed',
                 notifyFailedTitle: 'Generation Error',
+                triggerFailed: 'Could not start the generation',
             }
         },
         fr: {
@@ -100,6 +102,7 @@ export const useGenerationsStore = defineStore('generations', () => {
                 notifyCompletedTitle: 'Génération terminée',
                 notifyFailed: 'La génération a échoué',
                 notifyFailedTitle: 'Erreur de génération',
+                triggerFailed: 'Impossible de lancer la génération',
             }
         }
     })
@@ -308,7 +311,7 @@ export const useGenerationsStore = defineStore('generations', () => {
                 base.entities[entityIndex] = {
                     ...base.entities[entityIndex],
                     status: 'failed',
-                    error_message: 'Erreur lors du déclenchement de la génération: ' + (error.response?.data?.message || error.message)
+                    error_message: t('generations.triggerFailed') + ': ' + extractErrorMessage(error)
                 };
             }
         }
