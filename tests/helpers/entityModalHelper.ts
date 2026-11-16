@@ -2,7 +2,6 @@ import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
 import EntityModal from '../../src/components/Modals/EntityModal.vue'
-import ElementPlus from 'element-plus'
 
 /**
  * Shared fixtures and helpers for EntityModal test files.
@@ -93,8 +92,9 @@ export function mountEntityModal(props: Record<string, any> = {}) {
       entityName: 'TestEntity',
       ...props
     },
+    // No global Element Plus: EntityModal must import what it renders.
     global: {
-      plugins: [i18n, ElementPlus]
+      plugins: [i18n]
     }
   })
 }
