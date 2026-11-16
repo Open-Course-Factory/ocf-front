@@ -58,7 +58,7 @@ export function useResumeRejection() {
       // Quota-class 403s: localize from `source`, never the English error_message.
       message = getLimitReachedMessage({ source: err.response.data.source })
     } else {
-      message = err?.response?.data?.error_message || err?.message || options.fallbackMessage
+      message = err?.response?.data?.error_message || options.fallbackMessage
     }
     showError(message, options.title)
   }
