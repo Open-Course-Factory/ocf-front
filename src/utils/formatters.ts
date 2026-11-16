@@ -330,14 +330,16 @@ export function extractErrorMessage(
   fallback: string = 'An error occurred'
 ): string {
   const data = error?.response?.data
-  // The backend answers { error_message }, { error: { message } }, { message } or { error: "text" }.
+  // The backend answers { error_message }, { error: { message } }, { message }, { error, detail } or { error: "text" }.
   const bodyError = data?.error
   return (
     data?.error_message ||
     (typeof bodyError === 'object' && bodyError?.message) ||
     data?.message ||
+    (typeof data?.detail === 'string' && data.detail) ||
     (typeof bodyError === 'string' && bodyError) ||
-    error?.message ||
+    // Axios' own text ("Network Error", "Request failed with status code N") is not for readers
+    (!(error?.isAxiosError || error?.response || error?.request) && error?.message) ||
     fallback
   )
 }
