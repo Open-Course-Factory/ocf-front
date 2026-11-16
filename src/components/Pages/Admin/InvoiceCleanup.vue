@@ -350,6 +350,7 @@ import { useTranslations } from '../../../composables/useTranslations'
 import { useNotification } from '../../../composables/useNotification'
 import { useFormatters } from '../../../composables/useFormatters'
 import { sanitizeCSVField } from '../../../utils/csv'
+import { downloadCsv } from '../../../utils/download'
 import axios from 'axios'
 
 const { t } = useTranslations({
@@ -605,7 +606,6 @@ const runCleanup = async () => {
     showSuccess(t('invoiceCleanup.cleanupSuccess'))
   } catch (err: any) {
     console.error('Error running cleanup:', err)
-    console.error('Request body was:', requestBody) // Debug log
     showError(
       err.response?.data?.error_message ||
       err.response?.data?.message ||
@@ -751,16 +751,7 @@ const exportResults = () => {
       ...rows.map((row: string[]) => row.join(','))
     ].join('\n')
 
-    // Download file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(blob)
-    link.setAttribute('href', url)
-    link.setAttribute('download', `invoice-cleanup-${new Date().toISOString().split('T')[0]}.csv`)
-    link.style.visibility = 'hidden'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    downloadCsv(csvContent, `invoice-cleanup-${new Date().toISOString().split('T')[0]}.csv`)
 
     showSuccess(t('invoiceCleanup.exportSuccess'))
   } catch (err) {
