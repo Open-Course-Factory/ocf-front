@@ -1,21 +1,12 @@
-import axios, { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import axios, { InternalAxiosRequestConfig } from 'axios';
 import { tokenService } from '../../auth/tokenService';
 import { useCurrentUserStore } from '../../../stores/currentUser';
 import { useImpersonationStore } from '../../../stores/impersonation';
 import router from '../../../router';
 
-// Request deduplication cache
-const pendingRequests = new Map<string, Promise<AxiosResponse>>();
-
-// Generate a unique key for request deduplication
-function getRequestKey(config: AxiosRequestConfig): string {
-  const { method, url, params } = config;
-  return `${method}:${url}:${JSON.stringify(params || {})}`;
-}
-
 export const setupAxiosInterceptors = () => {
 
-  // Intercepteur de requête - ajouter automatiquement le token et dédupliquer
+  // Intercepteur de requête - ajouter automatiquement le token
   axios.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
       // Ne pas ajouter de token aux requêtes d'authentification
@@ -47,19 +38,6 @@ export const setupAxiosInterceptors = () => {
         }
       }
 
-      // Request deduplication - only for GET requests
-      if (config.method?.toLowerCase() === 'get' && !(config as any).skipDeduplication) {
-        const requestKey = getRequestKey(config);
-
-        if (pendingRequests.has(requestKey)) {
-          // Return the existing promise instead of making a new request
-          if (import.meta.env.DEV) {
-            console.debug(`🔄 Deduplicating request: ${requestKey}`);
-          }
-          return pendingRequests.get(requestKey)!.then(() => config);
-        }
-      }
-
       return config;
     },
     (error) => {
@@ -67,23 +45,10 @@ export const setupAxiosInterceptors = () => {
     }
   );
 
-  // Intercepteur de réponse - gérer les erreurs 401 et nettoyer le cache
+  // Intercepteur de réponse - gérer les erreurs 401
   axios.interceptors.response.use(
-    (response) => {
-      // Clean up request from pending cache
-      if (response.config.method?.toLowerCase() === 'get') {
-        const requestKey = getRequestKey(response.config);
-        pendingRequests.delete(requestKey);
-      }
-      return response;
-    },
+    (response) => response,
     async (error) => {
-      // Clean up request from pending cache on error
-      if (error.config?.method?.toLowerCase() === 'get') {
-        const requestKey = getRequestKey(error.config);
-        pendingRequests.delete(requestKey);
-      }
-
       // Handle impersonation-specific 401s BEFORE the generic auto-logout:
       // when the backend reports the impersonation session expired or is
       // invalid, we silently clear the impersonation state but keep the
