@@ -1,4 +1,5 @@
 import { ref, computed, watch, type Ref, type ComputedRef } from 'vue'
+import { normalizeSearchText } from './useEntitySearch'
 
 interface UseClientPaginationOptions<T> {
   /** The full list of items to paginate */
@@ -19,13 +20,13 @@ export function useClientPagination<T extends Record<string, any>>({
 
   // Filter items by search query
   const filteredItems = computed(() => {
-    const query = searchQuery.value.trim().toLowerCase()
+    const query = normalizeSearchText(searchQuery.value)
     if (!query) return items.value
 
     return items.value.filter(item =>
       searchFields.some(field => {
         const value = getNestedValue(item, field as string)
-        return value && String(value).toLowerCase().includes(query)
+        return value && normalizeSearchText(String(value)).includes(query)
       })
     )
   })
