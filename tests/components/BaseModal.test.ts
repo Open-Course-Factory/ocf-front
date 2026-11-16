@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, VueWrapper } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import BaseModal from '../../src/components/Modals/BaseModal.vue'
 
-function createTestI18n() {
+function createTestI18n(locale = 'en') {
   return createI18n({
     legacy: false,
-    locale: 'en',
+    locale,
     fallbackLocale: 'en',
     messages: { en: {}, fr: {} },
     missingWarn: false,
@@ -368,6 +369,144 @@ describe('BaseModal', () => {
       )
       expect(wrapper.find('.alert-success').exists()).toBe(true)
       expect(wrapper.find('.alert-danger').exists()).toBe(false)
+    })
+  })
+
+  describe('dialog semantics', () => {
+    it('exposes the container as a modal dialog', () => {
+      const wrapper = mountModal()
+      const dialog = wrapper.find('.base-modal-container')
+      expect(dialog.attributes('role')).toBe('dialog')
+      expect(dialog.attributes('aria-modal')).toBe('true')
+    })
+
+    it('labels the dialog with the rendered title', () => {
+      const wrapper = mountModal({ title: 'Delete member' })
+      const labelledBy = wrapper.find('.base-modal-container').attributes('aria-labelledby')
+      expect(labelledBy).toBeTruthy()
+      const label = wrapper.find(`[id="${labelledBy}"]`)
+      expect(label.exists()).toBe(true)
+      expect(label.text()).toContain('Delete member')
+    })
+  })
+
+  describe('keyboard and focus', () => {
+    let opener: HTMLButtonElement
+
+    function pressEscape() {
+      // Bubbles from wherever focus is, so it reaches a container or a document listener.
+      const target = (document.activeElement as HTMLElement | null) ?? document.body
+      target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    }
+
+    beforeEach(() => {
+      document.body.innerHTML = ''
+      opener = document.createElement('button')
+      opener.textContent = 'open'
+      document.body.appendChild(opener)
+      opener.focus()
+    })
+
+    function mountAttached(props: Record<string, unknown> = {}) {
+      return mount(BaseModal, {
+        props: { visible: false, ...props },
+        slots: { default: '<input class="inside-input" />' },
+        attachTo: document.body,
+        global: { plugins: [createTestI18n()] }
+      })
+    }
+
+    it('emits close on Escape, like the close button', async () => {
+      const wrapper = mountAttached({ visible: true })
+      await nextTick()
+      pressEscape()
+      await nextTick()
+      expect(wrapper.emitted('close')).toHaveLength(1)
+      expect(wrapper.emitted('confirm')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('ignores Escape while loading', async () => {
+      const wrapper = mountAttached({ visible: true, isLoading: true })
+      await nextTick()
+      pressEscape()
+      await nextTick()
+      expect(wrapper.emitted('close')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('ignores Escape when hidden', async () => {
+      const wrapper = mountAttached({ visible: false })
+      pressEscape()
+      await nextTick()
+      expect(wrapper.emitted('close')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('moves focus inside on open and returns it to the opener on close', async () => {
+      const wrapper = mountAttached({ visible: false })
+      expect(document.activeElement).toBe(opener)
+
+      await wrapper.setProps({ visible: true })
+      await nextTick()
+      const container = wrapper.find('.base-modal-container').element
+      expect(container.contains(document.activeElement)).toBe(true)
+
+      await wrapper.setProps({ visible: false })
+      await nextTick()
+      expect(document.activeElement).toBe(opener)
+      wrapper.unmount()
+    })
+
+    it('closes only the top modal when two are open', async () => {
+      // Mirrors ScenarioEditModal: a confirm BaseModal opens over the edit BaseModal.
+      const bottomClosed = vi.fn()
+      const topClosed = vi.fn()
+      const showTop = ref(false)
+      const Host = defineComponent({
+        setup() {
+          return () => [
+            h(BaseModal, { visible: true, title: 'Bottom', onClose: bottomClosed }, () => h('input')),
+            h(BaseModal, { visible: showTop.value, title: 'Top', onClose: topClosed }, () => h('p', 'sure?'))
+          ]
+        }
+      })
+      const wrapper = mount(Host, { attachTo: document.body, global: { plugins: [createTestI18n()] } })
+      await nextTick()
+      showTop.value = true
+      await nextTick()
+      await nextTick()
+
+      pressEscape()
+      await nextTick()
+      expect(topClosed).toHaveBeenCalledTimes(1)
+      expect(bottomClosed).not.toHaveBeenCalled()
+      wrapper.unmount()
+    })
+  })
+
+  describe('translated fallbacks', () => {
+    function mountIn(locale: string, props: Record<string, unknown> = {}) {
+      return mount(BaseModal, {
+        props: { visible: true, ...props },
+        global: { plugins: [createTestI18n(locale)] }
+      })
+    }
+
+    it('labels the close button in French', () => {
+      expect(mountIn('fr').find('.base-modal-close').attributes('aria-label')).toBe('Fermer')
+    })
+
+    it('labels the close button in English', () => {
+      expect(mountIn('en').find('.base-modal-close').attributes('aria-label')).toBe('Close')
+    })
+
+    it('shows the default loading text in French', () => {
+      expect(mountIn('fr', { isLoading: true }).find('.base-modal-loading').text()).toBe('Chargement...')
+    })
+
+    it('shows the default loading text in English', () => {
+      expect(mountIn('en', { isLoading: true }).find('.base-modal-loading').text()).toBe('Loading...')
     })
   })
 })
