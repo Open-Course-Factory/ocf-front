@@ -23,6 +23,7 @@
 
 <script setup lang="ts">
 import { currentUserTimezone } from '../../composables/useFormatters'
+import { intlLocale } from '../../utils/formatters'
 import { computed, onMounted, ref } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
@@ -121,7 +122,7 @@ const comingErasures = computed(() =>
 )
 
 const isSoon = (date: string) => new Date(date).getTime() - Date.now() < SOON_DAYS * DAY_MS
-const formatDay = (date: string) => new Date(date).toLocaleDateString(locale.value, { timeZone: currentUserTimezone() })
+const formatDay = (date: string) => new Date(date).toLocaleDateString(intlLocale(locale.value), { timeZone: currentUserTimezone() })
 const classNameOf = (group: ClassGroup) => group.display_name || group.name
 const nameOf = (member: OrganizationMember) =>
   member.user?.display_name || member.user?.name || member.user?.email || member.user_id

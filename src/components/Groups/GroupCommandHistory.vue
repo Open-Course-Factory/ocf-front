@@ -11,6 +11,7 @@
 
 <script setup lang="ts">
 import { useFormatters, currentUserTimezone } from '../../composables/useFormatters'
+import { intlLocale } from '../../utils/formatters'
 import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
@@ -216,7 +217,7 @@ const { formatNum } = useFormatters()
 function formatCommandTime(unixSeconds: number): string {
   try {
     const date = new Date(unixSeconds * 1000)
-    return date.toLocaleString(locale.value, {
+    return date.toLocaleString(intlLocale(locale.value), {
       timeZone: currentUserTimezone(),
       year: 'numeric',
       month: 'short',
@@ -242,7 +243,7 @@ function formatLastActive(unixSeconds: number): string {
   if (!unixSeconds) return '-'
   try {
     const date = new Date(unixSeconds * 1000)
-    return date.toLocaleDateString(locale.value, {
+    return date.toLocaleDateString(intlLocale(locale.value), {
       timeZone: currentUserTimezone(),
       year: 'numeric',
       month: 'short',

@@ -214,6 +214,7 @@
 
 <script setup lang="ts">
 import { currentUserTimezone } from '../../../composables/useFormatters'
+import { intlLocale } from '../../../utils/formatters'
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTerminalMetricsStore, type TerminalMetrics } from '../../../stores/terminalMetrics'
@@ -336,7 +337,7 @@ function getGaugeStyle(percentage: number) {
 
 function formatTimestamp(timestamp: number) {
   const date = new Date(timestamp)
-  return date.toLocaleString(locale.value, { timeZone: currentUserTimezone() })
+  return date.toLocaleString(intlLocale(locale.value), { timeZone: currentUserTimezone() })
 }
 
 // Data fetching

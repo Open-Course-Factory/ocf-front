@@ -17,6 +17,7 @@ import {
   formatDuration,
   truncate,
   getBrowserTimezone,
+  intlLocale,
 } from '../utils/formatters'
 
 /**
@@ -42,7 +43,7 @@ export function useFormatters() {
   const userTimezone = computed(currentUserTimezone)
 
   // Get user's locale from i18n
-  const userLocale = computed(() => locale.value || 'fr-FR')
+  const userLocale = computed(() => intlLocale(locale.value))
 
   /**
    * Format date with user's timezone and locale

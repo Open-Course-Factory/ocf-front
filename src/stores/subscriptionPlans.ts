@@ -24,7 +24,7 @@ import { computed } from "vue"
 import { useBaseStore } from "./baseStore"
 import { getDemoSubscriptionPlans, isDemoMode, logDemoAction, simulateDelay } from '../services/demo'
 import axios from 'axios'
-import { formatCurrency, formatMcpuAsVcpu } from '../utils/formatters'
+import { formatCurrency, formatMcpuAsVcpu, intlLocale } from '../utils/formatters'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
@@ -303,7 +303,7 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
 
     // Formatage du prix pour affichage
     const formatPrice = (amount: number, currency: string = 'EUR') => {
-        return formatCurrency(amount, currency, locale.value)
+        return formatCurrency(amount, currency, intlLocale(locale.value))
     }
 
     // Fonction personnalisée pour les données de sélection (utilise l'utilitaire réutilisable)

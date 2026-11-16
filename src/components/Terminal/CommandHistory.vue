@@ -131,6 +131,7 @@
 
 <script setup lang="ts">
 import { currentUserTimezone } from '../../composables/useFormatters'
+import { intlLocale } from '../../utils/formatters'
 import { ref, computed, watch, onBeforeUnmount, onMounted, nextTick, useId } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
@@ -330,7 +331,7 @@ const IDLE_THRESHOLD = 30000
 function formatTime(unixSeconds: number): string {
   try {
     const date = new Date(unixSeconds * 1000)
-    return date.toLocaleTimeString(locale.value, {
+    return date.toLocaleTimeString(intlLocale(locale.value), {
       timeZone: currentUserTimezone(),
       hour: '2-digit',
       minute: '2-digit',

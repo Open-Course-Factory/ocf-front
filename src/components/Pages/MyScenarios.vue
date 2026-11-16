@@ -199,6 +199,7 @@
 
 <script setup lang="ts">
 import { currentUserTimezone } from '../../composables/useFormatters'
+import { intlLocale } from '../../utils/formatters'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
@@ -348,7 +349,7 @@ function gradeClass(grade: number): string {
 function formatDate(dateStr: string): string {
   try {
     const date = new Date(dateStr)
-    return date.toLocaleDateString(locale.value, {
+    return date.toLocaleDateString(intlLocale(locale.value), {
       timeZone: currentUserTimezone(),
       year: 'numeric',
       month: 'short',

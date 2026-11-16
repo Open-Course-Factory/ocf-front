@@ -21,7 +21,7 @@
 
 import { defineStore } from "pinia"
 import { useBaseStore } from "./baseStore"
-import { formatCurrency, formatDate as formatDateUtil } from '../utils/formatters'
+import { formatCurrency, formatDate as formatDateUtil, intlLocale } from '../utils/formatters'
 import { createSyncAndLoadWrapper } from '../utils/asyncWrapper'
 import { buildFieldList, field, systemFields } from '../utils/fieldBuilder'
 import { buildSelectData } from '../utils'
@@ -120,7 +120,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
 
     // Formatage du montant avec devise
     const formatAmount = (amount: number, currency: string = 'EUR') => {
-        return formatCurrency(amount, currency, locale.value)
+        return formatCurrency(amount, currency, intlLocale(locale.value))
     }
 
     // Use shared status formatters (utilise le composable réutilisable)
@@ -154,7 +154,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
 
     // Formater la date
     const formatDate = (dateString: string) => {
-        return formatDateUtil(dateString, locale.value, '-', currentUserTimezone())
+        return formatDateUtil(dateString, intlLocale(locale.value), '-', currentUserTimezone())
     }
 
     // Synchroniser et charger les factures (utilise le wrapper réutilisable)
