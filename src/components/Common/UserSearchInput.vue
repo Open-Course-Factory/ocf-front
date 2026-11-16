@@ -55,23 +55,26 @@ const isOpen = ref(false)
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 let hideTimer: ReturnType<typeof setTimeout> | undefined
 
-function onInput() {
+function onInput(event: Event) {
   // A pick never outlives the text that showed it.
   userId.value = ''
   results.value = []
   clearTimeout(searchTimer)
-  const q = query.value.trim()
+  // From the event: a parent-bound query only catches up after this handler.
+  const q = (event.target as HTMLInputElement).value.trim()
   isSearching.value = q.length >= MIN_QUERY_LENGTH
   if (!isSearching.value) return
   searchTimer = setTimeout(async () => {
+    let found: User[] = []
     try {
-      results.value = await userService.searchUsers(q)
+      found = await userService.searchUsers(q)
     } catch (err) {
       console.error('Error searching users:', err)
-      results.value = []
-    } finally {
-      isSearching.value = false
     }
+    // A slower, earlier response must not replace the current one.
+    if (q !== query.value.trim()) return
+    results.value = found
+    isSearching.value = false
   }, 300)
 }
 
