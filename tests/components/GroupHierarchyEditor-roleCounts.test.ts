@@ -26,6 +26,7 @@ vi.mock('../../src/composables/useAdminViewMode', () => ({
 const ORG = { id: 'org-1', name: 'esitech', display_name: 'ESITECH', is_personal: false }
 // Who is looking: a platform admin by default, as every count test assumes.
 const viewer = { isAdmin: true, orgs: [ORG] as Record<string, any>[], roles: {} as Record<string, string> }
+const loadMemberships = vi.fn(async () => undefined)
 
 vi.mock('../../src/stores/organizations', () => ({
   useOrganizationsStore: () => ({
@@ -41,7 +42,7 @@ vi.mock('../../src/stores/currentUser', () => ({
 vi.mock('../../src/stores/userMemberships', () => ({
   useUserMembershipsStore: () => ({
     getOrgRole: (id: string) => viewer.roles[id] ?? null,
-    ensureLoaded: vi.fn().mockResolvedValue(undefined)
+    loadMemberships: () => loadMemberships()
   })
 }))
 
@@ -120,6 +121,14 @@ describe('GroupHierarchyEditor counts by role', () => {
 
 describe('GroupHierarchyEditor for a user who is not a platform admin', () => {
   beforeEach(() => vi.clearAllMocks())
+
+  // A role changed mid-session shows on the next visit, not after a browser reload.
+  it('reloads the user’s memberships each time the page opens', async () => {
+    Object.assign(viewer, { isAdmin: false, orgs: [ORG], roles: { 'org-1': 'member' } })
+    await mountEditor([])
+
+    expect(loadMemberships).toHaveBeenCalledTimes(1)
+  })
 
   it('offers only the organizations the user belongs to or owns', async () => {
     const OTHER = { id: 'org-2', name: 'other', display_name: 'OTHER SCHOOL', is_personal: false }

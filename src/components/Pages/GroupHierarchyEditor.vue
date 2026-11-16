@@ -525,7 +525,7 @@ const handleDrop = async (payload: { entity: TreeNode; target: TreeNode }) => {
 onMounted(async () => {
   await Promise.all([
     refreshHierarchy(),
-    membershipsStore.ensureLoaded()
+    membershipsStore.loadMemberships()
   ])
 })
 

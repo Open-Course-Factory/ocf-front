@@ -42,7 +42,7 @@ vi.mock('../../src/stores/currentUser', () => ({
 vi.mock('../../src/stores/userMemberships', () => ({
   useUserMembershipsStore: () => ({
     getOrgRole: () => null,
-    ensureLoaded: vi.fn().mockResolvedValue(undefined)
+    loadMemberships: vi.fn().mockResolvedValue(undefined)
   })
 }))
 

@@ -327,7 +327,7 @@ const { tabProps, panelProps, onKeydown } = useTabList(activeTab, 'org')
 onMounted(async () => {
   await Promise.all([
     loadOrganization(true), // Initial load
-    membershipsStore.ensureLoaded(),
+    membershipsStore.loadMemberships(),
     permissionsStore.classroomVerdictFor(organizationId.value)
       .then(allowed => { canRunClassroomsHere.value = allowed })
       .catch(() => { canRunClassroomsHere.value = false })

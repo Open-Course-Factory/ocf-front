@@ -21,6 +21,7 @@ const isOrganizationOwner = vi.fn()
 const canDeleteOrganization = vi.fn()
 const classroomVerdictFor = vi.fn()
 const canAuthorInOrg = vi.fn(() => false)
+const loadMemberships = vi.fn(async () => undefined)
 
 vi.mock('../../src/stores/organizations', () => ({
   useOrganizationsStore: () => ({
@@ -41,7 +42,7 @@ vi.mock('../../src/stores/permissions', () => ({
 vi.mock('../../src/stores/userMemberships', () => ({
   useUserMembershipsStore: () => ({
     canAuthorInOrg: (id: string) => canAuthorInOrg(id),
-    ensureLoaded: vi.fn().mockResolvedValue(undefined)
+    loadMemberships: () => loadMemberships()
   })
 }))
 
@@ -157,6 +158,13 @@ describe('OrganizationDetail tab bar — WAI-ARIA tabs pattern', () => {
   afterEach(() => {
     wrapper?.unmount()
     wrapper = null
+  })
+
+  // A role changed mid-session shows on the next visit, not after a browser reload.
+  it('reloads the user’s memberships each time the page opens', async () => {
+    wrapper = await mountOrganizationDetail()
+
+    expect(loadMemberships).toHaveBeenCalledTimes(1)
   })
 
   it('exposes the bar as a labelled tablist of tabs', async () => {

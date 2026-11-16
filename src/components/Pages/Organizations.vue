@@ -75,7 +75,7 @@ onMounted(async () => {
   // form they asked for.
   await Promise.all([
     loadOrganizations(),
-    useUserMembershipsStore().ensureLoaded().catch(() => null),
+    useUserMembershipsStore().loadMemberships().catch(() => null),
     // Awaited rather than left to the entitlement composable's own mount, so the
     // decision below is made on a verdict rather than on its absence.
     currentUserStore.ensurePermissionsLoaded().catch(() => null)

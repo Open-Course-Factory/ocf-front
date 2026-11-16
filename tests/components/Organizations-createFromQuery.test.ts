@@ -93,9 +93,9 @@ vi.mock('../../src/stores/permissions', () => ({
   }),
 }))
 
-const ensureMembershipsLoaded = vi.fn()
+const loadMemberships = vi.fn()
 vi.mock('../../src/stores/userMemberships', () => ({
-  useUserMembershipsStore: () => ({ ensureLoaded: ensureMembershipsLoaded }),
+  useUserMembershipsStore: () => ({ loadMemberships }),
 }))
 
 import i18n from '../../src/i18n'
@@ -161,13 +161,20 @@ describe('Organizations page — arriving to create', () => {
     canCreateOrganization.value = true
     loadPermissions.mockResolvedValue([])
     ensurePermissionsLoaded.mockResolvedValue([])
-    ensureMembershipsLoaded.mockResolvedValue(undefined)
+    loadMemberships.mockResolvedValue(undefined)
   })
 
   it('opens the creation form when asked to', async () => {
     const wrapper = await mountOrganizations({ create: '1' })
 
     expect(modalIsOpen(wrapper)).toBe(true)
+  })
+
+  // A role changed mid-session shows on the next visit, not after a browser reload.
+  it('reloads the user’s memberships each time the page opens', async () => {
+    await mountOrganizations({})
+
+    expect(loadMemberships).toHaveBeenCalledTimes(1)
   })
 
   it('leaves the page as it was without the parameter', async () => {
@@ -190,7 +197,7 @@ describe('Organizations page — arriving to create', () => {
     // The form was asked for; whether the user profile came back is a different
     // question, and losing the form to it would strand the teacher on a page
     // whose only route forward is the one they already took.
-    ensureMembershipsLoaded.mockRejectedValue(new Error('network'))
+    loadMemberships.mockRejectedValue(new Error('network'))
 
     const wrapper = await mountOrganizations({ create: '1' })
 
@@ -217,7 +224,7 @@ describe('Organizations page — refused by the plan gate', () => {
     canCreateOrganization.value = true
     loadPermissions.mockResolvedValue([])
     ensurePermissionsLoaded.mockResolvedValue([])
-    ensureMembershipsLoaded.mockResolvedValue(undefined)
+    loadMemberships.mockResolvedValue(undefined)
   })
 
   it('explains the refusal in the user’s language instead of echoing the API', async () => {
