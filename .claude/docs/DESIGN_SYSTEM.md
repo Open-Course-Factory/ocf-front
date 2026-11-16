@@ -317,107 +317,45 @@ import './assets/styles/main.css'
 
 ### Notifications & Modals
 
-**IMPORTANT:** OCF uses Element Plus notification system via the `useNotification` composable. **DO NOT use HTML alert/error panels** for user feedback - always use the notification composable functions.
+**IMPORTANT:** all user feedback goes through the `useNotification` composable (`src/composables/useNotification.ts`). **DO NOT use HTML alert/error panels, `window.alert` or `window.confirm`.**
 
-#### Notification Composable (`useNotification`)
-
-Located in `/src/composables/useNotification.ts`, this composable provides consistent modal-based feedback to users, replacing browser alerts and custom error panels.
-
-**Import & Setup:**
+- `showSuccess` / `showError` / `showWarning` / `showInfo` render a **house toast** (`useToast` + `UI/ToastContainer.vue`, mounted once in `App.vue`, top-right, on every route).
+- `showConfirm` opens the **Element Plus message box**, the only Element Plus dialog left in the app.
 
 ```vue
-<script setup>
-import { useNotification } from '@/composables/useNotification'
+<script setup lang="ts">
+import { useNotification } from '../../composables/useNotification'
 
-const { showError, showSuccess, showWarning, showInfo, showConfirm, showAlert, showMessage, showPrompt } = useNotification()
+const { showSuccess, showError, showWarning, showInfo, showConfirm } = useNotification()
 </script>
 ```
 
-#### Available Notification Functions
+#### Toasts
 
-##### 1. **Success Notification**
-
-```javascript
-showSuccess('Operation completed successfully!', 'Success')
-// Title is optional, defaults to 'Success'
+```typescript
+showSuccess('Course saved')                    // 3 s
+showError('Could not save', 'Validation')      // 4 s
+showWarning('Quota almost reached')            // 3.5 s
+showInfo('Did you know...')                    // 3 s
+showError(workerError, 'Generation failed', { persistent: true })  // stays until closed
 ```
 
-##### 2. **Error Notification**
+- The title is optional; it defaults to a translated "Success" / "Error" / "Warning" / "Info".
+- `{ persistent: true }` keeps the toast until the user closes it: use it when the user has to act on the message (failed generation, subgroups to recreate by hand).
+- The functions work outside a component setup (stores) too.
 
-```javascript
-showError('An error occurred. Please try again.', 'Error')
-// Title is optional, defaults to 'Error'
-// Duration: 4000ms (4 seconds)
-```
+#### Confirm dialog (replaces `window.confirm`)
 
-##### 3. **Warning Notification**
-
-```javascript
-showWarning('This action cannot be undone.', 'Warning')
-// Title is optional, defaults to 'Warning'
-// Duration: 3500ms (3.5 seconds)
-```
-
-##### 4. **Info Notification**
-
-```javascript
-showInfo('Did you know...', 'Info')
-// Title is optional, defaults to 'Info'
-// Duration: 3000ms (3 seconds)
-```
-
-##### 5. **Simple Toast Message** (less intrusive)
-
-```javascript
-showMessage('Changes saved', 'success')
-// Type: 'success' | 'warning' | 'info' | 'error'
-// Duration: 2500ms (2.5 seconds)
-```
-
-##### 6. **Alert Modal** (replaces window.alert)
-
-```javascript
-await showAlert('Your session will expire soon', 'Session Warning', 'warning')
-// Type: 'info' | 'warning' | 'error' | 'success'
-```
-
-##### 7. **Confirm Dialog** (replaces window.confirm)
-
-```javascript
+```typescript
 const confirmed = await showConfirm(
-  'Are you sure you want to delete this item?',
-  'Confirm Delete',
-  {
-    confirmButtonText: 'Yes, Delete',
-    cancelButtonText: 'Cancel',
-    type: 'warning'
-  }
+  t('myDomain.deleteConfirm'),
+  t('myDomain.deleteTitle'),          // optional, defaults to "Confirm"
+  { confirmButtonText: t('myDomain.delete'), type: 'warning' }  // optional
 )
-
-if (confirmed) {
-  // User clicked confirm
-  deleteItem()
-}
+if (confirmed) deleteItem()
 ```
 
-##### 8. **Prompt Dialog** (replaces window.prompt)
-
-```javascript
-const name = await showPrompt(
-  'Please enter your name',
-  'User Information',
-  {
-    inputPlaceholder: 'Enter name',
-    inputPattern: /^[a-zA-Z\s]+$/,
-    inputErrorMessage: 'Invalid name format'
-  }
-)
-
-if (name !== null) {
-  // User entered a value
-  saveName(name)
-}
-```
+`showConfirm` resolves `true` on confirm and `false` on cancel or close; the calling handler must be `async`.
 
 #### Usage Examples
 
@@ -546,7 +484,6 @@ function handleError(error) {
    - `showWarning` - For warnings and destructive action confirmations
    - `showSuccess` - For successful operations
    - `showInfo` - For informational messages
-   - `showMessage` - For quick, non-critical updates
 
 2. **Provide clear, actionable titles**:
    - ✅ "Validation Error", "Limit Reached", "Session Expired"
@@ -562,7 +499,7 @@ function handleError(error) {
 
 5. **Don't spam notifications**:
    - Avoid showing multiple notifications for the same error
-   - Use `showMessage` for less critical updates (saves, auto-updates)
+   - Keep `{ persistent: true }` for messages the user must act on
 
 ### Static Alerts (Deprecated)
 
