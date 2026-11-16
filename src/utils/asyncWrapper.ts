@@ -51,6 +51,7 @@
 
 import { Ref } from 'vue'
 import { handleStoreError } from '../services/core/error'
+import i18n from '../i18n'
 
 /**
  * State refs for async operations
@@ -133,8 +134,8 @@ export async function withAsync<T>(
 
     return result
   } catch (err: any) {
-    // Handle error
-    state.error.value = handleStoreError(err, fallbackKey)
+    // Handle error (the fallback is shown as is, so translate the key)
+    state.error.value = handleStoreError(err, i18n.global.t(fallbackKey))
 
     // Error callback
     if (onError) {

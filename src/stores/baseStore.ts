@@ -86,6 +86,13 @@ export const useBaseStore = () => {
                     description: 'Get started by creating your first item.',
                     action: 'Create Item'
                 }
+            },
+            errors: {
+                loadData: 'Unable to load the data.',
+                createEntity: 'Unable to create the item.',
+                updateEntity: 'Unable to update the item.',
+                deleteEntity: 'Unable to delete the item.',
+                loadEntity: 'Unable to load the item.'
             }
         },
         fr: {
@@ -167,6 +174,13 @@ export const useBaseStore = () => {
                     description: 'Commencez par créer votre premier élément.',
                     action: 'Créer un élément'
                 }
+            },
+            errors: {
+                loadData: 'Impossible de charger les données.',
+                createEntity: "Impossible de créer l'élément.",
+                updateEntity: "Impossible de mettre à jour l'élément.",
+                deleteEntity: "Impossible de supprimer l'élément.",
+                loadEntity: "Impossible de charger l'élément."
             }
         }
     });
