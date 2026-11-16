@@ -26,4 +26,3 @@ export * from './admin'
 export * from './services'
 
 // Help system types
-export * from './help'

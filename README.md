@@ -187,7 +187,7 @@ All development documentation is located in `.claude/docs/`:
 ## 📱 Responsive Design
 
 - **Mobile-first**: Responsive layouts for all screen sizes
-- **Terminal Integration**: XTerm.js with guacamole-common-js
+- **Terminal Integration**: XTerm.js
 - **Modern UI**: Element Plus and Vuetify components
 - **Accessibility**: ARIA compliance and keyboard navigation
 
