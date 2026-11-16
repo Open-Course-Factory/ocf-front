@@ -56,7 +56,8 @@ stages:
 
 .npm_cache:
   # npm's download cache, keyed on the lockfile so every branch shares it.
-  # node_modules is not cached: `npm ci` deletes it anyway.
+  # node_modules is not cached: `npm ci` deletes it anyway. The runner keeps a
+  # local cache per concurrent slot, so every job pushes to fill its own slot.
   cache:
     - &npm_cache
       key:
@@ -65,7 +66,6 @@ stages:
           - package-lock.json
       paths:
         - .npm/
-      policy: pull
   variables:
     npm_config_cache: "$CI_PROJECT_DIR/.npm"
 
@@ -78,9 +78,7 @@ unit-tests:
   image: node:${NODE_VERSION}
   extends: .npm_cache
   cache:
-    # The one job that refreshes the shared npm cache.
-    - <<: *npm_cache
-      policy: pull-push
+    - *npm_cache
     # Vitest's transformed-module cache (content-hashed, safe to share).
     - key: vitest-module-cache
       paths:
