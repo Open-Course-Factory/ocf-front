@@ -201,6 +201,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
+import { useNotification } from '../../composables/useNotification'
 import { scenarioSessionService } from '../../services/domain/scenario'
 import type { MyScenarioSession } from '../../services/domain/scenario'
 import ProgressBar from '../Common/ProgressBar.vue'
@@ -210,6 +211,7 @@ import { useScenarioRunRecovery, isExamAlreadySubmitted } from '../../composable
 const router = useRouter()
 const runLabel = useScenarioRunLabel()
 const { rebuild, launch, startOver } = useScenarioRunRecovery()
+const { showConfirm, showError } = useNotification()
 
 const { t } = useTranslations({
   en: {
@@ -457,12 +459,12 @@ function handleStartOver(session: MyScenarioSession) {
 }
 
 async function handleAbandon(session: MyScenarioSession) {
-  if (!confirm(t('myScenarios.abandonConfirm'))) return
+  if (!await showConfirm(t('myScenarios.abandonConfirm'))) return
   try {
     await scenarioSessionService.abandonSession(session.id)
     await loadSessions()
   } catch (err: any) {
-    alert(isExamAlreadySubmitted(err) ? t('myScenarios.examLocked') : t('myScenarios.abandonError'))
+    showError(isExamAlreadySubmitted(err) ? t('myScenarios.examLocked') : t('myScenarios.abandonError'))
   }
 }
 

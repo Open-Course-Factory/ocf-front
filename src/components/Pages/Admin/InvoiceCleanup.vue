@@ -490,7 +490,7 @@ const { t } = useTranslations({
   }
 })
 
-const { showSuccess, showError } = useNotification()
+const { showSuccess, showError, showConfirm } = useNotification()
 
 // Configuration
 const config = ref({
@@ -654,7 +654,7 @@ const deselectAllInvoices = () => {
   selectedInvoiceIds.value = []
 }
 
-const confirmExecuteSelected = () => {
+const confirmExecuteSelected = async () => {
   if (selectedInvoiceIds.value.length === 0) {
     showError(t('invoiceCleanup.noInvoicesSelected'))
     return
@@ -669,7 +669,7 @@ const confirmExecuteSelected = () => {
     action: config.value.action
   })
 
-  if (confirm(confirmMessage)) {
+  if (await showConfirm(confirmMessage)) {
     executeSelected()
   }
 }

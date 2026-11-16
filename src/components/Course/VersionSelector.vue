@@ -69,6 +69,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { useNotification } from '../../composables/useNotification'
 import AdminBadge from '../Common/AdminBadge.vue'
 import type { Course } from '../../types/entities'
 
@@ -94,6 +95,7 @@ const emit = defineEmits<{
   'delete-version': [courseId: string]
 }>()
 
+const { showConfirm } = useNotification()
 const { t } = useTranslations({
   en: {
     courses: {
@@ -166,7 +168,7 @@ async function handleDelete() {
 
   const confirmMessage = t('courses.confirmDeleteVersion', { version: currentVersion.value.version })
 
-  if (!confirm(confirmMessage)) return
+  if (!await showConfirm(confirmMessage)) return
 
   isDeleting.value = true
   try {

@@ -31,7 +31,7 @@ import BaseModal from '../Modals/BaseModal.vue'
 
 const router = useRouter()
 const emailTemplatesStore = useEmailTemplatesStore()
-const { showSuccess, showError } = useNotification()
+const { showSuccess, showError, showConfirm } = useNotification()
 
 const templates = computed(() => emailTemplatesStore.entities as EmailTemplate[])
 const isLoading = computed(() => emailTemplatesStore.isLoading)
@@ -69,7 +69,7 @@ const handleDelete = async (template: EmailTemplate) => {
     return
   }
 
-  if (!confirm(emailTemplatesStore.t('emailTemplates.deleteConfirm'))) {
+  if (!await showConfirm(emailTemplatesStore.t('emailTemplates.deleteConfirm'))) {
     return
   }
 
