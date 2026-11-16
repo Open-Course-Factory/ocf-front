@@ -25,6 +25,7 @@ import { getCountryOptions, getCountryName } from '../services/data'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
 import { buildSelectData } from '../utils'
+import axios from 'axios'
 
 export const useBillingAddressesStore = defineStore('billingAddresses', () => {
 
@@ -125,6 +126,12 @@ export const useBillingAddressesStore = defineStore('billingAddresses', () => {
         })
     }
 
+    // The API clears the previous default in the same transaction
+    const setAsDefault = async (addressId: string) => {
+        await axios.post(`/billing-addresses/${addressId}/set-default`)
+        await base.loadEntities('/billing-addresses')
+    }
+
     // No hooks needed - the select field handles ISO codes directly
     // The select options have ISO codes as values and country names as display text
 
@@ -132,6 +139,7 @@ export const useBillingAddressesStore = defineStore('billingAddresses', () => {
         ...base, 
         fieldList,
         formatAddress,
-        getSelectDatas
+        getSelectDatas,
+        setAsDefault
     }
 })

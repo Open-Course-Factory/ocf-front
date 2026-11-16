@@ -29,7 +29,6 @@ import { useBillingAddressesStore } from '../../stores/billingAddresses';
 import { useLoadingState } from '../../composables/useLoadingState';
 import { useTranslations } from '../../composables/useTranslations';
 import { extractErrorMessage } from '../../utils/formatters';
-import axios from 'axios';
 
 const { t } = useTranslations({
   en: {
@@ -54,22 +53,13 @@ const entityStore = useBillingAddressesStore();
 const { isLoading: isSettingDefault, withLoading } = useLoadingState();
 const error = ref('');
 
-// Action pour définir une adresse comme défaut
 const setAsDefault = async (addressId: string) => {
     await withLoading(async () => {
         try {
             error.value = '';
-            // L'API attend set_default: true dans le PATCH
-            await axios.patch(`/billing-addresses/${addressId}`, {
-                set_default: true
-            });
-
-            // Recharger les adresses pour voir les changements
-            const response = await axios.get('/billing-addresses');
-            entityStore.entities = response.data || [];
-
+            await entityStore.setAsDefault(addressId);
         } catch (err: any) {
-            console.error('Erreur lors de la définition comme défaut:', err);
+            console.error('Error setting the default billing address:', err);
             error.value = extractErrorMessage(err, t('billingAddresses.updateError'));
         }
     });
