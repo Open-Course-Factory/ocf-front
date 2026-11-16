@@ -147,6 +147,21 @@ describe('useClientTable — search', () => {
     expect(table.visibleRows.value.map((r) => r.name)).toEqual(['Alpha'])
   })
 
+  it('ignores accents in both the query and the row values', () => {
+    const rows = ref<Row[]>([
+      { name: 'Hélène Dupont', role: 'user' },
+      { name: 'ecole', role: 'admin' },
+      { name: 'Marc', role: 'user' },
+    ])
+    const table = useClientTable(rows, { columns: nameCols })
+
+    table.query.value = 'helene'
+    expect(table.visibleRows.value.map((r) => r.name)).toEqual(['Hélène Dupont'])
+
+    table.query.value = 'Éco'
+    expect(table.visibleRows.value.map((r) => r.name)).toEqual(['ecole'])
+  })
+
   it('lets a custom searchFilter fully replace the default', () => {
     const rows = ref<Row[]>([{ name: 'Beta' }, { name: 'Betamax' }])
     const table = useClientTable(rows, {

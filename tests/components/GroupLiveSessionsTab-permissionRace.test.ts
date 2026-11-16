@@ -15,7 +15,7 @@
  *     (the legitimate denial that must survive the fix).
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { nextTick } from 'vue'
@@ -29,6 +29,7 @@ vi.mock('../../src/services/domain/terminal/supervisionService', () => ({
   buildSuperviseWsUrl: () => 'ws://test/supervise'
 }))
 
+import { setTabHidden } from '../helpers/tabVisibility'
 import GroupLiveSessionsTab from '../../src/components/Groups/GroupLiveSessionsTab.vue'
 
 function createTestI18n() {
@@ -118,5 +119,55 @@ describe('GroupLiveSessionsTab — permission gate vs. async canSupervise', () =
 
     expect(getGroupLiveSessions).toHaveBeenCalledWith('grp-1')
     expect(wrapper.find('.live-sessions-error').text()).toContain('Supervision requires a higher plan')
+  })
+})
+
+describe('GroupLiveSessionsTab — roster polling follows tab visibility', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getGroupLiveSessions.mockResolvedValue([])
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+  })
+
+  afterEach(() => {
+    setTabHidden(false)
+    vi.useRealTimers()
+  })
+
+  it('does not poll the roster while the tab is hidden', async () => {
+    mountTab({ canSupervise: true })
+    await flushPromises()
+    setTabHidden(true)
+    getGroupLiveSessions.mockClear()
+
+    vi.advanceTimersByTime(120000)
+
+    expect(getGroupLiveSessions).not.toHaveBeenCalled()
+  })
+
+  it('refreshes at once and resumes polling when the tab is visible again', async () => {
+    mountTab({ canSupervise: true })
+    await flushPromises()
+    setTabHidden(true)
+    vi.advanceTimersByTime(120000)
+    getGroupLiveSessions.mockClear()
+
+    setTabHidden(false)
+    await flushPromises()
+    expect(getGroupLiveSessions).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(30000)
+    expect(getGroupLiveSessions).toHaveBeenCalledTimes(2)
+  })
+
+  it('stops polling once unmounted', async () => {
+    const wrapper = mountTab({ canSupervise: true })
+    await flushPromises()
+    wrapper.unmount()
+    getGroupLiveSessions.mockClear()
+
+    vi.advanceTimersByTime(120000)
+
+    expect(getGroupLiveSessions).not.toHaveBeenCalled()
   })
 })
