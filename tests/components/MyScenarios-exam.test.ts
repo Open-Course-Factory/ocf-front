@@ -173,4 +173,24 @@ describe('MyScenarios — exam already submitted', () => {
     expect(showErrorMock).toHaveBeenCalledWith('Exam already submitted')
     expect(launchScenarioMock).not.toHaveBeenCalled()
   })
+
+  it('Abandon asks and reports through the app dialogs, never the browser ones', async () => {
+    const nativeConfirm = vi.fn(() => true)
+    const nativeAlert = vi.fn()
+    vi.stubGlobal('confirm', nativeConfirm)
+    vi.stubGlobal('alert', nativeAlert)
+    getMySessionsMock.mockResolvedValue([{ ...BASE_RUN, resumable: true }])
+    abandonSessionMock.mockRejectedValueOnce({ response: { status: 409, data: { reason: 'exam_already_submitted' } } })
+    const wrapper = mountPage()
+    await flushPromises()
+
+    await wrapper.find('.abandon-btn').trigger('click')
+    await flushPromises()
+    const nativeCalls = nativeConfirm.mock.calls.length + nativeAlert.mock.calls.length
+    vi.unstubAllGlobals()
+
+    expect(nativeCalls).toBe(0)
+    expect(showConfirmMock).toHaveBeenCalled()
+    expect(showErrorMock).toHaveBeenCalledWith('Exam already submitted')
+  })
 })

@@ -45,6 +45,9 @@ import axios from 'axios'
 import { ElNotification } from 'element-plus'
 import i18n from '../../src/i18n'
 import { useClassGroupsStore } from '../../src/stores/classGroups'
+import { useToast } from '../../src/composables/useToast'
+
+const { toasts } = useToast()
 
 const PARENT = { id: 'grp-parent', display_name: 'Promo 2026', organization_id: 'org-1' }
 
@@ -55,9 +58,10 @@ function subgroupPayloads(): any[] {
     .filter((payload: any) => payload.parent_group_id === PARENT.id)
 }
 
+/** Last toast the teacher sees; the store must not bypass the house toast. */
 function lastNotification(): any {
-  const calls = (ElNotification as any).mock.calls
-  return calls.length > 0 ? calls[calls.length - 1][0] : null
+  expect(ElNotification).not.toHaveBeenCalled()
+  return toasts.value.length > 0 ? toasts.value[toasts.value.length - 1] : null
 }
 
 /**
@@ -92,6 +96,7 @@ describe('classGroups — subgroup creation after a class is created (#305)', ()
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    toasts.value.splice(0)
     i18n.global.locale.value = 'en'
   })
 
@@ -101,7 +106,7 @@ describe('classGroups — subgroup creation after a class is created (#305)', ()
     await createPromotionWith('TD 1\nTD 2\nTD 3')
 
     expect(subgroupPayloads().map(p => p.display_name)).toEqual(['TD 1', 'TD 2', 'TD 3'])
-    expect(ElNotification).not.toHaveBeenCalled()
+    expect(lastNotification()).toBeNull()
   })
 
   it('does not give subgroups the parent class size limit', async () => {
@@ -124,6 +129,8 @@ describe('classGroups — subgroup creation after a class is created (#305)', ()
     const notification = lastNotification()
     expect(notification).not.toBeNull()
     expect(notification.type).toBe('warning')
+    // The teacher has to recreate the missing subgroups by hand: it stays until closed.
+    expect(notification.persistent).toBe(true)
     expect(notification.message).toContain('TD 2')
     expect(notification.message).not.toContain('TD 1')
     expect(notification.message).toContain('2')
@@ -138,6 +145,7 @@ describe('classGroups — subgroup creation after a class is created (#305)', ()
     const notification = lastNotification()
     expect(notification).not.toBeNull()
     expect(notification.type).toBe('error')
+    expect(notification.persistent).toBe(true)
     expect(notification.message).toContain('TD 1')
     expect(notification.message).toContain('TD 2')
   })
@@ -148,7 +156,7 @@ describe('classGroups — subgroup creation after a class is created (#305)', ()
     await createPromotionWith('')
 
     expect(subgroupPayloads()).toHaveLength(0)
-    expect(ElNotification).not.toHaveBeenCalled()
+    expect(lastNotification()).toBeNull()
   })
 
   it('ignores blank and whitespace-only lines instead of creating unnamed groups', async () => {
@@ -157,7 +165,7 @@ describe('classGroups — subgroup creation after a class is created (#305)', ()
     await createPromotionWith('\n  \nTD 1\n\n   \n')
 
     expect(subgroupPayloads().map(p => p.display_name)).toEqual(['TD 1'])
-    expect(ElNotification).not.toHaveBeenCalled()
+    expect(lastNotification()).toBeNull()
   })
 
   it('does not send subgroup_names to the backend', async () => {
