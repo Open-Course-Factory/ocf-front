@@ -20,7 +20,6 @@
  */
 
 import { defineStore } from "pinia"
-import axios from "axios"
 import { useBaseStore } from "./baseStore"
 import { useSectionsStore } from "./sections"
 import { useCoursesStore } from "./courses"
@@ -100,44 +99,8 @@ export const useChaptersStore = defineStore('chapters', () => {
      * @param chapterId - The ID of the chapter
      * @returns The chapter or null if not found
      */
-    const fetchChapterById = async (chapterId: string): Promise<Chapter | null> => {
-        base.isLoading.value = true
-        base.error.value = ''
-
-        try {
-            // Build include parameter from store configuration
-            const includeList = [...base.includeParams.children, ...base.includeParams.parents]
-            const includeParam = includeList.length > 0 ? `?include=${includeList.join(',')}` : ''
-
-            // Try with include parameter first
-            let response;
-            try {
-                response = await axios.get(`/chapters/${chapterId}${includeParam}`)
-            } catch (includeError: any) {
-                // If 404 with include param, try without it (backend might not support it on detail endpoint)
-                if (includeError.response?.status === 404 && includeParam) {
-                    console.warn('Backend does not support include parameter on detail endpoint, fetching without it')
-                    response = await axios.get(`/chapters/${chapterId}`)
-                } else {
-                    throw includeError
-                }
-            }
-
-            return response.data
-        } catch (err: any) {
-            if (err.response?.status === 404) {
-                base.error.value = t('chapters.chapterNotFound')
-            } else {
-                base.error.value = err.response?.data?.error ||
-                                  err.response?.data?.message ||
-                                  t('chapters.errorLoadingChapter')
-            }
-            console.error('Error fetching chapter by ID:', err)
-            return null
-        } finally {
-            base.isLoading.value = false
-        }
-    }
+    const fetchChapterById = (chapterId: string) =>
+        base.fetchOneWithInclude<Chapter>('/chapters', chapterId, t('chapters.chapterNotFound'), t('chapters.errorLoadingChapter'))
 
     /**
      * Update a chapter

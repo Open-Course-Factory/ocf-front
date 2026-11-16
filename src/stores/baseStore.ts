@@ -650,6 +650,52 @@ export const useBaseStore = () => {
         })
     }
 
+    /**
+     * Fetch one entity with its `includeParams`. A backend that refuses the
+     * include on a detail route answers 404, so ask once more without it.
+     * Never throws: returns null and sets `error`.
+     */
+    const fetchOneWithInclude = async <T>(
+        endpoint: string,
+        entityId: string,
+        notFoundMessage: string,
+        loadErrorMessage: string
+    ): Promise<T | null> => {
+        isLoading.value = true
+        error.value = ''
+
+        try {
+            const includeList = [...includeParams.children, ...includeParams.parents]
+            const includeParam = includeList.length > 0 ? `?include=${includeList.join(',')}` : ''
+
+            let response
+            try {
+                response = await axios.get(`${endpoint}/${entityId}${includeParam}`)
+            } catch (includeError: any) {
+                if (includeError.response?.status === 404 && includeParam) {
+                    console.warn(`Retrying ${endpoint}/${entityId} without include parameter`)
+                    response = await axios.get(`${endpoint}/${entityId}`)
+                } else {
+                    throw includeError
+                }
+            }
+
+            return response.data
+        } catch (err: any) {
+            if (err.response?.status === 404) {
+                error.value = notFoundMessage
+            } else {
+                error.value = err.response?.data?.error ||
+                              err.response?.data?.message ||
+                              loadErrorMessage
+            }
+            console.error(`Error fetching ${endpoint}/${entityId}:`, err)
+            return null
+        } finally {
+            isLoading.value = false
+        }
+    }
+
     return {
         // Original exports
         entities,
@@ -694,6 +740,7 @@ export const useBaseStore = () => {
         deleteEntity,
         archiveEntity,
         unarchiveEntity,
-        getOne
+        getOne,
+        fetchOneWithInclude
     }
 }

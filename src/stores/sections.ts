@@ -20,7 +20,6 @@
  */
 
 import { defineStore } from "pinia"
-import axios from "axios"
 import { usePagesStore } from "./pages"
 import { useBaseStore } from "./baseStore"
 import { useCoursesStore } from "./courses"
@@ -106,44 +105,8 @@ export const useSectionsStore = defineStore('sections', () => {
      * @param sectionId - The ID of the section
      * @returns The section or null if not found
      */
-    const fetchSectionById = async (sectionId: string): Promise<Section | null> => {
-        base.isLoading.value = true
-        base.error.value = ''
-
-        try {
-            // Build include parameter from store configuration
-            const includeList = [...base.includeParams.children, ...base.includeParams.parents]
-            const includeParam = includeList.length > 0 ? `?include=${includeList.join(',')}` : ''
-
-            // Try with include parameter first
-            let response;
-            try {
-                response = await axios.get(`/sections/${sectionId}${includeParam}`)
-            } catch (includeError: any) {
-                // If 404 with include param, try without it (backend might not support it on detail endpoint)
-                if (includeError.response?.status === 404 && includeParam) {
-                    console.warn('Backend does not support include parameter on detail endpoint, fetching without it')
-                    response = await axios.get(`/sections/${sectionId}`)
-                } else {
-                    throw includeError
-                }
-            }
-
-            return response.data
-        } catch (err: any) {
-            if (err.response?.status === 404) {
-                base.error.value = t('sections.sectionNotFound')
-            } else {
-                base.error.value = err.response?.data?.error ||
-                                  err.response?.data?.message ||
-                                  t('sections.errorLoadingSection')
-            }
-            console.error('Error fetching section by ID:', err)
-            return null
-        } finally {
-            base.isLoading.value = false
-        }
-    }
+    const fetchSectionById = (sectionId: string) =>
+        base.fetchOneWithInclude<Section>('/sections', sectionId, t('sections.sectionNotFound'), t('sections.errorLoadingSection'))
 
     /**
      * Update a section
