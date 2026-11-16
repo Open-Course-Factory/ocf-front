@@ -1,5 +1,5 @@
 /**
- * The house toast: title + message, ARIA role by severity, translated close label.
+ * The house toast: polite live region, alert role on errors, title + message, translated close label.
  * App.vue mounts exactly one container, whatever the route.
  */
 
@@ -26,7 +26,11 @@ beforeEach(() => {
 })
 
 describe('ToastContainer', () => {
-  it('renders title and message, alert role for errors and status otherwise', async () => {
+  it('is a polite live region, even with no toast on screen', () => {
+    expect(mountWith('en').find('.ocf-toast-container').attributes('aria-live')).toBe('polite')
+  })
+
+  it('renders title and message, alert role for errors only', async () => {
     const { show } = useToast()
     show('Saved', 'success', 0, { title: 'Success', persistent: true })
     show('Refused', 'error', 0, { title: 'Error', persistent: true })
@@ -37,7 +41,8 @@ describe('ToastContainer', () => {
     expect(toasts).toHaveLength(2)
     expect(toasts[0].find('.toast-title').text()).toBe('Success')
     expect(toasts[0].find('.toast-message').text()).toBe('Saved')
-    expect(toasts[0].attributes('role')).toBe('status')
+    // the container's live region announces it: a role on an inserted node is often not read
+    expect(toasts[0].attributes('role')).toBeUndefined()
     expect(toasts[1].attributes('role')).toBe('alert')
   })
 
