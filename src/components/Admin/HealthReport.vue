@@ -133,8 +133,8 @@ onMounted(refresh)
 </template>
 
 <style scoped>
-/* `ocf-` on every class: Bootstrap is loaded globally here and a bare .card or
-   .badge would take its styling from it. */
+/* `ocf-` on every class: a bare .card or .badge would take the global
+   card/badge styling. */
 .ocf-health {
   padding: 1.5rem;
   max-width: 60rem;

@@ -731,7 +731,7 @@ const formatLimit = (value: number | undefined): string => {
   gap: 1rem;
 }
 
-/* ocf- prefixed: Bootstrap is loaded globally in this app. */
+/* ocf- prefixed: generic class names collide with the global stylesheets. */
 .ocf-paid-plan-note {
   margin: 1.25rem 0 0 0;
   padding: 0.75rem 1rem;
