@@ -208,7 +208,7 @@ const { t } = useTranslations({
       import: 'Importer',
       cancel: 'Annuler',
       close: 'Fermer',
-      importing: 'Importation...',
+      importing: 'Import en cours…',
       success: 'Scénario importé avec succès !',
       preview: 'Scénario : {title} — {steps} étape(s)',
       invalidJson: 'Fichier JSON invalide. Impossible de lire le contenu.',
@@ -250,8 +250,7 @@ function handleDrop(event: DragEvent) {
 }
 
 async function validateAndSetFile(file: File) {
-  clearMessages()
-  parsedData.value = null
+  clearFile()
 
   const name = file.name.toLowerCase()
   if (!spec.value.extensions.some(ext => name.endsWith(ext))) {
