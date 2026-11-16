@@ -37,7 +37,7 @@ try {
 ### Console Logging Standards
 
 - Use `console.error()` for errors with descriptive context
-- Use `console.warn()` for warnings (e.g., demo mode fallbacks)
+- Use `console.warn()` for warnings
 - Use `console.log()` sparingly for important state changes
 - Use `console.debug()` (wrapped in `import.meta.env.DEV` check) for development-only logs
 

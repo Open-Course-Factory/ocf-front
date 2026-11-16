@@ -933,7 +933,6 @@ import DropdownMenu from '../Common/DropdownMenu.vue'
 ### UI Components
 
 - ✅ **ToastContainer** - Uses design tokens
-- ✅ **DemoModeBanner** - Uses design tokens
 - ✅ **LoadingSkeleton** - Skeleton loading component with variants
 
 ### Generic Components

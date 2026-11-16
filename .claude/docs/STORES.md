@@ -7,7 +7,6 @@ All entity stores extend `useBaseStore()` which provides:
 - Generic CRUD operations (`create`, `update`, `delete`, `getOne`)
 - Loading states (`isLoading`, `error`, `lastLoaded`)
 - Hook system for entity-specific actions (`afterCreate`, `beforeCreate`, `afterUpdate`, `afterDelete`)
-- Demo mode integration with API/mock switching
 - Automatic data loading with `loadEntities()` and `ensureLoaded()`
 
 ## Entity Stores

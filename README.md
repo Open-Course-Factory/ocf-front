@@ -8,7 +8,6 @@ Vue.js frontend application for [Open Course Factory](https://usine.solution-lib
 - **Terminal Management** - Interactive terminal sessions with sharing capabilities
 - **Subscription System** - Stripe-integrated billing and subscription management
 - **Multi-language Support** - French and English with embedded translations
-- **Demo Mode** - Safe testing environment with mock data
 - **Feature Flags** - GitLab-style feature toggling for gradual rollouts
 
 ## 🛠 Tech Stack
@@ -62,9 +61,6 @@ Copy `.env.example` to `.env.local` and configure:
 # API Configuration
 VITE_API_URL=localhost:8000
 VITE_PROTOCOL=http
-
-# Demo Mode
-VITE_DEMO_MODE=false
 
 # Feature Flags (see Feature Flags section)
 VITE_FEATURE_FLAG_COURSE_CONCEPTION=true
@@ -130,7 +126,6 @@ if (isEnabled('course_conception')) {
 - **BaseStore**: Generic CRUD operations with hooks
 - **Entity Stores**: Domain-specific stores extending BaseStore
 - **Embedded Translations**: I18n translations within stores
-- **Demo Integration**: Automatic API/mock switching
 
 ### Component System
 
@@ -146,21 +141,6 @@ if (isEnabled('course_conception')) {
 - **Role-based Access**: Feature restrictions by user role
 - **Token Expiry Monitoring**: Automatic logout on expiry
 
-## 🐳 Demo Mode
-
-Enable demo mode for safe development without backend dependencies:
-
-```bash
-VITE_DEMO_MODE=true
-```
-
-Features:
-
-- Mock API responses with realistic data
-- Simulated Stripe payment flows
-- Network delay simulation
-- Safe testing environment
-
 ## 📚 Documentation
 
 All development documentation is located in `.claude/docs/`:
@@ -173,9 +153,8 @@ All development documentation is located in `.claude/docs/`:
 ## 🔧 Development Workflow
 
 1. **Feature Development**: Use feature flags to develop features safely
-2. **Testing**: Enable demo mode for backend-independent testing
-3. **Deployment**: Deploy with flags disabled, enable gradually
-4. **Monitoring**: Use admin panel for real-time flag management
+2. **Deployment**: Deploy with flags disabled, enable gradually
+3. **Monitoring**: Use admin panel for real-time flag management
 
 ## 🌐 Multi-language Support
 

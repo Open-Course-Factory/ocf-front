@@ -38,7 +38,7 @@ npm run preview  # Preview production build
 
 ### Store Architecture
 
-All entity stores extend `useBaseStore()` for consistent CRUD operations, loading states, and demo mode support. See [STORES.md](.claude/docs/STORES.md) for details.
+All entity stores extend `useBaseStore()` for consistent CRUD operations and loading states. See [STORES.md](.claude/docs/STORES.md) for details.
 
 ### Service Architecture
 
@@ -48,7 +48,6 @@ Domain-driven organization in `src/services/`:
 - `auth/` - Authentication & JWT
 - `features/` - Feature flags
 - `domain/` - Business logic (terminal, user, help)
-- `demo/` - Mock data for development
 
 See [SERVICES.md](.claude/docs/SERVICES.md) for import patterns.
 
@@ -188,7 +187,7 @@ axios.post('/terminals/start-session', data)
 axios.get('/api/v1/user-subscriptions/current')  // Double prefix!
 ```
 
-See [API.md](.claude/docs/API.md) for backend integration and demo mode.
+See [API.md](.claude/docs/API.md) for backend integration.
 
 ## Development Patterns
 
@@ -324,7 +323,7 @@ For detailed information, see:
 - [I18N.md](.claude/docs/I18N.md) - Internationalization patterns
 - [CSS.md](.claude/docs/CSS.md) - CSS architecture & variables
 - [CODE_QUALITY.md](.claude/docs/CODE_QUALITY.md) - Error handling, types, utilities
-- [API.md](.claude/docs/API.md) - API integration & demo mode
+- [API.md](.claude/docs/API.md) - API integration
 - [DESIGN_SYSTEM.md](.claude/docs/DESIGN_SYSTEM.md) - Design tokens & CSS framework
 - [BACKEND_FEATURE_FLAGS_INTEGRATION.md](.claude/docs/BACKEND_FEATURE_FLAGS_INTEGRATION.md) - Feature flags system
 - [ADMIN_BADGE_PATTERN.md](.claude/docs/ADMIN_BADGE_PATTERN.md) - Admin badge UX pattern for elevated-privilege indicators
