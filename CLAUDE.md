@@ -260,7 +260,7 @@ Multi-tier architecture with Stripe integration:
 
 ### Terminal Integration
 
-Remote terminal access with XTerm.js + guacamole-common-js:
+Remote terminal access with XTerm.js:
 
 - Terminal sessions with sharing capabilities
 - SSH key management
