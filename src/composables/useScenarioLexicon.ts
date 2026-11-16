@@ -1,6 +1,22 @@
 import { ref, type Ref } from 'vue'
 import axios from 'axios'
 
+/**
+ * A language's name in its own language — "Français", not "French".
+ *
+ * Capitalised on the way out: French does not capitalise its language names, so
+ * Intl returns "français", which reads as a mistake sitting under a "Language"
+ * label beside "English". The list is a set of labels here, not running prose.
+ */
+export function languageName(locale: string): string {
+  try {
+    const name = new Intl.DisplayNames([locale], { type: 'language' }).of(locale) || locale
+    return name.charAt(0).toLocaleUpperCase(locale) + name.slice(1)
+  } catch {
+    return locale
+  }
+}
+
 export interface LexiconEntry {
   key: string
   parent_key: string

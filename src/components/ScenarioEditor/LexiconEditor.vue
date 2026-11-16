@@ -127,7 +127,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
-import type { ScenarioLexicon, LexiconEntry } from '../../composables/useScenarioLexicon'
+import { languageName, type ScenarioLexicon, type LexiconEntry } from '../../composables/useScenarioLexicon'
 
 /**
  * The vocabulary a scenario's world is built from.
@@ -154,15 +154,6 @@ const { problems, scriptLiterals, isLoading, isSaving, saveError } = props.lexic
 const entries = computed(() =>
   props.lexicon.entries.value.filter(entry => entry.kind !== 'message')
 )
-
-function languageName(locale: string): string {
-  try {
-    const name = new Intl.DisplayNames([locale], { type: 'language' }).of(locale) || locale
-    return name.charAt(0).toLocaleUpperCase(locale) + name.slice(1)
-  } catch {
-    return locale
-  }
-}
 
 /**
  * Keys an entry may sit inside: any other entry, minus itself.
