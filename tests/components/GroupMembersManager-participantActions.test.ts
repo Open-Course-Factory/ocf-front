@@ -37,10 +37,6 @@ vi.mock('../../src/services/domain/bulkImport', () => ({
   bulkImportService: { regeneratePasswords: vi.fn().mockResolvedValue({ success: true, credentials: [], errors: [] }) }
 }))
 
-vi.mock('../../src/utils/formatters', () => ({
-  formatDate: (date: string) => date
-}))
-
 vi.mock('../../src/stores/currentUser', () => ({
   useCurrentUserStore: () => ({ userId: 'u-marc', isAdmin: false, isLoggedIn: true })
 }))

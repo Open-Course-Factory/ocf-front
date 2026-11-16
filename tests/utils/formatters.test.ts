@@ -16,7 +16,7 @@ import {
 
 describe('formatCurrency', () => {
   it('formats basic EUR amount from cents', () => {
-    const result = formatCurrency(1999)
+    const result = formatCurrency(1999, 'EUR', 'fr-FR')
     // 1999 cents = 19.99 EUR in fr-FR locale
     expect(result).toContain('19,99')
     expect(result).toContain('€')
@@ -29,13 +29,13 @@ describe('formatCurrency', () => {
   })
 
   it('formats zero amount', () => {
-    const result = formatCurrency(0)
+    const result = formatCurrency(0, 'EUR', 'fr-FR')
     expect(result).toContain('0,00')
     expect(result).toContain('€')
   })
 
   it('formats large amount', () => {
-    const result = formatCurrency(1000000)
+    const result = formatCurrency(1000000, 'EUR', 'fr-FR')
     // 1000000 cents = 10000.00 EUR
     expect(result).toContain('10')
     expect(result).toContain('000')
@@ -43,7 +43,7 @@ describe('formatCurrency', () => {
   })
 
   it('formats negative amount', () => {
-    const result = formatCurrency(-1999)
+    const result = formatCurrency(-1999, 'EUR', 'fr-FR')
     expect(result).toContain('19,99')
     expect(result).toContain('€')
     // Should contain a negative indicator
@@ -58,11 +58,11 @@ describe('formatDate', () => {
   })
 
   it('returns fallback for null input', () => {
-    expect(formatDate(null)).toBe('-')
+    expect(formatDate(null, 'fr-FR')).toBe('-')
   })
 
   it('returns fallback for undefined input', () => {
-    expect(formatDate(undefined)).toBe('-')
+    expect(formatDate(undefined, 'fr-FR')).toBe('-')
   })
 
   it('returns custom fallback for null input', () => {
@@ -72,7 +72,7 @@ describe('formatDate', () => {
   it('returns the original string for truly invalid date strings', () => {
     // Note: Date constructor behavior varies, but a clearly invalid string
     // will cause toLocaleDateString to throw or return invalid
-    const result = formatDate('not-a-date')
+    const result = formatDate('not-a-date', 'fr-FR')
     // The function catches errors and returns the original string
     expect(typeof result).toBe('string')
   })
@@ -97,11 +97,11 @@ describe('formatDateTime', () => {
   })
 
   it('returns fallback for null input', () => {
-    expect(formatDateTime(null)).toBe('-')
+    expect(formatDateTime(null, 'fr-FR')).toBe('-')
   })
 
   it('returns fallback for undefined input', () => {
-    expect(formatDateTime(undefined)).toBe('-')
+    expect(formatDateTime(undefined, 'fr-FR')).toBe('-')
   })
 
   it('returns custom fallback for null input', () => {
@@ -109,7 +109,7 @@ describe('formatDateTime', () => {
   })
 
   it('returns the original string for truly invalid date strings', () => {
-    const result = formatDateTime('not-a-date')
+    const result = formatDateTime('not-a-date', 'fr-FR')
     expect(typeof result).toBe('string')
   })
 })
@@ -133,8 +133,8 @@ describe('formatStorageSize', () => {
 })
 
 describe('formatNumber', () => {
-  it('formats a basic number with fr-FR locale (default)', () => {
-    const result = formatNumber(1234567)
+  it('formats a basic number with fr-FR locale', () => {
+    const result = formatNumber(1234567, 'fr-FR')
     // fr-FR uses narrow no-break space or regular space as thousands separator
     // Normalize whitespace for comparison
     const normalized = result.replace(/\s/g, ' ')
@@ -146,32 +146,32 @@ describe('formatNumber', () => {
   })
 
   it('formats small number without separators', () => {
-    expect(formatNumber(42)).toBe('42')
+    expect(formatNumber(42, 'fr-FR')).toBe('42')
   })
 })
 
 describe('formatPercentage', () => {
   it('formats 50%', () => {
-    const result = formatPercentage(0.5)
+    const result = formatPercentage(0.5, 0, 'fr-FR')
     // fr-FR percentage format may include narrow no-break space before %
     const normalized = result.replace(/\s/g, ' ')
     expect(normalized).toBe('50 %')
   })
 
   it('formats 33.33% with 2 decimal places', () => {
-    const result = formatPercentage(0.3333, 2)
+    const result = formatPercentage(0.3333, 2, 'fr-FR')
     const normalized = result.replace(/\s/g, ' ')
     expect(normalized).toBe('33,33 %')
   })
 
   it('formats 100%', () => {
-    const result = formatPercentage(1.0)
+    const result = formatPercentage(1.0, 0, 'fr-FR')
     const normalized = result.replace(/\s/g, ' ')
     expect(normalized).toBe('100 %')
   })
 
   it('formats 0%', () => {
-    const result = formatPercentage(0)
+    const result = formatPercentage(0, 0, 'fr-FR')
     const normalized = result.replace(/\s/g, ' ')
     expect(normalized).toBe('0 %')
   })

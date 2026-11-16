@@ -13,6 +13,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
+import { createPinia, setActivePinia } from 'pinia'
 
 const routerPushMock = vi.fn()
 vi.mock('vue-router', () => ({
@@ -529,5 +530,24 @@ describe('MyScenarios — a run to rebuild', () => {
     await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledWith('/terminal-session/term-1')
+  })
+})
+
+describe('MyScenarios — run start time', () => {
+  it('shows it in the app language and the saved time zone', async () => {
+    // The saved zone, set as the settings store's state (importing the store
+    // pulls in the router, which this file mocks).
+    const pinia = createPinia()
+    pinia.state.value.UserSettings = { settings: { timezone: 'Pacific/Auckland' } }
+    setActivePinia(pinia)
+    // 11:30 UTC is 00:30 the next day in Auckland (UTC+13).
+    getMySessionsMock.mockResolvedValue([{ ...BASE_RUN, started_at: '2026-03-15T11:30:00Z' }])
+
+    const wrapper = mountPage('fr')
+    await flushPromises()
+
+    const started = wrapper.find('.timestamp-row').text()
+    expect(started).toContain('16 mars 2026')
+    expect(started).toContain('00:30')
   })
 })

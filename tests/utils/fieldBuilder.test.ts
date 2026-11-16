@@ -8,6 +8,7 @@ import {
   type FieldConfig
 } from '../../src/utils/fieldBuilder'
 import i18n from '../../src/i18n'
+import { createPinia, setActivePinia } from 'pinia'
 
 describe('fieldBuilder', () => {
   describe('field() factory', () => {
@@ -215,7 +216,7 @@ describe('fieldBuilder', () => {
     })
 
     it('.withDateFormat() sets date display formatter', () => {
-      const [, config] = field('x').withDateFormat('en-US').build()
+      const [, config] = field('x').withDateFormat().build()
       expect(typeof config.displayValue).toBe('function')
       // Returns dash for falsy values
       expect(config.displayValue(null)).toBe('-')
@@ -227,7 +228,7 @@ describe('fieldBuilder', () => {
     })
 
     it('.withDateTimeFormat() sets datetime display formatter', () => {
-      const [, config] = field('x').withDateTimeFormat('en-US').build()
+      const [, config] = field('x').withDateTimeFormat().build()
       expect(typeof config.displayValue).toBe('function')
       expect(config.displayValue(null)).toBe('-')
       const result = config.displayValue('2025-06-15T12:00:00Z')
@@ -240,7 +241,7 @@ describe('fieldBuilder', () => {
     // The stores call withDateFormat()/withDateTimeFormat() with no locale.
     // Mid-morning UTC: the same calendar day in every zone from UTC-10 to UTC+13.
     it.each([
-      ['en', '3/15/2026'],
+      ['en', '15/03/2026'],
       ['fr', '15/03/2026'],
     ] as const)('shows a %s user the date as %s', (locale, expected) => {
       i18n.global.locale.value = locale
@@ -249,6 +250,17 @@ describe('fieldBuilder', () => {
 
       expect(date.displayValue('2026-03-15T10:00:00Z')).toBe(expected)
       expect(dateTime.displayValue('2026-03-15T10:00:00Z')).toContain(expected)
+    })
+
+    it('shows the date on the saved time zone\'s calendar day', () => {
+      // 11:30 UTC is already 16/03 in Auckland (UTC+13).
+      const pinia = createPinia()
+      pinia.state.value.UserSettings = { settings: { timezone: 'Pacific/Auckland' } }
+      setActivePinia(pinia)
+      i18n.global.locale.value = 'fr'
+      const [, date] = field('x').withDateFormat().build()
+
+      expect(date.displayValue('2026-03-15T11:30:00Z')).toBe('16/03/2026')
     })
   })
 

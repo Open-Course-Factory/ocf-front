@@ -23,7 +23,7 @@
  *        to reach cancel/manage.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
@@ -45,6 +45,7 @@ vi.mock('axios', () => ({
 }))
 
 import ActiveSubscriptionSource from '../../src/components/Subscription/Dashboard/ActiveSubscriptionSource.vue'
+import i18n from '../../src/i18n'
 
 function createTestI18n(locale: 'en' | 'fr' = 'en') {
   return createI18n({
@@ -59,8 +60,16 @@ function createTestI18n(locale: 'en' | 'fr' = 'en') {
   })
 }
 
+// Dates and prices read the app's own i18n instance; the component's labels
+// come from the test instance below.
+const appLocale = i18n.global.locale.value
+afterEach(() => {
+  i18n.global.locale.value = appLocale
+})
+
 function mountSource(primarySubscription: any, locale: 'en' | 'fr' = 'en') {
   setActivePinia(createPinia())
+  i18n.global.locale.value = locale
   return mount(ActiveSubscriptionSource, {
     props: {
       primarySubscription,
@@ -299,7 +308,7 @@ describe('ActiveSubscriptionSource — session duration limit', () => {
 
 describe('ActiveSubscriptionSource — next billing date follows the app language', () => {
   it.each([
-    ['en', '3/15/2026'],
+    ['en', '15/03/2026'],
     ['fr', '15/03/2026'],
   ] as const)('shows the date to a %s user as %s', (locale, expected) => {
     const wrapper = mountSource(

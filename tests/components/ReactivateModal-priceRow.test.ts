@@ -100,7 +100,7 @@ describe('ReactivateModal — price and next billing date follow the app languag
   it('shows them in English to an English user', () => {
     const text = mountModal(subscription, 'en').text()
     expect(text).toContain('€12.00')
-    expect(text).toContain('3/15/2026')
+    expect(text).toContain('15/03/2026')
   })
 
   it('shows them in French to a French user', () => {
