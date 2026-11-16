@@ -49,6 +49,7 @@ vi.mock('../../src/composables/useNotification', () => ({
 }))
 
 import GroupAnalyticsTab from '../../src/components/Groups/GroupAnalyticsTab.vue'
+import { sanitizeCSVField } from '../../src/utils/csv'
 
 const ASSIGNMENTS = [
   { id: 'a1', scenario_id: 'sc-1', group_id: 'grp-1', scenario: { title: 'Bash basics', difficulty: 'beginner' } },
@@ -181,6 +182,25 @@ describe('GroupAnalyticsTab — per-scenario analytics fan-out (#306)', () => {
       expect(showConfirm).not.toHaveBeenCalled()
       expect(exportedFilenames).toEqual(['analytics-group-grp-1.csv'])
       expect(await exportedBlobs[0].text()).toContain('Bash basics')
+    })
+  })
+
+  describe('a scenario title that reads as a formula (#392)', () => {
+    it('is neutralised in the exported file', async () => {
+      const title = '=HYPERLINK("http://x")'
+      getGroupAssignments.mockResolvedValue([
+        { id: 'a1', scenario_id: 'sc-1', group_id: 'grp-1', scenario: { title, difficulty: 'beginner' } }
+      ])
+      getScenarioAnalytics.mockResolvedValue(analyticsFor(10, 5))
+
+      const wrapper = mountTab()
+      await flushPromises()
+      await wrapper.find('.tab-header button').trigger('click')
+      await flushPromises()
+
+      const row = (await exportedBlobs[0].text()).split('\n')[1]
+      const cell = sanitizeCSVField(title) + ','
+      expect(row.slice(0, cell.length)).toBe(cell)
     })
   })
 
