@@ -26,6 +26,7 @@ import { useFeatureFlags } from "../composables/useFeatureFlags"
 import { createAsyncWrapper } from '../utils/asyncWrapper'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { COMMON_TIMEZONES } from '../utils/formatters'
+import { USER_SETTINGS_STORE_ID } from './userSettingsId'
 
 export interface UserSettings {
     id?: string
@@ -50,7 +51,7 @@ export interface ChangePasswordData {
     confirm_password: string
 }
 
-export const useUserSettingsStore = defineStore('UserSettings', () => {
+export const useUserSettingsStore = defineStore(USER_SETTINGS_STORE_ID, () => {
     const { t } = useStoreTranslations({
         en: {
             userSettings: {
