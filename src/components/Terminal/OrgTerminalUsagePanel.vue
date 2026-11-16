@@ -620,7 +620,7 @@ onUnmounted(() => {
 .bar-label {
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
-  font-family: var(--font-family-monospace);
+  font-family: monospace;
 }
 
 .bar-track {
@@ -650,7 +650,7 @@ onUnmounted(() => {
 }
 
 .bar-meta {
-  font-family: var(--font-family-monospace);
+  font-family: monospace;
   color: var(--color-text-primary);
   white-space: nowrap;
   font-size: var(--font-size-xs, 0.75rem);

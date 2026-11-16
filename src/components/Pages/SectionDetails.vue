@@ -239,7 +239,7 @@ onMounted(async () => {
     color: var(--color-text-secondary);
     line-height: 1.6;
     white-space: pre-wrap;
-    font-family: var(--font-family-monospace);
+    font-family: monospace;
     font-size: var(--font-size-sm);
 }
 
