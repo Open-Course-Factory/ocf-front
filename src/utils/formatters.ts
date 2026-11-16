@@ -329,9 +329,14 @@ export function extractErrorMessage(
   error: any,
   fallback: string = 'An error occurred'
 ): string {
+  const data = error?.response?.data
+  // The backend answers { error_message }, { error: { message } }, { message } or { error: "text" }.
+  const bodyError = data?.error
   return (
-    error?.response?.data?.error_message ||
-    error?.response?.data?.message ||
+    data?.error_message ||
+    (typeof bodyError === 'object' && bodyError?.message) ||
+    data?.message ||
+    (typeof bodyError === 'string' && bodyError) ||
     error?.message ||
     fallback
   )
