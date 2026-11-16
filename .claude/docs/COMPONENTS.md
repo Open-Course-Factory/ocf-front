@@ -15,8 +15,10 @@
 
 OCF Front uses a centralized modal system to ensure consistency and reduce duplication:
 
-- `BaseModal.vue` (367 lines) - Foundation modal with 18 configurable props and 3 slots
-- **18 Props**: `visible`, `title`, `titleIcon`, `size`, `isLoading`, `showClose`, `showDefaultFooter`, `confirmText`, `confirmIcon`, `confirmDisabled`, `cancelText`, `allowOutsideClose`, `noPadding`, `maxHeight`, `fullHeight`, `zIndex`, `trapFocus`, `showOverlay`
+- `BaseModal.vue` - Foundation modal with 21 props, 3 slots and 2 events (`close`, `confirm`)
+- **Props**: `visible`, `isLoading`, `loadingText`, `successMessage`, `errorMessage`, `title`, `titleIcon`, `showClose`, `closeLabel`, `closeOnOverlayClick`, `size`, `noPadding`, `showDefaultFooter`, `confirmText`, `confirmIcon`, `confirmDisabled`, `cancelText`, `cancelIcon`, `confirmVariant`, `confirmTestId`, `cancelTestId`
+- **Accessibility**: the container is a `role="dialog"` with `aria-modal`, labelled by `title`. Opening moves focus into it (an `[autofocus]` child or the container); closing returns focus to the opener. No Tab focus trap.
+- **Escape** closes the top-most modal only, under the same rule as the overlay click: never while `isLoading`, never when `closeOnOverlayClick` is `false` (use it to protect unsaved edits).
 - **3 Slots**: `header` (custom title), `default` (content), `footer` (custom buttons)
 - **4 Size Variants**: small (400px), medium (600px), large (800px), xlarge (1200px)
 - **CSS Safety**: All classes use `base-modal-` prefix to avoid global conflicts

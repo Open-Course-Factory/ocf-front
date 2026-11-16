@@ -1,16 +1,22 @@
 <template>
-  <div v-if="visible" class="base-modal-overlay" @click="handleOverlayClick">
+  <div v-if="visible" class="base-modal-overlay" @click="handleDismiss">
     <div
+      ref="containerRef"
       class="base-modal-container"
       :class="[`base-modal-${size}`, { 'base-modal-no-padding': noPadding }]"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="title ? titleId : undefined"
+      tabindex="-1"
       @click.stop
+      @keydown.esc.stop="handleDismiss"
     >
       <!-- Close Button -->
       <button
         v-if="showClose && !isLoading"
         class="base-modal-close"
         @click="closeModal"
-        :aria-label="closeLabel || 'Close'"
+        :aria-label="closeLabel || t('baseModal.close')"
       >
         <i class="fas fa-times"></i>
       </button>
@@ -18,7 +24,7 @@
       <!-- Header Slot (optional) -->
       <div v-if="$slots.header || title" class="base-modal-header">
         <slot name="header">
-          <h2 class="base-modal-title">
+          <h2 :id="titleId" class="base-modal-title">
             <i v-if="titleIcon" :class="titleIcon"></i>
             {{ title }}
           </h2>
@@ -30,7 +36,7 @@
         <!-- Loading State -->
         <div v-if="isLoading" class="base-modal-loading">
           <i class="fas fa-spinner fa-spin"></i>
-          {{ loadingText || 'Loading...' }}
+          {{ loadingText || t('baseModal.loading') }}
         </div>
 
         <!-- Success Message -->
@@ -78,6 +84,8 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeUnmount, ref, useId, watch } from 'vue'
+import { useTranslations } from '../../composables/useTranslations'
 
 interface Props {
   visible: boolean
@@ -140,11 +148,37 @@ function handleConfirm() {
   emit('confirm');
 }
 
-function handleOverlayClick() {
+// Escape shares the overlay gate: closeOnOverlayClick=false protects unsaved edits from both.
+function handleDismiss() {
   if (props.closeOnOverlayClick && !props.isLoading) {
     closeModal();
   }
 }
+
+const { t } = useTranslations({
+  en: { baseModal: { close: 'Close', loading: 'Loading...' } },
+  fr: { baseModal: { close: 'Fermer', loading: 'Chargement...' } }
+});
+
+const titleId = useId();
+const containerRef = ref<HTMLElement | null>(null);
+let opener: HTMLElement | null = null;
+
+function restoreFocus() {
+  if (opener?.isConnected) opener.focus();
+  opener = null;
+}
+
+// The container exists exactly while the modal is open (v-if).
+watch(containerRef, (el) => {
+  if (!el) return restoreFocus();
+  opener = document.activeElement as HTMLElement | null;
+  if (!el.contains(document.activeElement)) {
+    (el.querySelector<HTMLElement>('[autofocus]') ?? el).focus();
+  }
+}, { flush: 'post' });
+
+onBeforeUnmount(restoreFocus);
 </script>
 
 <style scoped>
@@ -173,6 +207,7 @@ function handleOverlayClick() {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  outline: none;
 }
 
 /* Size variants control width */
