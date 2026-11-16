@@ -201,6 +201,15 @@ describe('ErrorHandlerService', () => {
           expect(result.userMessage).toBe('Detail field')
         })
 
+        // Generic entity create/update answers { error: { code, message, details } }.
+        it('reads the message nested in a data.error object', () => {
+          const error = makeAxiosError(403, {
+            error: { code: 'ERR403', message: 'Quota exceeded for this plan', details: {} }
+          })
+          const result = errorHandler.handleError(error, { fallbackKey: 'my.fallback' })
+          expect(result.userMessage).toBe('Quota exceeded for this plan')
+        })
+
         it('uses fallback key when no recognized fields are present', () => {
           const error = makeAxiosError(400, {})
           const result = errorHandler.handleError(error, { fallbackKey: 'my.fallback' })

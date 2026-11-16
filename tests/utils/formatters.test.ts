@@ -369,4 +369,37 @@ describe('extractErrorMessage', () => {
     expect(extractErrorMessage(null)).toBe('An error occurred')
     expect(extractErrorMessage(undefined)).toBe('An error occurred')
   })
+
+  // The teacher, security-admin, impersonation and users controllers answer { error: "…" }.
+  it('reads a string data.error before the axios message', () => {
+    const error = {
+      response: { data: { error: 'invalid session ID' } },
+      message: 'Request failed with status code 400',
+    }
+    expect(extractErrorMessage(error)).toBe('invalid session ID')
+  })
+
+  // Generic entity create/update answers { error: { code, message, details } }.
+  it('reads the message nested in a data.error object', () => {
+    const error = {
+      response: { data: { error: { code: 'ERR403', message: 'Quota exceeded for this plan', details: {} } } },
+      message: 'Request failed with status code 403',
+    }
+    expect(extractErrorMessage(error)).toBe('Quota exceeded for this plan')
+  })
+
+  it('ignores a data.error object without a message', () => {
+    const error = {
+      response: { data: { error: { code: 'ERR000' } } },
+      message: 'Request failed with status code 500',
+    }
+    expect(extractErrorMessage(error)).toBe('Request failed with status code 500')
+  })
+
+  it('falls back without crashing when response.data is missing or a string body', () => {
+    const noData = { response: { status: 502 }, message: 'Request failed with status code 502' }
+    const htmlBody = { response: { status: 502, data: '<html>Bad Gateway</html>' }, message: 'Request failed with status code 502' }
+    expect(extractErrorMessage(noData, 'fallback')).toBe('Request failed with status code 502')
+    expect(extractErrorMessage(htmlBody, 'fallback')).toBe('Request failed with status code 502')
+  })
 })

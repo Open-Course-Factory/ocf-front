@@ -239,6 +239,27 @@ describe('useImpersonationStore', () => {
     expect(store.loading).toBe(false)
   })
 
+  it('start shows the backend error_message', async () => {
+    mockedAxios.post.mockRejectedValueOnce({
+      response: { status: 403, data: { error_message: 'Quota exceeded for this plan' } },
+      message: 'Request failed with status code 403',
+    })
+    const store = useImpersonationStore()
+    await expect(store.start('target-id')).rejects.toBeDefined()
+    expect(store.error).toBe('Quota exceeded for this plan')
+  })
+
+  // The impersonation controller answers { error: "<code>" }.
+  it('start shows the backend error string', async () => {
+    mockedAxios.post.mockRejectedValueOnce({
+      response: { status: 400, data: { error: 'self_impersonation_forbidden' } },
+      message: 'Request failed with status code 400',
+    })
+    const store = useImpersonationStore()
+    await expect(store.start('target-id')).rejects.toBeDefined()
+    expect(store.error).toBe('self_impersonation_forbidden')
+  })
+
   // ---- stop() -----------------------------------------------------------
 
   it('stop posts to admin/impersonate/stop', async () => {
