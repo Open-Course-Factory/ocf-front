@@ -90,6 +90,7 @@ vi.mock('../../src/stores/currentUser', () => ({
 import axios from 'axios'
 import { usePermissionsStore } from '../../src/stores/permissions'
 import { useOrganizationsStore } from '../../src/stores/organizations'
+import { useUserMembershipsStore } from '../../src/stores/userMemberships'
 
 const mockedGet = vi.mocked(axios.get)
 const mockedPost = vi.mocked(axios.post)
@@ -179,6 +180,51 @@ describe('permissions store — refreshEntitlements', () => {
     await organizationsStore.createOrganization({ name: 'acme', display_name: 'Acme' } as any)
 
     expect(navInputs(permissionsStore)).toEqual(granted)
+  })
+
+  it('reloads the memberships, so the creator manages the new organization', async () => {
+    const permissionsStore = usePermissionsStore()
+    const organizationsStore = useOrganizationsStore()
+    const memberships = useUserMembershipsStore()
+    // Startup memberships, taken before the organization existed.
+    memberships.orgMemberships = [{ organization_id: 'org-old', role: 'owner' }]
+    memberships.isLoaded = true
+    mockedPost.mockResolvedValue({ data: { id: 'org-new', name: 'acme', display_name: 'Acme' } })
+    answerBackendWith(true)
+    const answerFeatures = mockedGet.getMockImplementation()!
+    mockedGet.mockImplementation(async (url: string, config?: any) => {
+      if (url === '/users/me') {
+        return { data: { organization_memberships: [
+          { organization_id: 'org-old', role: 'owner' },
+          { organization_id: 'org-new', role: 'owner' }
+        ] } }
+      }
+      return answerFeatures(url, config)
+    })
+
+    expect(permissionsStore.canManageOrganization('org-new')).toBe(false)
+    await organizationsStore.createOrganization({ name: 'acme', display_name: 'Acme' } as any)
+
+    expect(permissionsStore.canManageOrganization('org-new')).toBe(true)
+  })
+
+  it('a failed membership reload does not fail the creation', async () => {
+    const organizationsStore = useOrganizationsStore()
+    const memberships = useUserMembershipsStore()
+    memberships.isLoaded = true
+    const created = { id: 'org-new', name: 'acme', display_name: 'Acme' }
+    mockedPost.mockResolvedValue({ data: created })
+    answerBackendWith(true)
+    const answerFeatures = mockedGet.getMockImplementation()!
+    mockedGet.mockImplementation(async (url: string, config?: any) => {
+      if (url === '/users/me') throw new Error('network down')
+      return answerFeatures(url, config)
+    })
+
+    await expect(organizationsStore.createOrganization({ name: 'acme', display_name: 'Acme' } as any))
+      .resolves.toMatchObject({ id: 'org-new' })
+    // Left unloaded, so the next reader retries instead of trusting nothing.
+    expect(memberships.isLoaded).toBe(false)
   })
 
   it('is triggered by converting a personal organization to a team', async () => {

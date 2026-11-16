@@ -20,14 +20,16 @@ vi.mock('vue-router', () => ({
 }))
 
 vi.mock('../../src/composables/useAdminViewMode', () => ({
-  useAdminViewMode: () => ({ isAdmin: ref(true), shouldFilterAsStandardUser: ref(false) })
+  useAdminViewMode: () => ({ isAdmin: ref(viewer.isAdmin), shouldFilterAsStandardUser: ref(false) })
 }))
 
 const ORG = { id: 'org-1', name: 'esitech', display_name: 'ESITECH', is_personal: false }
+// Who is looking: a platform admin by default, as every count test assumes.
+const viewer = { isAdmin: true, orgs: [ORG] as Record<string, any>[], roles: {} as Record<string, string> }
 
 vi.mock('../../src/stores/organizations', () => ({
   useOrganizationsStore: () => ({
-    organizations: [ORG],
+    organizations: viewer.orgs,
     loadOrganizations: vi.fn().mockResolvedValue(undefined)
   })
 }))
@@ -38,7 +40,7 @@ vi.mock('../../src/stores/currentUser', () => ({
 
 vi.mock('../../src/stores/userMemberships', () => ({
   useUserMembershipsStore: () => ({
-    getOrgRole: () => null,
+    getOrgRole: (id: string) => viewer.roles[id] ?? null,
     ensureLoaded: vi.fn().mockResolvedValue(undefined)
   })
 }))
@@ -91,7 +93,10 @@ const countsIn = (el: ReturnType<ReturnType<typeof mount>['find']>) =>
   Object.fromEntries(el.findAll('[data-test^="role-count-"]').map(c => [c.attributes('data-test')!.replace('role-count-', ''), Number(c.text())]))
 
 describe('GroupHierarchyEditor counts by role', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    Object.assign(viewer, { isAdmin: true, orgs: [ORG], roles: {} })
+  })
 
   it('asks for the members, which carry the roles', async () => {
     await mountEditor([PARENT])
@@ -110,5 +115,22 @@ describe('GroupHierarchyEditor counts by role', () => {
   it('shows no global total when there is nothing to count', async () => {
     const wrapper = await mountEditor([groupRow({ members: [] , member_count: 0 })])
     expect(wrapper.find('[data-test="hierarchy-role-totals"]').text()).toBe('')
+  })
+})
+
+describe('GroupHierarchyEditor for a user who is not a platform admin', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('offers only the organizations the user belongs to or owns', async () => {
+    const OTHER = { id: 'org-2', name: 'other', display_name: 'OTHER SCHOOL', is_personal: false }
+    const OWNED = { id: 'org-3', name: 'mine', display_name: 'MINE', is_personal: false, owner_user_id: 'user-1' }
+    Object.assign(viewer, { isAdmin: false, orgs: [ORG, OTHER, OWNED], roles: { 'org-1': 'member' } })
+
+    const wrapper = await mountEditor([])
+    const labels = wrapper.findAll('.node-label').map(l => l.text())
+
+    expect(labels).toEqual(expect.arrayContaining(['ESITECH', 'MINE']))
+    expect(labels).not.toContain('OTHER SCHOOL')
+    expect(axios.get).not.toHaveBeenCalledWith('/organizations/org-2/groups', expect.anything())
   })
 })
