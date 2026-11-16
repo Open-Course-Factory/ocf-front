@@ -25,6 +25,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
+import { sanitizeCSVField } from '../../utils/csv'
 import { teacherService, type ScenarioAnalytics } from '../../services/domain/scenario/teacherService'
 
 interface ScenarioAssignment {
@@ -252,7 +253,7 @@ async function exportCsv() {
   ]
   const header = headers.map(h => `"${escape(h)}"`).join(',') + '\n'
   const rows = analyticsData.value
-    .map(a => `"${escape(a.scenario_title)}","${escape(translateDifficulty(a.difficulty))}",${a.started_count},${a.completed_count},${a.completion_rate}%,${a.avg_grade.toFixed(1)},${formatTime(a.avg_time_seconds)}`)
+    .map(a => `${sanitizeCSVField(a.scenario_title)},${sanitizeCSVField(translateDifficulty(a.difficulty))},${a.started_count},${a.completed_count},${a.completion_rate}%,${a.avg_grade.toFixed(1)},${formatTime(a.avg_time_seconds)}`)
     .join('\n')
   const blob = new Blob([header + rows], { type: 'text/csv' })
   const url = URL.createObjectURL(blob)
