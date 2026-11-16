@@ -110,4 +110,20 @@ describe('BillingAddresses page — set as default (#415)', () => {
     expect(store.entities.map((e: any) => e.id)).toEqual(['a1', 'a2'])
     expect(store.entities.find((e: any) => e.id === 'a2')?.is_default).toBe(true)
   })
+
+  it('shows the API error_message and keeps the list when set-default fails', async () => {
+    vi.mocked(axios.post).mockRejectedValue(Object.assign(new Error('Request failed with status code 404'), {
+      response: { status: 404, data: { error_code: 404, error_message: 'Billing address not found' } },
+    }))
+
+    const store = useBillingAddressesStore()
+    store.entities.push({ ...oldDefault }, { ...newDefault })
+    const wrapper = mount(BillingAddresses, { global: { stubs: { Entity: EntityStub } } })
+    await wrapper.find('.row-a2 button').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('.alert-message').text()).toBe('Billing address not found')
+    expect(axios.get).not.toHaveBeenCalled()
+    expect(store.entities).toEqual([oldDefault, newDefault])
+  })
 })

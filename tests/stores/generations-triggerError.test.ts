@@ -73,4 +73,17 @@ describe('generations store — generation trigger error (#415)', () => {
     expect(generation?.status).toBe('failed')
     expect(generation?.error_message).toContain('Worker unavailable, retry later')
   })
+
+  it('falls back to the translated generic text when the error carries no message', async () => {
+    vi.mocked(axios.post).mockImplementation(async (url: string) => {
+      if (url === '/courses/generate') throw { response: { status: 500, data: {} } }
+      return { status: 201, data: { id: 'g1', status: 'pending' } }
+    })
+
+    const store = useGenerationsStore()
+    await store.createEntity('/generations', { format: '0' })
+
+    const generation = store.entities.find((e: any) => e.id === 'g1')
+    expect(generation?.error_message).toBe('generations.triggerError: generations.failed')
+  })
 })
