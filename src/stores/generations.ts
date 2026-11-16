@@ -317,7 +317,7 @@ export const useGenerationsStore = defineStore('generations', () => {
                 base.entities[entityIndex] = {
                     ...base.entities[entityIndex],
                     status: 'failed',
-                    error_message: t('generations.triggerFailed') + ': ' + extractErrorMessage(error)
+                    error_message: extractErrorMessage(error, t('generations.triggerFailed'))
                 };
             }
         }

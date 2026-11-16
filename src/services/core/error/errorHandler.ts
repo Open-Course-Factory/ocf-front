@@ -136,7 +136,7 @@ export class ErrorHandlerService {
 
     // Extract error message from backend
     const backendData = response.data as BackendErrorResponse;
-    const userMessage = this.extractErrorMessage(backendData, fallbackKey);
+    const userMessage = extractErrorMessage(error, fallbackKey);
 
     // Authentication/Authorization errors
     if (statusCode === HttpStatusCode.UNAUTHORIZED || statusCode === HttpStatusCode.FORBIDDEN) {
@@ -167,14 +167,6 @@ export class ErrorHandlerService {
       this.logError(apiError);
     }
     return apiError;
-  }
-
-  /**
-   * Extract user-friendly error message from backend response
-   * Shared body fields first, then detail, then fallback
-   */
-  private extractErrorMessage(data: BackendErrorResponse, fallback: string): string {
-    return extractErrorMessage({ response: { data } }, data?.detail || fallback);
   }
 
   /**
