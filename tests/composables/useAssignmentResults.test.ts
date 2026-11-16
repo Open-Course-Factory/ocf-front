@@ -34,6 +34,7 @@ vi.mock('../../src/services/domain/scenario', () => ({
   },
 }))
 
+import { setTabHidden } from '../helpers/tabVisibility'
 import { useAssignmentResults } from '../../src/composables/useAssignmentResults'
 
 type Results = ReturnType<typeof useAssignmentResults>
@@ -244,5 +245,42 @@ describe('useAssignmentResults', () => {
       results.toggleResult('s2')
       expect(results.allSelected.value).toBe(true)  // both selected
     })
+  })
+})
+
+describe('useAssignmentResults — auto-refresh follows tab visibility', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetScenarioResults.mockResolvedValue([makeResult('s1')])
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    setTabHidden(false)
+    vi.useRealTimers()
+  })
+
+  it('does not refresh the results while the tab is hidden', async () => {
+    const { results } = setupResults('g1')
+    await results.handleViewResults(makeAssignment('scn-1') as any)
+    setTabHidden(true)
+    mockGetScenarioResults.mockClear()
+
+    await vi.advanceTimersByTimeAsync(120000)
+
+    expect(mockGetScenarioResults).not.toHaveBeenCalled()
+  })
+
+  it('refreshes again once the tab is visible', async () => {
+    const { results } = setupResults('g1')
+    await results.handleViewResults(makeAssignment('scn-1') as any)
+    setTabHidden(true)
+    await vi.advanceTimersByTimeAsync(120000)
+    mockGetScenarioResults.mockClear()
+
+    setTabHidden(false)
+    await vi.advanceTimersByTimeAsync(30000)
+
+    expect(mockGetScenarioResults).toHaveBeenCalledWith('g1', 'scn-1')
   })
 })

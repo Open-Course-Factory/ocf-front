@@ -5,7 +5,7 @@
  * 403 { error_message: "session_start_blocked", scope, reason }. The page shows
  * the scope and the trainer's reason, not the raw code.
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
@@ -76,6 +76,7 @@ vi.mock('../../src/stores/classGroups', () => ({
 }))
 
 import axios from 'axios'
+import { setTabHidden } from '../helpers/tabVisibility'
 import TerminalMySessions from '../../src/components/Pages/TerminalMySessions.vue'
 
 function createTestI18n() {
@@ -147,5 +148,61 @@ describe('TerminalMySessions — a blocked learner resumes', () => {
     expect(shown).toContain('Exam in progress')
     expect(shown).toMatch(/class/i)
     expect(shown).not.toContain('session_start_blocked')
+  })
+})
+
+describe('TerminalMySessions — session polling follows tab visibility', () => {
+  const sessionListCalls = () =>
+    (axios.get as any).mock.calls.filter((c: any[]) => c[0] === '/terminals/user-sessions').length
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+  })
+
+  afterEach(() => {
+    setTabHidden(false)
+    vi.useRealTimers()
+  })
+
+  it('does not reload the sessions while the tab is hidden', async () => {
+    mountPage([])
+    await flushPromises()
+    setTabHidden(true)
+    ;(axios.get as any).mockClear()
+
+    vi.advanceTimersByTime(120000)
+    await flushPromises()
+
+    expect(sessionListCalls()).toBe(0)
+  })
+
+  it('reloads at once and resumes polling when the tab is visible again', async () => {
+    mountPage([])
+    await flushPromises()
+    setTabHidden(true)
+    vi.advanceTimersByTime(120000)
+    await flushPromises()
+    ;(axios.get as any).mockClear()
+
+    setTabHidden(false)
+    await flushPromises()
+    expect(sessionListCalls()).toBe(1)
+
+    vi.advanceTimersByTime(30000)
+    await flushPromises()
+    expect(sessionListCalls()).toBe(2)
+  })
+
+  it('stops polling once unmounted', async () => {
+    const wrapper = mountPage([])
+    await flushPromises()
+    wrapper.unmount()
+    ;(axios.get as any).mockClear()
+
+    vi.advanceTimersByTime(120000)
+    await flushPromises()
+
+    expect(sessionListCalls()).toBe(0)
   })
 })

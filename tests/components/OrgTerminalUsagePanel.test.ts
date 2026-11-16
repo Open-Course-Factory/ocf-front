@@ -12,7 +12,7 @@
  * 6f93f5a — these tests guard against it being reintroduced.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import type { OrgTerminalUsage } from '../../src/types/terminal'
@@ -33,6 +33,7 @@ vi.mock('../../src/stores/permissions', () => ({
   })
 }))
 
+import { setTabHidden } from '../helpers/tabVisibility'
 import OrgTerminalUsagePanel from '../../src/components/Terminal/OrgTerminalUsagePanel.vue'
 
 function createTestI18n() {
@@ -204,5 +205,54 @@ describe('OrgTerminalUsagePanel', () => {
       expect(wrapper.find('.advanced-quota').exists()).toBe(false)
       expect(wrapper.find('.progress-section').exists()).toBe(false)
     })
+  })
+})
+
+describe('OrgTerminalUsagePanel — auto-refresh follows tab visibility', () => {
+  beforeEach(() => {
+    getOrgTerminalUsageMock.mockReset()
+    getOrgTerminalUsageMock.mockResolvedValue(CAPPED_USAGE)
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+  })
+
+  afterEach(() => {
+    setTabHidden(false)
+    vi.useRealTimers()
+  })
+
+  it('does not refresh the usage while the tab is hidden', async () => {
+    await mountExpanded()
+    setTabHidden(true)
+    getOrgTerminalUsageMock.mockClear()
+
+    vi.advanceTimersByTime(120000)
+    await flushPromises()
+
+    expect(getOrgTerminalUsageMock).not.toHaveBeenCalled()
+  })
+
+  it('refreshes again once the tab is visible', async () => {
+    await mountExpanded()
+    setTabHidden(true)
+    vi.advanceTimersByTime(120000)
+    await flushPromises()
+    getOrgTerminalUsageMock.mockClear()
+
+    setTabHidden(false)
+    vi.advanceTimersByTime(30000)
+    await flushPromises()
+
+    expect(getOrgTerminalUsageMock).toHaveBeenCalledWith('org-1')
+  })
+
+  it('stops refreshing once unmounted', async () => {
+    const wrapper = await mountExpanded()
+    wrapper.unmount()
+    getOrgTerminalUsageMock.mockClear()
+
+    vi.advanceTimersByTime(120000)
+    await flushPromises()
+
+    expect(getOrgTerminalUsageMock).not.toHaveBeenCalled()
   })
 })
