@@ -7,6 +7,7 @@ import { useScenariosStore } from '../../../stores/scenarios'
 import { useTranslations } from '../../../composables/useTranslations'
 import { useNotification } from '../../../composables/useNotification'
 import { teacherService } from '../../../services/domain/scenario'
+import { downloadBlob, downloadJSON } from '../../../utils/download'
 import ScenarioImportModal from '../../Modals/ScenarioImportModal.vue'
 
 const router = useRouter()
@@ -53,25 +54,6 @@ const { t } = useTranslations({
 function handleImported() {
   importFormat.value = null
   entityStore.loadEntities('scenarios')
-}
-
-function downloadJSON(data: any, filename: string) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
-}
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
 }
 
 async function exportJSON(entity: any) {

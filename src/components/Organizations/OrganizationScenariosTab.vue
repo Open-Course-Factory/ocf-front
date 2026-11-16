@@ -31,6 +31,7 @@ import { teacherService } from '../../services/domain/scenario'
 import { useScenariosStore } from '../../stores/scenarios'
 import BaseModal from '../Modals/BaseModal.vue'
 import ScenarioImportModal from '../Modals/ScenarioImportModal.vue'
+import { downloadBlob, downloadJSON } from '../../utils/download'
 import AdminBadge from '../Common/AdminBadge.vue'
 import { formatMinutes } from '../../utils/formatters'
 
@@ -248,26 +249,6 @@ async function handleExportArchive(scenario: OrgScenario) {
   } catch (err: any) {
     notifyError(err.response?.data?.error_message || t('orgScenarios.exportError'))
   }
-}
-
-// Download helpers
-function downloadJSON(data: any, filename: string) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
-}
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
 }
 
 // Import handlers
