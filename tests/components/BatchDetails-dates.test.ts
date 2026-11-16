@@ -53,7 +53,7 @@ async function mountDetails(locale: 'en' | 'fr') {
 
 describe('BatchDetails — license dates follow the app language', () => {
   it.each([
-    ['en', '3/15/2026'],
+    ['en', '15/03/2026'],
     ['fr', '15/03/2026'],
   ] as const)('shows the date to a %s user as %s', async (locale, expected) => {
     const wrapper = await mountDetails(locale)

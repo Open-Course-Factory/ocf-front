@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
-import { createPinia, setActivePinia } from 'pinia'
+import { createPinia, getActivePinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import axios from 'axios'
 
@@ -36,11 +36,6 @@ vi.mock('../../src/services/domain/bulkImport', () => ({
       errors: []
     })
   }
-}))
-
-// Mock formatDate
-vi.mock('../../src/utils/formatters', () => ({
-  formatDate: (date: string) => date
 }))
 
 // Mock the currentUser store
@@ -922,5 +917,19 @@ describe('GroupMembersManager large class pagination', () => {
     expect(wrapper.find('[data-testid="members-page-prev"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="members-page-next"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="members-page-indicator"]').exists()).toBe(false)
+  })
+})
+
+describe('GroupMembersManager joined date', () => {
+  it('shows the day a participant joined on the saved time zone\'s calendar', async () => {
+    // 11:30 UTC is already 16/03 in Auckland (UTC+13).
+    vi.mocked(axios.get).mockResolvedValueOnce({
+      data: { data: [{ id: 'gm-1', user_id: 'p-1', role: 'member', joined_at: '2026-03-15T11:30:00Z', user: { id: 'p-1', email: 'p@example.com', display_name: 'Pat Participant' } }] }
+    })
+    const wrapper = mountComponent({ canEditGroup: true, canNameOwner: true, isOwner: true })
+    getActivePinia()!.state.value.UserSettings = { settings: { timezone: 'Pacific/Auckland' } }
+    await flushPromises()
+
+    expect(rowOf(wrapper, 'Pat Participant').find('td[title]').attributes('title')).toContain('16/03/2026')
   })
 })

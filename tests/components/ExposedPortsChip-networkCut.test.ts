@@ -12,6 +12,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
+import { createPinia, setActivePinia } from 'pinia'
 
 const getExposedPorts = vi.fn()
 vi.mock('../../src/services/domain/terminal/terminalService', () => ({
@@ -27,6 +28,7 @@ vi.mock('../../src/composables/useNotification', () => ({
 }))
 
 import ExposedPortsChip from '../../src/components/Terminal/ExposedPortsChip.vue'
+import { useUserSettingsStore } from '../../src/stores/userSettings'
 
 async function mountChip(props: Record<string, unknown>, locale: 'en' | 'fr' = 'en') {
   const wrapper = mount(ExposedPortsChip, {
@@ -75,5 +77,18 @@ describe('ExposedPortsChip — internet cut by the training team', () => {
     const wrapper = await mountChip({ hasNetwork: false, networkCut: false })
 
     expect(wrapper.find('.ports-locked').text()).toMatch(/Start a session with internet access/i)
+  })
+})
+
+describe('ExposedPortsChip — expiry clock', () => {
+  it('shows the expiry time in the app language and the saved time zone', async () => {
+    setActivePinia(createPinia())
+    useUserSettingsStore().settings.timezone = 'Pacific/Auckland'
+    // 11:30 UTC is 00:30 in Auckland (UTC+13).
+    getExposedPorts.mockResolvedValue([{ id: 'ep-1', port: 8080, slug: 's', url: 'https://s.example', created_at: '2026-03-15T11:00:00Z', expires_at: '2026-03-15T11:30:00Z' }])
+
+    const wrapper = await mountChip({ hasNetwork: true }, 'fr')
+
+    expect(wrapper.find('.exposed-port-expiry').attributes('title')).toContain('00:30')
   })
 })

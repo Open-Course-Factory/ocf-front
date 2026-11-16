@@ -94,7 +94,7 @@ describe('AdminOrgPlanModal — period end in the admin\'s language and time zon
   // day in Los Angeles (UTC-7): whatever the machine's zone, one case differs.
   it.each([
     ['fr', 'Pacific/Auckland', '16/03/2026'],
-    ['en', 'America/Los_Angeles', '3/15/2026'],
+    ['en', 'America/Los_Angeles', '15/03/2026'],
   ] as const)('shows a %s admin in %s a period ending on %s', async (locale, timezone, expected) => {
     const pinia = createPinia()
     setActivePinia(pinia)

@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import axios from 'axios'
 
@@ -59,24 +59,43 @@ describe('UserTerminalKeys — regeneration refused', () => {
   })
 })
 
+// The key's creation date as the page shows it to a user with this language
+// and saved zone. 11:30 UTC is already the next day in Auckland (UTC+13) but
+// still the same day in Los Angeles (UTC-7).
+async function keyCreatedAtText(locale: 'en' | 'fr', savedZone: string) {
+  vi.mocked(axios.get).mockResolvedValueOnce({ data: { id: 'key-1', key_name: 'k', is_active: true, created_at: '2026-03-15T11:30:00Z' } })
+  const pinia = createPinia()
+  setActivePinia(pinia)
+  useUserSettingsStore().settings.timezone = savedZone
+  i18n.global.locale.value = locale
+
+  const wrapper = mount(UserTerminalKeys, {
+    global: { plugins: [i18n, pinia], stubs: { BaseModal: true, ErrorAlert: true } }
+  })
+  await flushPromises()
+  return wrapper.text()
+}
+
 describe('UserTerminalKeys — creation date in the user\'s language and time zone', () => {
-  // 11:30 UTC is already the next day in Auckland (UTC+13) but still the same
-  // day in Los Angeles (UTC-7): whatever the machine's zone, one case differs.
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  // Whatever the machine's zone, one of the two cases differs from it.
   it.each([
     ['fr', 'Pacific/Auckland', '16/03/2026'],
-    ['en', 'America/Los_Angeles', '3/15/2026'],
+    ['en', 'America/Los_Angeles', '15/03/2026'],
   ] as const)('shows a %s user in %s the key created on %s', async (locale, timezone, expected) => {
-    vi.mocked(axios.get).mockResolvedValueOnce({ data: { id: 'key-1', key_name: 'k', is_active: true, created_at: '2026-03-15T11:30:00Z' } })
-    const pinia = createPinia()
-    setActivePinia(pinia)
-    useUserSettingsStore().settings.timezone = timezone
-    i18n.global.locale.value = locale
+    expect(await keyCreatedAtText(locale, timezone)).toContain(expected)
+  })
 
-    const wrapper = mount(UserTerminalKeys, {
-      global: { plugins: [i18n, pinia], stubs: { BaseModal: true, ErrorAlert: true } }
+  it('uses the browser zone when the saved zone is the backend default UTC', async () => {
+    // The browser says Auckland, whatever the machine running the tests uses.
+    const real = Intl.DateTimeFormat.prototype.resolvedOptions
+    vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockImplementation(function (this: Intl.DateTimeFormat) {
+      return { ...real.call(this), timeZone: 'Pacific/Auckland' }
     })
-    await flushPromises()
 
-    expect(wrapper.text()).toContain(expected)
+    expect(await keyCreatedAtText('fr', 'UTC')).toContain('16/03/2026')
   })
 })

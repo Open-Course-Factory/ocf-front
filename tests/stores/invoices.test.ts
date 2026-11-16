@@ -184,7 +184,7 @@ describe('invoices store - amounts and dates follow the app language', () => {
     const store = useInvoicesStore()
 
     expect(store.formatAmount(1999, 'EUR')).toBe('€19.99')
-    expect(store.formatDate(INVOICE_DATE)).toBe('3/15/2026')
+    expect(store.formatDate(INVOICE_DATE)).toBe('15/03/2026')
   })
 
   it('shows a French amount and date to a French user', () => {

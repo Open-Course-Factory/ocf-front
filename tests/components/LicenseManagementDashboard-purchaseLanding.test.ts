@@ -313,7 +313,7 @@ describe('LicenseManagementDashboard — batch dates follow the app language', (
   })
 
   it.each([
-    ['en', '3/15/2026'],
+    ['en', '15/03/2026'],
     ['fr', '15/03/2026'],
   ] as const)('shows the renewal date to a %s user as %s', async (locale, expected) => {
     const wrapper = mountDashboard(locale)

@@ -46,7 +46,7 @@ async function previewIn(locale: 'en' | 'fr') {
 
 describe('InvoiceCleanup — preview amounts and dates follow the app language', () => {
   it.each([
-    ['en', '€19.99', '3/15/2026'],
+    ['en', '€19.99', '15/03/2026'],
     ['fr', '19,99 €', '15/03/2026'],
   ] as const)('shows a %s user %s on %s', async (locale, amount, date) => {
     const cells = (await previewIn(locale)).map(td => td.text())

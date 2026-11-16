@@ -18,16 +18,16 @@ import { formatCurrency } from '../../src/utils/formatters'
 describe('formatCurrency', () => {
   it('falls back to EUR when the currency is an empty string', () => {
     // The exact input that crashed the admin organizations panel.
-    expect(() => formatCurrency(1990, '')).not.toThrow()
-    expect(formatCurrency(1990, '')).toBe(formatCurrency(1990, 'EUR'))
+    expect(() => formatCurrency(1990, '', 'fr-FR')).not.toThrow()
+    expect(formatCurrency(1990, '', 'fr-FR')).toBe(formatCurrency(1990, 'EUR', 'fr-FR'))
   })
 
   it('falls back to EUR when the currency is whitespace', () => {
-    expect(formatCurrency(1990, '   ')).toBe(formatCurrency(1990, 'EUR'))
+    expect(formatCurrency(1990, '   ', 'fr-FR')).toBe(formatCurrency(1990, 'EUR', 'fr-FR'))
   })
 
   it('falls back to EUR when the currency is undefined', () => {
-    expect(formatCurrency(1990, undefined)).toBe(formatCurrency(1990, 'EUR'))
+    expect(formatCurrency(1990, undefined, 'fr-FR')).toBe(formatCurrency(1990, 'EUR', 'fr-FR'))
   })
 
   it('still honours an explicit currency', () => {
@@ -35,6 +35,6 @@ describe('formatCurrency', () => {
   })
 
   it('formats zero rather than treating it as missing', () => {
-    expect(formatCurrency(0, 'eur')).toBe(formatCurrency(0, 'EUR'))
+    expect(formatCurrency(0, 'eur', 'fr-FR')).toBe(formatCurrency(0, 'EUR', 'fr-FR'))
   })
 })

@@ -37,10 +37,6 @@ vi.mock('../../src/services/domain/bulkImport', () => ({
   },
 }))
 
-vi.mock('../../src/utils/formatters', () => ({
-  formatDate: (date: string) => date,
-}))
-
 vi.mock('../../src/stores/currentUser', () => ({
   useCurrentUserStore: () => ({
     userId: 'current-user-id',

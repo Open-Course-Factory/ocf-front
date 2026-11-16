@@ -28,6 +28,7 @@ vi.mock('vue-router', () => ({
 }))
 
 import GroupSettingsTab from '../../src/components/Groups/GroupSettingsTab.vue'
+import i18n from '../../src/i18n'
 
 const openClass = {
   id: 'class-1',
@@ -147,5 +148,16 @@ describe('GroupSettingsTab archive verb', () => {
 
     expect(toastError).toHaveBeenCalledWith('organization is archived')
     expect(wrapper.emitted('group-updated')).toBeUndefined()
+  })
+})
+
+describe('GroupSettingsTab dates', () => {
+  it('shows an English user the creation date and time in English', () => {
+    i18n.global.locale.value = 'en'
+    // Mid-morning UTC: the same calendar day in every zone from UTC-10 to UTC+13.
+    const wrapper = mountTab({ ...openClass, created_at: '2026-03-15T10:00:00Z' })
+
+    // en-GB date and time: "15/03/2026, 10:00:00" (French has no comma).
+    expect(wrapper.text()).toContain('15/03/2026, ')
   })
 })
