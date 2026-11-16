@@ -109,14 +109,12 @@ See [CSS.md](.claude/docs/CSS.md) for CSS variables and shared classes.
 
 ### Error Handling
 
-**Always use translation keys - never hardcode error messages**
+**Always use `extractErrorMessage` (`utils/formatters`) with a translation key - never hardcode error messages.** It reads every backend error shape and never shows axios' own text.
 
 ```typescript
 // ✅ CORRECT
 catch (err: any) {
-  error.value = err.response?.data?.error_message ||
-                err.response?.data?.message ||
-                t('myDomain.errorKey')
+  error.value = extractErrorMessage(err, t('myDomain.errorKey'))
 }
 
 // ❌ WRONG
