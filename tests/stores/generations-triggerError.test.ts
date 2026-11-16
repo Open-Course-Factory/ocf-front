@@ -84,6 +84,6 @@ describe('generations store — generation trigger error (#415)', () => {
     await store.createEntity('/generations', { format: '0' })
 
     const generation = store.entities.find((e: any) => e.id === 'g1')
-    expect(generation?.error_message).toBe('generations.triggerError: generations.failed')
+    expect(generation?.error_message).toBe('generations.triggerFailed')
   })
 })
