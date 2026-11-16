@@ -25,7 +25,6 @@ import { ref } from 'vue'
 import axios from 'axios'
 import { isDemoMode, logDemoAction, simulateDelay, demoPayments, getDemoCurrentSubscription, getDemoUsageMetrics } from '../services/demo'
 import { featureFlagService } from '../services/features'
-import { formatDate as formatDateUtil } from '../utils/formatters'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
 import { pollUntil } from '../utils/pollUntil'
 import { useStatusFormatters } from '../composables/useStatusFormatters'
@@ -495,10 +494,6 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     // Use shared status formatters (utilise le composable réutilisable)
     const { getStatusClass, getStatusIcon } = useStatusFormatters('subscription')
 
-    const formatDate = (dateString: string) => {
-        return formatDateUtil(dateString, 'fr-FR', '-')
-    }
-
     const isCanceled = () => {
         return currentSubscription.value?.cancel_at_period_end === true
     }
@@ -542,7 +537,6 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         // Utilitaires
         getStatusClass,
         getStatusIcon,
-        formatDate,
         isCanceled,
         hasActiveSubscription
     }

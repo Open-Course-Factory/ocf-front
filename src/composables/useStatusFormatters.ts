@@ -3,8 +3,6 @@
  * Provides reusable status formatters to avoid duplication across stores
  */
 
-import { formatDate as formatDateUtil } from '../utils/formatters'
-
 /**
  * Status class mappings for common status types
  */
@@ -129,25 +127,9 @@ export function useStatusFormatters(
     return iconMap[normalizedStatus] || 'fas fa-question-circle'
   }
 
-  /**
-   * Format a date string using the common date formatter
-   * @param dateString - ISO date string
-   * @param locale - Locale for formatting (default: 'fr-FR')
-   * @param fallback - Fallback value if date is invalid (default: '-')
-   * @returns Formatted date string
-   */
-  const formatDate = (
-    dateString: string | null | undefined,
-    locale: string = 'fr-FR',
-    fallback: string = '-'
-  ): string => {
-    return formatDateUtil(dateString, locale, fallback)
-  }
-
   return {
     getStatusClass,
     getStatusIcon,
-    formatDate,
   }
 }
 
@@ -186,17 +168,8 @@ export function useCustomStatusFormatters(options: {
     return iconMap[normalizedStatus] || 'fas fa-question-circle'
   }
 
-  const formatDate = (
-    dateString: string | null | undefined,
-    locale: string = 'fr-FR',
-    fallback: string = '-'
-  ): string => {
-    return formatDateUtil(dateString, locale, fallback)
-  }
-
   return {
     getStatusClass,
     getStatusIcon,
-    formatDate,
   }
 }
