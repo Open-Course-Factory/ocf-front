@@ -26,6 +26,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useEmailTemplatesStore } from '../../stores/emailTemplates'
 import { useNotification } from '../../composables/useNotification'
+import { extractErrorMessage } from '../../utils/formatters'
 import type { EmailTemplateVariable } from '../../types/entities'
 import VariablesEditor from '../EmailTemplates/VariablesEditor.vue'
 import EmailPreview from '../EmailTemplates/EmailPreview.vue'
@@ -79,7 +80,7 @@ const loadTemplate = async () => {
       is_active: template.is_active
     })
   } catch (err: any) {
-    showError(err.message || 'Failed to load template')
+    showError(extractErrorMessage(err, 'Failed to load template'))
     router.push({ name: 'EmailTemplates' })
   } finally {
     isLoading.value = false
@@ -100,7 +101,7 @@ const handleSave = async () => {
     }
     router.push({ name: 'EmailTemplates' })
   } catch (err: any) {
-    showError(err.message || 'Failed to save template')
+    showError(extractErrorMessage(err, 'Failed to save template'))
   } finally {
     isSaving.value = false
   }

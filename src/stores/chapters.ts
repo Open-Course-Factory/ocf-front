@@ -25,6 +25,7 @@ import { useBaseStore } from "./baseStore"
 import { useSectionsStore } from "./sections"
 import { useCoursesStore } from "./courses"
 import { useStoreTranslations } from '../composables/useTranslations'
+import { extractErrorMessage } from '../utils/formatters'
 import { field, buildFieldList } from '../utils/fieldBuilder'
 import type { Chapter } from '../types/entities'
 
@@ -128,9 +129,7 @@ export const useChaptersStore = defineStore('chapters', () => {
             if (err.response?.status === 404) {
                 base.error.value = t('chapters.chapterNotFound')
             } else {
-                base.error.value = err.response?.data?.error ||
-                                  err.response?.data?.message ||
-                                  t('chapters.errorLoadingChapter')
+                base.error.value = extractErrorMessage(err, t('chapters.errorLoadingChapter'))
             }
             console.error('Error fetching chapter by ID:', err)
             return null

@@ -367,6 +367,7 @@ import { getTranslationKey } from '../../utils';
 import { useRoute, useRouter } from 'vue-router';
 import { useBaseStore } from '../../stores/baseStore';
 import { useNotification } from '../../composables/useNotification';
+import { extractErrorMessage } from '../../utils/formatters';
 import { useAdminViewMode } from '../../composables/useAdminViewMode';
 import { useCurrentUserStore } from '../../stores/currentUser';
 import { useEntitySearch } from '../../composables/useEntitySearch';
@@ -1289,7 +1290,7 @@ async function exportEntities() {
     showSuccess(t('exportSuccess'));
   } catch (error: any) {
     console.error('Export error:', error);
-    showError(error.message || 'Export failed');
+    showError(extractErrorMessage(error, 'Export failed'));
   } finally {
     isExporting.value = false;
   }

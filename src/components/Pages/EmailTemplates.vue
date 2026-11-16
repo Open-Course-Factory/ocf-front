@@ -26,6 +26,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEmailTemplatesStore } from '../../stores/emailTemplates'
 import { useNotification } from '../../composables/useNotification'
+import { extractErrorMessage } from '../../utils/formatters'
 import type { EmailTemplate } from '../../types/entities'
 import BaseModal from '../Modals/BaseModal.vue'
 
@@ -51,7 +52,7 @@ const loadTemplates = async () => {
   try {
     await emailTemplatesStore.loadTemplates()
   } catch (err: any) {
-    showError(err.message || emailTemplatesStore.t('emailTemplates.loadError'))
+    showError(extractErrorMessage(err, emailTemplatesStore.t('emailTemplates.loadError')))
   }
 }
 
@@ -78,7 +79,7 @@ const handleDelete = async (template: EmailTemplate) => {
     showSuccess(emailTemplatesStore.t('emailTemplates.deleteSuccess'))
     await loadTemplates()
   } catch (err: any) {
-    showError(err.message || 'Failed to delete template')
+    showError(extractErrorMessage(err, 'Failed to delete template'))
   }
 }
 
@@ -103,7 +104,7 @@ const sendTestEmail = async () => {
     showSuccess(`${emailTemplatesStore.t('emailTemplates.testEmailSuccess')} ${testEmailAddress.value}`)
     closeTestModal()
   } catch (err: any) {
-    showError(err.message || emailTemplatesStore.t('emailTemplates.testEmailError'))
+    showError(extractErrorMessage(err, emailTemplatesStore.t('emailTemplates.testEmailError')))
   } finally {
     sendingTest.value = false
   }
