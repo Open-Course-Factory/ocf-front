@@ -459,7 +459,7 @@ describe('SubscriptionPlansCustomer — direct-to-Stripe checkout', () => {
   // WHY: 2026-07-10. `hasBulkPurchaseFeature` gated the "Voir les tarifs en
   // volume" entry point behind `isAdmin`. Real trainers are Casbin `Member`s,
   // never platform admins, so the exact users the Trainer plan's degressive
-  // pricing targets never saw the PricingCalculator entry point. The section
+  // pricing targets never saw the volume pricing entry point. The section
   // must show for ANY plan with `use_tiered_pricing === true`, regardless of
   // admin status. These render as a NON-admin (the default useAdminViewMode
   // mock above returns isAdmin=false), i.e. as a real trainer would.
@@ -499,7 +499,7 @@ describe('SubscriptionPlansCustomer — direct-to-Stripe checkout', () => {
 
       const card = findCard(wrapper, 'Formateur')
       expect(card, 'plan card should render').toBeTruthy()
-      // The entry point to the PricingCalculator — its section and the
+      // The volume pricing entry point — its section and the
       // "view bulk pricing" button must be present for a real trainer.
       expect(card.find('.bulk-purchase-section').exists()).toBe(true)
       expect(card.find('button.btn-bulk-purchase').exists()).toBe(true)
