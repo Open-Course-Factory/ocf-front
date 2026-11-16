@@ -6,9 +6,9 @@
  * live-session wall in GroupLiveSessionsTab), which previously each re-declared an
  * identical scoped `.btn` set.
  *
- * They are namespaced `ocf-btn` on purpose: this app loads Bootstrap globally, whose
- * `.btn` would otherwise win or lose by stylesheet load order (a known collision).
- * An `ocf-`-prefixed name cannot collide, so these can live in one globally-imported
+ * They are namespaced `ocf-btn` on purpose: a bare `.btn` would collide with the
+ * global `.btn` in components.css and the scoped re-declarations of it. An
+ * `ocf-`-prefixed name cannot collide, so these can live in one globally-imported
  * sheet instead of being scoped per component. Colors and spacing come from design
  * tokens for dark-mode safety.
  */

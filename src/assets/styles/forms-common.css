@@ -34,22 +34,29 @@
 /* === FORM CONTROLS === */
 
 .form-control,
+.form-select,
 input.form-control,
 select.form-control,
 textarea.form-control {
+  display: block;
   width: 100%;
   padding: var(--input-padding);
   background-color: var(--color-bg-primary);
+  background-clip: padding-box;
   border: var(--input-border);
   border-radius: var(--border-radius-md);
   color: var(--color-text-primary);
   font-size: var(--font-size-base);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
   font-family: var(--font-family-primary);
+  appearance: none;
   transition: border-color var(--transition-base), box-shadow var(--transition-base);
   box-sizing: border-box;
 }
 
 .form-control:focus,
+.form-select:focus,
 input.form-control:focus,
 select.form-control:focus,
 textarea.form-control:focus {
@@ -58,7 +65,8 @@ textarea.form-control:focus {
   box-shadow: var(--shadow-focus-primary);
 }
 
-.form-control:disabled {
+.form-control:disabled,
+.form-select:disabled {
   background-color: var(--color-gray-100);
   cursor: not-allowed;
   opacity: 0.6;
@@ -105,6 +113,12 @@ select.form-control,
   cursor: pointer;
 }
 
+.form-select-sm {
+  padding: var(--spacing-xs) 2.5rem var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  border-radius: var(--border-radius-sm);
+}
+
 select.form-control option {
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
@@ -127,6 +141,8 @@ textarea.form-control {
 }
 
 .form-check-input {
+  flex-shrink: 0;
+  accent-color: var(--color-primary);
   margin-right: var(--spacing-sm);
   width: 18px;
   height: 18px;
