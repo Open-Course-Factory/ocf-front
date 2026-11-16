@@ -97,7 +97,7 @@ async function addLearner(page: Page, email: string): Promise<void> {
  */
 async function deleteClassIfPresent(page: Page, name: string): Promise<void> {
   // A failure can leave a modal overlay swallowing clicks on the sidebar, and
-  // BaseModal has no Escape handler — its close button is the only way out.
+  // BaseModal ignores Escape when closeOnOverlayClick is false; its close button always works.
   const close = page.locator('.base-modal-close')
   if (await close.isVisible().catch(() => false)) {
     await close.click({ timeout: 5_000 }).catch(() => {})

@@ -388,6 +388,11 @@ describe('BaseModal', () => {
       expect(label.exists()).toBe(true)
       expect(label.text()).toContain('Delete member')
     })
+
+    it('sets no aria-labelledby when there is no title', () => {
+      const wrapper = mountModal({}, { header: '<h3>Custom</h3>' })
+      expect(wrapper.find('.base-modal-container').attributes()).not.toHaveProperty('aria-labelledby')
+    })
   })
 
   describe('keyboard and focus', () => {
@@ -432,6 +437,60 @@ describe('BaseModal', () => {
       pressEscape()
       await nextTick()
       expect(wrapper.emitted('close')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('ignores Escape when closeOnOverlayClick is false, to protect unsaved edits', async () => {
+      const wrapper = mountAttached({ visible: true, closeOnOverlayClick: false })
+      await nextTick()
+      expect(wrapper.find('.base-modal-container').element.contains(document.activeElement)).toBe(true)
+      pressEscape()
+      await nextTick()
+      expect(wrapper.emitted('close')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('focuses an [autofocus] child, and leaves a caller-focused input alone', async () => {
+      const wrapper = mount(BaseModal, {
+        props: { visible: false },
+        slots: { default: '<input class="first" /><input class="auto" autofocus />' },
+        attachTo: document.body,
+        global: { plugins: [createTestI18n()] }
+      })
+      await wrapper.setProps({ visible: true })
+      expect(document.activeElement).toBe(wrapper.find('.auto').element)
+
+      // A caller that focuses its own field after open (await nextTick(); el.focus()) keeps it.
+      const first = wrapper.find('.first').element as HTMLInputElement
+      first.focus()
+      await new Promise(resolve => setTimeout(resolve, 50))
+      expect(document.activeElement).toBe(first)
+      wrapper.unmount()
+    })
+
+    it('returns focus to the opener when a parent v-if removes the open modal, and tolerates a removed opener', async () => {
+      const show = ref(false)
+      const Host = defineComponent({
+        setup() {
+          return () => show.value ? h(BaseModal, { visible: true, title: 'T' }, () => h('input')) : null
+        }
+      })
+      const wrapper = mount(Host, { attachTo: document.body, global: { plugins: [createTestI18n()] } })
+      show.value = true
+      await nextTick()
+      await nextTick()
+      expect(document.querySelector('.base-modal-container')!.contains(document.activeElement)).toBe(true)
+      show.value = false
+      await nextTick()
+      expect(document.activeElement).toBe(opener)
+
+      show.value = true
+      await nextTick()
+      await nextTick()
+      opener.remove()
+      show.value = false
+      await expect(nextTick()).resolves.not.toThrow()
+      expect(document.querySelector('.base-modal-container')).toBeNull()
       wrapper.unmount()
     })
 
