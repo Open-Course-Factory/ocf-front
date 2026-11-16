@@ -593,13 +593,13 @@ onMounted(refresh)
 }
 
 .timestamp-cell {
-  font-family: var(--font-family-monospace);
+  font-family: monospace;
   color: var(--color-text-muted);
   white-space: nowrap;
 }
 
 .hook-name-cell {
-  font-family: var(--font-family-monospace);
+  font-family: monospace;
   color: var(--color-primary);
   font-weight: var(--font-weight-medium);
 }
@@ -617,7 +617,7 @@ onMounted(refresh)
 
 .error-cell {
   color: var(--color-danger-text);
-  font-family: var(--font-family-monospace);
+  font-family: monospace;
   word-break: break-word;
 }
 
