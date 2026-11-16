@@ -56,6 +56,16 @@ describe('withAsync — fallback key is translated (#389)', () => {
     expect(state.error.value).toBe(expected)
   })
 
+  it('stores the translation when the request got no answer at all', async () => {
+    i18n.global.locale.value = 'fr'
+    const state = createState()
+    const networkError = { isAxiosError: true, request: {}, message: 'Network Error', config: {} }
+
+    await withAsync(state, async () => { throw networkError }, 'asyncFallbackTest.loadError').catch(() => {})
+
+    expect(state.error.value).toBe('Impossible de charger la chose')
+  })
+
   it('stores the translation when the 502 body is empty', async () => {
     i18n.global.locale.value = 'en'
     const state = createState()

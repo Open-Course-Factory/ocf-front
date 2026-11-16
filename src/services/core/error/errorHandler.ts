@@ -124,10 +124,8 @@ export class ErrorHandlerService {
 
     // Network error (no response)
     if (!response) {
-      const networkError = new NetworkError(
-        'Network error - please check your connection',
-        error
-      );
+      // The caller's fallback, already in the user's language.
+      const networkError = new NetworkError(fallbackKey, error);
       if (logToConsole) {
         this.logError(networkError);
       }
