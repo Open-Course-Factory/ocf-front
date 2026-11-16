@@ -14,6 +14,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
+import { pickFile } from '../helpers/fileInput'
 import { createI18n } from 'vue-i18n'
 import { computed } from 'vue'
 
@@ -60,13 +61,6 @@ async function choose(wrapper: VueWrapper, format: 'killercoda' | 'json', destin
   await flushPromises()
 }
 
-/** Hand a file to the visible file input, as picking one in the browser does. */
-async function pickFile(wrapper: VueWrapper, file: File) {
-  const input = wrapper.find('input[type="file"]')
-  Object.defineProperty(input.element, 'files', { value: [file], configurable: true })
-  await input.trigger('change')
-  await flushPromises()
-}
 
 async function clickImport(wrapper: VueWrapper) {
   const importButton = wrapper.findAll('.upload-footer .btn-primary').find(b => !b.attributes('disabled'))
