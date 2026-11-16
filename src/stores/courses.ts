@@ -197,50 +197,8 @@ export const useCoursesStore = defineStore('courses', () => {
      * @param courseId - The ID of the course
      * @returns The course or null if not found
      */
-    const fetchCourseById = async (courseId: string): Promise<Course | null> => {
-        base.isLoading.value = true
-        base.error.value = ''
-
-        try {
-            // Build include parameter from store configuration
-            const includeList = [...base.includeParams.children, ...base.includeParams.parents]
-            const includeParam = includeList.length > 0 ? `?include=${includeList.join(',')}` : ''
-
-            // Try with include parameter first
-            let response;
-            try {
-                response = await axios.get(`/courses/${courseId}${includeParam}`)
-            } catch (includeError: any) {
-                // Only retry without include if we get a 404 AND the entity actually exists
-                // This handles backends that don't support include on detail endpoints
-                if (includeError.response?.status === 404 && includeParam) {
-                    console.warn(`Retrying /courses/${courseId} without include parameter`)
-                    try {
-                        response = await axios.get(`/courses/${courseId}`)
-                    } catch (retryError: any) {
-                        // If still 404, the entity really doesn't exist
-                        throw retryError
-                    }
-                } else {
-                    throw includeError
-                }
-            }
-
-            return response.data
-        } catch (err: any) {
-            if (err.response?.status === 404) {
-                base.error.value = t('courses.versionNotFound')
-            } else {
-                base.error.value = err.response?.data?.error ||
-                                  err.response?.data?.message ||
-                                  t('courses.errorLoadingVersion')
-            }
-            console.error('Error fetching course by ID:', err)
-            return null
-        } finally {
-            base.isLoading.value = false
-        }
-    }
+    const fetchCourseById = (courseId: string) =>
+        base.fetchOneWithInclude<Course>('/courses', courseId, t('courses.versionNotFound'), t('courses.errorLoadingVersion'))
 
     /**
      * Delete a specific course version
