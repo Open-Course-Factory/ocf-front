@@ -2,8 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   ErrorHandlerService,
   errorHandler,
-  handleStoreError,
-  wrapAsyncStoreCall
+  handleStoreError
 } from '../../src/services/core/error/errorHandler'
 import {
   ApiError,
@@ -218,24 +217,6 @@ describe('ErrorHandlerService', () => {
       })
     })
   })
-
-  describe('getStatusMessage', () => {
-    it('returns appropriate message for known status codes', () => {
-      expect(errorHandler.getStatusMessage(400)).toBe('Invalid request')
-      expect(errorHandler.getStatusMessage(401)).toBe('Authentication required')
-      expect(errorHandler.getStatusMessage(403)).toBe('Access denied')
-      expect(errorHandler.getStatusMessage(404)).toBe('Resource not found')
-      expect(errorHandler.getStatusMessage(409)).toBe('Conflict - resource already exists')
-      expect(errorHandler.getStatusMessage(422)).toBe('Validation failed')
-      expect(errorHandler.getStatusMessage(500)).toBe('Server error')
-      expect(errorHandler.getStatusMessage(502)).toBe('Service unavailable')
-      expect(errorHandler.getStatusMessage(503)).toBe('Service temporarily unavailable')
-    })
-
-    it('returns default message for unknown status codes', () => {
-      expect(errorHandler.getStatusMessage(418)).toBe('An error occurred')
-    })
-  })
 })
 
 describe('handleStoreError', () => {
@@ -259,82 +240,5 @@ describe('handleStoreError', () => {
   it('returns fallback key when error has no message', () => {
     const result = handleStoreError('unknown', 'store.fallback')
     expect(result).toBe('store.fallback')
-  })
-})
-
-describe('wrapAsyncStoreCall', () => {
-  beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-  })
-
-  it('sets loading to true during operation and false after', async () => {
-    const loadingRef = { value: false }
-    const errorRef = { value: '' }
-
-    let loadingDuringExecution = false
-
-    await wrapAsyncStoreCall(
-      loadingRef,
-      errorRef,
-      async () => {
-        loadingDuringExecution = loadingRef.value
-        return 'result'
-      },
-      'store.error'
-    )
-
-    expect(loadingDuringExecution).toBe(true)
-    expect(loadingRef.value).toBe(false)
-  })
-
-  it('clears error at start', async () => {
-    const loadingRef = { value: false }
-    const errorRef = { value: 'previous error' }
-
-    let errorDuringExecution = ''
-
-    await wrapAsyncStoreCall(
-      loadingRef,
-      errorRef,
-      async () => {
-        errorDuringExecution = errorRef.value
-        return 'result'
-      },
-      'store.error'
-    )
-
-    expect(errorDuringExecution).toBe('')
-  })
-
-  it('returns the result of the operation', async () => {
-    const loadingRef = { value: false }
-    const errorRef = { value: '' }
-
-    const result = await wrapAsyncStoreCall(
-      loadingRef,
-      errorRef,
-      async () => 'my-data',
-      'store.error'
-    )
-
-    expect(result).toBe('my-data')
-  })
-
-  it('sets error and re-throws on failure', async () => {
-    const loadingRef = { value: false }
-    const errorRef = { value: '' }
-
-    await expect(
-      wrapAsyncStoreCall(
-        loadingRef,
-        errorRef,
-        async () => { throw new Error('Boom') },
-        'store.fallback'
-      )
-    ).rejects.toThrow('Boom')
-
-    expect(errorRef.value).toBe('Boom')
-    expect(loadingRef.value).toBe(false)
   })
 })

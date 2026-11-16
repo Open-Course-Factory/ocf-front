@@ -210,25 +210,6 @@ export class ErrorHandlerService {
         break;
     }
   }
-
-  /**
-   * Utility: Get user-friendly message for common HTTP status codes
-   */
-  getStatusMessage(statusCode: number): string {
-    const messages: Record<number, string> = {
-      [HttpStatusCode.BAD_REQUEST]: 'Invalid request',
-      [HttpStatusCode.UNAUTHORIZED]: 'Authentication required',
-      [HttpStatusCode.FORBIDDEN]: 'Access denied',
-      [HttpStatusCode.NOT_FOUND]: 'Resource not found',
-      [HttpStatusCode.CONFLICT]: 'Conflict - resource already exists',
-      [HttpStatusCode.UNPROCESSABLE_ENTITY]: 'Validation failed',
-      [HttpStatusCode.INTERNAL_SERVER_ERROR]: 'Server error',
-      [HttpStatusCode.BAD_GATEWAY]: 'Service unavailable',
-      [HttpStatusCode.SERVICE_UNAVAILABLE]: 'Service temporarily unavailable',
-    };
-
-    return messages[statusCode] || 'An error occurred';
-  }
 }
 
 /**
@@ -252,38 +233,4 @@ export const errorHandler = ErrorHandlerService.getInstance();
 export function handleStoreError(error: any, fallbackKey: string): string {
   const apiError = errorHandler.handleError(error, { fallbackKey });
   return apiError.userMessage;
-}
-
-/**
- * Async wrapper for store operations with automatic error handling
- *
- * @example
- * const loadData = wrapAsyncStoreCall(
- *   base.isLoading,
- *   base.error,
- *   async () => {
- *     const response = await axios.get('/endpoint')
- *     return response.data
- *   },
- *   'myDomain.loadError'
- * )
- */
-export async function wrapAsyncStoreCall<T>(
-  loadingRef: { value: boolean },
-  errorRef: { value: string },
-  operation: () => Promise<T>,
-  fallbackKey: string
-): Promise<T> {
-  loadingRef.value = true;
-  errorRef.value = '';
-
-  try {
-    const result = await operation();
-    return result;
-  } catch (err: any) {
-    errorRef.value = handleStoreError(err, fallbackKey);
-    throw err;
-  } finally {
-    loadingRef.value = false;
-  }
 }

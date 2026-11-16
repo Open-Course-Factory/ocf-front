@@ -11,8 +11,7 @@ vi.mock('../../src/services/core/error', () => ({
 }))
 
 import {
-  withAsync,
-  withAsyncSequence
+  withAsync
 } from '../../src/utils/asyncWrapper'
 import type { AsyncState } from '../../src/utils/asyncWrapper'
 
@@ -93,23 +92,5 @@ describe('withAsync — state transitions', () => {
     )
 
     expect(errorDuringExecution).toBe('existing error')
-  })
-})
-
-describe('withAsyncSequence — state transitions', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('sets loading state during sequence', async () => {
-    const state = createState()
-    let loadingDuring = false
-
-    await withAsyncSequence(state, [
-      [async () => { loadingDuring = state.isLoading.value; return 'ok' }, 'op.error']
-    ])
-
-    expect(loadingDuring).toBe(true)
-    expect(state.isLoading.value).toBe(false)
   })
 })

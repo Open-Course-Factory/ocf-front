@@ -12,9 +12,7 @@ vi.mock('../../src/services/core/error', () => ({
 
 import {
   withAsync,
-  createAsyncWrapper,
-  withAsyncSequence,
-  withAsyncParallel
+  createAsyncWrapper
 } from '../../src/utils/asyncWrapper'
 import type { AsyncState } from '../../src/utils/asyncWrapper'
 
@@ -77,47 +75,5 @@ describe('createAsyncWrapper — error handling', () => {
     ).rejects.toThrow('Bound error')
 
     expect(state.error.value).toBe('Bound error')
-  })
-})
-
-describe('withAsyncSequence — error handling', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('stops on first error and sets error message', async () => {
-    const state = createState()
-
-    await expect(
-      withAsyncSequence(state, [
-        [async () => 'ok', 'op1.error'],
-        [async () => { throw new Error('second failed') }, 'op2.error'],
-        [async () => 'never', 'op3.error']
-      ])
-    ).rejects.toThrow('second failed')
-
-    expect(state.error.value).toBe('second failed')
-    expect(state.isLoading.value).toBe(false)
-  })
-})
-
-describe('withAsyncParallel — error handling', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('sets error using first operation fallback key on failure', async () => {
-    const state = createState()
-
-    await expect(
-      withAsyncParallel(state, [
-        [async () => 'ok', 'first.error'],
-        [async () => { throw new Error('parallel fail') }, 'second.error']
-      ])
-    ).rejects.toThrow('parallel fail')
-
-    // Uses handleStoreError with the error; our mock returns the error message
-    expect(state.error.value).toBe('parallel fail')
-    expect(state.isLoading.value).toBe(false)
   })
 })

@@ -12,9 +12,7 @@ vi.mock('../../src/services/core/error', () => ({
 
 import {
   withAsync,
-  createAsyncWrapper,
-  withAsyncSequence,
-  withAsyncParallel
+  createAsyncWrapper
 } from '../../src/utils/asyncWrapper'
 import type { AsyncState } from '../../src/utils/asyncWrapper'
 
@@ -83,55 +81,5 @@ describe('createAsyncWrapper — success path', () => {
 
     expect(result).toBe(42)
     expect(state.isLoading.value).toBe(false)
-  })
-})
-
-describe('withAsyncSequence — success path', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('executes operations sequentially and returns all results', async () => {
-    const state = createState()
-    const executionOrder: number[] = []
-
-    const [r1, r2] = await withAsyncSequence(state, [
-      [async () => { executionOrder.push(1); return 'first' }, 'op1.error'],
-      [async () => { executionOrder.push(2); return 'second' }, 'op2.error']
-    ])
-
-    expect(r1).toBe('first')
-    expect(r2).toBe('second')
-    expect(executionOrder).toEqual([1, 2])
-    expect(state.isLoading.value).toBe(false)
-  })
-})
-
-describe('withAsyncParallel — success path', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('executes operations in parallel and returns all results', async () => {
-    const state = createState()
-
-    const [r1, r2, r3] = await withAsyncParallel(state, [
-      [async () => 'a', 'op1.error'],
-      [async () => 'b', 'op2.error'],
-      [async () => 'c', 'op3.error']
-    ])
-
-    expect(r1).toBe('a')
-    expect(r2).toBe('b')
-    expect(r3).toBe('c')
-    expect(state.isLoading.value).toBe(false)
-  })
-
-  it('uses errors.generic when no operations provided', async () => {
-    const state = createState()
-
-    // Promise.all with empty array resolves to []
-    const results = await withAsyncParallel(state, [])
-    expect(results).toEqual([])
   })
 })
