@@ -5,6 +5,10 @@
 # ============================================================================
 
 workflow:
+  # A new commit on a ref cancels the older pipeline's interruptible jobs, even
+  # running ones: a burst of merges to main runs E2E once, for the newest commit.
+  auto_cancel:
+    on_new_commit: interruptible
   rules:
     # Tags always run (release pipelines)
     - if: $CI_COMMIT_TAG
@@ -19,9 +23,7 @@ workflow:
 default:
   tags:
     - ocf-core
-  # A newer pipeline on the same ref cancels this one (auto-cancel redundant
-  # pipelines is on for the project), so a burst of merges to main queues only
-  # the latest e2e run instead of one full stack per merge.
+  # Lets workflow:auto_cancel cancel this job when a newer commit lands.
   interruptible: true
   # Docker Hub pulls fail under load (TLS handshake or token timeouts); retry once.
   retry:
@@ -53,11 +55,19 @@ stages:
 # ============================================================================
 
 .npm_cache:
+  # npm's download cache, keyed on the lockfile so every branch shares it.
+  # node_modules is not cached: `npm ci` deletes it anyway.
   cache:
-    key: "${CI_COMMIT_REF_SLUG}-npm"
-    paths:
-      - node_modules/
-      - .npm/
+    - &npm_cache
+      key:
+        prefix: npm
+        files:
+          - package-lock.json
+      paths:
+        - .npm/
+      policy: pull
+  variables:
+    npm_config_cache: "$CI_PROJECT_DIR/.npm"
 
 # ============================================================================
 # Test & Type-Check
@@ -67,9 +77,19 @@ unit-tests:
   stage: test
   image: node:${NODE_VERSION}
   extends: .npm_cache
+  cache:
+    # The one job that refreshes the shared npm cache.
+    - <<: *npm_cache
+      policy: pull-push
+    # Vitest's transformed-module cache (content-hashed, safe to share).
+    - key: vitest-module-cache
+      paths:
+        - .vitest-cache/
   script:
+    - if node scripts/ci-version-only.mjs; then exit 0; fi
+    - nproc
     - npm ci --prefer-offline
-    - npm test
+    - npm test -- --fsModuleCachePath=.vitest-cache
   artifacts:
     when: always
     reports:
@@ -84,9 +104,16 @@ typecheck:
   stage: test
   image: node:${NODE_VERSION}
   extends: .npm_cache
+  cache:
+    - *npm_cache
+    # tsc's incremental state: unchanged files are not re-checked.
+    - key: vue-tsc-buildinfo
+      paths:
+        - .vue-tsc/
   script:
+    - if node scripts/ci-version-only.mjs; then exit 0; fi
     - npm ci --prefer-offline
-    - npx vue-tsc --noEmit
+    - npx vue-tsc --noEmit --tsBuildInfoFile .vue-tsc/tsbuildinfo
   rules:
     - if: $CI_COMMIT_TAG
       when: never
@@ -116,11 +143,7 @@ e2e:payment:
   # No dind service: the runner exposes the shared host Docker daemon (same as
   # ocf-core's test:auth job), so the stack runs there and this job joins the
   # compose network to reach it by service name.
-  cache:
-    - key: "${CI_COMMIT_REF_SLUG}-npm"
-      paths:
-        - node_modules/
-        - .npm/
+  extends: .npm_cache
   variables:
     # Unique project name per job so parallel pipelines don't collide
     COMPOSE_PROJECT: "ocf-e2e-${CI_JOB_ID}"
@@ -142,6 +165,7 @@ e2e:payment:
       when: manual
       allow_failure: true
   before_script:
+    - if node scripts/ci-version-only.mjs; then exit 0; fi
     # Docker CLI + compose plugin (static binaries — the node image has neither)
     - curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz" | tar -xz --strip-components=1 -C /usr/local/bin docker/docker
     - mkdir -p /usr/local/lib/docker/cli-plugins
@@ -201,11 +225,7 @@ e2e:scenarios:
   # one stack at a time per project, or they starve the runner host together.
   resource_group: e2e-stack
   image: mcr.microsoft.com/playwright:v1.64.1-noble
-  cache:
-    - key: "${CI_COMMIT_REF_SLUG}-npm"
-      paths:
-        - node_modules/
-        - .npm/
+  extends: .npm_cache
   variables:
     COMPOSE_PROJECT: "ocf-e2e-scen-${CI_JOB_ID}"
     COMPOSE_FILES: "-f .e2e-core/docker-compose.test.yml -f e2e/ci/docker-compose.core.yml"
@@ -217,6 +237,7 @@ e2e:scenarios:
     - if: $CI_COMMIT_BRANCH == "main"
       when: always
   before_script:
+    - if node scripts/ci-version-only.mjs; then exit 0; fi
     - curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz" | tar -xz --strip-components=1 -C /usr/local/bin docker/docker
     - mkdir -p /usr/local/lib/docker/cli-plugins
     - curl -fsSL "https://github.com/docker/compose/releases/download/v${COMPOSE_PLUGIN_VERSION}/docker-compose-linux-x86_64" -o /usr/local/lib/docker/cli-plugins/docker-compose
@@ -284,11 +305,7 @@ e2e:scenarios:
 .e2e:gameshell:
   stage: test
   image: mcr.microsoft.com/playwright:v1.64.1-noble
-  cache:
-    - key: "${CI_COMMIT_REF_SLUG}-npm"
-      paths:
-        - node_modules/
-        - .npm/
+  extends: .npm_cache
   variables:
     # The spec's own progress trail, written line by line. Playwright buffers
     # its stdout, so on a run that hangs this file is the only thing that says
