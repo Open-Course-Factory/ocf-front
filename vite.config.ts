@@ -59,6 +59,8 @@ export default defineConfig({
     silent: 'passed-only',
     // Unmounts every wrapper after its test — see tests/setup.ts for why.
     setupFiles: ['tests/setup.ts'],
+    // CSS is stubbed to '' in tests; the design system audit page reads its token list from this file.
+    css: { include: [/variables\.css/] },
     // Spread into every vi.useFakeTimers() call. vitest does not fake
     // `performance` by default, so vue-i18n's message compiler compared a
     // faked Date against a real performance.now(), derived a negative
