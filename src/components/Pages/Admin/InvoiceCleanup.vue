@@ -599,7 +599,6 @@ const runCleanup = async () => {
   }
 
   try {
-    console.log('Sending cleanup request:', requestBody) // Debug log
     const response = await axios.post('/invoices/admin/cleanup', requestBody)
 
     results.value = response.data
@@ -690,7 +689,6 @@ const executeSelected = async () => {
       dry_run: false
     }
 
-    console.log('Sending selective cleanup request:', requestBody)
     const response = await axios.post('/invoices/admin/cleanup', requestBody)
 
     results.value = response.data

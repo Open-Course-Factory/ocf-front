@@ -131,7 +131,6 @@ const subtitle = computed(() => {
 })
 
 const handleEdit = (event?: MouseEvent) => {
-  console.log('BaseNode: handleEdit called', props.data)
   if (event) {
     event.preventDefault()
     event.stopPropagation()
@@ -140,7 +139,6 @@ const handleEdit = (event?: MouseEvent) => {
 }
 
 const handleDelete = (event?: MouseEvent) => {
-  console.log('BaseNode: handleDelete called', props.data)
   if (event) {
     event.preventDefault()
     event.stopPropagation()
@@ -153,7 +151,6 @@ const handleToggleExpand = () => {
 }
 
 const handleSelectTree = (event?: MouseEvent) => {
-  console.log('BaseNode: handleSelectTree called', props.data)
   if (event) {
     event.preventDefault()
     event.stopPropagation()
@@ -188,7 +185,6 @@ const handleContentClick = (event: MouseEvent) => {
 }
 
 const handleContentDoubleClick = (event: MouseEvent) => {
-  console.log('BaseNode: handleContentDoubleClick triggered')
 
   // Prevent Vue Flow from handling this event
   event.preventDefault()
@@ -202,12 +198,10 @@ const handleContentDoubleClick = (event: MouseEvent) => {
 
   // Don't select tree when Ctrl/Cmd is held (let Vue Flow handle multi-select)
   if (event.ctrlKey || event.metaKey) {
-    console.log('BaseNode: Ctrl/Cmd held, skipping select tree')
     return
   }
 
   // Select this node and all its children
-  console.log('BaseNode: calling handleSelectTree from double-click')
   handleSelectTree()
 }
 </script>

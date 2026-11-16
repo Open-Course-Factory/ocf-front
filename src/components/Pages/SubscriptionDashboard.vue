@@ -256,7 +256,6 @@ async function loadRecentInvoices(force: boolean = false) {
   // Check cache unless forced reload
   const now = Date.now()
   if (!force && (now - lastInvoicesLoad.value) < CACHE_DURATION && recentInvoices.value.length > 0) {
-    console.debug('Using cached invoices')
     isLoadingInvoices.value = false
     return
   }

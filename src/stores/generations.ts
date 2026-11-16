@@ -199,7 +199,6 @@ export const useGenerationsStore = defineStore('generations', () => {
             if (response.status === 200) {
                 const statusData = response.data;
                 
-                console.log(`[Polling] Génération ${generationId}: ${statusData.status} (${statusData.progress || 0}%)`);
                 
                 // Trouver l'index de l'entité
                 const entityIndex = base.entities.findIndex(e => e.id === generationId);
@@ -220,7 +219,6 @@ export const useGenerationsStore = defineStore('generations', () => {
                     // Force Vue à détecter le changement
                     await nextTick();
                     
-                    console.log(`[Polling] Entité mise à jour:`, updatedEntity);
                 } else {
                     console.warn(`[Polling] Génération ${generationId} non trouvée dans le store`);
                 }
@@ -277,7 +275,6 @@ export const useGenerationsStore = defineStore('generations', () => {
                 generationId: entity.id
             };
 
-            console.log('Déclenchement de la génération avec:', generatePayload);
 
             const generateResponse = await axios.post('/courses/generate', generatePayload, {
                 headers: {
@@ -303,7 +300,6 @@ export const useGenerationsStore = defineStore('generations', () => {
                 // Démarrer le polling pour suivre le statut
                 startStatusPolling(entity.id);
 
-                console.log('Génération déclenchée avec succès:', generationResult);
             }
         } catch (error) {
             console.error('Erreur lors du déclenchement de la génération:', error);

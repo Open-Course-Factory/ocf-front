@@ -335,7 +335,6 @@ export function createSyncAndLoadWrapper(
         // Lazy import axios to avoid circular dependencies
         const { default: axios } = await import('axios')
         const response = await axios.post(syncEndpoint)
-        console.log(`Sync result for ${syncEndpoint}:`, response.data)
         return response.data
       },
       syncErrorKey

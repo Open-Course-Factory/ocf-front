@@ -59,7 +59,6 @@ export function saveLocale(locale: SupportedLocale): void {
     }
 
     localStorage.setItem(LOCALE_STORAGE_KEY, locale);
-    console.log(`Locale saved: ${locale}`);
   } catch (error) {
     console.warn('Error saving locale to localStorage:', error);
   }

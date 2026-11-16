@@ -148,9 +148,7 @@ onMounted(async () => {
     isLoading.value = true
     error.value = null
     try {
-      console.log('🏴 Admin panel: Fetching feature flags from backend...')
       await fetchFromBackend(true) // Force fetch
-      console.log('🏴 Admin panel: Backend fetch complete, flags:', flags.value)
 
       // Check if flags have backend IDs
       const flagsWithoutIds = Object.entries(flags.value)
@@ -176,7 +174,6 @@ const flagSummary = computed(() => {
     enabled: config.enabled,
     userCanAccess: isEnabled(name)
   }))
-  console.log('🏴 Flag summary recomputed:', summary)
   return summary
 })
 
@@ -193,7 +190,6 @@ async function toggleFlag(flagName: string, event: Event) {
     await updateFlag(flagName, { enabled: target.checked })
     // Force a small delay to ensure reactivity propagates
     await nextTick()
-    console.log(`🏴 Feature flag "${flagName}" toggled to: ${target.checked}`)
   } catch (err: any) {
     error.value = `Failed to update ${flagName}: ${err.message}`
     // Revert checkbox
@@ -207,7 +203,6 @@ function getEnvValue(flagName: string): string | undefined {
 }
 
 async function refreshFlags() {
-  console.log('🏴 Refreshing feature flags from backend...')
   isLoading.value = true
   error.value = null
 
@@ -223,7 +218,6 @@ async function refreshFlags() {
 async function syncLimits() {
   if (!isAdmin.value) return
 
-  console.log('🏴 Syncing usage limits...')
   isSyncing.value = true
   error.value = null
 
@@ -238,37 +232,18 @@ async function syncLimits() {
 }
 
 function diagnose() {
-  console.log('🏴 === FEATURE FLAGS DIAGNOSTIC ===')
-  console.log('Current flags:', flags.value)
-
   const flagsWithIds: string[] = []
   const flagsWithoutIds: string[] = []
 
   Object.entries(flags.value).forEach(([name, flag]) => {
-    const info = {
-      name,
-      enabled: flag.enabled,
-      hasBackendId: !!flag.id,
-      backendId: flag.id,
-      backendName: flag.name,
-      module: flag.module
-    }
-
     if (flag.id) {
       flagsWithIds.push(name)
     } else {
       flagsWithoutIds.push(name)
     }
-
-    console.log(`  ${name}:`, info)
   })
 
-  console.log('✅ Flags WITH backend IDs:', flagsWithIds)
-  console.log('❌ Flags WITHOUT backend IDs:', flagsWithoutIds)
-  console.log('localStorage:', localStorage.getItem('ocf_feature_flags'))
-  console.log('=== END DIAGNOSTIC ===')
-
-  showInfo(`Diagnostic complete! Check console.\n\n✅ ${flagsWithIds.length} flags have backend IDs\n❌ ${flagsWithoutIds.length} flags missing backend IDs`, 'Diagnostic Complete')
+  showInfo(`Diagnostic complete!\n\n✅ ${flagsWithIds.length} flags have backend IDs\n❌ ${flagsWithoutIds.length} flags missing backend IDs`, 'Diagnostic Complete')
 }
 
 async function resetToDefaults() {
@@ -279,7 +254,6 @@ async function resetToDefaults() {
     return
   }
 
-  console.log('🏴 Resetting feature flags to defaults...')
   error.value = null
 
   try {

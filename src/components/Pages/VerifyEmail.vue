@@ -262,17 +262,13 @@ const performVerification = async (token: string) => {
           // First update the store directly for immediate UI update
           userStore.emailVerified = true
           userStore.emailVerifiedAt = new Date().toISOString()
-          console.log('✅ User store updated immediately after verification')
 
           // Then refresh from backend to ensure consistency
           await userStore.refreshVerificationStatus()
-          console.log('✅ User verification status refreshed from backend')
         } catch (refreshError) {
           console.warn('⚠️ Could not refresh verification status from backend:', refreshError)
           // The immediate update above should still work
         }
-      } else {
-        console.log('ℹ️ User not authenticated, verification status will be loaded on next login')
       }
 
       // Start redirect countdown

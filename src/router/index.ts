@@ -487,9 +487,7 @@ router.beforeEach(async (to, from) => {
 
   // Redirect authenticated users away from login/register pages (but allow password reset)
   if (to.name === 'Login' || to.name === 'Register') {
-    console.log('🔐 Navigation to', to.name, '- isAuthenticated:', currentUserStore.isAuthenticated);
     if (currentUserStore.isAuthenticated) {
-      console.log('🔐 Blocking access, redirecting to /terminal-sessions');
       return { path: '/terminal-sessions' };
     }
   }
@@ -565,24 +563,11 @@ router.beforeEach(async (to, from) => {
   // Check permissions (if route requires specific permissions)
   const requiredPermissions = to.meta.requiredPermissions as string[] | undefined;
   if (requiredPermissions && requiredPermissions.length > 0) {
-    console.log('🔐 Route permission check:', {
-      route: to.path,
-      requiredPermissions,
-      userPermissions: currentUserStore.permissions,
-      permissionsCount: currentUserStore.permissions.length,
-      userId: currentUserStore.userId,
-      userRoles: currentUserStore.userRoles
-    });
 
     const hasAnyPermission = requiredPermissions.some(permission =>
       currentUserStore.permissions.includes(permission)
     );
 
-    console.log('🔐 Permission check result:', {
-      hasAccess: hasAnyPermission,
-      requiredPermissions,
-      userPermissions: currentUserStore.permissions
-    });
 
     if (!hasAnyPermission) {
       console.warn(`❌ Access denied to ${to.path}: Missing required permissions`, requiredPermissions);
@@ -599,7 +584,6 @@ router.beforeEach(async (to, from) => {
       };
     }
 
-    console.log('✅ Permission check passed for', to.path);
   }
 
   // Classroom pages follow the backend's verdict for the current context, like

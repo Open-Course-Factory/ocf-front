@@ -57,7 +57,6 @@ export function useLocale() {
       // Save to localStorage for persistence
       saveLocale(newLocale)
 
-      console.log(`Locale changed to: ${newLocale}`)
       return true
     } catch (error) {
       console.error('Error changing locale:', error)

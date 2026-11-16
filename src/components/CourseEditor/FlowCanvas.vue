@@ -215,11 +215,9 @@ const handleEdgesChange = (changes: any[]) => {
 
 // Node action handlers
 const handleEditNode = (nodeData: any) => {
-  console.log('FlowCanvas: handleEditNode called', nodeData)
   // Find the node and emit edit event to open edit modal
   const node = nodesData.value.find(n => n.data === nodeData)
   if (node) {
-    console.log('FlowCanvas: emitting node-edit', node)
     emit('node-edit', node)
   }
 }
@@ -237,7 +235,6 @@ const handleToggleExpand = (nodeData: any) => {
 }
 
 const handleSelectTree = (nodeData: any) => {
-  console.log('FlowCanvas: handleSelectTree called', nodeData)
   emit('select-tree', nodeData)
 }
 

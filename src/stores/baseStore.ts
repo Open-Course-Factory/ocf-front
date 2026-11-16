@@ -373,7 +373,6 @@ export const useBaseStore = () => {
             appendArchiveScope(params)
 
             const fullUrl = `${endpoint}?${params}`
-            console.log(`[BaseStore LIST] Loading: ${fullUrl}`)
             const response = await axios.get(fullUrl)
 
             const result = response.data?.data || response.data || []

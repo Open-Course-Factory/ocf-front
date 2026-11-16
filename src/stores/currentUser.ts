@@ -141,14 +141,11 @@ export const useCurrentUserStore = defineStore('currentUser', {
         },
 
         async logout() {
-            console.log('🔐 logout() called');
             this.$reset();
             // Nothing saved under this account may greet the next one on this browser.
             clearPersistedStores();
-            console.log('🔐 After $reset, isAuthenticated:', this.isAuthenticated);
             // Use nextTick to ensure reactivity has updated before navigation
             await new Promise(resolve => setTimeout(resolve, 0));
-            console.log('🔐 After delay, isAuthenticated:', this.isAuthenticated);
             await router.push({ name: 'Login' });
         },
         
@@ -172,7 +169,6 @@ export const useCurrentUserStore = defineStore('currentUser', {
         initializeAuth() {
             const hasValidToken = tokenService.hasValidToken();
             this._isAuthenticated = hasValidToken;
-            console.log('🔐 initializeAuth: hasValidToken=', hasValidToken);
         },
 
         /**
@@ -181,7 +177,6 @@ export const useCurrentUserStore = defineStore('currentUser', {
          */
         async loadUserData() {
             try {
-                console.log('🔐 Loading user data from backend...');
 
                 // Try /auth/me first (should return user_roles like /auth/login does)
                 let response;
@@ -190,11 +185,9 @@ export const useCurrentUserStore = defineStore('currentUser', {
                 try {
                     response = await axios.get('/auth/me');
                     userData = response.data.data || response.data;
-                    console.log('🔐 Using /auth/me endpoint');
                 } catch (authMeError: any) {
                     // If /auth/me doesn't exist (404), fall back to /users/me
                     if (authMeError.response?.status === 404) {
-                        console.log('🔐 /auth/me not found, trying /users/me');
                         response = await axios.get('/users/me');
                         userData = response.data.data || response.data;
                     } else {
@@ -202,10 +195,6 @@ export const useCurrentUserStore = defineStore('currentUser', {
                     }
                 }
 
-                console.log('🔐 Raw backend response:', JSON.stringify(response.data, null, 2));
-                console.log('🔐 User data received:', userData);
-                console.log('🔐 userData.roles:', userData.roles);
-                console.log('🔐 userData.user_roles:', userData.user_roles);
 
                 // Populate user store from backend response
                 this.userId = userData.id || userData.user_id;
@@ -220,24 +209,16 @@ export const useCurrentUserStore = defineStore('currentUser', {
                 if (userData.user_roles && Array.isArray(userData.user_roles)) {
                     // Direct user_roles field (from /auth/me or /auth/login)
                     this.userRoles = userData.user_roles;
-                    console.log('🔐 Using user_roles field directly:', this.userRoles);
                 } else if (userData.roles && Array.isArray(userData.roles)) {
                     // Roles may be strings (from /auth/me) or objects with .name (from /users/me)
                     this.userRoles = userData.roles.map((role: any) =>
                         typeof role === 'string' ? role : role.name
                     );
-                    console.log('🔐 Extracted userRoles from roles array:', this.userRoles);
                 } else {
                     console.warn('⚠️ No roles found in user data! userData:', userData);
                     this.userRoles = [];
                 }
 
-                console.log('✅ User data loaded:', {
-                    userId: this.userId,
-                    userName: this.userName,
-                    userDisplayName: this.userDisplayName,
-                    userRoles: this.userRoles
-                });
 
                 // Sync impersonation state from the same /auth/me payload so
                 // the impersonation banner reflects the authoritative server
@@ -278,7 +259,6 @@ export const useCurrentUserStore = defineStore('currentUser', {
             const permissions = new Set<string>();
             const resourcePermissions = backendData.permissions || [];
 
-            console.log('🔐 Transforming', resourcePermissions.length, 'resource permissions...');
 
             resourcePermissions.forEach((perm: any) => {
                 const resource = perm.resource || '';
@@ -314,7 +294,6 @@ export const useCurrentUserStore = defineStore('currentUser', {
             });
 
             const result = Array.from(permissions);
-            console.log('🔐 Generated', result.length, 'action permissions:', result.slice(0, 10), '...');
             return result;
         },
 
@@ -324,29 +303,18 @@ export const useCurrentUserStore = defineStore('currentUser', {
          */
         async loadPermissions() {
             try {
-                console.log('🔐 Loading user permissions from backend...');
-                console.log('🔐 Request URL: /auth/permissions');
-                console.log('🔐 Current user:', {
-                    userId: this.userId,
-                    userName: this.userName,
-                    userRoles: this.userRoles
-                });
 
                 const response = await axios.get('/auth/permissions');
 
-                console.log('🔐 Backend response status:', response.status);
-                console.log('🔐 Backend response data (raw):', JSON.stringify(response.data, null, 2));
 
                 // Extract user ID if not already set
                 if (response.data.user_id && !this.userId) {
                     this.userId = response.data.user_id;
-                    console.log('🔐 User ID extracted from /auth/permissions:', this.userId);
                 }
 
                 // Extract user roles from response
                 if (response.data.roles && Array.isArray(response.data.roles)) {
                     this.userRoles = response.data.roles;
-                    console.log('🔐 User roles extracted from /auth/permissions:', this.userRoles);
                 }
 
                 // Only a real boolean counts. A backend that does not send the
@@ -359,10 +327,6 @@ export const useCurrentUserStore = defineStore('currentUser', {
                 // Transform resource permissions to action permissions
                 this.permissions = this.transformResourcePermissions(response.data);
 
-                console.log('✅ User permissions loaded (transformed):', this.permissions);
-                console.log('✅ Permissions count:', this.permissions.length);
-                console.log('✅ User roles:', this.userRoles);
-                console.log('✅ Has view_groups permission:', this.permissions.includes('view_groups'));
 
                 // Eager-load memberships so the scenario-editor gate (#213) and
                 // any other surface reading /me/memberships gets a stable
@@ -492,10 +456,6 @@ export const useCurrentUserStore = defineStore('currentUser', {
                 this.emailVerified = status.verified;
                 this.emailVerifiedAt = status.verified_at || null;
                 this.userEmail = status.email;
-                console.log('✅ Email verification status refreshed:', {
-                    verified: this.emailVerified,
-                    verifiedAt: this.emailVerifiedAt
-                });
                 return status;
             } catch (error: any) {
                 console.error('❌ Failed to refresh verification status:', error);

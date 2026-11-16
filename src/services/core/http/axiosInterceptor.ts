@@ -105,7 +105,6 @@ export const setupAxiosInterceptors = () => {
 
       // Si on reçoit une 401, déconnecter automatiquement
       if (error.response?.status === 401) {
-        console.log('Erreur 401 détectée, déconnexion automatique');
         const userStore = useCurrentUserStore();
         userStore.autoLogout();
       }
@@ -117,7 +116,6 @@ export const setupAxiosInterceptors = () => {
 
       // Handle email verification required error - redirect to verify page
       if (error.response?.status === 403 && error.response?.data?.error === 'EMAIL_NOT_VERIFIED') {
-        console.log('📧 Email not verified (403), redirecting to verification page...');
         const currentRoute = router.currentRoute.value;
         if (currentRoute.name !== 'VerifyEmail') {
           router.push({ name: 'VerifyEmail', query: { redirect: currentRoute.fullPath } });

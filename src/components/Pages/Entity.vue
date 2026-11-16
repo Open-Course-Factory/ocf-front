@@ -422,7 +422,6 @@ const hasPreviousPage = ref(false);
 const pageHistory = ref<Array<{ cursor: string | null, count: number }>>([{ cursor: null, count: 0 }]);
 const currentPageIndex = ref(0);
 const isUpdatingURL = ref(false);
-const backendSupportsCursor = ref<boolean | null>(null); // null = unknown, true = supports, false = doesn't support
 const pageJumpInput = ref('');
 const showPageJumpInput = ref(false);
 const isSequentialNavigating = ref(false);
@@ -686,11 +685,9 @@ function validateRequestedPage() {
   // Use computed total pages
   const totalPagesCount = totalPages.value;
 
-  console.log(`Validating requested page ${requestedPage} against ${totalPagesCount} total pages`);
 
   if (requestedPage > totalPagesCount && totalPagesCount > 0) {
     // Requested page doesn't exist, redirect to last page
-    console.log(`Page ${requestedPage} doesn't exist, redirecting to last page ${totalPagesCount}`);
 
     // Clear the stored requested page
     delete (window as any).__requestedPage;
@@ -707,7 +704,6 @@ function validateRequestedPage() {
     return;
   } else if (requestedPage <= totalPagesCount && requestedPage > 1) {
     // Valid page requested - we need to navigate to it
-    console.log(`Valid page ${requestedPage} requested - starting navigation`);
 
     // Clear the stored requested page
     delete (window as any).__requestedPage;
@@ -726,7 +722,6 @@ async function navigateToPageSequentially(targetPage: number) {
     return;
   }
 
-  console.log(`Starting sequential navigation to page ${targetPage}`);
 
   // Set navigation flag to hide intermediate states
   isSequentialNavigating.value = true;
@@ -740,7 +735,6 @@ async function navigateToPageSequentially(targetPage: number) {
   for (let page = 1; page <= targetPage; page++) {
     if (!hasNextPage.value && page > 1) {
       // We've reached the end before getting to target page
-      console.log(`Reached end at page ${page}, target was ${targetPage}`);
       break;
     }
 
@@ -759,7 +753,6 @@ async function navigateToPageSequentially(targetPage: number) {
     }
   }
 
-  console.log(`Sequential navigation completed, currently on page ${currentPageIndex.value + 1}`);
 
   } finally {
     // Clear navigation flag to show final result
@@ -784,44 +777,31 @@ function togglePageJumpInput() {
 }
 
 function jumpToPage() {
-  console.log('🔄 jumpToPage called with input:', pageJumpInput.value);
 
   const targetPage = parseInt(pageJumpInput.value);
 
-  console.log('📊 Jump validation:', {
-    input: pageJumpInput.value,
-    targetPage,
-    isNaN: isNaN(targetPage),
-    totalPages: totalPages.value,
-    currentPage: currentPageIndex.value + 1
-  });
 
   if (isNaN(targetPage) || targetPage < 1) {
-    console.log('❌ Invalid page number');
     showError(t('pagination.invalidPage'), t('pagination.error'));
     return;
   }
 
   if (targetPage > totalPages.value) {
-    console.log('❌ Page exceeds maximum');
     showError(`${t('pagination.page')} ${targetPage} ${t('pagination.pageNotExist')} ${totalPages.value}`, t('pagination.error'));
     return;
   }
 
   if (targetPage === currentPageIndex.value + 1) {
     // Already on this page
-    console.log('✅ Already on target page, closing input');
     showPageJumpInput.value = false;
     return;
   }
 
-  console.log(`✅ Jumping to page ${targetPage}`);
 
   // Update URL to trigger navigation
   const newQuery = { ...route.query };
   newQuery.page = targetPage.toString();
 
-  console.log('🔄 Updating URL:', { newQuery });
 
   router.push({
     path: route.path,
@@ -935,7 +915,6 @@ function loadFromURL() {
     if (requestedPage > 1) {
       // Store the requested page for validation after data loads
       (window as any).__requestedPage = requestedPage;
-      console.log(`URL requests page ${requestedPage} - will validate after loading data`);
     }
   }
 }
@@ -947,7 +926,6 @@ watch(() => route.query, (newQuery, oldQuery) => {
     return;
   }
 
-  console.log('URL query changed from browser navigation, reloading data:', { newQuery, oldQuery });
 
   // Reset pagination state
   resetPagination();
@@ -1018,20 +996,6 @@ async function getEntitiesWithCursor(entityName: string, store: any, cursor: str
       // ❌ NEVER generate fake cursors - this breaks UUID-based backends
     }
 
-    // Debug logging (can be removed in production)
-    console.log('Pagination debug:', {
-      totalItems: totalItems.value,
-      hasNextPage: hasNextPage.value,
-      hasPreviousPage: hasPreviousPage.value,
-      currentPageIndex: currentPageIndex.value,
-      pageSize: pageSize.value,
-      entityCount: result.data.length,
-      nextCursor: result.nextCursor,
-      currentCursor: currentCursor.value,
-      mode: backendSupportsCursor.value === true ? 'cursor' :
-            backendSupportsCursor.value === false ? 'offset' : 'detecting'
-    });
-
     // Store next cursor separately (don't overwrite currentCursor)
     nextCursor.value = result.nextCursor;
 
@@ -1058,7 +1022,6 @@ async function getEntitiesWithCursor(entityName: string, store: any, cursor: str
       case 404:
         break;
       case 401:
-        console.log('401 - L\'intercepteur va gérer la déconnexion');
         break;
       default:
         break;
@@ -1163,12 +1126,6 @@ async function loadEntities() {
 }
 
 function goToNextPage() {
-  console.log('🔄 goToNextPage called:', {
-    hasNextPage: hasNextPage.value,
-    currentCursor: currentCursor.value,
-    currentPageIndex: currentPageIndex.value,
-    totalItems: totalItems.value
-  });
 
   if (hasNextPage.value) {
     // Save current page info in history BEFORE moving to next page
@@ -1187,8 +1144,6 @@ function goToNextPage() {
     // Update URL with new page
     updateURL();
     loadEntities();
-  } else {
-    console.log('❌ Cannot go to next page: hasNextPage is false');
   }
 }
 
@@ -1200,11 +1155,6 @@ function goToPreviousPage() {
     const previousPageData = pageHistory.value[currentPageIndex.value];
     currentCursor.value = previousPageData?.cursor || null;
 
-    console.log('🔄 Going to previous page:', {
-      currentPageIndex: currentPageIndex.value,
-      cursor: currentCursor.value,
-      pageHistoryLength: pageHistory.value.length
-    });
 
     // Update URL with new page
     updateURL();
@@ -1226,11 +1176,6 @@ function goToFirstPage() {
 }
 
 function changePageSize() {
-  console.log('📏 changePageSize called:', {
-    newPageSize: pageSize.value,
-    currentPageIndex: currentPageIndex.value,
-    totalItems: totalItems.value
-  });
 
   resetPagination();
   props.entityStore.entities.splice(0);

@@ -170,13 +170,10 @@ export class FeatureFlagService {
   private async initialize(): Promise<void> {
     try {
       await this.fetchFromBackend(true)
-      console.log('✅ Feature flags initialized from backend')
     } catch (err: any) {
       // If error is 401/403 (unauthenticated), that's expected - just use defaults
       // Don't load localStorage in this case as it may have stale data
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        console.log('🏴 User not authenticated yet, using default feature flags')
-      } else {
+      if (err.response?.status !== 401 && err.response?.status !== 403) {
         console.warn('⚠️ Failed to fetch feature flags from backend, using defaults:', err)
       }
       // Do NOT load localStorage here - backend is source of truth
@@ -219,7 +216,6 @@ export class FeatureFlagService {
 
       if (envValue !== undefined) {
         this.flags[flagName].enabled = envValue === 'true'
-        console.log(`🏴 Feature flag "${flagName}" set from environment: ${this.flags[flagName].enabled}`)
       }
     })
   }
@@ -239,7 +235,6 @@ export class FeatureFlagService {
         Object.keys(storedFlags).forEach(flagName => {
           if (this.flags[flagName] && storedFlags[flagName].enabled !== undefined) {
             this.flags[flagName].enabled = storedFlags[flagName].enabled
-            console.log(`🏴 Feature flag "${flagName}" loaded from localStorage (fallback): ${this.flags[flagName].enabled}`)
           }
         })
       }
@@ -258,7 +253,6 @@ export class FeatureFlagService {
         flagsToStore[flagName] = { enabled: this.flags[flagName].enabled }
       })
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(flagsToStore))
-      console.log('🏴 Feature flags saved to localStorage')
     } catch (error) {
       console.warn('Failed to save feature flags to localStorage:', error)
     }
@@ -270,7 +264,6 @@ export class FeatureFlagService {
   clearLocalStorage(): void {
     try {
       localStorage.removeItem(this.STORAGE_KEY)
-      console.log('🏴 Feature flags cleared from localStorage')
       // Force reload from backend
       this.fetchFromBackend(true).catch(err => {
         console.warn('Failed to reload from backend:', err)
@@ -287,7 +280,6 @@ export class FeatureFlagService {
    * This bypasses cache and ensures we have fresh data
    */
   async refreshAfterLogin(): Promise<void> {
-    console.log('🏴 Refreshing feature flags after login...')
     await this.fetchFromBackend(true)
   }
 
@@ -301,7 +293,6 @@ export class FeatureFlagService {
 
     // Skip if cache is valid and not forced
     if (!force && cacheValid) {
-      console.log('🏴 Using cached feature flags')
       return
     }
 
@@ -322,7 +313,6 @@ export class FeatureFlagService {
 
       if (Array.isArray(backendFeatures)) {
         if (backendFeatures.length > 0) {
-          console.log(`🏴 Backend returned ${backendFeatures.length} features`)
 
           // First pass: reset all flags that will be updated from backend,
           // registering any the defaults never declared. The defaults only
@@ -333,7 +323,6 @@ export class FeatureFlagService {
             const flagKey = this.mapBackendFeatureToFlagKey(backendKey)
             if (!this.flags[flagKey]) {
               this.flags[flagKey] = { enabled: false, type: 'ops', description: feature.description || '' }
-              console.log(`🏴 Auto-discovered feature flag "${flagKey}" from backend`)
             }
             flagsToUpdate.add(flagKey)
           })
@@ -370,21 +359,17 @@ export class FeatureFlagService {
           })
 
           this.lastFetch = now
-          console.log(`✅ Feature flags synced from backend (${backendFeatures.length} features)`)
         } else {
           // Backend returned empty array - no features configured in database
           console.warn(`⚠️ Backend returned empty feature flags array`)
-          console.log(`🏴 Falling back to environment variables...`)
           this.loadEnvironmentFlags()
 
-          // Log which flags are enabled from environment
+          // Warn when no flag is enabled from environment
           const envEnabledFlags = Object.entries(this.flags)
             .filter(([_, flag]) => flag.enabled)
             .map(([key, _]) => key)
 
-          if (envEnabledFlags.length > 0) {
-            console.log(`🏴 Enabled flags from environment: ${envEnabledFlags.join(', ')}`)
-          } else {
+          if (envEnabledFlags.length === 0) {
             console.warn(`⚠️ No environment variables found. Using default flag states.`)
           }
 
@@ -460,16 +445,9 @@ export class FeatureFlagService {
     }
 
     const payload = { enabled: flag.enabled }
-    console.log(`🏴 Syncing "${flagKey}" to backend:`, {
-      url: `/features/${flag.id}`,
-      method: 'PATCH',
-      payload,
-      flagName: flag.name
-    })
 
     try {
-      const response = await axios.patch(`/features/${flag.id}`, payload)
-      console.log(`✅ Feature flag "${flagKey}" synced to backend successfully`, response.data)
+      await axios.patch(`/features/${flag.id}`, payload)
     } catch (error: any) {
       console.error(`❌ Failed to sync feature flag "${flagKey}":`, {
         status: error.response?.status,
@@ -487,7 +465,6 @@ export class FeatureFlagService {
   async syncUsageLimits(): Promise<void> {
     try {
       const response = await axios.post('/user-subscriptions/sync-usage-limits')
-      console.log('🏴 Usage limits synced:', response.data)
       return response.data
     } catch (error: any) {
       // Non-critical: don't throw, the flag toggle already succeeded
@@ -513,12 +490,10 @@ export class FeatureFlagService {
 
     // Check base enabled state first
     if (!flag.enabled) {
-      console.debug(`🏴 Feature flag "${flagName}" is DISABLED (enabled=${flag.enabled}, initialized=${this.isInitialized}, lastFetch=${this.lastFetch})`)
       return false
     }
 
     const actorRoles = actor?.roles || (actor?.role ? [actor.role] : [])
-    console.debug(`🏴 Feature flag "${flagName}" is ENABLED (enabled=${flag.enabled}, actor roles=${actorRoles.join(', ')})`)
 
     // If no restrictions are defined, the flag is globally enabled
     const hasRoleRestrictions = flag.allowedRoles && flag.allowedRoles.length > 0
@@ -526,39 +501,31 @@ export class FeatureFlagService {
 
     // If no restrictions exist, flag is globally enabled
     if (!hasRoleRestrictions && !hasUserRestrictions) {
-      console.debug(`🏴 Feature flag "${flagName}" allowed: no restrictions (globally enabled)`)
       return true
     }
 
     // If there are role restrictions, check them
     if (hasRoleRestrictions) {
       if (actorRoles.length === 0) {
-        console.debug(`🏴 Feature flag "${flagName}" blocked: role restrictions exist but no actor roles provided`)
         return false
       }
       // Check if ANY of the actor's roles matches ANY of the allowed roles
       const roleAllowed = actorRoles.some(actorRole => flag.allowedRoles!.includes(actorRole))
       if (!roleAllowed) {
-        console.debug(`🏴 Feature flag "${flagName}" blocked: actor roles [${actorRoles.join(', ')}] not in allowedRoles [${flag.allowedRoles!.join(', ')}]`)
         return false
       }
-      const matchedRole = actorRoles.find(actorRole => flag.allowedRoles!.includes(actorRole))
-      console.debug(`🏴 Feature flag "${flagName}" allowed: role "${matchedRole}" matches`)
       return true
     }
 
     // If there are user restrictions, check them
     if (hasUserRestrictions) {
       if (!actor?.userId) {
-        console.debug(`🏴 Feature flag "${flagName}" blocked: user restrictions exist but no actor userId provided`)
         return false
       }
       const userAllowed = flag.allowedUsers!.includes(actor.userId)
       if (!userAllowed) {
-        console.debug(`🏴 Feature flag "${flagName}" blocked: user "${actor.userId}" not in allowedUsers`)
         return false
       }
-      console.debug(`🏴 Feature flag "${flagName}" allowed: user "${actor.userId}" matches`)
       return true
     }
 
@@ -586,32 +553,20 @@ export class FeatureFlagService {
   async updateFlag(flagName: string, config: Partial<FeatureFlagConfig>): Promise<void> {
     if (this.flags[flagName]) {
       const oldEnabled = this.flags[flagName].enabled
-      const hasBackendId = !!this.flags[flagName].id
-
-      console.log(`🏴 updateFlag("${flagName}")`, {
-        oldEnabled,
-        newEnabled: config.enabled,
-        hasBackendId,
-        backendId: this.flags[flagName].id,
-        backendName: this.flags[flagName].name
-      })
 
       this.flags[flagName] = { ...this.flags[flagName], ...config }
-      this.logFlagChange(flagName, config)
-
+  
       // Persist to localStorage (local override)
       this.saveToLocalStorage()
 
       // Sync to backend if we have a backend ID
       if (this.flags[flagName].id && config.enabled !== undefined) {
-        console.log(`🏴 Flag has backend ID, syncing to backend...`)
         try {
           await this.syncToBackend(flagName)
 
           // Auto-sync usage limits if toggling course/terminal features
           if (oldEnabled !== config.enabled &&
               (this.flags[flagName].controlledMetrics?.length || 0) > 0) {
-            console.log(`🏴 Feature "${flagName}" affects metrics, syncing usage limits...`)
             await this.syncUsageLimits()
           }
         } catch (error) {
@@ -638,7 +593,6 @@ export class FeatureFlagService {
    */
   addFlag(flagName: string, config: FeatureFlagConfig): void {
     this.flags[flagName] = config
-    this.logFlagChange(flagName, config)
     // Persist to localStorage
     this.saveToLocalStorage()
   }
@@ -718,13 +672,6 @@ export class FeatureFlagService {
 
     // Return only visible ones
     return new Set([...allMetricTypes].filter(m => !hiddenMetricTypes.has(m)))
-  }
-
-  /**
-   * Log feature flag changes
-   */
-  private logFlagChange(flagName: string, config: Partial<FeatureFlagConfig>): void {
-    console.log(`🏴 Feature flag "${flagName}" updated:`, config)
   }
 }
 

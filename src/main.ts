@@ -66,7 +66,6 @@ setupAxiosInterceptors()
 // 2. Register Pinia (so stores can access localStorage/tokens)
 // 3. Fetch feature flags (which needs token from Pinia store)
 // 4. Mount app
-console.log('🏴 Starting app initialization...')
 
 async function initializeApp() {
     // Step 1: Create app instance and register Pinia FIRST
@@ -106,7 +105,6 @@ async function initializeApp() {
     // Initialize currentUser store to ensure token is loaded from localStorage
     const userStore = useCurrentUserStore()
     userStore.initializeAuth() // Initialize auth state from stored token
-    console.log('🏴 Current user authenticated:', userStore.isAuthenticated)
 
     // Restore impersonation target from sessionStorage so the first /auth/me
     // call below carries the X-Impersonate-User header. The /auth/me response
@@ -123,15 +121,12 @@ async function initializeApp() {
     // Backend is the source of truth, localStorage is only for emergency fallback
     const storedFlags = localStorage.getItem('ocf_feature_flags')
     if (storedFlags) {
-        console.log('🏴 Clearing stale localStorage feature flags before initialization')
         localStorage.removeItem('ocf_feature_flags')
     }
 
     // Step 4: Fetch feature flags (now token is available if user is authenticated)
     try {
-        console.log('🏴 Fetching feature flags from backend...')
         await featureFlagService.waitForInitialization()
-        console.log('✅ Feature flags initialized successfully')
     } catch (err: any) {
         console.warn('⚠️ Feature flags initialization failed, using defaults:', err?.message || err)
     }
@@ -140,13 +135,10 @@ async function initializeApp() {
     if (userStore.isAuthenticated) {
         try {
             // Load user data first (userName, userRoles, etc.)
-            console.log('🔐 Loading user data...')
             await userStore.loadUserData()
-            console.log('✅ User data loaded successfully')
 
             // Then load permissions
             await userStore.loadPermissions()
-            console.log('✅ Permissions loaded successfully')
         } catch (err: any) {
             console.warn('⚠️ User data/permissions loading failed:', err?.message || err)
         }
@@ -155,12 +147,10 @@ async function initializeApp() {
     // Step 6: Mount the app
     await brandingLoaded
     app.mount('#app')
-    console.log('✅ App mounted successfully')
 
     // Step 7: Start token expiry monitoring if authenticated
     if (userStore.isAuthenticated) {
         userStore.startTokenExpiryCheck()
-        console.log('🏴 Token expiry monitoring started')
     }
 }
 

@@ -237,7 +237,6 @@ const upgradePlan = async (plan: any) => {
     try {
         await subscriptionsStore.upgradePlan(plan.id)
         // Show success message or redirect
-        console.log('Plan upgraded successfully')
     } catch (error: any) {
         console.error('Error upgrading plan:', error)
         // Handle specific error cases
@@ -276,7 +275,6 @@ const syncWithStripe = async () => {
 
     try {
         const result = await entityStore.syncAndLoadPlans()
-        console.log('Plans synced successfully with Stripe:', result)
 
         syncResult.value = result
         showSyncResult.value = true
