@@ -7,13 +7,14 @@
 
 <template>
   <!-- ocf- prefix: Bootstrap's .toast/.toast-container (loaded from index.html) would hide and restyle these -->
-  <div class="ocf-toast-container">
+  <!-- Persistent polite live region: a role on each inserted toast is often not announced -->
+  <div class="ocf-toast-container" aria-live="polite">
     <TransitionGroup name="toast">
       <div
         v-for="toast in toasts"
         :key="toast.id"
         :class="['ocf-toast', `toast-${toast.type}`]"
-        :role="toast.type === 'error' ? 'alert' : 'status'"
+        :role="toast.type === 'error' ? 'alert' : undefined"
       >
         <i :class="getIcon(toast.type)"></i>
         <div class="toast-text">
