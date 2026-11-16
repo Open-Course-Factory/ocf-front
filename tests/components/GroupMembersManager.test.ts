@@ -98,10 +98,11 @@ function mountComponent(propsOverrides: Record<string, unknown> = {}, locale: 'e
       plugins: [i18n],
       stubs: {
         // Honours `visible` and renders the title and footer, so a dialog can be
-        // seen opening, read, and its buttons clicked.
+        // seen opening, read, and its buttons clicked. Like the real one, it
+        // swaps its content out while `isLoading`.
         BaseModal: {
           name: 'BaseModal',
-          template: '<div v-if="visible" class="base-modal-stub"><div class="base-modal-title">{{ title }}</div><slot /><div class="base-modal-footer"><slot name="footer" /></div></div>',
+          template: '<div v-if="visible" class="base-modal-stub"><div class="base-modal-title">{{ title }}</div><slot v-if="!isLoading" /><div class="base-modal-footer"><slot name="footer" /></div></div>',
           props: ['visible', 'title', 'size', 'isLoading', 'showDefaultFooter',
                   'confirmText', 'cancelText']
         },
@@ -282,6 +283,14 @@ describe('GroupMembersManager', () => {
     // The dropdown used to render only while a search was running or had
     // results, so the "no user found" branch inside it could never show: a
     // teacher searching a mistyped email got silence.
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
     async function searchFor(query: string) {
       const wrapper = mountComponent()
       await nextTick()
@@ -289,9 +298,8 @@ describe('GroupMembersManager', () => {
       const input = wrapper.find('.base-modal-stub').find('.user-search-container input')
       await input.trigger('focus')
       await input.setValue(query)
-      await input.trigger('input')
       // Past the search debounce, so the search has completed.
-      await new Promise(resolve => setTimeout(resolve, 350))
+      await vi.advanceTimersByTimeAsync(350)
       await flushPromises()
       return wrapper
     }
@@ -378,8 +386,8 @@ describe('GroupMembersManager', () => {
       addModal(wrapper).vm.$emit('close')
       await settle()
 
+      // Untouched text: typing would clear the id by itself and hide a missing reset.
       await wrapper.find('[data-test="add-member"]').trigger('click')
-      await type(wrapper, 'bob')
       addModal(wrapper).vm.$emit('confirm')
       await settle()
 
@@ -395,6 +403,35 @@ describe('GroupMembersManager', () => {
       await settle()
 
       expect(postedMembers()).toEqual([])
+    })
+
+    // The input lost its native `required`: this message is the only guard left.
+    it('asks for a user when the trainer typed a query but picked nobody', async () => {
+      const wrapper = await mountOpen()
+      await type(wrapper, 'bob')
+
+      addModal(wrapper).vm.$emit('confirm')
+      await settle()
+
+      expect(postedMembers()).toEqual([])
+      expect(wrapper.find('.base-modal-stub .alert-danger').text()).toBe('User ID is required')
+    })
+
+    // RED ON PURPOSE (defect): the modal shows a spinner instead of its content
+    // while the POST runs, so the input remounts empty; on a failed add the
+    // picked id survives with no visible user, and the next confirm adds them.
+    it('keeps the picked user visible after a failed add', async () => {
+      const wrapper = await mountOpen()
+      // handleAddMember does not catch the rethrown error; keep it out of the run.
+      wrapper.vm.$.appContext.config.errorHandler = () => {}
+      await pickAlice(wrapper)
+      vi.mocked(axios.post).mockRejectedValueOnce(new Error('boom'))
+
+      addModal(wrapper).vm.$emit('confirm')
+      await settle()
+
+      const input = wrapper.find('.base-modal-stub .user-search-container input').element as HTMLInputElement
+      expect(input.value).toBe('Alice (alice@example.com)')
     })
   })
 

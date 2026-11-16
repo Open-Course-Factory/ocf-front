@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
@@ -32,6 +32,7 @@ vi.mock('../../src/stores/currentUser', () => ({
 }))
 
 import OrganizationMembersManager from '../../src/components/Organizations/OrganizationMembersManager.vue'
+import { userService } from '../../src/services/domain/user'
 
 function createTestI18n() {
   return createI18n({
@@ -135,5 +136,52 @@ describe('OrganizationMembersManager backend endpoint contract', () => {
     await flushPromises()
 
     expect(axios.get).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('OrganizationMembersManager add member: a cancelled pick is never added', () => {
+  const alice = { id: 'alice-id', name: 'alice', display_name: 'Alice', email: 'alice@example.com' }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    vi.mocked(axios.get).mockResolvedValue({ data: [{ ...testMember }] })
+    vi.mocked(userService.searchUsers).mockImplementation(async (q: string) => (q.startsWith('al') ? [alice] : []))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.mocked(userService.searchUsers).mockReset().mockResolvedValue([])
+  })
+
+  async function type(wrapper: ReturnType<typeof mountComponent>, query: string) {
+    const input = wrapper.find('.base-modal-stub .user-search-container input')
+    await input.trigger('focus')
+    await input.setValue(query)
+    await vi.advanceTimersByTimeAsync(1000)
+    await flushPromises()
+  }
+
+  const openAdd = (wrapper: ReturnType<typeof mountComponent>) =>
+    wrapper.findAll('button').find(b => b.text() === 'Add Member')!.trigger('click')
+
+  it('does not add a user picked before the dialog was cancelled', async () => {
+    const wrapper = mountComponent()
+    await flushPromises()
+    await openAdd(wrapper)
+    await type(wrapper, 'ali')
+    await wrapper.find('.base-modal-stub .search-result').trigger('click')
+    wrapper.findAllComponents({ name: 'BaseModal' }).find(m => m.props('visible'))!.vm.$emit('close')
+    await flushPromises()
+
+    await openAdd(wrapper)
+    const confirm = () => wrapper.find('.base-modal-stub button.btn-primary')
+    expect(confirm().attributes('disabled')).toBeDefined()
+    await type(wrapper, 'bob')
+    expect(confirm().attributes('disabled')).toBeDefined()
+    await confirm().trigger('click')
+    await flushPromises()
+
+    expect(vi.mocked(axios.post).mock.calls.filter(([url]) => url === '/organization-members')).toEqual([])
   })
 })

@@ -168,3 +168,48 @@ describe('UserSearchInput', () => {
     expect(wrapper.find('.search-result').text()).toContain('albert')
   })
 })
+
+describe('UserSearchInput out-of-order responses', () => {
+  // RED ON PURPOSE (defect): nothing ties a response to the query that asked
+  // for it, so a slow earlier answer overwrites the newer one.
+  it('keeps the latest query\'s results when an earlier response arrives last', async () => {
+    const pending: Record<string, (users: unknown[]) => void> = {}
+    vi.mocked(axios.get).mockImplementation((_url: string, config?: any) =>
+      new Promise(resolve => { pending[config.params.q] = users => resolve({ data: users }) })
+    )
+    const wrapper = mountInput()
+
+    await type(wrapper, 'ali')
+    await vi.advanceTimersByTimeAsync(300)
+    await type(wrapper, 'alb')
+    await vi.advanceTimersByTimeAsync(300)
+
+    pending.alb([albert])
+    await flushPromises()
+    pending.ali([alice])
+    await flushPromises()
+
+    const rows = wrapper.findAll('.search-result')
+    expect(rows).toHaveLength(1)
+    expect(rows[0].text()).toContain('albert')
+  })
+
+  it('stays "searching" when only the stale response has arrived', async () => {
+    const pending: Record<string, (users: unknown[]) => void> = {}
+    vi.mocked(axios.get).mockImplementation((_url: string, config?: any) =>
+      new Promise(resolve => { pending[config.params.q] = users => resolve({ data: users }) })
+    )
+    const wrapper = mountInput()
+
+    await type(wrapper, 'ali')
+    await vi.advanceTimersByTimeAsync(300)
+    await type(wrapper, 'alb')
+    await vi.advanceTimersByTimeAsync(300)
+
+    pending.ali([alice])
+    await flushPromises()
+
+    expect(wrapper.find('.search-loading').exists()).toBe(true)
+    expect(wrapper.findAll('.search-result')).toHaveLength(0)
+  })
+})
