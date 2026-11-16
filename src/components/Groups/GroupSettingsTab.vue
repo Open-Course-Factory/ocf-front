@@ -28,7 +28,7 @@ import { useClassGroupsStore } from '../../stores/classGroups'
 import { useTranslations } from '../../composables/useTranslations'
 import { useToast } from '../../composables/useToast'
 import { withAsync } from '../../utils/asyncWrapper'
-import { formatDate, formatDateTime } from '../../utils/formatters'
+import { useFormatters } from '../../composables/useFormatters'
 import { CLASS_PAGE_NAMES } from '../../router/classPages'
 import type { ClassGroup } from '../../types'
 import type { Organization } from '../../types/organization'
@@ -66,6 +66,7 @@ const isArchived = computed(() => !!props.group.archived_at)
 const isLoading = ref(false)
 const error = ref('')
 
+const { formatDate, formatDateTime } = useFormatters()
 const { t } = useTranslations({
   en: {
     groupSettings: {

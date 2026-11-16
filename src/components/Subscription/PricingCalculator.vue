@@ -313,14 +313,14 @@ const loadPricingPreview = async () => {
 // Cents → localized currency string via the shared Intl formatter (locale-aware,
 // multi-currency, dark-mode agnostic). Used for the cents-denominated fields.
 const formatCents = (cents: number): string => {
-  return formatCurrency(cents, preview.value?.currency || 'EUR')
+  return formatCurrency(cents, preview.value?.currency || 'EUR', 'fr-FR')
 }
 
 // `average_per_license` arrives already in currency units (e.g. 9.33), while the
 // shared formatter expects cents — scale up so it round-trips exactly. Units are
 // unchanged; only the formatting is centralized.
 const formatFromCurrency = (amount: number): string => {
-  return formatCurrency(Math.round(amount * 100), preview.value?.currency || 'EUR')
+  return formatCurrency(Math.round(amount * 100), preview.value?.currency || 'EUR', 'fr-FR')
 }
 
 const handlePurchase = () => {

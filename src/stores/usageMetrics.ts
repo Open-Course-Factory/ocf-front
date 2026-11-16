@@ -21,7 +21,8 @@
 
 import { defineStore } from "pinia"
 import { useBaseStore } from "./baseStore"
-import { formatStorageSize, formatNumber, formatDate as formatDateUtil } from '../utils/formatters'
+import { formatStorageSize, formatNumber, formatDate as formatDateUtil, intlLocale } from '../utils/formatters'
+import { currentUserTimezone } from '../composables/useFormatters'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { field, buildFieldList } from '../utils/fieldBuilder'
 import { buildSelectData } from '../utils'
@@ -29,7 +30,7 @@ import { buildSelectData } from '../utils'
 export const useUsageMetricsStore = defineStore('usageMetrics', () => {
 
     const base = useBaseStore();
-    const { t } = useStoreTranslations({
+    const { t, locale } = useStoreTranslations({
         en: {
             usageMetrics: {
                 pageTitle: 'Usage Statistics',
@@ -151,7 +152,7 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
             case 'storage':
                 return formatStorageSize(value);
             case 'api_calls':
-                return formatNumber(value);
+                return formatNumber(value, intlLocale(locale.value));
             default:
                 return value.toString();
         }
@@ -173,8 +174,8 @@ export const useUsageMetricsStore = defineStore('usageMetrics', () => {
     const formatPeriod = (startDate: string, endDate: string) => {
         if (!startDate || !endDate) return '-';
         try {
-            const start = formatDateUtil(startDate);
-            const end = formatDateUtil(endDate);
+            const start = formatDateUtil(startDate, intlLocale(locale.value), '-', currentUserTimezone());
+            const end = formatDateUtil(endDate, intlLocale(locale.value), '-', currentUserTimezone());
             return `${start} - ${end}`;
         } catch (e) {
             return `${startDate} - ${endDate}`;
