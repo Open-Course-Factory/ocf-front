@@ -31,6 +31,26 @@ const source = readFileSync(
 )
 const styleBlock = source.match(/<style[^>]*>([\s\S]*)<\/style>/)?.[1] ?? ''
 
+/** Class names used in the page's own selectors (comments and declaration bodies removed). */
+const styledClasses = new Set(
+  [...styleBlock
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\{[^{}]*\}/g, ' ')
+    .matchAll(/\.(-?[a-zA-Z_][\w-]*)/g)].map(m => m[1])
+)
+
+/** The page's own layout classes: anything else would restyle the design system it audits. */
+const OWN_CLASSES = [
+  'design-system-audit', 'audit-header', 'theme-toggle', 'active', 'audit-grid',
+  'audit-section', 'audit-section--wide', 'section-title', 'section-body', 'caption',
+  'dsa-row', 'stack', 'token-list', 'token', 'token-swatch', 'table-scroll'
+]
+
+const colorTokens = [...new Set(
+  readFileSync(resolve(__dirname, '../../src/assets/styles/variables.css'), 'utf-8')
+    .match(/--color-[\w-]+(?=\s*:)/g)
+)]
+
 function mountPage() {
   return mount(DesignSystemAudit, {
     global: { plugins: [i18n], stubs: { 'router-link': RouterLinkStub } }
@@ -82,18 +102,9 @@ describe('DesignSystemAudit', () => {
     expect(mountPage().find(selector).exists()).toBe(true)
   })
 
-  it.each([
-    '.btn',
-    '.card',
-    '.badge',
-    '.alert',
-    '.form-group',
-    '.form-control',
-    '.empty-state',
-    '.ocf-data-table'
-  ])('does not restyle the shared selector %s in its own <style>', selector => {
-    const escaped = selector.replace('.', '\\.')
-    expect(styleBlock).not.toMatch(new RegExp(`${escaped}(?![\\w-])`))
+  it('styles only its own layout classes, without piercing child components', () => {
+    expect([...styledClasses].filter(c => !OWN_CLASSES.includes(c))).toEqual([])
+    expect(styleBlock).not.toMatch(/:deep|::v-deep|>>>/)
   })
 
   it.each([
@@ -110,7 +121,28 @@ describe('DesignSystemAudit', () => {
       .findAll('[style]')
       .find(el => el.attributes('style')!.includes(`var(${token})`))
     expect(swatch, `no element styled with var(${token})`).toBeDefined()
-    expect(wrapper.text()).toMatch(new RegExp(`${token}(?![\\w-])`))
+    expect(wrapper.findAll('code').some(c => c.text() === token)).toBe(true)
+  })
+
+  it('labels a swatch for every color token defined in variables.css', () => {
+    const labels = new Set(mountPage().findAll('code').map(c => c.text()))
+    expect(colorTokens.filter(token => !labels.has(token))).toEqual([])
+  })
+
+  it('switches theme through the app theme, with pressed state on the toggle', async () => {
+    const html = document.documentElement
+    html.removeAttribute('data-theme')
+    html.removeAttribute('data-bs-theme')
+    html.classList.remove('dark')
+    const [light, dark] = mountPage().findAll('.theme-toggle button')
+
+    await dark.trigger('click')
+
+    expect(html.getAttribute('data-theme'), 'data-theme').toBe('dark')
+    expect(html.getAttribute('data-bs-theme'), 'data-bs-theme').toBe('dark')
+    expect(html.classList.contains('dark'), 'dark class').toBe(true)
+    expect(dark.attributes('aria-pressed'), 'dark aria-pressed').toBe('true')
+    expect(light.attributes('aria-pressed'), 'light aria-pressed').toBe('false')
   })
 
   it('translates its title', async () => {
