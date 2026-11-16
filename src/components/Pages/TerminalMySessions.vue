@@ -610,6 +610,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { useVisiblePolling } from '../../composables/useVisiblePolling'
 import axios from 'axios'
 import { terminalService } from '../../services/domain/terminal'
 import { useNotification } from '../../composables/useNotification'
@@ -1054,6 +1055,16 @@ function handleClickOutside(event: MouseEvent) {
   }
 }
 
+// Rafraîchir les sessions toutes les 30 secondes et vérifier les expirations
+useVisiblePolling(() => {
+  // A refused class listing stays refused until the filter changes; polling it
+  // only produces 403s. The expiry sync is self-scoped by nature, so it is
+  // skipped whenever the listing on screen is somebody else's.
+  if (groupAccessDenied.value) return
+  if (!isGroupMode.value) checkExpiredSessions()
+  loadSessions()
+}, 30000)
+
 onMounted(() => {
   // Add click outside listener for dropdowns
   document.addEventListener('click', handleClickOutside)
@@ -1066,16 +1077,6 @@ onMounted(() => {
     groupStore.loadEntities()
   }
 
-  // Rafraîchir les sessions toutes les 30 secondes et vérifier les expirations
-  const interval = setInterval(() => {
-    // A refused class listing stays refused until the filter changes; polling it
-    // only produces 403s. The expiry sync is self-scoped by nature, so it is
-    // skipped whenever the listing on screen is somebody else's.
-    if (groupAccessDenied.value) return
-    if (!isGroupMode.value) checkExpiredSessions()
-    loadSessions()
-  }, 30000)
-
   // Refresh the auto-delete countdown displays once per minute
   const countdownInterval = setInterval(() => {
     countdownTick.value++
@@ -1083,7 +1084,6 @@ onMounted(() => {
 
   // Cleanup on unmount
   onUnmounted(() => {
-    clearInterval(interval)
     clearInterval(countdownInterval)
     document.removeEventListener('click', handleClickOutside)
   })

@@ -156,6 +156,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, toRef } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { useVisiblePolling } from '../../composables/useVisiblePolling'
 import { supervisionService, type LiveSession } from '../../services/domain/terminal/supervisionService'
 import { useWallOrder } from '../../composables/useWallOrder'
 import { useActivityHighlight } from '../../composables/useActivityHighlight'
@@ -227,7 +228,6 @@ const sessions = ref<LiveSession[]>([])
 const isLoading = ref(false)
 const error = ref('')
 const focusedSessionId = ref<string | null>(props.initialFocusSessionId ?? null)
-let pollInterval: ReturnType<typeof setInterval> | null = null
 
 // Per-group tile ordering (drag & drop + persisted envelope) and the transient
 // "just produced output" highlight live in dedicated composables.
@@ -318,12 +318,12 @@ watch(() => props.canSupervise, (canSupervise) => {
 onMounted(() => {
   loadStoredOrder()
   loadSessions()
-  // Refresh the roster periodically so newly-started / ended sessions appear.
-  pollInterval = setInterval(loadSessions, 30000)
 })
 
+// Refresh the roster periodically so newly-started / ended sessions appear.
+useVisiblePolling(loadSessions, 30000)
+
 onUnmounted(() => {
-  if (pollInterval) clearInterval(pollInterval)
   stopActivityHighlight()
 })
 </script>

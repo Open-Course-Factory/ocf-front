@@ -213,13 +213,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTerminalMetricsStore, type TerminalMetrics } from '../../../stores/terminalMetrics'
 import { useTerminalBackendsStore } from '../../../stores/terminalBackends'
 import { useOrganizationsStore } from '../../../stores/organizations'
 import axios from 'axios'
 import Button from '../../UI/Button.vue'
+import { useVisiblePolling } from '../../../composables/useVisiblePolling'
 
 const { t } = useI18n()
 // Initialize store to register translations
@@ -263,7 +264,6 @@ function filteredOrgsByBackend(backendId: string) {
 
 // Auto-refresh
 const autoRefreshInterval = 30000
-let refreshIntervalId: ReturnType<typeof setTimeout> | null = null
 
 // Computed: online/offline counts
 const onlineCount = computed(() => backendsStore.onlineBackends.length)
@@ -418,24 +418,16 @@ async function setAsDefault(backendId: string) {
   }
 }
 
-onMounted(async () => {
-  await initialLoad()
+onMounted(initialLoad)
 
-  // Auto-refresh: only re-fetch metrics every 30s
-  refreshIntervalId = setInterval(async () => {
-    try {
-      await fetchAllMetrics()
-    } catch {
-      // Silent refresh failure
-    }
-  }, autoRefreshInterval)
-})
-
-onBeforeUnmount(() => {
-  if (refreshIntervalId) {
-    clearInterval(refreshIntervalId)
+// Auto-refresh: only re-fetch metrics every 30s
+useVisiblePolling(async () => {
+  try {
+    await fetchAllMetrics()
+  } catch {
+    // Silent refresh failure
   }
-})
+}, autoRefreshInterval)
 </script>
 
 <style scoped>

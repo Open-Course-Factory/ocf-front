@@ -162,8 +162,9 @@
 // quota. An org's real ceiling is its backend's physical capacity, which this
 // panel does not have. So we show each member's usage against the per-member
 // cap — never an org-total / remaining-by-size view (that pool doesn't exist).
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
+import { useVisiblePolling } from '../../composables/useVisiblePolling'
 import { terminalService } from '../../services/domain/terminal'
 import { usePermissionsStore } from '../../stores/permissions'
 import { formatMemoryMb } from '../../utils/quotaFormatters'
@@ -216,7 +217,6 @@ const loading = ref(false)
 const refreshing = ref(false)
 const fetchError = ref(false)
 const usageData = ref<OrgTerminalUsage | null>(null)
-let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 // Only show to org managers / owners
 const canManage = computed(() => {
@@ -291,21 +291,11 @@ async function refreshUsage() {
   }
 }
 
-function startAutoRefresh() {
-  stopAutoRefresh()
-  refreshTimer = setInterval(() => {
-    if (isExpanded.value && props.organizationId) {
-      refreshUsage()
-    }
-  }, AUTO_REFRESH_SECONDS * 1000)
-}
-
-function stopAutoRefresh() {
-  if (refreshTimer !== null) {
-    clearInterval(refreshTimer)
-    refreshTimer = null
+useVisiblePolling(() => {
+  if (isExpanded.value && props.organizationId) {
+    refreshUsage()
   }
-}
+}, AUTO_REFRESH_SECONDS * 1000)
 
 // Reload when org context changes
 watch(() => props.organizationId, (newId) => {
@@ -319,11 +309,6 @@ onMounted(() => {
   if (canManage.value && props.organizationId) {
     loadUsage()
   }
-  startAutoRefresh()
-})
-
-onUnmounted(() => {
-  stopAutoRefresh()
 })
 </script>
 
