@@ -61,6 +61,7 @@ vi.mock('../../src/stores/classGroups', () => ({
 }))
 
 import BulkLicensePurchase from '../../src/components/Pages/BulkLicensePurchase.vue'
+import i18n from '../../src/i18n'
 
 const MONTHLY = {
   id: 'plan-monthly', name: 'Siège élève — mensuel', description: '', currency: 'eur',
@@ -76,7 +77,9 @@ const PACK = {
 const stubs = { ErrorAlert: true, RouterLink: { template: '<a><slot /></a>' } }
 
 async function mountScreen() {
-  const wrapper = mount(BulkLicensePurchase, { global: { stubs } })
+  // English everywhere: the mocked translations above say 'en' as well.
+  i18n.global.locale.value = 'en'
+  const wrapper = mount(BulkLicensePurchase, { global: { plugins: [i18n], stubs } })
   await flushPromises()
   await flushPromises()
   return wrapper
@@ -147,5 +150,11 @@ describe('BulkLicensePurchase — seat ordering', () => {
     expect(wrapper.find('[data-test="seat-purchase-ineligible"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="seat-purchase-learners"]').exists()).toBe(false)
     expect(getPricingPreview).not.toHaveBeenCalled()
+  })
+
+  it('shows the quoted prices in the app language', async () => {
+    const wrapper = await mountScreen()
+    const prices = wrapper.findAll('.plan-price').map(p => p.text())
+    expect(prices).toEqual(['€49.50', '€80.00'])
   })
 })

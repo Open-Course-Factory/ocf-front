@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { ref } from 'vue'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
@@ -23,9 +22,12 @@ vi.mock('../../src/services/core/error', () => ({
   handleStoreError: vi.fn((err: any, fallbackKey: string) => fallbackKey)
 }))
 
+// The app language, switchable per test.
+const appLocale = vi.hoisted(() => ({ value: 'en' }))
+
 vi.mock('../../src/composables/useTranslations', () => ({
-  useTranslations: () => ({ t: (key: string) => key, te: () => true, locale: ref('en') }),
-  useStoreTranslations: () => ({ t: (key: string) => key, te: () => true, locale: ref('en') })
+  useTranslations: () => ({ t: (key: string) => key, te: () => true, locale: appLocale }),
+  useStoreTranslations: () => ({ t: (key: string) => key, te: () => true, locale: appLocale })
 }))
 
 import { useSubscriptionPlansStore } from '../../src/stores/subscriptionPlans'
@@ -142,5 +144,25 @@ describe('subscriptionPlans store', () => {
       const occurrences = storeSource.split(`${key}:`).length - 1
       expect(occurrences).toBeGreaterThanOrEqual(2)
     })
+  })
+})
+
+describe('subscriptionPlans store - prices follow the app language', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    appLocale.value = 'en'
+  })
+
+  it('shows an English price to an English user', () => {
+    appLocale.value = 'en'
+    expect(useSubscriptionPlansStore().formatPrice(1999, 'EUR')).toBe('€19.99')
+  })
+
+  it('shows a French price to a French user', () => {
+    appLocale.value = 'fr'
+    expect(useSubscriptionPlansStore().formatPrice(1999, 'EUR')).toBe('19,99\u00a0€')
   })
 })

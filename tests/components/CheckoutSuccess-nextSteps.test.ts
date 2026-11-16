@@ -11,6 +11,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick, ref } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 
 const h = vi.hoisted(() => ({
   getCurrentSubscription: vi.fn(),
@@ -40,10 +41,15 @@ vi.mock('../../src/composables/useClassroomEntitlement', () => ({
 }))
 
 import CheckoutSuccess from '../../src/components/Flows/CheckoutSuccess.vue'
+import i18n from '../../src/i18n'
 
-function mountSuccess() {
+function mountSuccess(locale: 'en' | 'fr' = 'en') {
+  const pinia = createPinia()
+  setActivePinia(pinia)
+  i18n.global.locale.value = locale
   return mount(CheckoutSuccess, {
     global: {
+      plugins: [i18n, pinia],
       stubs: { 'router-link': { props: ['to'], template: '<a :href="to"><slot /></a>' } },
     },
   })
@@ -93,5 +99,30 @@ describe('CheckoutSuccess — next steps follow the plan just bought', () => {
     expect(hrefs(wrapper)).toContain('/invoices')
     expect(hrefs(wrapper)).toContain('/subscription-dashboard')
     wrapper.unmount()
+  })
+})
+
+describe('CheckoutSuccess — the period end follows the app language', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    h.planAllowsClassrooms.value = false
+    h.getCurrentSubscription.mockImplementation(async () => {
+      // Mid-morning UTC: the same calendar day in every zone from UTC-10 to UTC+13.
+      h.sub.current = { current_period_end: '2026-03-15T10:00:00Z', subscription_plan: { name: 'Solo' } }
+    })
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    h.sub.current = null
+  })
+
+  it.each([
+    ['en', '3/15/2026'],
+    ['fr', '15/03/2026'],
+  ] as const)('shows the date to a %s user as %s', async (locale, expected) => {
+    const wrapper = mountSuccess(locale)
+    await vi.advanceTimersByTimeAsync(0); await nextTick()
+
+    expect(wrapper.find('[data-test="subscription-details"]').text()).toContain(expected)
   })
 })

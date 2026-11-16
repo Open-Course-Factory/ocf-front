@@ -47,6 +47,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref, nextTick } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 
 // All spies / mutable state referenced inside vi.mock factories must come from
 // vi.hoisted — the factories are hoisted above these declarations.
@@ -96,6 +97,7 @@ vi.mock('../../src/stores/subscriptionBatches', () => ({
 }))
 
 import LicenseManagementDashboard from '../../src/components/Pages/LicenseManagementDashboard.vue'
+import i18n from '../../src/i18n'
 
 // Swap the plain holders for real reactive refs so the component's
 // `batches` computed re-renders when loadBatches() mutates them.
@@ -113,9 +115,13 @@ const BATCH = {
   created_at: '2026-07-01T00:00:00Z',
 }
 
-function mountDashboard() {
+function mountDashboard(locale: 'en' | 'fr' = 'en') {
+  const pinia = createPinia()
+  setActivePinia(pinia)
+  i18n.global.locale.value = locale
   return mount(LicenseManagementDashboard, {
     global: {
+      plugins: [i18n, pinia],
       stubs: {
         AddLicensesModal: true,
         'router-link': { props: ['to'], template: '<a><slot /></a>' },
@@ -294,5 +300,26 @@ describe('LicenseManagementDashboard — bulk purchase landing (?success=true)',
     // route against whatever page the user has since navigated to.
     expect(h.loadBatches.mock.calls.length).toBe(callsAtUnmount)
     expect(h.routerReplace).not.toHaveBeenCalled()
+  })
+})
+
+describe('LicenseManagementDashboard — batch dates follow the app language', () => {
+  beforeEach(() => {
+    h.routeQuery.value = {}
+    h.error.value = null
+    h.loadBatches.mockReset()
+    // Mid-morning UTC: the same calendar day in every zone from UTC-10 to UTC+13.
+    h.batches.value = [{ ...BATCH, current_period_end: '2026-03-15T10:00:00Z' }]
+  })
+
+  it.each([
+    ['en', '3/15/2026'],
+    ['fr', '15/03/2026'],
+  ] as const)('shows the renewal date to a %s user as %s', async (locale, expected) => {
+    const wrapper = mountDashboard(locale)
+    await nextTick()
+
+    const renews = wrapper.findAll('.batch-meta .meta-item')[0].text()
+    expect(renews).toBe(`licenseDashboard.renews: ${expected}`)
   })
 })
