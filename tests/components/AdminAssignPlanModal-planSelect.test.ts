@@ -1,11 +1,8 @@
 /**
  * Characterization pins for AdminAssignPlanModal's plan-<select> behavior.
  *
- * This is the representative modal for the plan-select dedupe (#268, I4):
- * AdminAssignPlanModal, AdminOrgPlanModal and AdminAssignOrgPlanModal all
- * duplicate the same select markup + activePlans / selectedPlanName computeds +
- * confirm-summary block, which the batch extracts into a shared <PlanSelect>.
- * (PlanConfigModal is NOT part of this dedupe — it has no plan-<select>.)
+ * <PlanSelect> is the shared plan select used by AdminAssignPlanModal and
+ * AdminOrgPlanModal; this modal is the representative one.
  *
  * These pins fix the behavior <PlanSelect> must preserve for this modal:
  *   - options are rendered from ACTIVE plans only (inactive excluded),
