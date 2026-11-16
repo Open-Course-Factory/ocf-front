@@ -364,11 +364,8 @@ import { terminalService } from '../../services/domain/terminal/terminalService'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { useEndStateConfig, type EndStateReason } from '../../composables/useEndStateConfig'
-import { useLimitReachedMessage } from '../../composables/useLimitReachedMessage'
 import { useScenarioRunRecovery } from '../../composables/useScenarioRunRecovery'
-import { useDunningRejection } from '../../composables/useDunningRejection'
-import { isQuotaFullRejection, useBudgetRejection } from '../../composables/useBudgetRejection'
-import { isSessionBlockRejection, useSessionBlockRejection } from '../../composables/useSessionBlockRejection'
+import { useResumeRejection } from '../../composables/useResumeRejection'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import SessionPausedBanner from '../Terminal/SessionPausedBanner.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
@@ -398,7 +395,7 @@ const backLabel = computed(() => {
   if (supervisorGroup) return t('sessionView.backToClass')
   return t(returnTo.value ? 'sessionView.back' : 'sessionView.backToSessions')
 })
-const { showSuccess, showWarning, showError: showErrorNotification, showInfo, showConfirm } = useNotification()
+const { showSuccess, showWarning, showError: showErrorNotification, showInfo } = useNotification()
 
 const { t } = useTranslations({
   en: {
@@ -738,15 +735,8 @@ const terminalEndReason = computed<'completed' | 'abandoned' | 'expired' | 'stop
 // End banner config (shared composable)
 const { getEndStateConfig } = useEndStateConfig()
 
-// Localized quota-class error messages (shared with TerminalStarter).
-// Used by resumeSession's catch block to translate backend 403-with-source
-// responses instead of surfacing the raw English `error_message`.
-const { getLimitReachedMessage } = useLimitReachedMessage()
-
-// Dunning (past-due) rejection detection + copy, shared across terminal flows.
-const { isDunningRejection, getDunningCopy } = useDunningRejection()
-const { getResumeQuotaFullMessage } = useBudgetRejection()
-const { getSessionBlockMessage } = useSessionBlockRejection()
+// Refused resume: same handling as "My sessions".
+const { handleResumeRejection } = useResumeRejection()
 
 const activeEndBanner = computed(() => {
   const reason = terminalEndReason.value
@@ -868,41 +858,10 @@ async function resumeSession() {
     await detectScenarioSession()
   } catch (err: any) {
     console.error('Error resuming session:', err)
-    // Dunning (past-due) 402: detect BEFORE the source→limit mapping below,
-    // which would otherwise emit the wrong "concurrent terminal limit" copy.
-    // Offer the subscription dashboard so the user can settle the invoice.
-    if (isDunningRejection(err)) {
-      const copy = getDunningCopy()
-      const confirmed = await showConfirm(copy.message, copy.title, {
-        confirmButtonText: copy.action,
-        cancelButtonText: copy.dismiss
-      })
-      if (confirmed) {
-        Promise.resolve(router.push('/subscription-dashboard')).catch(() => {})
-      }
-      return
-    }
-    // Quota full: only running machines use it, so name the ones to stop.
-    if (isQuotaFullRejection(err)) {
-      showErrorNotification(await getResumeQuotaFullMessage(sessionInfo.value?.organization_id))
-      return
-    }
-    // Blocked by a trainer, the organisation or the platform (#384).
-    if (isSessionBlockRejection(err)) {
-      showErrorNotification(getSessionBlockMessage(err))
-      return
-    }
-    // Localize quota-class 403s using the `source` returned by the backend.
-    // CheckLimit was removed from POST /:id/start (see ocf-core fix for slot-
-    // neutral resume), but other paths can still return a 403-with-source —
-    // and any future quota-gated surface that touches the resume flow gets
-    // the same UX for free. Fall back to the raw error_message for non-quota
-    // failures (RAM, network, ownership flap).
-    const source = err.response?.data?.source
-    const msg = source
-      ? getLimitReachedMessage({ source })
-      : (err.response?.data?.error_message || err.message || t('sessionView.resumeFailed'))
-    showErrorNotification(msg)
+    await handleResumeRejection(err, {
+      organizationId: sessionInfo.value?.organization_id,
+      fallbackMessage: t('sessionView.resumeFailed')
+    })
   } finally {
     isResuming.value = false
   }

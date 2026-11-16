@@ -619,13 +619,11 @@ import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import { useClassGroupsStore } from '../../stores/classGroups'
 import { useGroupMemberNames } from '../../composables/useGroupMemberNames'
 import { extractErrorMessage } from '../../utils/formatters'
-import { isQuotaFullRejection, useBudgetRejection } from '../../composables/useBudgetRejection'
-import { isSessionBlockRejection, useSessionBlockRejection } from '../../composables/useSessionBlockRejection'
+import { useResumeRejection } from '../../composables/useResumeRejection'
 import { getEffectiveSessionState, sessionHasNetwork, type EffectiveSessionState, type SessionLifecycleFields } from '../../utils/sessionState'
 
 const { showConfirm, showError } = useNotification()
-const { getResumeQuotaFullMessage } = useBudgetRejection()
-const { getSessionBlockMessage } = useSessionBlockRejection()
+const { handleResumeRejection } = useResumeRejection()
 const { formatDateTime: formatDateTimeTz } = useFormatters()
 const { isEnabled } = useFeatureFlags()
 const groupStore = useClassGroupsStore()
@@ -1175,12 +1173,11 @@ async function handleStartSession(sessionId: string) {
     await loadSessions()
   } catch (err: any) {
     console.error('Erreur lors du démarrage:', err)
-    const message = isQuotaFullRejection(err)
-      ? await getResumeQuotaFullMessage(sessions.value.find((s: any) => s.session_id === sessionId)?.organization_id)
-      : isSessionBlockRejection(err)
-        ? getSessionBlockMessage(err)
-        : err.response?.data?.error_message || t('terminalMySessions.startFailed')
-    showError(message, t('terminalMySessions.startFailed'))
+    await handleResumeRejection(err, {
+      organizationId: sessions.value.find((s: any) => s.session_id === sessionId)?.organization_id,
+      fallbackMessage: t('terminalMySessions.startFailed'),
+      title: t('terminalMySessions.startFailed')
+    })
     // Do NOT mutate the local session state here — the row stays as it was.
     // On 409, refetch to catch up to backend reality.
     if (err.response?.status === 409) {
