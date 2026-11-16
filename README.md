@@ -18,7 +18,7 @@ Vue.js frontend application for [Open Course Factory](https://usine.solution-lib
 - **Vue Router 4** with authentication guards
 - **Vue i18n** for internationalization
 - **Vite** as build tool and dev server
-- **Element Plus** and **Vuetify** for UI components
+- House components on **Bootstrap 5** CSS; **Element Plus** only for the confirm dialog and one filterable select
 - **Axios** with custom interceptors
 
 ## 📦 Development Setup
@@ -188,7 +188,7 @@ All development documentation is located in `.claude/docs/`:
 
 - **Mobile-first**: Responsive layouts for all screen sizes
 - **Terminal Integration**: XTerm.js with guacamole-common-js
-- **Modern UI**: Element Plus and Vuetify components
+- **Modern UI**: house design system components and toast notifications
 - **Accessibility**: ARIA compliance and keyboard navigation
 
 ## License

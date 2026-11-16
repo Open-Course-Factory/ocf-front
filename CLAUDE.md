@@ -31,7 +31,7 @@ npm run preview  # Preview production build
 - Vue Router 4 (routing + auth guards)
 - Vue i18n (French default, English fallback)
 - Vite (build tool)
-- Element Plus + Vuetify (UI components)
+- House components + Bootstrap 5 CSS (from `index.html`); Element Plus only for the confirm dialog (`showConfirm`) and the filterable select in `EntityModal.vue`
 - Axios (API client with interceptors)
 
 ## Architecture Principles
