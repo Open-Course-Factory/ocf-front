@@ -87,6 +87,25 @@ describe('stores show the backend error_message', () => {
     const store = useGenerationsStore()
     await store.createEntity('/generations', { format: '0' }).catch(() => {})
     await vi.waitFor(() => expect(store.entities[0]?.status).toBe('failed'))
-    expect(store.entities[0].error_message).toContain(MESSAGE)
+    // The backend already words a full sentence: shown alone, no translated prefix.
+    expect(store.entities[0].error_message).toBe(MESSAGE)
+  })
+
+  it('generations: a trigger lost to a network error records the translated text alone', async () => {
+    mockPost.mockImplementation(async (url: string) => {
+      if (url === '/courses/generate') throw { isAxiosError: true, request: {}, message: 'Network Error' }
+      return { status: 201, data: { id: 'g1', status: 'pending' } }
+    })
+    const store = useGenerationsStore()
+    await store.createEntity('/generations', { format: '0' }).catch(() => {})
+    await vi.waitFor(() => expect(store.entities[0]?.status).toBe('failed'))
+    expect(store.entities[0].error_message).toMatch(/^(Could not start the generation|Impossible de lancer la génération)$/)
+  })
+
+  it('chapters.fetchChapterById: a network error shows the translated fallback, not axios text', async () => {
+    mockGet.mockRejectedValue({ isAxiosError: true, request: {}, message: 'Network Error' })
+    const store = useChaptersStore()
+    await store.fetchChapterById('ch1')
+    expect(store.error).toMatch(/^(Error loading chapter|Erreur lors du chargement du chapitre)$/)
   })
 })

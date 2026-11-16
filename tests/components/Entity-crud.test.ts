@@ -77,6 +77,7 @@ vi.mock('../../src/stores/currentUser', () => ({
 
 import axios from 'axios'
 import Entity from '../../src/components/Pages/Entity.vue'
+import appI18n from '../../src/i18n'
 import { useBaseStore } from '../../src/stores/baseStore'
 
 // Wrapped in reactive() to mirror the Pinia store proxy used in production:
@@ -231,5 +232,56 @@ describe('Entity.vue — CRUD / export / import (characterization)', () => {
     expect(body).not.toHaveProperty('updated_at')
     expect(body).not.toHaveProperty('deleted_at')
     expect(body).toMatchObject({ name: 'Imported', color: 'blue' })
+  })
+
+  it('export: a refused export shows the backend error_message', async () => {
+    const store = makeThemesStore()
+    const wrapper = mountEntity(store)
+    await flushPromises()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    ;(axios.get as any).mockReset()
+    ;(axios.get as any).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 403, data: { error_code: 403, error_message: 'X' } },
+      message: 'Request failed with status code 403'
+    })
+
+    await (wrapper.vm as any).exportEntities()
+    await flushPromises()
+
+    expect(showErrorSpy).toHaveBeenCalledWith('X')
+  })
+
+  it('export: a bodiless failure shows a translated sentence in both locales', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const exportFailingIn = async (locale: 'en' | 'fr') => {
+      ;(axios.get as any).mockResolvedValue(cursorPage([]))
+      // The app instance: Entity's shared keys (exportData, exportSuccess…) live in src/i18n.ts.
+      ;(appI18n.global.locale as any).value = locale
+      const wrapper = mount(Entity, {
+        props: { entityName: 'themes', entityStore: makeThemesStore() },
+        global: {
+          plugins: [appI18n],
+          stubs: { EntityModal: true, EntityCard: true, EntityListSkeleton: true, EmptyState: true }
+        }
+      })
+      await flushPromises()
+      ;(axios.get as any).mockReset()
+      ;(axios.get as any).mockRejectedValue({ isAxiosError: true, request: {}, message: 'Network Error' })
+      await (wrapper.vm as any).exportEntities()
+      await flushPromises()
+      return showErrorSpy.mock.calls.at(-1)?.[0]
+    }
+
+    const en = await exportFailingIn('en')
+    const fr = await exportFailingIn('fr')
+    ;(appI18n.global.locale as any).value = 'en'
+    for (const msg of [en, fr]) {
+      expect(msg).toBeTruthy()
+      expect(msg).not.toBe('Network Error')
+      expect(msg).not.toMatch(/^[\w-]+(\.[\w-]+)+$/)
+    }
+    expect(fr, 'fr fallback must differ from the en one').not.toBe(en)
   })
 })
