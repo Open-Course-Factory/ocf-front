@@ -64,6 +64,8 @@ export const useScenarioSessionsStore = defineStore('scenarioSessions', () => {
     })
 
     base.parentEntitiesStores = new Map([["scenario_id", useScenariosStore()]])
+    // Sessions start from a scenario; the backend mounts no bare POST /scenario-sessions.
+    base.allowCreation.value = false
 
     const fieldList = computed(() => buildFieldList([
         field('id').hidden().readonly(),
