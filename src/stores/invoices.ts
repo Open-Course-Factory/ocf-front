@@ -27,11 +27,12 @@ import { buildFieldList, field, systemFields } from '../utils/fieldBuilder'
 import { buildSelectData } from '../utils'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { useStatusFormatters } from '../composables/useStatusFormatters'
+import { currentUserTimezone } from '../composables/useFormatters'
 
 export const useInvoicesStore = defineStore('invoices', () => {
 
     const base = useBaseStore();
-    const { t } = useStoreTranslations({
+    const { t, locale } = useStoreTranslations({
         en: {
             invoices: {
                 pageTitle: 'Invoices',
@@ -119,7 +120,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
 
     // Formatage du montant avec devise
     const formatAmount = (amount: number, currency: string = 'EUR') => {
-        return formatCurrency(amount, currency)
+        return formatCurrency(amount, currency, locale.value)
     }
 
     // Use shared status formatters (utilise le composable réutilisable)
@@ -153,7 +154,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
 
     // Formater la date
     const formatDate = (dateString: string) => {
-        return formatDateUtil(dateString, 'fr-FR', '-')
+        return formatDateUtil(dateString, locale.value, '-', currentUserTimezone())
     }
 
     // Synchroniser et charger les factures (utilise le wrapper réutilisable)

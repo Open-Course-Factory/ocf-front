@@ -35,7 +35,7 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
 
     const base = useBaseStore();
 
-    const { t } = useStoreTranslations({
+    const { t, locale } = useStoreTranslations({
         en: { 
         subscriptionPlans: {
             pageTitle: 'Subscription Plans',
@@ -303,7 +303,7 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
 
     // Formatage du prix pour affichage
     const formatPrice = (amount: number, currency: string = 'EUR') => {
-        return formatCurrency(amount, currency)
+        return formatCurrency(amount, currency, locale.value)
     }
 
     // Fonction personnalisée pour les données de sélection (utilise l'utilitaire réutilisable)

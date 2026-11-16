@@ -108,11 +108,11 @@
               >
                 <div class="plan-header">
                   <h4 class="plan-name">{{ q.plan.name }}</h4>
-                  <div class="plan-price">{{ formatCurrency(q.total) }}</div>
+                  <div class="plan-price">{{ formatPrice(q.total, q.plan.currency) }}</div>
                 </div>
                 <div class="plan-description">
                   {{ t('bulkPurchase.quantityDetail', { qty: q.quantity, unit: unitLabel(q.plan.seat_unit) }) }}
-                  · {{ t('bulkPurchase.perLearner', { amount: formatCurrency(Math.round(q.total / Math.max(learners, 1))) }) }}
+                  · {{ t('bulkPurchase.perLearner', { amount: formatPrice(Math.round(q.total / Math.max(learners, 1)), q.plan.currency) }) }}
                 </div>
                 <div v-if="index === 0 && quotes.length > 1" class="plan-badge">
                   <i class="fas fa-award"></i>
@@ -225,7 +225,8 @@ import {
 import { useTranslations } from '../../composables/useTranslations'
 import { useSubscriptionBatchesStore } from '../../stores/subscriptionBatches'
 import { useClassGroupsStore } from '../../stores/classGroups'
-import { formatCurrency as formatCurrencyUtil, extractErrorMessage } from '../../utils/formatters'
+import { extractErrorMessage } from '../../utils/formatters'
+import { useFormatters } from '../../composables/useFormatters'
 import ErrorAlert from '../UI/ErrorAlert.vue'
 
 const { t } = useTranslations({
@@ -449,9 +450,7 @@ const groups = computed(() => {
 })
 
 // Methods
-const formatCurrency = (amount: number | undefined): string => {
-  return formatCurrencyUtil(amount ?? 0, 'EUR')
-}
+const { formatPrice } = useFormatters()
 
 const handlePurchase = async () => {
   if (!selectedPlanId.value || quantity.value < 1) {

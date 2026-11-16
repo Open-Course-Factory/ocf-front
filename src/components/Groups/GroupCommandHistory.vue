@@ -10,6 +10,7 @@
 -->
 
 <script setup lang="ts">
+import { useFormatters, currentUserTimezone } from '../../composables/useFormatters'
 import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
@@ -59,7 +60,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const { t } = useTranslations({
+const { t, locale } = useTranslations({
   en: {
     groupCommandHistory: {
       // Header
@@ -209,11 +210,14 @@ const showingEnd = computed(() => {
   return Math.min(currentOffset.value + pageSize, total.value)
 })
 
+const { formatNum } = useFormatters()
+
 // Methods
 function formatCommandTime(unixSeconds: number): string {
   try {
     const date = new Date(unixSeconds * 1000)
-    return date.toLocaleString(undefined, {
+    return date.toLocaleString(locale.value, {
+      timeZone: currentUserTimezone(),
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -238,7 +242,8 @@ function formatLastActive(unixSeconds: number): string {
   if (!unixSeconds) return '-'
   try {
     const date = new Date(unixSeconds * 1000)
-    return date.toLocaleDateString(undefined, {
+    return date.toLocaleDateString(locale.value, {
+      timeZone: currentUserTimezone(),
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -309,8 +314,8 @@ async function exportCsv() {
   // Warn the user if the export will be truncated by the backend cap.
   if (total.value > MAX_CSV_EXPORT_LIMIT) {
     showWarning(t('groupCommandHistory.exportTruncatedWarning', {
-      total: total.value.toLocaleString(),
-      limit: MAX_CSV_EXPORT_LIMIT.toLocaleString()
+      total: formatNum(total.value),
+      limit: formatNum(MAX_CSV_EXPORT_LIMIT)
     }))
   }
 
@@ -443,7 +448,7 @@ onMounted(() => {
           {{ t('groupCommandHistory.exportCsv') }}
         </button>
         <span class="export-cap-note">
-          {{ t('groupCommandHistory.exportCapNote', { limit: MAX_CSV_EXPORT_LIMIT.toLocaleString() }) }}
+          {{ t('groupCommandHistory.exportCapNote', { limit: formatNum(MAX_CSV_EXPORT_LIMIT) }) }}
         </span>
         <button
           class="btn btn-secondary btn-sm"
@@ -459,7 +464,7 @@ onMounted(() => {
     <!-- Stats Summary Cards -->
     <div v-if="stats?.summary" class="stats-cards">
       <div class="stat-card">
-        <div class="stat-value">{{ stats.summary.total_commands.toLocaleString() }}</div>
+        <div class="stat-value">{{ formatNum(stats.summary.total_commands) }}</div>
         <div class="stat-label">{{ t('groupCommandHistory.statTotalCommands') }}</div>
       </div>
       <div class="stat-card">
@@ -501,7 +506,7 @@ onMounted(() => {
                   <span class="student-email">{{ student.student_email }}</span>
                 </div>
               </td>
-              <td class="col-numeric">{{ student.total_commands.toLocaleString() }}</td>
+              <td class="col-numeric">{{ formatNum(student.total_commands) }}</td>
               <td class="col-numeric">{{ student.session_count }}</td>
               <td>{{ formatDuration(student.total_time_seconds) }}</td>
               <td>{{ formatLastActive(student.last_active_at) }}</td>

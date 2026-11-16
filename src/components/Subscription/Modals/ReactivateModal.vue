@@ -36,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import { useFormatters } from '../../../composables/useFormatters'
 import { computed } from 'vue'
 import { useSubscriptionPlansStore } from '../../../stores/subscriptionPlans'
 import { useSubscriptionTranslations } from '../composables/useSubscriptionTranslations'
@@ -63,14 +64,7 @@ const subscriptionPlansStore = useSubscriptionPlansStore()
 
 const formatPrice = computed(() => subscriptionPlansStore.formatPrice)
 
-function formatDate(dateString: string) {
-  if (!dateString) return '-'
-  try {
-    return new Date(dateString).toLocaleDateString('fr-FR')
-  } catch (e) {
-    return dateString
-  }
-}
+const { formatDate } = useFormatters()
 
 </script>
 

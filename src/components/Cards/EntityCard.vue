@@ -141,10 +141,12 @@
 <script setup lang="ts">
 import { Store } from 'pinia';
 import { getTranslationKey } from '../../utils';
-import { formatDateTime, formatCurrency, formatStorageSize, formatDuration, formatNumber } from '../../utils/formatters';
+import { formatStorageSize, formatDuration } from '../../utils/formatters';
+import { useFormatters } from '../../composables/useFormatters';
 import { computed, reactive, unref } from 'vue';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n<{ message: Record<string, string> }>();
+const { formatDateTime, formatPrice, formatNum } = useFormatters();
 
 const translationKey = computed(() => getTranslationKey(props.entityStore.$id || 'unknown'));
 
@@ -422,7 +424,7 @@ function getDisplayValue(key: string, value: any) {
   if (isCurrencyField(key) && typeof value === 'number') {
     // Detect currency from field name or entity
     const currency = props.entity.currency || 'EUR';
-    return formatCurrency(value, currency);
+    return formatPrice(value, currency);
   }
 
   // Storage size fields
@@ -447,7 +449,7 @@ function getDisplayValue(key: string, value: any) {
 
   // Count/number fields with thousand separators
   if (isCountField(key) && typeof value === 'number') {
-    return formatNumber(value);
+    return formatNum(value);
   }
 
   // Otherwise return the original value

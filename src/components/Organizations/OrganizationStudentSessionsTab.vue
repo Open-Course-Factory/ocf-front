@@ -132,6 +132,7 @@
 </template>
 
 <script setup lang="ts">
+import { currentUserTimezone } from '../../composables/useFormatters'
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
@@ -159,7 +160,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const { t } = useTranslations({
+const { t, locale } = useTranslations({
   en: {
     sessions: {
       title: 'Learner Sessions',
@@ -241,7 +242,8 @@ function formatDateTime(dateStr: string): string {
   if (!dateStr) return '-'
   try {
     const date = new Date(dateStr)
-    return date.toLocaleString(undefined, {
+    return date.toLocaleString(locale.value, {
+      timeZone: currentUserTimezone(),
       year: 'numeric',
       month: 'short',
       day: 'numeric',

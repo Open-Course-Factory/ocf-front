@@ -83,6 +83,7 @@
 </template>
 
 <script setup lang="ts">
+import { useFormatters } from '../../composables/useFormatters'
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSshKeysStore } from '../../stores/sshKeys'
@@ -105,10 +106,8 @@ onMounted(async () => {
   await sshKeysStore.loadEntities()
 })
 
-function formatDate(dateString: string | undefined): string {
-  if (!dateString) return t('sshkeys.unknown')
-  return new Date(dateString).toLocaleDateString()
-}
+const formatters = useFormatters()
+const formatDate = (dateString: string | undefined) => formatters.formatDate(dateString, t('sshkeys.unknown'))
 
 function openAddModal() {
   editingKey.value = null

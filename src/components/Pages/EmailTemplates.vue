@@ -22,6 +22,7 @@
 -->
 
 <script setup lang="ts">
+import { useFormatters } from '../../composables/useFormatters'
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEmailTemplatesStore } from '../../stores/emailTemplates'
@@ -109,10 +110,7 @@ const sendTestEmail = async () => {
   }
 }
 
-const formatDate = (date: string | undefined) => {
-  if (!date) return '-'
-  return new Date(date).toLocaleString()
-}
+const { formatDateTime: formatDate } = useFormatters()
 
 const getStatusBadgeClass = (isActive: boolean) => {
   return isActive ? 'badge-success' : 'badge-secondary'

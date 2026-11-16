@@ -224,12 +224,13 @@
 </template>
 
 <script setup lang="ts">
+import { useFormatters } from '../../composables/useFormatters'
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
 import { useSubscriptionBatchesStore } from '../../stores/subscriptionBatches'
 import { userService } from '../../services/domain/user'
-import { formatDateTime, extractErrorMessage } from '../../utils/formatters'
+import { extractErrorMessage } from '../../utils/formatters'
 import { useNotification } from '../../composables/useNotification'
 import LicenseAssignmentModal from '../Modals/LicenseAssignmentModal.vue'
 import type { UserSubscription } from '../../types/entities'
@@ -625,10 +626,7 @@ const confirmRevoke = async (license: UserSubscription) => {
   }
 }
 
-const formatDate = (dateString: string | undefined): string => {
-  if (!dateString) return '-'
-  return formatDateTime(dateString).split(' ')[0]
-}
+const { formatDate } = useFormatters()
 
 // Lifecycle
 onMounted(async () => {

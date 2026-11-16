@@ -198,6 +198,7 @@
 </template>
 
 <script setup lang="ts">
+import { currentUserTimezone } from '../../composables/useFormatters'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTranslations } from '../../composables/useTranslations'
@@ -211,7 +212,7 @@ const router = useRouter()
 const runLabel = useScenarioRunLabel()
 const { rebuild, launch, startOver } = useScenarioRunRecovery()
 
-const { t } = useTranslations({
+const { t, locale } = useTranslations({
   en: {
     myScenarios: {
       title: 'Scenario History',
@@ -347,7 +348,8 @@ function gradeClass(grade: number): string {
 function formatDate(dateStr: string): string {
   try {
     const date = new Date(dateStr)
-    return date.toLocaleDateString(undefined, {
+    return date.toLocaleDateString(locale.value, {
+      timeZone: currentUserTimezone(),
       year: 'numeric',
       month: 'short',
       day: 'numeric',

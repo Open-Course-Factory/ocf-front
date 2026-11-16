@@ -22,6 +22,7 @@
 -->
 
 <script setup lang="ts">
+import { useFormatters } from '../../composables/useFormatters'
 import { ref, computed, onMounted } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
@@ -299,10 +300,8 @@ function translateDifficulty(difficulty: string): string {
   return difficultyMap[difficulty] || difficulty
 }
 
-function formatDate(dateStr: string): string {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString()
-}
+const formatters = useFormatters()
+const formatDate = (dateStr: string) => formatters.formatDate(dateStr, '')
 
 onMounted(() => {
   loadScenarios()
