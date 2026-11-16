@@ -147,7 +147,6 @@ function mountAdmin() {
       plugins: [createTestI18n()],
       stubs: {
         Entity: { props: ['entityName', 'entityStore'], template: '<div class="entity-stub" />' },
-        AdminAssignOrgPlanModal: true,
         AdminAssignPlanModal: true,
         PlanConfigModal: true,
         AdminBadge: true,

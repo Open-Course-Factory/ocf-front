@@ -24,7 +24,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import Entity from './Entity.vue'
-import AdminAssignOrgPlanModal from '../Modals/AdminAssignOrgPlanModal.vue'
 import PlanConfigModal from '../Modals/PlanConfigModal.vue'
 import AdminAssignPlanModal from '../Modals/AdminAssignPlanModal.vue'
 import BaseModal from '../Modals/BaseModal.vue'
@@ -128,18 +127,6 @@ const mirrorPreview = ref<any>(null)
 
 // Import (Stripe → DB) confirm dialog state
 const showImportConfirm = ref(false)
-const showAssignOrgModal = ref(false)
-const assignOrgPreselectedPlanId = ref<string | undefined>(undefined)
-
-const openAssignOrgModal = (planId?: string) => {
-    assignOrgPreselectedPlanId.value = planId
-    showAssignOrgModal.value = true
-}
-
-const onOrgPlanAssigned = () => {
-    showSuccess(t('subscriptionPlans.assignOrgSuccess'))
-}
-
 const showAssignModal = ref(false)
 const assignPlanId = ref<string | null>(null)
 
@@ -435,13 +422,6 @@ const confirmImport = async () => {
                         {{ isSyncing ? t('subscriptionPlans.importing') : t('subscriptionPlans.importFromStripe') }}
                     </button>
                 </div>
-                <button
-                    class="btn btn-secondary"
-                    @click="openAssignOrgModal()"
-                >
-                    <i class="fas fa-building"></i>
-                    {{ t('subscriptionPlans.assignToOrg') }}
-                </button>
                 <small class="text-muted">
                     {{ t('subscriptionPlans.stripeSyncDescription') }}
                 </small>
@@ -662,14 +642,6 @@ const confirmImport = async () => {
                             </span>
                             <AdminBadge v-if="!entity.is_active" icon-only />
                             <button
-                                v-if="entity.is_active"
-                                class="btn btn-sm btn-outline-primary"
-                                @click.stop="openAssignOrgModal(entity.id)"
-                            >
-                                <i class="fas fa-building"></i>
-                                {{ t('subscriptionPlans.assignToOrg') }}
-                            </button>
-                            <button
                                 class="btn btn-sm btn-outline-primary assign-btn"
                                 @click.stop="openAssignModal(entity.id)"
                             >
@@ -680,14 +652,6 @@ const confirmImport = async () => {
                     </div>
                 </template>
             </Entity>
-
-            <!-- Admin: Assign Plan to Organization Modal -->
-            <AdminAssignOrgPlanModal
-                :visible="showAssignOrgModal"
-                :preselected-plan-id="assignOrgPreselectedPlanId"
-                @close="showAssignOrgModal = false"
-                @assigned="onOrgPlanAssigned"
-            />
 
             <!-- Admin Assign Plan Modal -->
             <AdminAssignPlanModal
