@@ -163,13 +163,11 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { useHelpTranslations } from '../../../composables/useHelpTranslations'
 
 const { t } = useI18n()
-const { loadHelpTranslations } = useHelpTranslations()
 const route = useRoute()
 
 const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
@@ -238,10 +236,6 @@ const groupMatrix: { key: string; marks: Mark[] }[] = [
   { key: 'groupRenameArchiveClass', marks: [y, y, n] },
   { key: 'groupDeleteClass', marks: [y, n, n] }
 ]
-
-onMounted(async () => {
-  await loadHelpTranslations()
-})
 </script>
 
 <style scoped>
