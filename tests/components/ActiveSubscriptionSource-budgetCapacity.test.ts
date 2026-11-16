@@ -296,3 +296,24 @@ describe('ActiveSubscriptionSource — session duration limit', () => {
     expect(wrapper.text()).toContain('1h 30min session duration')
   })
 })
+
+describe('ActiveSubscriptionSource — next billing date follows the app language', () => {
+  it.each([
+    ['en', '3/15/2026'],
+    ['fr', '15/03/2026'],
+  ] as const)('shows the date to a %s user as %s', (locale, expected) => {
+    const wrapper = mountSource(
+      {
+        id: 'sub-1',
+        status: 'active',
+        subscription_type: 'personal',
+        // Mid-morning UTC: the same calendar day in every zone from UTC-10 to UTC+13.
+        current_period_end: '2026-03-15T10:00:00Z',
+        subscription_plan: { id: 'plan-1', name: 'Solo' },
+      },
+      locale
+    )
+
+    expect(wrapper.find('.billing-notice').text()).toContain(expected)
+  })
+})

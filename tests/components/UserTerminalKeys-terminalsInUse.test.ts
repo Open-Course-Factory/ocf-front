@@ -1,5 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import axios from 'axios'
 
 const showError = vi.fn()
 const post = vi.fn()
@@ -8,13 +10,16 @@ vi.mock('axios', () => ({
   default: { get: vi.fn().mockResolvedValue({ data: null }), post: (...args: unknown[]) => post(...args) }
 }))
 vi.mock('../../src/composables/useTranslations', () => ({
-  useTranslations: () => ({ t: (key: string) => key })
+  useTranslations: () => ({ t: (key: string) => key }),
+  useStoreTranslations: () => ({ t: (key: string) => key })
 }))
 vi.mock('../../src/composables/useNotification', () => ({
   useNotification: () => ({ showSuccess: vi.fn(), showError })
 }))
 
 import UserTerminalKeys from '../../src/components/Pages/UserTerminalKeys.vue'
+import i18n from '../../src/i18n'
+import { useUserSettingsStore } from '../../src/stores/userSettings'
 
 const ConfirmingModal = {
   emits: ['confirm'],
@@ -51,5 +56,27 @@ describe('UserTerminalKeys — regeneration refused', () => {
     await confirmRegeneration()
 
     expect(showError.mock.calls[0][0]).toBe('server failure')
+  })
+})
+
+describe('UserTerminalKeys — creation date in the user\'s language and time zone', () => {
+  // 11:30 UTC is already the next day in Auckland (UTC+13) but still the same
+  // day in Los Angeles (UTC-7): whatever the machine's zone, one case differs.
+  it.each([
+    ['fr', 'Pacific/Auckland', '16/03/2026'],
+    ['en', 'America/Los_Angeles', '3/15/2026'],
+  ] as const)('shows a %s user in %s the key created on %s', async (locale, timezone, expected) => {
+    vi.mocked(axios.get).mockResolvedValueOnce({ data: { id: 'key-1', key_name: 'k', is_active: true, created_at: '2026-03-15T11:30:00Z' } })
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    useUserSettingsStore().settings.timezone = timezone
+    i18n.global.locale.value = locale
+
+    const wrapper = mount(UserTerminalKeys, {
+      global: { plugins: [i18n, pinia], stubs: { BaseModal: true, ErrorAlert: true } }
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain(expected)
   })
 })

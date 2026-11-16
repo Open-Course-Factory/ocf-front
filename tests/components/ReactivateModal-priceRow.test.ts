@@ -18,7 +18,6 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
 
 // The subscriptionPlans store is instantiated by the modal; stub axios so no real
@@ -38,19 +37,7 @@ vi.mock('axios', () => ({
 }))
 
 import ReactivateModal from '../../src/components/Subscription/Modals/ReactivateModal.vue'
-
-function createTestI18n(locale: 'en' | 'fr' = 'en') {
-  return createI18n({
-    legacy: false,
-    locale,
-    fallbackLocale: 'en',
-    // The modal supplies its own labels via useSubscriptionTranslations; an empty
-    // bundle is enough to satisfy the plugin.
-    messages: { en: {}, fr: {} },
-    missingWarn: false,
-    fallbackWarn: false,
-  })
-}
+import i18n from '../../src/i18n'
 
 /**
  * A subscription shaped like the REAL backend DTO: price/interval/currency live
@@ -73,17 +60,21 @@ function realDtoSubscription() {
   }
 }
 
+// The app's own i18n instance: the component and the plans store must read the
+// same language, as they do in the app.
 function mountModal(subscription: any, locale: 'en' | 'fr' = 'en') {
-  setActivePinia(createPinia())
+  const pinia = createPinia()
+  setActivePinia(pinia)
+  i18n.global.locale.value = locale
   return mount(ReactivateModal, {
     props: { visible: true, subscription },
-    global: { plugins: [createTestI18n(locale)] },
+    global: { plugins: [i18n, pinia] },
   })
 }
 
 describe('ReactivateModal — reactivation summary price row (issue #265)', () => {
   it('renders the plan price and interval in the reactivation summary', () => {
-    const wrapper = mountModal(realDtoSubscription())
+    const wrapper = mountModal(realDtoSubscription(), 'fr')
     const text = wrapper.text()
 
     // formatCurrency(1200, 'EUR', 'fr-FR') → "12,00 €" (the space is a narrow
@@ -99,5 +90,22 @@ describe('ReactivateModal — reactivation summary price row (issue #265)', () =
     // the DTO does not provide — the plan name comes from subscription_plan.name.
     const wrapper = mountModal(realDtoSubscription())
     expect(wrapper.text()).toContain('Solo')
+  })
+})
+
+describe('ReactivateModal — price and next billing date follow the app language', () => {
+  // Mid-morning UTC: the same calendar day in every zone from UTC-10 to UTC+13.
+  const subscription = { ...realDtoSubscription(), current_period_end: '2026-03-15T10:00:00Z' }
+
+  it('shows them in English to an English user', () => {
+    const text = mountModal(subscription, 'en').text()
+    expect(text).toContain('€12.00')
+    expect(text).toContain('3/15/2026')
+  })
+
+  it('shows them in French to a French user', () => {
+    const text = mountModal(subscription, 'fr').text()
+    expect(text).toContain('12,00\u00a0€')
+    expect(text).toContain('15/03/2026')
   })
 })

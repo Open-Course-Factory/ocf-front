@@ -7,6 +7,7 @@ import {
   FieldBuilder,
   type FieldConfig
 } from '../../src/utils/fieldBuilder'
+import i18n from '../../src/i18n'
 
 describe('fieldBuilder', () => {
   describe('field() factory', () => {
@@ -232,6 +233,22 @@ describe('fieldBuilder', () => {
       const result = config.displayValue('2025-06-15T12:00:00Z')
       expect(typeof result).toBe('string')
       expect(result).not.toBe('-')
+    })
+  })
+
+  describe('date fields follow the app language', () => {
+    // The stores call withDateFormat()/withDateTimeFormat() with no locale.
+    // Mid-morning UTC: the same calendar day in every zone from UTC-10 to UTC+13.
+    it.each([
+      ['en', '3/15/2026'],
+      ['fr', '15/03/2026'],
+    ] as const)('shows a %s user the date as %s', (locale, expected) => {
+      i18n.global.locale.value = locale
+      const [, date] = field('x').withDateFormat().build()
+      const [, dateTime] = field('x').withDateTimeFormat().build()
+
+      expect(date.displayValue('2026-03-15T10:00:00Z')).toBe(expected)
+      expect(dateTime.displayValue('2026-03-15T10:00:00Z')).toContain(expected)
     })
   })
 

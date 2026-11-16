@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { ref } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 
 // Mocks MUST be defined BEFORE imports
@@ -21,9 +20,12 @@ vi.mock('../../src/services/core/error', () => ({
   handleStoreError: vi.fn((err: any, fallbackKey: string) => fallbackKey)
 }))
 
+// The app language, switchable per test.
+const appLocale = vi.hoisted(() => ({ value: 'en' }))
+
 vi.mock('../../src/composables/useTranslations', () => ({
-  useTranslations: () => ({ t: (key: string) => key, te: () => true, locale: ref('en') }),
-  useStoreTranslations: () => ({ t: (key: string) => key, te: () => true, locale: ref('en') })
+  useTranslations: () => ({ t: (key: string) => key, te: () => true, locale: appLocale }),
+  useStoreTranslations: () => ({ t: (key: string) => key, te: () => true, locale: appLocale })
 }))
 
 vi.mock('../../src/services/demo', () => ({
@@ -161,5 +163,35 @@ describe('invoices store - refund status formatting (#257)', () => {
     expect(store.getStatusLabel('open')).toBe('invoices.unpaid')
     expect(store.getStatusClass('unpaid')).toBe('text-warning')
     expect(store.getStatusIcon('unpaid')).toBe('fas fa-clock')
+  })
+})
+
+// Mid-morning UTC: the same calendar day in every zone from UTC-10 to UTC+13,
+// so the assertions below do not depend on the machine's zone.
+const INVOICE_DATE = '2026-03-15T10:00:00Z'
+
+describe('invoices store - amounts and dates follow the app language', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    appLocale.value = 'en'
+  })
+
+  it('shows an English amount and date to an English user', () => {
+    appLocale.value = 'en'
+    const store = useInvoicesStore()
+
+    expect(store.formatAmount(1999, 'EUR')).toBe('€19.99')
+    expect(store.formatDate(INVOICE_DATE)).toBe('3/15/2026')
+  })
+
+  it('shows a French amount and date to a French user', () => {
+    appLocale.value = 'fr'
+    const store = useInvoicesStore()
+
+    expect(store.formatAmount(1999, 'EUR')).toBe('19,99 €')
+    expect(store.formatDate(INVOICE_DATE)).toBe('15/03/2026')
   })
 })
