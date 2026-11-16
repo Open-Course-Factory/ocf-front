@@ -12,6 +12,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
+import { pickFile } from '../helpers/fileInput'
 import { createI18n } from 'vue-i18n'
 import { createTestI18n } from '../helpers/entityModalHelper'
 
@@ -42,13 +43,6 @@ const LAB = { title: 'Lab', steps: [{ title: 'one' }, { title: 'two' }] }
 const validFile = (format: Format) =>
   format === 'json' ? fileOf('lab.json', JSON.stringify(LAB)) : fileOf('lab.zip', 'PK')
 
-/** Hand a file to the file input, as picking one in the browser does. */
-async function pickFile(wrapper: VueWrapper, file: File) {
-  const input = wrapper.find('input[type="file"]')
-  Object.defineProperty(input.element, 'files', { value: [file], configurable: true })
-  await input.trigger('change')
-  await flushPromises()
-}
 
 const importButton = (wrapper: VueWrapper) => wrapper.find('.upload-footer .btn-primary')
 const errorText = (wrapper: VueWrapper) => wrapper.find('.error-message').text()
@@ -88,6 +82,18 @@ describe('ScenarioImportModal — what each format accepts', () => {
     { format: 'archive' as const, name: 'lab.json', says: 'Please select a .zip, .tar.gz, or .tgz file' },
   ])('$format: refuses $name', async ({ format, name, says }) => {
     const wrapper = mountModal(format)
+    await pickFile(wrapper, fileOf(name, JSON.stringify(LAB)))
+    expect(errorText(wrapper)).toContain(says)
+    expect(wrapper.find('.file-name').exists()).toBe(false)
+    expect(importButton(wrapper).attributes('disabled')).toBeDefined()
+  })
+
+  it.each([
+    { format: 'json' as const, name: 'lab.zip', says: 'Please select a .json file' },
+    { format: 'archive' as const, name: 'lab.json', says: 'Please select a .zip, .tar.gz, or .tgz file' },
+  ])('$format: a refused $name replaces the file picked before it', async ({ format, name, says }) => {
+    const wrapper = mountModal(format)
+    await pickFile(wrapper, validFile(format))
     await pickFile(wrapper, fileOf(name, JSON.stringify(LAB)))
     expect(errorText(wrapper)).toContain(says)
     expect(wrapper.find('.file-name').exists()).toBe(false)

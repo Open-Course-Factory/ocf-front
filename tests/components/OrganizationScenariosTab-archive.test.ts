@@ -10,6 +10,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
+import { pickFile } from '../helpers/fileInput'
 import { createI18n } from 'vue-i18n'
 
 const orgListScenariosMock = vi.fn()
@@ -237,13 +238,6 @@ describe('OrganizationScenariosTab — import buttons', () => {
 describe('OrganizationScenariosTab — one import dialog for both formats', () => {
   async function openImport(wrapper: VueWrapper, button: string) {
     await wrapper.findAll('.tab-header-actions button').find(b => b.text().includes(button))!.trigger('click')
-  }
-
-  async function pickFile(wrapper: VueWrapper, file: File) {
-    const input = wrapper.find('input[type="file"]')
-    Object.defineProperty(input.element, 'files', { value: [file], configurable: true })
-    await input.trigger('change')
-    await flushPromises()
   }
 
   beforeEach(() => {
