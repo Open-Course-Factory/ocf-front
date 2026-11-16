@@ -6,6 +6,7 @@
 import { computed } from 'vue'
 import { getActivePinia } from 'pinia'
 import i18n from '../i18n'
+import { USER_SETTINGS_STORE_ID } from '../stores/userSettingsId'
 import {
   formatCurrency,
   formatDate as baseFormatDate,
@@ -28,7 +29,9 @@ export function currentUserTimezone(): string {
   // useUserSettingsStore(): that module pulls in the router, which formatting
   // must not depend on. Layout loads it on every signed-in page; until then
   // (or with no pinia at all), the browser zone applies.
-  return getActivePinia()?.state.value.UserSettings?.settings?.timezone || getBrowserTimezone()
+  const saved = getActivePinia()?.state.value[USER_SETTINGS_STORE_ID]?.settings?.timezone
+  // shortcut: ocf-core stores 'UTC' as every user's default, so UTC reads as "not chosen" and a user who really wants UTC cannot have it; drop this once ocf-core stores '' by default.
+  return saved && saved !== 'UTC' ? saved : getBrowserTimezone()
 }
 
 export function useFormatters() {
