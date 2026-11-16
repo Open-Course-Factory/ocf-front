@@ -12,6 +12,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils'
+import { createI18n } from 'vue-i18n'
 import { createTestI18n } from '../helpers/entityModalHelper'
 
 const postMock = vi.fn()
@@ -232,5 +233,58 @@ describe('ScenarioImportModal — closing', () => {
     expect(wrapper.find('[data-testid="scenario-import-problems"]').exists()).toBe(false)
     expect(wrapper.find('.error-message').exists()).toBe(false)
     expect(importButton(wrapper).attributes('disabled')).toBeDefined()
+  })
+})
+
+// A key missing in one language renders as the key itself: walk every screen
+// of the dialog in each language, with no fallback to hide a gap.
+describe('ScenarioImportModal — both languages', () => {
+  it.each([
+    { locale: 'en', format: 'json' as const, title: 'Import JSON Scenario' },
+    { locale: 'en', format: 'archive' as const, title: 'Import KillerCoda Scenario' },
+    { locale: 'fr', format: 'json' as const, title: 'Importer un scénario JSON' },
+    { locale: 'fr', format: 'archive' as const, title: 'Importer un scénario KillerCoda' },
+  ])('$locale $format: every screen is translated', async ({ locale, format, title }) => {
+    const i18n = createI18n({
+      legacy: false, locale, fallbackLocale: false as any,
+      messages: { en: {}, fr: {} }, missingWarn: false, fallbackWarn: false,
+    })
+    const wrapper = mount(ScenarioImportModal, {
+      props: { visible: true, format },
+      global: { plugins: [i18n] },
+    })
+    const screens: string[] = [wrapper.html()]
+    expect(wrapper.find('.base-modal-header').text()).toContain(title)
+
+    await pickFile(wrapper, fileOf(format === 'json' ? 'lab.zip' : 'lab.json', 'x'))
+    screens.push(wrapper.html())
+    await pickFile(wrapper, validFile(format))
+    await pickFile(wrapper, fileOf(format === 'json' ? 'lab.json' : 'lab.zip', 'x', 11 * MB))
+    screens.push(wrapper.html())
+    if (format === 'json') {
+      await pickFile(wrapper, fileOf('lab.json', '{not json'))
+      screens.push(wrapper.html())
+      await pickFile(wrapper, fileOf('lab.json', JSON.stringify({ title: 'Lab' })))
+      screens.push(wrapper.html())
+    }
+    await pickFile(wrapper, validFile(format))
+    screens.push(wrapper.html())
+
+    postMock.mockReset()
+    postMock.mockRejectedValueOnce(new Error('network down'))
+    await importButton(wrapper).trigger('click')
+    await flushPromises()
+    screens.push(wrapper.html())
+
+    let finish: (v: unknown) => void = () => {}
+    postMock.mockReturnValueOnce(new Promise(resolve => { finish = resolve }))
+    await importButton(wrapper).trigger('click')
+    screens.push(wrapper.html())
+    finish({ data: { id: 'new-scenario' } })
+    await flushPromises()
+    screens.push(wrapper.html())
+
+    expect(screens.length).toBeGreaterThanOrEqual(6)
+    for (const screen of screens) expect(screen).not.toMatch(/scenarioImportModal\./)
   })
 })

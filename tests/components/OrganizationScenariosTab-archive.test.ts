@@ -15,13 +15,15 @@ import { createI18n } from 'vue-i18n'
 const orgListScenariosMock = vi.fn()
 const archiveScenarioMock = vi.fn()
 const unarchiveScenarioMock = vi.fn()
+const orgUploadScenarioMock = vi.fn()
 
 vi.mock('../../src/services/domain/scenario', () => ({
   teacherService: {
     orgListScenarios: (...args: unknown[]) => orgListScenariosMock(...args),
     orgDeleteScenario: vi.fn(),
     orgExportScenarioJSON: vi.fn(),
-    orgExportScenarioArchive: vi.fn()
+    orgExportScenarioArchive: vi.fn(),
+    orgUploadScenario: (...args: unknown[]) => orgUploadScenarioMock(...args)
   }
 }))
 
@@ -227,5 +229,58 @@ describe('OrganizationScenariosTab — import buttons', () => {
     const wrapper = await mountTab()
     await wrapper.findAll('.tab-header-actions button').find(b => b.text().includes(button))!.trigger('click')
     expect(wrapper.findAll('input[type="file"]').map(i => i.attributes('accept'))).toEqual([accept])
+  })
+})
+
+// One dialog serves both formats, so what was left in it under one format must
+// not show up when it is opened under the other.
+describe('OrganizationScenariosTab — one import dialog for both formats', () => {
+  async function openImport(wrapper: VueWrapper, button: string) {
+    await wrapper.findAll('.tab-header-actions button').find(b => b.text().includes(button))!.trigger('click')
+  }
+
+  async function pickFile(wrapper: VueWrapper, file: File) {
+    const input = wrapper.find('input[type="file"]')
+    Object.defineProperty(input.element, 'files', { value: [file], configurable: true })
+    await input.trigger('change')
+    await flushPromises()
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    orgListScenariosMock.mockResolvedValue([])
+  })
+
+  it('a file refused as JSON is gone when the archive import is opened', async () => {
+    const wrapper = await mountTab()
+    await openImport(wrapper, 'Import JSON')
+    await pickFile(wrapper, new File(['PK'], 'lab.zip'))
+    expect(wrapper.find('.error-message').exists()).toBe(true)
+
+    await wrapper.find('.upload-footer .btn-secondary').trigger('click')
+    expect(wrapper.find('input[type="file"]').exists()).toBe(false)
+
+    await openImport(wrapper, 'Import KillerCoda')
+    expect(wrapper.find('input[type="file"]').attributes('accept')).toBe('.zip,.tar.gz,.tgz')
+    expect(wrapper.find('.error-message').exists()).toBe(false)
+    expect(wrapper.find('.file-name').exists()).toBe(false)
+  })
+
+  it('an imported archive closes the dialog and reloads the library', async () => {
+    orgUploadScenarioMock.mockResolvedValue({ id: 'new-scenario' })
+    const wrapper = await mountTab()
+    expect(orgListScenariosMock).toHaveBeenCalledTimes(1)
+
+    await openImport(wrapper, 'Import KillerCoda')
+    await pickFile(wrapper, new File(['PK'], 'lab.zip'))
+    await wrapper.find('.upload-footer .btn-primary').trigger('click')
+    await flushPromises()
+    expect(orgUploadScenarioMock).toHaveBeenCalledWith('org-1', expect.any(File), expect.any(Function))
+
+    await wrapper.find('.upload-success .btn-primary').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('input[type="file"]').exists()).toBe(false)
+    expect(wrapper.find('.upload-success').exists()).toBe(false)
+    expect(orgListScenariosMock).toHaveBeenCalledTimes(2)
   })
 })
