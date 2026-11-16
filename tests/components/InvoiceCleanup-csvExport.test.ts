@@ -95,4 +95,10 @@ describe('InvoiceCleanup CSV export (#392)', () => {
 
     expect(lines[1]).toContain(',' + sanitizeCSVField(number) + ',')
   })
+
+  it('keeps a negative amount a plain number, without the formula prefix', async () => {
+    const lines = await exportWith([invoice({ amount: -1250 })])
+
+    expect(lines[1]).toContain(',"-12.50",')
+  })
 })
