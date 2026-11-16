@@ -390,16 +390,71 @@ describe('extractErrorMessage', () => {
 
   it('ignores a data.error object without a message', () => {
     const error = {
+      isAxiosError: true,
       response: { data: { error: { code: 'ERR000' } } },
       message: 'Request failed with status code 500',
     }
-    expect(extractErrorMessage(error)).toBe('Request failed with status code 500')
+    expect(extractErrorMessage(error, 'fallback')).toBe('fallback')
   })
 
   it('falls back without crashing when response.data is missing or a string body', () => {
-    const noData = { response: { status: 502 }, message: 'Request failed with status code 502' }
-    const htmlBody = { response: { status: 502, data: '<html>Bad Gateway</html>' }, message: 'Request failed with status code 502' }
-    expect(extractErrorMessage(noData, 'fallback')).toBe('Request failed with status code 502')
-    expect(extractErrorMessage(htmlBody, 'fallback')).toBe('Request failed with status code 502')
+    const noData = { isAxiosError: true, response: { status: 502 }, message: 'Request failed with status code 502' }
+    const htmlBody = { isAxiosError: true, response: { status: 502, data: '<html>Bad Gateway</html>' }, message: 'Request failed with status code 502' }
+    expect(extractErrorMessage(noData, 'fallback')).toBe('fallback')
+    expect(extractErrorMessage(htmlBody, 'fallback')).toBe('fallback')
+  })
+
+  // The layer-2 middleware answers { error: "Access denied", detail: "<why>" }: the why is what helps.
+  it('reads detail before a string data.error', () => {
+    const error = {
+      isAxiosError: true,
+      response: { status: 403, data: { error: 'Access denied', detail: 'You do not own this entity' } },
+      message: 'Request failed with status code 403',
+    }
+    expect(extractErrorMessage(error, 'F')).toBe('You do not own this entity')
+  })
+
+  it('still reads a string data.error when there is no detail', () => {
+    const error = {
+      isAxiosError: true,
+      response: { status: 403, data: { error: 'Access denied' } },
+      message: 'Request failed with status code 403',
+    }
+    expect(extractErrorMessage(error, 'F')).toBe('Access denied')
+  })
+
+  // An axios error never surfaces axios' own English text; only our own thrown Error may.
+  describe('never surfaces axios\' own error text', () => {
+    it('uses the fallback for an axios error whose body says nothing', () => {
+      const error = {
+        isAxiosError: true,
+        response: { status: 500, data: '' },
+        message: 'Request failed with status code 500',
+      }
+      expect(extractErrorMessage(error, 'F')).toBe('F')
+    })
+
+    it('uses the fallback for an axios network error', () => {
+      const error = { isAxiosError: true, request: {}, message: 'Network Error' }
+      expect(extractErrorMessage(error, 'F')).toBe('F')
+    })
+
+    it('uses the fallback for an error that carries a response but no isAxiosError flag', () => {
+      const error = { response: { status: 500 }, message: 'Request failed with status code 500' }
+      expect(extractErrorMessage(error, 'F')).toBe('F')
+    })
+
+    it('keeps the message of an Error our own code threw', () => {
+      expect(extractErrorMessage(new Error('Translated sentence'), 'F')).toBe('Translated sentence')
+    })
+
+    it('still prefers the body message of an axios error', () => {
+      const error = {
+        isAxiosError: true,
+        response: { status: 403, data: { error_message: 'Quota exceeded for this plan' } },
+        message: 'Request failed with status code 403',
+      }
+      expect(extractErrorMessage(error, 'F')).toBe('Quota exceeded for this plan')
+    })
   })
 })
