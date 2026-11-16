@@ -80,7 +80,7 @@ async function initializeApp() {
     // Preload help translations synchronously so direct page loads of
     // /help-public/* render translated content on first paint.
     // vue-i18n v11 does not trigger reactivity from mergeLocaleMessage,
-    // so merging in onMounted (the old pattern in useHelpTranslations)
+    // so merging in each help page's onMounted (the old pattern)
     // leaves the first render stuck on raw keys.
     i18n.global.mergeLocaleMessage('fr', helpFr)
     i18n.global.mergeLocaleMessage('en', helpEn)

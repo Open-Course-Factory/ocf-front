@@ -158,14 +158,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { useHelpTranslations } from '../../../composables/useHelpTranslations'
 import HelpScreenshot from './HelpScreenshot.vue'
 
 const { t } = useI18n()
-const { loadHelpTranslations } = useHelpTranslations()
 const route = useRoute()
 
 // Determine the correct help routes based on current path
@@ -191,10 +189,6 @@ grep -Eq '^[[:space:]]*port[[:space:]]*=[[:space:]]*[0-9]+' /srv/app/app.conf ||
   service: `command -v nginx >/dev/null || { apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq nginx; }
 systemctl is-active --quiet nginx || systemctl start nginx`
 }
-
-onMounted(async () => {
-  await loadHelpTranslations()
-})
 </script>
 
 <style scoped>

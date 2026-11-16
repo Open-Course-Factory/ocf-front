@@ -127,24 +127,18 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { useHelpTranslations } from '../../../composables/useHelpTranslations'
 import HelpScreenshot from './HelpScreenshot.vue'
 
 const { t } = useI18n()
-const { loadHelpTranslations } = useHelpTranslations()
 const route = useRoute()
 
 // Determine the correct help routes based on current path
 const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
 const helpMainRoute = computed(() => isPublicHelp.value ? '/help-public' : '/help')
 const helpRoutePrefix = computed(() => isPublicHelp.value ? '/help-public' : '/help')
-
-onMounted(async () => {
-  await loadHelpTranslations()
-})
 </script>
 
 <style scoped>

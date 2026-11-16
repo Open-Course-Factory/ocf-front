@@ -133,13 +133,11 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTranslations } from '../../../composables/useTranslations'
-import { useHelpTranslations } from '../../../composables/useHelpTranslations'
 import HelpScreenshot from './HelpScreenshot.vue'
 
-const { loadHelpTranslations } = useHelpTranslations()
 const route = useRoute()
 
 const isPublicHelp = computed(() => route.path.startsWith('/help-public'))
@@ -271,10 +269,6 @@ const { t } = useTranslations({
       }
     }
   }
-})
-
-onMounted(async () => {
-  await loadHelpTranslations()
 })
 </script>
 
