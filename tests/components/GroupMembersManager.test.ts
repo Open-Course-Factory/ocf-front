@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, VueWrapper, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
@@ -54,6 +54,7 @@ vi.mock('../../src/stores/currentUser', () => ({
 
 import GroupMembersManager from '../../src/components/Groups/GroupMembersManager.vue'
 import { bulkImportService } from '../../src/services/domain/bulkImport'
+import { sanitizeCSVField } from '../../src/utils/csv'
 
 function createTestI18n(locale: 'en' | 'fr' = 'en') {
   return createI18n({
@@ -922,5 +923,65 @@ describe('GroupMembersManager large class pagination', () => {
     expect(wrapper.find('[data-testid="members-page-prev"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="members-page-next"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="members-page-indicator"]').exists()).toBe(false)
+  })
+})
+
+describe('GroupMembersManager credentials CSV (#392)', () => {
+  // A participant's name or email starting with = + - @ would run as a formula
+  // when the trainer opens the file in a spreadsheet. The password column is
+  // left as is: prefixing it would hand the participant a wrong password.
+  let exported: Blob[] = []
+
+  beforeEach(() => {
+    exported = []
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: vi.fn((blob: Blob) => { exported.push(blob); return 'blob:mock' }),
+      revokeObjectURL: vi.fn()
+    })
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  async function downloadCredentials(credentials: Array<{ name: string, email: string, password: string }>) {
+    vi.mocked(bulkImportService.regeneratePasswords).mockResolvedValueOnce({
+      success: true,
+      credentials: credentials.map((c, i) => ({ user_id: `u-${i}`, ...c })),
+      errors: []
+    } as any)
+    const wrapper = await mountRoster()
+    await tick(wrapper, 'Bob Participant')
+    await wrapper.find('[data-testid="regenerate-passwords"]').trigger('click')
+    await wrapper.find('[data-testid="regenerate-confirm"]').trigger('click')
+    await flushPromises()
+    const button = wrapper.findAll('button').find(b => b.text().includes('Download CSV'))
+    expect(button, 'download button').toBeDefined()
+    await button!.trigger('click')
+    expect(exported).toHaveLength(1)
+    return (await exported[0].text()).split('\n')
+  }
+
+  it('neutralises a name and an email that would run as a formula', async () => {
+    const name = '=HYPERLINK("http://x")'
+    const email = '+33@example.com'
+    const lines = await downloadCredentials([{ name, email, password: 'plain' }])
+
+    expect(lines[1]).toBe(`${sanitizeCSVField(name)},${sanitizeCSVField(email)},"plain"`)
+  })
+
+  it('keeps a password starting with - @ or = byte for byte, quotes escaped only', async () => {
+    const lines = await downloadCredentials([
+      { name: 'A', email: 'a@example.com', password: '-a"b' },
+      { name: 'B', email: 'b@example.com', password: '@pass' },
+      { name: 'C', email: 'c@example.com', password: '=pass+1' }
+    ])
+
+    expect(lines[1].endsWith(',"-a""b"')).toBe(true)
+    expect(lines[2].endsWith(',"@pass"')).toBe(true)
+    expect(lines[3].endsWith(',"=pass+1"')).toBe(true)
   })
 })
