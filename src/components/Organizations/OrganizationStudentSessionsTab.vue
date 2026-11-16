@@ -133,6 +133,7 @@
 
 <script setup lang="ts">
 import { currentUserTimezone } from '../../composables/useFormatters'
+import { intlLocale } from '../../utils/formatters'
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { useTranslations } from '../../composables/useTranslations'
@@ -242,7 +243,7 @@ function formatDateTime(dateStr: string): string {
   if (!dateStr) return '-'
   try {
     const date = new Date(dateStr)
-    return date.toLocaleString(locale.value, {
+    return date.toLocaleString(intlLocale(locale.value), {
       timeZone: currentUserTimezone(),
       year: 'numeric',
       month: 'short',

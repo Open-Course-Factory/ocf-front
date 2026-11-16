@@ -122,6 +122,7 @@
 
 <script setup lang="ts">
 import { currentUserTimezone } from '../../composables/useFormatters'
+import { intlLocale } from '../../utils/formatters'
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import Button from '../UI/Button.vue'
 import { terminalService } from '../../services/domain/terminal/terminalService'
@@ -227,7 +228,7 @@ function remaining(ep: ExposedPort): string {
 }
 
 function expiryClock(ep: ExposedPort): string {
-  return new Date(ep.expires_at).toLocaleTimeString(locale.value, { timeZone: currentUserTimezone(), hour: '2-digit', minute: '2-digit' })
+  return new Date(ep.expires_at).toLocaleTimeString(intlLocale(locale.value), { timeZone: currentUserTimezone(), hour: '2-digit', minute: '2-digit' })
 }
 
 function dropExpired() {

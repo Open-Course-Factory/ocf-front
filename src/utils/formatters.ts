@@ -51,6 +51,14 @@ export function getBrowserTimezone(): string {
 }
 
 /**
+ * The Intl locale for an app language. English reads day first (en-GB): most
+ * of our English-speaking users are in Europe. Anything else passes through.
+ */
+export function intlLocale(appLocale: string): string {
+  return ({ en: 'en-GB', fr: 'fr-FR' } as Record<string, string>)[appLocale] ?? appLocale
+}
+
+/**
  * Format a monetary amount from cents to a currency string
  * @param amount - Amount in cents (e.g., 1999 for $19.99)
  * @param currency - Currency code (default: 'EUR')

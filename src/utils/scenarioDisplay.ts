@@ -13,7 +13,7 @@
  */
 
 import i18n from '../i18n'
-import { formatDateTime } from './formatters'
+import { formatDateTime, intlLocale } from './formatters'
 import { currentUserTimezone } from '../composables/useFormatters'
 import type {
   ScenarioInfo,
@@ -147,7 +147,7 @@ export function stepTypeIcon(stepType?: string): string {
 
 export function formatExecutedAt(unixSeconds: number): string {
   try {
-    return new Date(unixSeconds * 1000).toLocaleString(i18n.global.locale.value, { timeZone: currentUserTimezone() })
+    return new Date(unixSeconds * 1000).toLocaleString(intlLocale(i18n.global.locale.value), { timeZone: currentUserTimezone() })
   } catch {
     return String(unixSeconds)
   }
@@ -163,7 +163,7 @@ export function formatDuration(seconds: number): string {
 }
 
 export function formatDate(dateStr: string): string {
-  return formatDateTime(dateStr, i18n.global.locale.value, '', currentUserTimezone())
+  return formatDateTime(dateStr, intlLocale(i18n.global.locale.value), '', currentUserTimezone())
 }
 
 export function getStatusClass(status: string): string {

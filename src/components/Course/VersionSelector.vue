@@ -68,6 +68,7 @@
 
 <script setup lang="ts">
 import { currentUserTimezone } from '../../composables/useFormatters'
+import { intlLocale } from '../../utils/formatters'
 import { ref, computed, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import AdminBadge from '../Common/AdminBadge.vue'
@@ -147,7 +148,7 @@ function formatDate(dateString?: string): string {
 
   try {
     const date = new Date(dateString)
-    return date.toLocaleDateString(locale.value, {
+    return date.toLocaleDateString(intlLocale(locale.value), {
       timeZone: currentUserTimezone(),
       year: 'numeric',
       month: 'short',

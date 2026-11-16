@@ -42,7 +42,7 @@
  */
 
 import i18n from '../i18n'
-import { formatDate, formatDateTime } from './formatters'
+import { formatDate, formatDateTime, intlLocale } from './formatters'
 import { currentUserTimezone } from '../composables/useFormatters'
 
 /**
@@ -283,7 +283,7 @@ export class FieldBuilder {
    * value is displayed (a language switch applies without reloading the store).
    */
   withDateFormat(): this {
-    this.config.displayValue = (value: any) => formatDate(value, i18n.global.locale.value, '-', currentUserTimezone())
+    this.config.displayValue = (value: any) => formatDate(value, intlLocale(i18n.global.locale.value), '-', currentUserTimezone())
     return this
   }
 
@@ -291,7 +291,7 @@ export class FieldBuilder {
    * Same as withDateFormat, with the time.
    */
   withDateTimeFormat(): this {
-    this.config.displayValue = (value: any) => formatDateTime(value, i18n.global.locale.value, '-', currentUserTimezone())
+    this.config.displayValue = (value: any) => formatDateTime(value, intlLocale(i18n.global.locale.value), '-', currentUserTimezone())
     return this
   }
 

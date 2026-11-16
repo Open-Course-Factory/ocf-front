@@ -157,7 +157,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useTranslations } from '../../composables/useTranslations'
-import { formatDate } from '../../utils/formatters'
+import { formatDate, intlLocale } from '../../utils/formatters'
 import { CLASS_PAGE_NAMES, type ClassPageKey } from '../../router/classPages'
 import {
   classDisplayName,
@@ -349,7 +349,7 @@ function completionBarWidth(assignment: TeacherGroupAssignment): string {
 }
 
 function formatDeadline(deadline: string): string {
-  return formatDate(deadline, locale.value === 'en' ? 'en-GB' : 'fr-FR')
+  return formatDate(deadline, intlLocale(locale.value))
 }
 
 /**
