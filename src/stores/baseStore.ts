@@ -1,7 +1,6 @@
 import { reactive, ref } from 'vue'
 import axios from 'axios'
 import { useStoreTranslations } from '../composables/useTranslations'
-import { isDemoMode, logDemoAction, simulateDelay } from '../services/demo'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
 
 export const useBaseStore = () => {
@@ -315,23 +314,14 @@ export const useBaseStore = () => {
     }
 
     // API Loading Methods
-    const loadEntities = async (endpoint: string, demoDataProvider?: () => any[], config?: any) => {
+    const loadEntities = async (endpoint: string, config?: any) => {
         return withAsync(async () => {
-            let data: any[]
-
-            if (isDemoMode() && demoDataProvider) {
-                logDemoAction(`Loading demo data for ${endpoint}`)
-                await simulateDelay(1500) // Simulate API delay
-                data = demoDataProvider()
-            } else {
-                logDemoAction(`Loading real data from ${endpoint}`)
-                const requestConfig = includeArchived.value
-                    ? { ...config, params: { ...config?.params, include_archived: 'true' } }
-                    : config
-                const response = requestConfig ? await axios.get(endpoint, requestConfig) : await axios.get(endpoint)
-                // Handle both direct array responses and paginated responses
-                data = response.data?.data || response.data || []
-            }
+            const requestConfig = includeArchived.value
+                ? { ...config, params: { ...config?.params, include_archived: 'true' } }
+                : config
+            const response = requestConfig ? await axios.get(endpoint, requestConfig) : await axios.get(endpoint)
+            // Handle both direct array responses and paginated responses
+            let data: any[] = response.data?.data || response.data || []
 
             // Ensure data is an array before spreading
             if (!Array.isArray(data)) {
@@ -344,83 +334,33 @@ export const useBaseStore = () => {
             lastLoaded.value = new Date()
 
             return data
-        }, 'errors.loadData', {
-            onError: () => {
-                logDemoAction(`Error loading data: ${error.value}`)
-            }
-        })
+        }, 'errors.loadData')
     }
 
     // Cursor-based pagination methods
-    const loadEntitiesWithCursor = async (endpoint: string, cursor?: string, limit: number = 20, filters: Record<string, string> = {}, demoDataProvider?: () => any[]) => {
+    const loadEntitiesWithCursor = async (endpoint: string, cursor?: string, limit: number = 20, filters: Record<string, string> = {}) => {
         return withAsync(async () => {
-            let response: any
+            const params = new URLSearchParams()
+            params.append('cursor', cursor || '') // ✅ Always include cursor param, even if empty
+            params.append('limit', limit.toString())
 
-            if (isDemoMode() && demoDataProvider) {
-                logDemoAction(`Loading demo data with cursor for ${endpoint}`)
-                await simulateDelay(1500)
-
-                const allData = demoDataProvider()
-
-                // Parse cursor to get startIndex (for demo mode only)
-                let startIndex = 0;
-                if (cursor) {
-                    try {
-                        const decodedCursor = atob(cursor);
-                        // Handle both old format (just numbers) and new format (demo_123_timestamp)
-                        if (decodedCursor.startsWith('demo_')) {
-                            const parts = decodedCursor.split('_');
-                            startIndex = parseInt(parts[1]) || 0;
-                        } else {
-                            // Legacy numeric cursor
-                            startIndex = parseInt(decodedCursor) || 0;
-                        }
-                    } catch {
-                        console.warn('Invalid demo cursor, starting from 0');
-                        startIndex = 0;
-                    }
-                }
-
-                const endIndex = Math.min(startIndex + limit, allData.length)
-                const data = allData.slice(startIndex, endIndex)
-
-                // Generate realistic-looking cursor for demo (but still functional)
-                const nextCursor = endIndex < allData.length
-                    ? btoa(`demo_${endIndex}_${Date.now()}`) // More realistic demo cursor
-                    : null;
-
-                response = {
-                    data: {
-                        data,
-                        nextCursor,
-                        hasMore: endIndex < allData.length,
-                        total: allData.length
-                    }
-                }
-            } else {
-                const params = new URLSearchParams()
-                params.append('cursor', cursor || '') // ✅ Always include cursor param, even if empty
-                params.append('limit', limit.toString())
-
-                // Add include parameter for nested data from store configuration
-                const includeList = [...includeParams.children, ...includeParams.parents]
-                if (includeList.length > 0) {
-                    params.append('include', includeList.join(','))
-                }
-
-                // Add filter parameters
-                Object.entries(filters).forEach(([key, value]) => {
-                    if (value && value !== '') {
-                        params.append(key, value)
-                    }
-                })
-                appendArchiveScope(params)
-
-                const fullUrl = `${endpoint}?${params}`
-                console.log(`[BaseStore LIST] Loading: ${fullUrl}`)
-                logDemoAction(`Loading real data with cursor from ${endpoint}`)
-                response = await axios.get(fullUrl)
+            // Add include parameter for nested data from store configuration
+            const includeList = [...includeParams.children, ...includeParams.parents]
+            if (includeList.length > 0) {
+                params.append('include', includeList.join(','))
             }
+
+            // Add filter parameters
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value && value !== '') {
+                    params.append(key, value)
+                }
+            })
+            appendArchiveScope(params)
+
+            const fullUrl = `${endpoint}?${params}`
+            console.log(`[BaseStore LIST] Loading: ${fullUrl}`)
+            const response = await axios.get(fullUrl)
 
             const result = response.data?.data || response.data || []
             const nextCursor = response.data?.nextCursor || null
@@ -438,21 +378,12 @@ export const useBaseStore = () => {
                 hasMore,
                 total
             }
-        }, 'errors.loadData', {
-            onError: () => {
-                logDemoAction(`Error loading data with cursor: ${error.value}`)
-            }
-        })
+        }, 'errors.loadData')
     }
 
     // Fetch every page of an entity (page/size pagination) and return the full list.
     // Used for exports; extraParams carries caller-side filters (e.g. active UI filters).
     const fetchAllEntities = async (endpoint: string, extraParams: Record<string, any> = {}) => {
-        if (isDemoMode()) {
-            logDemoAction(`Fetching all demo entities for ${endpoint}`)
-            return [...entities]
-        }
-
         const allEntities: any[] = []
         let page = 1
         const size = 100
@@ -492,8 +423,8 @@ export const useBaseStore = () => {
         return allEntities
     }
 
-    const refreshEntities = async (endpoint: string, demoDataProvider?: () => any[]) => {
-        return await loadEntities(endpoint, demoDataProvider)
+    const refreshEntities = async (endpoint: string) => {
+        return await loadEntities(endpoint)
     }
 
     const clearEntities = () => {
@@ -508,23 +439,7 @@ export const useBaseStore = () => {
             const skipHooks = options?.skipHooks === true
             const processedData = skipHooks ? entityData : await executeBeforeCreateHook(entityData)
 
-            let response: any
-
-            if (isDemoMode()) {
-                logDemoAction(`Creating demo entity at ${endpoint}`, processedData)
-                await simulateDelay(1000)
-                // Mock response for demo mode
-                response = {
-                    data: {
-                        id: `demo_${Date.now()}`,
-                        ...processedData,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    }
-                }
-            } else {
-                response = await axios.post(endpoint, processedData)
-            }
+            const response = await axios.post(endpoint, processedData)
 
             // Add to local entities
             entities.push(response.data)
@@ -542,22 +457,7 @@ export const useBaseStore = () => {
             // Process data through before update hook
             const processedData = await executeBeforeUpdateHook(entityData)
 
-            let response: any
-
-            if (isDemoMode()) {
-                logDemoAction(`Updating demo entity ${entityId} at ${endpoint}`, processedData)
-                await simulateDelay(800)
-                // Mock response for demo mode
-                response = {
-                    data: {
-                        id: entityId,
-                        ...processedData,
-                        updated_at: new Date().toISOString()
-                    }
-                }
-            } else {
-                response = await axios.patch(`${endpoint}/${entityId}`, processedData)
-            }
+            const response = await axios.patch(`${endpoint}/${entityId}`, processedData)
 
             // Update in local entities
             const index = entities.findIndex((e: any) => e.id === entityId)
@@ -573,12 +473,7 @@ export const useBaseStore = () => {
 
     const deleteEntity = async (endpoint: string, entityId: string) => {
         return withAsync(async () => {
-            if (isDemoMode()) {
-                logDemoAction(`Deleting demo entity ${entityId} at ${endpoint}`)
-                await simulateDelay(600)
-            } else {
-                await axios.delete(`${endpoint}/${entityId}`)
-            }
+            await axios.delete(`${endpoint}/${entityId}`)
 
             // Remove from local entities
             const index = entities.findIndex((e: any) => e.id === entityId)
@@ -598,18 +493,7 @@ export const useBaseStore = () => {
     const setArchived = async (endpoint: string, entityId: string, archived: boolean) => {
         const action = archived ? 'archive' : 'unarchive'
         return withAsync(async () => {
-            let response: any
-
-            if (isDemoMode()) {
-                logDemoAction(`${action} demo entity ${entityId} at ${endpoint}`)
-                await simulateDelay(600)
-                const row = { ...(entities.find((e: any) => e.id === entityId) || { id: entityId }) }
-                delete row.archived_at
-                if (archived) row.archived_at = new Date().toISOString()
-                response = { data: row }
-            } else {
-                response = await axios.post(`${endpoint}/${entityId}/${action}`)
-            }
+            const response = await axios.post(`${endpoint}/${entityId}/${action}`)
 
             const index = entities.findIndex((e: any) => e.id === entityId)
             if (index !== -1) {
@@ -623,31 +507,11 @@ export const useBaseStore = () => {
     const archiveEntity = (endpoint: string, entityId: string) => setArchived(endpoint, entityId, true)
     const unarchiveEntity = (endpoint: string, entityId: string) => setArchived(endpoint, entityId, false)
 
-    const getOne = async (endpoint: string, entityId: string, demoDataProvider?: () => any[]) => {
+    const getOne = async (endpoint: string, entityId: string) => {
         return withAsync(async () => {
-            let data: any
-
-            if (isDemoMode() && demoDataProvider) {
-                logDemoAction(`Loading demo entity ${entityId} from ${endpoint}`)
-                await simulateDelay(800)
-                // Find entity in demo data
-                const allData = demoDataProvider()
-                data = allData.find((e: any) => e.id === entityId)
-                if (!data) {
-                    throw new Error(`Entity ${entityId} not found`)
-                }
-            } else {
-                logDemoAction(`Loading real entity ${entityId} from ${endpoint}`)
-                const response = await axios.get(`${endpoint}/${entityId}`)
-                data = response.data
-            }
-
-            return data
-        }, 'errors.loadEntity', {
-            onError: () => {
-                logDemoAction(`Error loading entity ${entityId}: ${error.value}`)
-            }
-        })
+            const response = await axios.get(`${endpoint}/${entityId}`)
+            return response.data
+        }, 'errors.loadEntity')
     }
 
     return {

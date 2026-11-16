@@ -36,10 +36,6 @@ vi.mock('axios', () => ({
   },
 }))
 
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: vi.fn(() => false),
-}))
-
 // ---- Real imports --------------------------------------------------------
 
 import axios from 'axios'

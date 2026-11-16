@@ -26,12 +26,6 @@ vi.mock('../../src/composables/useTranslations', () => ({
   useStoreTranslations: () => ({ t: (key: string) => key, te: () => true, locale: ref('en') })
 }))
 
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: vi.fn(() => false),
-  logDemoAction: vi.fn(),
-  simulateDelay: vi.fn()
-}))
-
 import { useInvoicesStore } from '../../src/stores/invoices'
 
 // downloadInvoice must open the invoice's pre-signed Stripe URL directly

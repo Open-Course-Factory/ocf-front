@@ -31,12 +31,6 @@ vi.mock('../../src/composables/useTranslations', () => ({
   useStoreTranslations: () => ({ t: (key: string) => key, te: () => true, locale: ref('en') })
 }))
 
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: vi.fn(() => false),
-  logDemoAction: vi.fn(),
-  simulateDelay: vi.fn()
-}))
-
 vi.mock('../../src/composables/useAdminViewMode', () => ({
   useAdminViewMode: () => ({
     isAdmin: ref(false),

@@ -23,7 +23,6 @@ import { defineStore } from "pinia"
 import { useStoreTranslations } from '../composables/useTranslations'
 import { ref } from 'vue'
 import axios from 'axios'
-import { isDemoMode, logDemoAction, simulateDelay, demoPayments, getDemoCurrentSubscription, getDemoUsageMetrics } from '../services/demo'
 import { featureFlagService } from '../services/features'
 import { formatDate as formatDateUtil } from '../utils/formatters'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
@@ -179,22 +178,14 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     // Récupérer l'abonnement actuel
     const getCurrentSubscription = async () => {
         return withAsync(async () => {
-            let data: any
-
-            if (isDemoMode()) {
-                logDemoAction('Getting demo current subscription')
-                await simulateDelay(1000)
-                data = getDemoCurrentSubscription('active') // You can change this to test different states
-            } else {
-                // Pass org context to get subscription for current organization
-                const orgStore = useOrganizationsStore()
-                const orgId = orgStore.currentOrganizationId
-                const url = orgId
-                    ? `/user-subscriptions/current?organization_id=${orgId}`
-                    : '/user-subscriptions/current'
-                const response = await axios.get(url)
-                data = response.data
-            }
+            // Pass org context to get subscription for current organization
+            const orgStore = useOrganizationsStore()
+            const orgId = orgStore.currentOrganizationId
+            const url = orgId
+                ? `/user-subscriptions/current?organization_id=${orgId}`
+                : '/user-subscriptions/current'
+            const response = await axios.get(url)
+            const data = response.data
 
             currentSubscription.value = data
             return data
@@ -211,17 +202,8 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     // Récupérer tous les abonnements (stacked subscriptions)
     const getAllSubscriptions = async () => {
         return withAsync(async () => {
-            let data: any
-
-            if (isDemoMode()) {
-                logDemoAction('Getting all demo subscriptions')
-                await simulateDelay(800)
-                // For demo, return array with current subscription
-                data = currentSubscription.value ? [currentSubscription.value] : []
-            } else {
-                const response = await axios.get('/user-subscriptions/all')
-                data = response.data
-            }
+            const response = await axios.get('/user-subscriptions/all')
+            const data = response.data
 
             allSubscriptions.value = data
             return data
@@ -238,30 +220,23 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     // Créer une session de checkout Stripe
     const createCheckoutSession = async (planId: string, successUrl: string, cancelUrl: string, couponCode?: string, allowReplace: boolean = false) => {
         return withAsync(async () => {
-            let response: any
-
-            if (isDemoMode()) {
-                logDemoAction('Creating demo checkout session', { planId, couponCode })
-                response = await demoPayments.createCheckoutSession(planId, successUrl, cancelUrl, couponCode)
-            } else {
-                const payload: any = {
-                    subscription_plan_id: planId,
-                    success_url: successUrl,
-                    cancel_url: cancelUrl
-                }
-
-                if (couponCode) {
-                    payload.coupon_code = couponCode
-                }
-
-                // If allowReplace is true, tell backend to replace existing free subscription
-                if (allowReplace) {
-                    payload.allow_replace = true
-                }
-
-                const axiosResponse = await axios.post('/user-subscriptions/checkout', payload)
-                response = axiosResponse.data
+            const payload: any = {
+                subscription_plan_id: planId,
+                success_url: successUrl,
+                cancel_url: cancelUrl
             }
+
+            if (couponCode) {
+                payload.coupon_code = couponCode
+            }
+
+            // If allowReplace is true, tell backend to replace existing free subscription
+            if (allowReplace) {
+                payload.allow_replace = true
+            }
+
+            const axiosResponse = await axios.post('/user-subscriptions/checkout', payload)
+            const response = axiosResponse.data
 
             // Handle free plan activation (no Stripe redirect needed)
             if (response.free_plan) {
@@ -285,19 +260,12 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     // Créer une session portail client Stripe
     const createPortalSession = async (returnUrl: string) => {
         return withAsync(async () => {
-            let response: any
+            const axiosResponse = await axios.post('/user-subscriptions/portal', {
+                return_url: returnUrl
+            })
+            const response = axiosResponse.data
 
-            if (isDemoMode()) {
-                logDemoAction('Creating demo portal session', { returnUrl })
-                response = await demoPayments.createPortalSession(returnUrl)
-            } else {
-                const axiosResponse = await axios.post('/user-subscriptions/portal', {
-                    return_url: returnUrl
-                })
-                response = axiosResponse.data
-            }
-
-            // Rediriger vers le portail Stripe (ou demo portal)
+            // Rediriger vers le portail Stripe
             if (response.url) {
                 window.location.href = response.url
             }
@@ -334,22 +302,14 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     // Récupérer les métriques d'utilisation
     const getUsageMetrics = async () => {
         try {
-            let data: any[]
-
-            if (isDemoMode()) {
-                logDemoAction('Getting demo usage metrics')
-                await simulateDelay(800)
-                data = getDemoUsageMetrics()
-            } else {
-                // Pass org context for org-scoped limits
-                const orgStore = useOrganizationsStore()
-                const orgId = orgStore.currentOrganizationId
-                const url = orgId
-                    ? `/user-subscriptions/usage?organization_id=${orgId}`
-                    : '/user-subscriptions/usage'
-                const response = await axios.get(url)
-                data = response.data || []
-            }
+            // Pass org context for org-scoped limits
+            const orgStore = useOrganizationsStore()
+            const orgId = orgStore.currentOrganizationId
+            const url = orgId
+                ? `/user-subscriptions/usage?organization_id=${orgId}`
+                : '/user-subscriptions/usage'
+            const response = await axios.get(url)
+            const data: any[] = response.data || []
 
             // Deduplicate metrics by metric_type (keep the first occurrence)
             const uniqueMetrics = new Map()
@@ -373,22 +333,11 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         prorationBehavior: 'always_invoice' | 'create_prorations' | 'none' = 'always_invoice'
     ) => {
         return withAsync(async () => {
-            let result: any
-
-            if (isDemoMode()) {
-                logDemoAction('Upgrading demo plan', { newPlanId, prorationBehavior })
-                await simulateDelay(1500)
-                result = { success: true, subscription: getDemoCurrentSubscription('active') }
-                // In demo mode, reload usage metrics and return — no polling needed
-                await getUsageMetrics()
-                return result
-            }
-
             const response = await axios.post('/user-subscriptions/upgrade', {
                 new_plan_id: newPlanId,
                 proration_behavior: prorationBehavior
             })
-            result = response.data
+            const result = response.data
 
             // Build the current-subscription URL once, reflecting the active org
             // context (if any). We call axios directly inside the polling loop
@@ -459,14 +408,8 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     // Synchroniser les limites d'utilisation avec le backend
     const syncUsageLimits = async () => {
         try {
-            if (isDemoMode()) {
-                logDemoAction('Syncing demo usage limits')
-                await simulateDelay(500)
-                return { success: true }
-            } else {
-                const response = await axios.post('/user-subscriptions/sync-usage-limits')
-                return response.data
-            }
+            const response = await axios.post('/user-subscriptions/sync-usage-limits')
+            return response.data
         } catch (err: any) {
             console.error('Erreur lors de la synchronisation des limites:', err)
             throw err
@@ -476,12 +419,6 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     // Admin: assign a plan to a user
     const adminAssignPlan = async (userId: string, planId: string, durationDays: number) => {
         return withAsync(async () => {
-            if (isDemoMode()) {
-                logDemoAction('Admin assigning plan', { userId, planId, durationDays })
-                await simulateDelay(1000)
-                return { success: true }
-            }
-
             const response = await axios.post('/user-subscriptions/admin-assign', {
                 user_id: userId,
                 plan_id: planId,

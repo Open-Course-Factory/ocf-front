@@ -22,7 +22,6 @@
 import { defineStore } from "pinia"
 import { computed } from "vue"
 import { useBaseStore } from "./baseStore"
-import { getDemoSubscriptionPlans, isDemoMode, logDemoAction, simulateDelay } from '../services/demo'
 import axios from 'axios'
 import { formatCurrency, formatMcpuAsVcpu } from '../utils/formatters'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
@@ -316,12 +315,12 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
 
     // Load subscription plans on store initialization
     const loadPlans = async () => {
-        return await base.loadEntities('/subscription-plans', getDemoSubscriptionPlans)
+        return await base.loadEntities('/subscription-plans')
     }
 
     // Refresh subscription plans
     const refreshPlans = async () => {
-        return await base.refreshEntities('/subscription-plans', getDemoSubscriptionPlans)
+        return await base.refreshEntities('/subscription-plans')
     }
 
     // Custom action for plan selection (for subscription flow)
@@ -391,19 +390,8 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
     const syncPlansWithStripe = async () => {
         return await baseAsync(
             async () => {
-                if (isDemoMode()) {
-                    logDemoAction('Syncing demo subscription plans with Stripe')
-                    await simulateDelay(2000)
-                    // Nothing to push to Stripe in demo mode: report the demo
-                    // plans as updated, in the same shape the real endpoint yields.
-                    const plans = await loadPlans()
-                    return adaptStripeSyncResult({
-                        updated: asArray(plans).map((plan: any) => `${plan.name} (${plan.id})`)
-                    })
-                } else {
-                    const response = await axios.post('/subscription-plans/sync-stripe')
-                    return adaptStripeSyncResult(response.data)
-                }
+                const response = await axios.post('/subscription-plans/sync-stripe')
+                return adaptStripeSyncResult(response.data)
             },
             'subscriptionPlans.syncError'
         );
@@ -414,18 +402,12 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
     const mirrorPlansToStripe = async (dryRun: boolean) => {
         return await baseAsync(
             async () => {
-                if (isDemoMode()) {
-                    logDemoAction(`Mirroring demo subscription plans to Stripe (dry_run=${dryRun})`)
-                    await simulateDelay(2000)
-                    return adaptStripeSyncResult({})
-                } else {
-                    const response = await axios.post(
-                        '/subscription-plans/sync-stripe/mirror',
-                        undefined,
-                        { params: { dry_run: dryRun } }
-                    )
-                    return adaptStripeSyncResult(response.data)
-                }
+                const response = await axios.post(
+                    '/subscription-plans/sync-stripe/mirror',
+                    undefined,
+                    { params: { dry_run: dryRun } }
+                )
+                return adaptStripeSyncResult(response.data)
             },
             'subscriptionPlans.mirrorError'
         );
@@ -435,20 +417,6 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
     const importPlansFromStripe = async () => {
         return await baseAsync(
             async () => {
-                if (isDemoMode()) {
-                    logDemoAction('Importing demo subscription plans from Stripe')
-                    await simulateDelay(2000)
-                    await loadPlans()
-                    return {
-                        success: true,
-                        created_count: 0,
-                        updated_count: 0,
-                        skipped_count: 0,
-                        failed_count: 0,
-                        details: { created: [], updated: [], skipped: [], failed: [] }
-                    }
-                }
-
                 const response = await axios.post('/subscription-plans/import-stripe')
                 const data = response.data || {}
                 const failed = asArray(data.failed_plans).map((f: any) =>
@@ -509,13 +477,6 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
     }) => {
         return await baseAsync(
             async () => {
-                if (isDemoMode()) {
-                    logDemoAction('Previewing demo pricing ladder')
-                    await simulateDelay(200)
-                    // Demo mode must not invent prices: an empty table is honest,
-                    // a locally-computed one would be a second implementation.
-                    return { currency: input.currency || 'eur', points: [] }
-                }
                 const response = await axios.post('/subscription-plans/pricing-preview', input)
                 return response.data
             },
@@ -530,11 +491,6 @@ export const useSubscriptionPlansStore = defineStore('subscriptionPlans', () => 
     const checkSeatPricingCoherence = async (input: Record<string, unknown>) => {
         return await baseAsync(
             async () => {
-                if (isDemoMode()) {
-                    logDemoAction('Checking demo seat pricing coherence')
-                    await simulateDelay(200)
-                    return { ok: true, points: [], violations: [] }
-                }
                 const response = await axios.post('/subscription-plans/seat-pricing-check', input)
                 return response.data
             },

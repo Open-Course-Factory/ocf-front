@@ -5,7 +5,7 @@
  * These tests PIN the externally-observable contract that must NOT change:
  * the HTTP requests issued (URL / verb / params) and the rendered list.
  * They deliberately do NOT pin which internal code path issues the call,
- * hook mechanics, or demo-mode branches (demo mode is mocked OFF).
+ * or hook mechanics.
  *
  * A realistic store (`{ ...useBaseStore(), fieldList }`, like the themes
  * store) is used, so the list load takes the STORE path
@@ -38,13 +38,6 @@ vi.mock('axios', () => ({
       response: { use: vi.fn() }
     }
   }
-}))
-
-// Demo mode OFF — the baseStore branches on isDemoMode(); we pin the real path.
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: () => false,
-  logDemoAction: vi.fn(),
-  simulateDelay: () => Promise.resolve()
 }))
 
 // Route/router are stubbed; route.query is a stable empty object so the

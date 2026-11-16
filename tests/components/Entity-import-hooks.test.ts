@@ -12,7 +12,7 @@
  * These tests mount the real Entity.vue over a store carrying observable
  * before/after create hooks and drive the two write paths through the exposed
  * setup bindings (vm.handleImportFile / vm.addEntity), asserting on the hooks'
- * observable side effects and the axios boundary. Demo mode is mocked OFF.
+ * observable side effects and the axios boundary.
  *
  * Expected: test 1 RED (import currently runs hooks), test 2 GREEN (regression
  * pin — manual create already runs hooks; guards against skipHooks leaking).
@@ -38,12 +38,6 @@ vi.mock('axios', () => ({
       response: { use: vi.fn() }
     }
   }
-}))
-
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: () => false,
-  logDemoAction: vi.fn(),
-  simulateDelay: () => Promise.resolve()
 }))
 
 const mockRouterPush = vi.fn().mockResolvedValue(undefined)

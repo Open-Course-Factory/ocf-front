@@ -48,19 +48,6 @@ vi.mock('../../src/stores/organizations', () => ({
   })
 }))
 
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: vi.fn(() => false),
-  logDemoAction: vi.fn(),
-  simulateDelay: vi.fn(),
-  demoPayments: {
-    createCheckoutSession: vi.fn(),
-    createPortalSession: vi.fn(),
-    checkUsageLimit: vi.fn()
-  },
-  getDemoCurrentSubscription: vi.fn(),
-  getDemoUsageMetrics: vi.fn()
-}))
-
 vi.mock('../../src/services/features', () => ({
   featureFlagService: {
     isMetricVisible: vi.fn(() => true)

@@ -29,12 +29,6 @@ vi.mock('axios', () => ({
   }
 }))
 
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: () => false,
-  logDemoAction: vi.fn(),
-  simulateDelay: () => Promise.resolve()
-}))
-
 vi.mock('vue-router', () => ({
   useRoute: () => ({ query: {}, path: '/scenarios' }),
   useRouter: () => ({

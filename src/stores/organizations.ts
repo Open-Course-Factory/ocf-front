@@ -5,7 +5,6 @@ import { useStoreTranslations } from '../composables/useTranslations'
 import { createAsyncWrapper } from '../utils/asyncWrapper'
 import { usePermissionsStore } from './permissions'
 import axios from 'axios'
-import { isDemoMode } from '../services/demo'
 import { useSubscriptionsStore } from './subscriptions'
 import { classroomRefusalRedirect } from '../router/classroomGuard'
 import type { Organization, CreateOrganizationRequest, UpdateOrganizationRequest, ConvertOrganizationToTeamRequest } from '../types'
@@ -121,50 +120,8 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     isPersonalOrganizationRecord(currentOrganization.value)
   )
 
-  // Demo data provider
-  const getDemoOrganizations = (): Organization[] => [
-    {
-      id: 'demo-org-1',
-      name: 'personal-demo',
-      display_name: 'Personal Organization',
-      description: 'Auto-created personal organization',
-      owner_user_id: 'demo-user-1',
-      organization_type: 'personal',
-      is_personal: true, // Backward compatibility
-      max_groups: 5,
-      max_members: 10,
-      is_active: true,
-      group_count: 2,
-      member_count: 1,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    },
-    {
-      id: 'demo-org-2',
-      name: 'acme-corp',
-      display_name: 'ACME Corporation',
-      description: 'Training organization for ACME employees',
-      owner_user_id: 'demo-user-1',
-      organization_type: 'team',
-      is_personal: false, // Backward compatibility
-      max_groups: 20,
-      max_members: 100,
-      is_active: true,
-      group_count: 5,
-      member_count: 25,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-  ]
-
   // Load all organizations for current user (follows cursor pagination to get all pages)
   const loadOrganizations = async (_includes?: string) => {
-    if (isDemoMode()) {
-      const result = await base.loadEntities(apiEndpoint, getDemoOrganizations)
-      initCurrentOrganization()
-      return result
-    }
-
     base.isLoading.value = true
     base.error.value = ''
 
@@ -202,7 +159,7 @@ export const useOrganizationsStore = defineStore('organizations', () => {
 
   // Get single organization by ID
   const loadOrganization = async (id: string, _includes?: string) => {
-    return await base.getOne(apiEndpoint, id, getDemoOrganizations)
+    return await base.getOne(apiEndpoint, id)
   }
 
   // Create organization

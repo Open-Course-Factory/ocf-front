@@ -21,7 +21,6 @@
 
 import { useI18n } from 'vue-i18n';
 import { helpService } from '../services/domain/help';
-import { isDemoMode } from '../services/demo';
 
 export function useHelpTranslations() {
   const { mergeLocaleMessage, locale } = useI18n();
@@ -39,10 +38,6 @@ export function useHelpTranslations() {
 
       mergeLocaleMessage(currentLocale, currentTranslations);
       mergeLocaleMessage(fallbackLocale, fallbackTranslations);
-
-      if (isDemoMode()) {
-        console.log(`[DEMO] Loaded help translations for ${currentLocale} and ${fallbackLocale}`);
-      }
     } catch (error) {
       console.error('Failed to load help translations:', error);
       // Fallback to local imports if service fails

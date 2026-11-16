@@ -3,7 +3,6 @@ import { ref, computed } from 'vue'
 import axios from 'axios'
 import { useStoreTranslations } from '../composables/useTranslations'
 import { useCurrentUserStore } from './currentUser'
-import { isDemoMode, logDemoAction } from '../services/demo'
 import type { User, UserEffectiveFeatures } from '../types'
 import { isRoleAtLeast } from '../utils/roles'
 
@@ -39,44 +38,6 @@ export const usePermissionsStore = defineStore('permissions', () => {
     isLoading.value = true
     error.value = ''
     try {
-      if (isDemoMode()) {
-        logDemoAction('loadCurrentUser')
-        currentUser.value = {
-          id: 'demo-user-1',
-          email: 'demo@example.com',
-          username: 'demo',
-          display_name: 'Demo User',
-          roles: [{ id: 'role-1', name: 'member' }],
-          is_active: true,
-          organization_memberships: [
-            {
-              id: 'mem-1',
-              organization_id: 'demo-org-1',
-              user_id: 'demo-user-1',
-              role: 'owner',
-              joined_at: new Date().toISOString(),
-              is_active: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-            {
-              id: 'mem-2',
-              organization_id: 'demo-org-2',
-              user_id: 'demo-user-1',
-              role: 'member',
-              joined_at: new Date().toISOString(),
-              is_active: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            }
-          ],
-          group_memberships: [],
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }
-        return currentUser.value
-      }
-
       const response = await axios.get('/users/me', {
         params: { includes: 'organization_memberships,group_memberships' }
       })
@@ -121,54 +82,6 @@ export const usePermissionsStore = defineStore('permissions', () => {
     isLoading.value = true
     error.value = ''
     try {
-      if (isDemoMode()) {
-        logDemoAction('loadEffectiveFeatures')
-        effectiveFeatures.value = {
-          user_id: 'demo-user-1',
-          effective_features: {
-            id: 'effective-plan',
-            name: 'Aggregated Features',
-            priority: 30,
-            stripe_product_id: '',
-            stripe_price_id: '',
-            price_amount: 0,
-            currency: 'EUR',
-            billing_interval: 'month',
-            features: ['group_management', 'multiple_groups', 'network_access', 'data_persistence', 'command_history', 'session_supervision'],
-            max_courses: 50,
-            is_active: true,
-            required_role: 'member',
-            max_session_duration_minutes: 240,
-            max_cpu: 16,
-            max_memory_mb: 16384,
-            network_access_enabled: true,
-            data_persistence_enabled: true,
-            data_persistence_gb: 50,
-            allowed_backends: [],
-            default_backend: '',
-            command_history_retention_days: 30,
-            use_tiered_pricing: false,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          source_organizations: [
-            {
-              organization_id: 'demo-org-1',
-              organization_name: 'Demo Organization',
-              role: 'owner',
-              contributing_features: ['group_management', 'network_access'],
-            }
-          ],
-          has_personal_subscription: false,
-          // The demo persona is a trainer with a classroom-granting plan, so the
-          // verdict must say so. Omitting it would make demo mode deny every
-          // classroom affordance, since an absent verdict is read as "no".
-          can_run_classrooms: true,
-        }
-        allOrgFeatures.value = effectiveFeatures.value
-        return effectiveFeatures.value
-      }
-
       // Get org context for scoped features
       const { useOrganizationsStore } = await import('./organizations')
       const orgStore = useOrganizationsStore()

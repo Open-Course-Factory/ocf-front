@@ -1,6 +1,6 @@
 /**
  * Pages that take a destination from the query string (login `redirect`,
- * demo `return_url`, verify-email `redirect`, session view `returnTo`) must
+ * verify-email `redirect`, session view `returnTo`) must
  * only follow a path inside this app. `inAppPath` returns the value when it
  * resolves to this origin, and `null` otherwise so callers use their default.
  */

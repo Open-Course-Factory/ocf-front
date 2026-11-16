@@ -61,10 +61,6 @@ vi.mock('../../src/router/index', () => ({
   },
 }))
 
-vi.mock('../../src/services/demo', () => ({
-  isDemoMode: () => false,
-}))
-
 // ---- Real imports — these are the units under test -----------------------
 
 import { useScenarioEditorAccess } from '../../src/composables/useScenarioEditorAccess'
