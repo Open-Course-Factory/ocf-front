@@ -94,9 +94,13 @@ textarea.form-control:focus {
 
 /* === VALIDATION STATES === */
 
-/* The danger icon is an image: its red is fixed in the data URI, as for the select arrow. */
 .form-control.is-invalid {
   border-color: var(--color-danger);
+}
+
+/* The danger icon is an image: its red is fixed in the data URI, as for the select arrow.
+   A select keeps its arrow instead. */
+.form-control.is-invalid:not(select) {
   padding-right: calc(1.5em + 0.75rem);
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
   background-repeat: no-repeat;
@@ -139,6 +143,12 @@ select.form-control,
   background-size: 16px 12px;
   padding-right: 2.5rem;
   cursor: pointer;
+}
+
+/* The arrow is an image: its stroke is fixed in the data URI, so dark mode swaps in a light one. */
+[data-theme="dark"] select.form-control,
+[data-theme="dark"] .form-select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23dee2e6' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
 }
 
 .form-select-sm {
