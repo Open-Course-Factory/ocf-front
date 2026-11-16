@@ -21,312 +21,261 @@
  */
 -->
 
+<!-- Renders the REAL shared components and classes, unstyled by this page,
+     so any drift between them and the design system shows up here. -->
 <template>
   <div class="design-system-audit">
     <div class="audit-header">
       <h1><i class="fas fa-palette"></i> {{ t('designSystem.title') }}</h1>
       <div class="theme-toggle">
-        <button
-          :class="{ active: currentTheme === 'light' }"
-          @click="setTheme('light')"
-        >
+        <button :class="{ active: currentTheme === 'light' }" @click="setTheme('light')">
           <i class="fas fa-sun"></i> {{ t('designSystem.light') }}
         </button>
-        <button
-          :class="{ active: currentTheme === 'dark' }"
-          @click="setTheme('dark')"
-        >
+        <button :class="{ active: currentTheme === 'dark' }" @click="setTheme('dark')">
           <i class="fas fa-moon"></i> {{ t('designSystem.dark') }}
         </button>
       </div>
     </div>
 
-    <div class="audit-content">
-      <!-- LEFT COLUMN -->
-      <div class="audit-column">
-
-        <!-- 1. SIDEBAR -->
-        <div class="audit-section">
-          <div class="section-title"><i class="fas fa-bars"></i> {{ t('designSystem.sidebarTitle') }}</div>
-          <div class="section-body">
-            <div class="sidebar-demo">
-              <!-- Main Nav -->
-              <div class="sidebar-panel main-nav-sidebar">
-                <div class="nav-category">
-                  <div class="category-header">
-                    <i class="fas fa-graduation-cap"></i>
-                    <span>Course Design</span>
-                    <i class="fas fa-chevron-down" style="margin-left:auto;font-size:0.7rem;"></i>
-                  </div>
-                  <ul class="category-items">
-                    <li><a href="#"><i class="fas fa-book"></i> Courses</a></li>
-                    <li><a href="#" class="active"><i class="fas fa-book-open"></i> Chapters</a></li>
-                    <li><a href="#"><i class="fas fa-stream"></i> Sections</a></li>
-                    <li><a href="#"><i class="fas fa-file-alt"></i> Pages</a></li>
-                  </ul>
+    <div class="audit-grid">
+      <!-- 1. Tokens -->
+      <section class="audit-section audit-section--wide">
+        <h2 class="section-title">{{ t('designSystem.tokens') }}</h2>
+        <div class="section-body">
+          <div v-for="group in tokenGroups" :key="group.key" class="token-group">
+            <h3 class="caption">{{ t(`designSystem.${group.key}`) }}</h3>
+            <div class="token-list">
+              <div v-for="token in group.tokens" :key="token" class="token">
+                <div class="token-swatch" :style="`${group.prop}: var(${token})`">
+                  {{ group.prop === 'font-size' ? 'Aa' : '' }}
                 </div>
-                <div class="nav-category">
-                  <div class="category-header">
-                    <i class="fas fa-users"></i>
-                    <span>Groups</span>
-                  </div>
-                </div>
-                <div class="nav-category">
-                  <div class="category-header admin-cat">
-                    <i class="fas fa-shield-alt"></i>
-                    <span>Administration</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Settings Nav -->
-              <div class="sidebar-panel settings-nav-sidebar">
-                <div class="settings-header">
-                  <a href="#"><i class="fas fa-arrow-left"></i> Settings</a>
-                </div>
-                <a href="#" class="menu-item"><i class="fas fa-compass"></i> Navigation</a>
-                <a href="#" class="menu-item active"><i class="fas fa-globe"></i> Localization</a>
-                <a href="#" class="menu-item"><i class="fas fa-palette"></i> UI Preferences</a>
-                <a href="#" class="menu-item"><i class="fas fa-bell"></i> Notifications</a>
-                <a href="#" class="menu-item"><i class="fas fa-shield-alt"></i> Security</a>
-                <a href="#" class="menu-item"><i class="fas fa-terminal"></i> SSH Keys</a>
+                <!-- trailing space keeps token names separate words in the text content -->
+                <code>{{ `${token} ` }}</code>
               </div>
             </div>
           </div>
         </div>
+      </section>
 
-        <!-- 2. TREE COMPONENTS -->
-        <div class="audit-section">
-          <div class="section-title"><i class="fas fa-sitemap"></i> {{ t('designSystem.treeTitle') }}</div>
-          <div class="section-body">
-            <div class="tree-demo">
-              <div class="tree-node">
-                <div class="tree-node-header" style="background: var(--color-surface-hover);">
-                  <span class="expand-icon">&#9654;</span>
-                  <span class="node-icon"><i class="fas fa-building"></i></span>
-                  <span class="node-label">{{ t('designSystem.treeHover') }}</span>
-                  <div class="tree-node-actions" style="opacity:1;">
-                    <button class="tree-action-btn"><i class="fas fa-edit"></i></button>
-                    <button class="tree-action-btn"><i class="fas fa-trash"></i></button>
-                  </div>
-                </div>
-              </div>
-              <div class="tree-node">
-                <div class="tree-node-header" style="background: var(--color-surface-active);">
-                  <span class="expand-icon">&#9660;</span>
-                  <span class="node-icon"><i class="fas fa-users"></i></span>
-                  <span class="node-label">{{ t('designSystem.treeActive') }}</span>
-                </div>
-              </div>
-              <div class="tree-children">
-                <div class="tree-node">
-                  <div class="tree-node-header">
-                    <span class="expand-icon" style="visibility:hidden;">&#9654;</span>
-                    <span class="node-icon"><i class="fas fa-user"></i></span>
-                    <span class="node-label">{{ t('designSystem.treeDefault') }}</span>
-                  </div>
-                </div>
-              </div>
-              <div style="margin-top:12px;">
-                <div class="tree-node dragging-over">
-                  <div class="tree-node-header" style="background: var(--color-primary-bg); border: 2px dashed var(--color-primary);">
-                    <span class="expand-icon">&#9654;</span>
-                    <span class="node-icon"><i class="fas fa-folder"></i></span>
-                    <span class="node-label">{{ t('designSystem.treeDragOver') }}</span>
-                  </div>
-                </div>
-              </div>
-              <div style="margin-top:8px;">
-                <div class="tree-node drop-target" style="background: var(--color-success-bg); border-left: 3px solid var(--color-success);">
-                  <div class="tree-node-header">
-                    <span class="expand-icon">&#9654;</span>
-                    <span class="node-icon"><i class="fas fa-check"></i></span>
-                    <span class="node-label">{{ t('designSystem.treeDrop') }}</span>
-                  </div>
-                </div>
-              </div>
-              <div style="margin-top:12px;">
-                <span style="font-size:0.8rem;color:var(--color-text-muted);">{{ t('designSystem.actionButtonHover') }}:</span>
-                <button class="tree-action-btn" style="background: var(--color-surface-variant); color: var(--color-text-primary);"><i class="fas fa-edit"></i> Edit</button>
-              </div>
-            </div>
+      <!-- 2. Buttons -->
+      <section class="audit-section audit-section--wide">
+        <h2 class="section-title">{{ t('designSystem.buttons') }}</h2>
+        <div class="section-body">
+          <h3 class="caption">UI/Button.vue</h3>
+          <div class="row">
+            <Button v-for="v in buttonVariants" :key="v" :variant="v" size="md">{{ v }}</Button>
+          </div>
+          <div class="row">
+            <Button>{{ t('designSystem.noProps') }}</Button>
+            <Button variant="primary" size="sm">sm</Button>
+            <Button variant="primary" size="lg">lg</Button>
+            <Button variant="primary" size="md" icon="fas fa-plus">icon</Button>
+            <Button variant="primary" size="md" disabled>disabled</Button>
+            <Button variant="primary" size="md" loading>loading</Button>
+          </div>
+          <h3 class="caption">.btn</h3>
+          <div class="row">
+            <button v-for="c in rawButtonClasses" :key="c" type="button" :class="['btn', c]">{{ c }}</button>
+          </div>
+          <div class="row">
+            <button type="button" class="btn btn-primary btn-sm">btn-sm</button>
+            <button type="button" class="btn btn-primary btn-lg">btn-lg</button>
+            <button type="button" class="btn btn-primary"><i class="fas fa-plus"></i> icon</button>
+            <button type="button" class="btn btn-primary" disabled>disabled</button>
+            <button type="button" class="btn-icon" :aria-label="t('designSystem.more')"><i class="fas fa-ellipsis-v"></i></button>
           </div>
         </div>
+      </section>
 
-        <!-- 5. USER SETTINGS MENU -->
-        <div class="audit-section">
-          <div class="section-title"><i class="fas fa-cog"></i> {{ t('designSystem.userSettingsTitle') }}</div>
-          <div class="section-body">
-            <div class="user-settings-demo">
-              <div class="us-header">
-                <h2><i class="fas fa-cog"></i> Settings</h2>
-                <button class="us-close"><i class="fas fa-times"></i></button>
-              </div>
-              <div class="us-section">
-                <div class="us-cat-header"><i class="fas fa-compass"></i> Navigation</div>
-              </div>
-              <div class="us-section">
-                <div class="us-cat-header"><i class="fas fa-globe"></i> Localization</div>
-              </div>
-              <div class="us-section">
-                <div class="us-cat-header"><i class="fas fa-palette"></i> UI Preferences</div>
-              </div>
-            </div>
+      <!-- 3. Forms -->
+      <section class="audit-section">
+        <h2 class="section-title">{{ t('designSystem.forms') }}</h2>
+        <div class="section-body">
+          <h3 class="caption">UI/FormGroup.vue</h3>
+          <FormGroup id="dsa-name" :label="t('designSystem.name')" :help-text="t('designSystem.help')" required>
+            <input id="dsa-name" class="form-control" :placeholder="t('designSystem.placeholder')" />
+          </FormGroup>
+          <FormGroup id="dsa-email" label="Email" :error="t('designSystem.error')">
+            <input id="dsa-email" class="form-control is-invalid" value="not-an-email" />
+          </FormGroup>
+          <h3 class="caption">.form-group</h3>
+          <div class="form-group">
+            <label for="dsa-select">{{ t('designSystem.choice') }}</label>
+            <select id="dsa-select" class="form-control"><option>Ubuntu</option><option>Debian</option></select>
+          </div>
+          <div class="form-group">
+            <label for="dsa-text">{{ t('designSystem.description') }}</label>
+            <textarea id="dsa-text" class="form-control" rows="2"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="dsa-disabled">{{ t('designSystem.disabled') }}</label>
+            <input id="dsa-disabled" class="form-control" disabled value="read-only" />
+          </div>
+          <div class="form-check">
+            <input id="dsa-check" type="checkbox" class="form-check-input" checked />
+            <label for="dsa-check" class="form-check-label">{{ t('designSystem.checkbox') }}</label>
           </div>
         </div>
+      </section>
 
-      </div>
+      <!-- 4. Alerts -->
+      <section class="audit-section">
+        <h2 class="section-title">{{ t('designSystem.alerts') }}</h2>
+        <div class="section-body">
+          <h3 class="caption">UI/ErrorAlert.vue</h3>
+          <ErrorAlert :message="t('designSystem.error')" />
+          <h3 class="caption">.alert</h3>
+          <div class="alert alert-success"><i class="fas fa-check-circle"></i> alert-success</div>
+          <div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> alert-warning</div>
+          <div class="alert alert-danger"><i class="fas fa-times-circle"></i> alert-danger</div>
+          <div class="alert alert-info"><i class="fas fa-info-circle"></i> alert-info</div>
+        </div>
+      </section>
 
-      <!-- RIGHT COLUMN -->
-      <div class="audit-column">
-
-        <!-- 3. COURSE EDITOR NODES -->
-        <div class="audit-section">
-          <div class="section-title"><i class="fas fa-project-diagram"></i> {{ t('designSystem.courseNodesTitle') }}</div>
-          <div class="section-body">
-            <div style="display:flex;gap:16px;">
-              <div style="flex:1;">
-                <div class="course-nodes-grid">
-                  <div class="editor-node node-course">
-                    <div class="node-head"><span class="icon"><i class="fas fa-book"></i></span><span class="title">Intro to CS</span></div>
-                    <div class="node-actions-bar">
-                      <button class="action-btn"><i class="fas fa-edit"></i></button>
-                      <button class="action-btn delete"><i class="fas fa-trash"></i></button>
-                    </div>
-                  </div>
-                  <div class="editor-node node-chapter">
-                    <div class="node-head"><span class="icon"><i class="fas fa-book-open"></i></span><span class="title">Chapter 1</span></div>
-                    <div class="node-actions-bar">
-                      <button class="action-btn"><i class="fas fa-edit"></i></button>
-                      <button class="action-btn delete"><i class="fas fa-trash"></i></button>
-                    </div>
-                  </div>
-                  <div class="editor-node node-section">
-                    <div class="node-head"><span class="icon"><i class="fas fa-stream"></i></span><span class="title">Section A</span></div>
-                    <div class="node-actions-bar">
-                      <button class="action-btn"><i class="fas fa-edit"></i></button>
-                      <button class="action-btn delete"><i class="fas fa-trash"></i></button>
-                    </div>
-                  </div>
-                  <div class="editor-node node-page">
-                    <div class="node-head"><span class="icon"><i class="fas fa-file-alt"></i></span><span class="title">Page 1</span></div>
-                    <div class="node-actions-bar">
-                      <button class="action-btn"><i class="fas fa-edit"></i></button>
-                      <button class="action-btn delete"><i class="fas fa-trash"></i></button>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Course Tree Node -->
-                <div class="course-tree-demo" style="margin-top:16px;">
-                  <div style="font-size:0.8rem;color:var(--color-text-muted);margin-bottom:8px;">{{ t('designSystem.courseTreePanel') }}:</div>
-                  <div class="ct-node ct-course"><i class="fas fa-book"></i> Introduction to CS</div>
-                  <div class="ct-node ct-chapter"><i class="fas fa-book-open"></i> Chapter 1: Basics</div>
-                  <div class="ct-node ct-section"><i class="fas fa-stream"></i> Section A: Variables</div>
-                  <div class="ct-node ct-page"><i class="fas fa-file-alt"></i> Page 1: Introduction</div>
-                  <div class="ct-node ct-page"><i class="fas fa-file-alt"></i> Page 2: Data Types</div>
-                  <div class="ct-node ct-section"><i class="fas fa-stream"></i> Section B: Functions</div>
-                </div>
-              </div>
-
-              <!-- Node Library -->
-              <div style="width:180px;flex-shrink:0;">
-                <div class="node-library">
-                  <div class="node-library-header">{{ t('designSystem.nodeLibrary') }}</div>
-                  <div class="node-library-items">
-                    <div class="node-library-item">
-                      <div class="node-library-preview lib-course">
-                        <i class="fas fa-book"></i><span class="lib-label">Course</span>
-                      </div>
-                    </div>
-                    <div class="node-library-item">
-                      <div class="node-library-preview lib-chapter">
-                        <i class="fas fa-book-open"></i><span class="lib-label">Chapter</span>
-                      </div>
-                    </div>
-                    <div class="node-library-item">
-                      <div class="node-library-preview lib-section">
-                        <i class="fas fa-stream"></i><span class="lib-label">Section</span>
-                      </div>
-                    </div>
-                    <div class="node-library-item">
-                      <div class="node-library-preview lib-page">
-                        <i class="fas fa-file-alt"></i><span class="lib-label">Page</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+      <!-- 5. Badges -->
+      <section class="audit-section">
+        <h2 class="section-title">{{ t('designSystem.badges') }}</h2>
+        <div class="section-body">
+          <h3 class="caption">AdminBadge / BetaBadge</h3>
+          <div class="row">
+            <AdminBadge />
+            <AdminBadge icon-only />
+            <BetaBadge size="small" />
+            <BetaBadge />
+            <BetaBadge size="large" />
+          </div>
+          <h3 class="caption">.badge</h3>
+          <div class="row">
+            <span v-for="c in badgeClasses" :key="c" :class="['badge', c]">{{ c }}</span>
           </div>
         </div>
+      </section>
 
-        <!-- 3b. SCENARIO STEP TYPES -->
-        <div class="audit-section">
-          <div class="section-title"><i class="fas fa-flask"></i> {{ t('designSystem.scenarioNodesTitle') }}</div>
-          <div class="section-body">
-            <div style="display:flex;gap:16px;">
-              <span v-for="type in ['terminal', 'flag', 'info', 'quiz', 'survey']" :key="type" style="display:inline-flex;align-items:center;gap:8px;">
-                <span class="ocf-step-type-icon" :class="`is-${type}`" style="width:1.5rem;height:1.5rem;"><i class="fas fa-circle" style="font-size:0.5rem;"></i></span>
-                {{ type }}
-              </span>
-            </div>
+      <!-- 6. Cards -->
+      <section class="audit-section">
+        <h2 class="section-title">{{ t('designSystem.cards') }}</h2>
+        <div class="section-body">
+          <h3 class="caption">UI/SettingsCard.vue</h3>
+          <SettingsCard :title="t('designSystem.cardTitle')" icon="fas fa-user">
+            <template #headerActions>
+              <Button variant="outline-primary" size="sm">{{ t('designSystem.edit') }}</Button>
+            </template>
+            <p>{{ t('designSystem.cardBody') }}</p>
+          </SettingsCard>
+          <h3 class="caption">.card</h3>
+          <div class="card">
+            <div class="card-header"><h3>{{ t('designSystem.cardTitle') }}</h3></div>
+            <div class="card-body"><p>{{ t('designSystem.cardBody') }}</p></div>
           </div>
         </div>
-        <!-- 4. TERMINAL COMPONENTS -->
-        <div class="audit-section">
-          <div class="section-title"><i class="fas fa-terminal"></i> {{ t('designSystem.terminalTitle') }}</div>
-          <div class="section-body" style="display:flex;flex-direction:column;gap:12px;">
-            <div class="terminal-wrapper-demo">
-              <div class="prompt"><span class="user">user@terminal</span>:<span class="path">~/project</span><span class="dollar">$</span> npm run build</div>
-              <div style="color:#6a9955;">&#10003; Compiled successfully in 2.3s</div>
-              <div style="color:#569cd6;">  dist/index.js  2,256 kB</div>
-              <div class="prompt"><span class="user">user@terminal</span>:<span class="path">~/project</span><span class="dollar">$</span> <span class="cursor-blink">&nbsp;</span></div>
-            </div>
+      </section>
 
-            <div class="terminal-error-demo">
-              <div style="font-size:2rem;"><i class="fas fa-exclamation-triangle"></i></div>
-              <h2>{{ t('designSystem.terminalError') }}</h2>
-              <p>{{ t('designSystem.terminalErrorDesc') }} <code>ECONNREFUSED</code></p>
-            </div>
+      <!-- 7. Tabs + 8. Menus -->
+      <section class="audit-section">
+        <h2 class="section-title">{{ t('designSystem.tabsMenus') }}</h2>
+        <div class="section-body">
+          <h3 class="caption">Common/TabStrip.vue</h3>
+          <TabStrip v-model="activeTab" :tabs="tabs" :aria-label="t('designSystem.tabsMenus')" />
+          <h3 class="caption">Common/DropdownMenu.vue</h3>
+          <DropdownMenu align="left" :trigger-label="t('designSystem.more')">
+            <button type="button" class="ocf-dropdown-item"><i class="fas fa-edit"></i> {{ t('designSystem.edit') }}</button>
+            <button type="button" class="ocf-dropdown-item" disabled><i class="fas fa-copy"></i> {{ t('designSystem.disabled') }}</button>
+            <button type="button" class="ocf-dropdown-item ocf-dropdown-item--danger"><i class="fas fa-trash"></i> {{ t('designSystem.delete') }}</button>
+          </DropdownMenu>
+        </div>
+      </section>
 
-            <div class="code-example-demo">
-              <div style="font-size:0.8rem;color:var(--color-text-muted);margin-bottom:6px;">{{ t('designSystem.codeExample') }}:</div>
-              <pre>ssh -i ~/.ssh/id_rsa user@terminal.example.com
-# Start a new session
-tmux new-session -s dev</pre>
-            </div>
-
-            <div>
-              <div style="font-size:0.8rem;color:var(--color-text-muted);margin-bottom:6px;">{{ t('designSystem.badges') }}:</div>
-              <div class="badge-row">
-                <span class="badge read"><i class="fas fa-eye"></i> Read</span>
-                <span class="badge write"><i class="fas fa-edit"></i> Write</span>
-                <span class="badge owner"><i class="fas fa-user"></i> Owner</span>
-                <span class="badge warning"><i class="fas fa-exclamation-triangle"></i> Expiring</span>
-                <span class="badge danger"><i class="fas fa-times-circle"></i> Expired</span>
-              </div>
-            </div>
+      <!-- 9. Tables -->
+      <section class="audit-section audit-section--wide">
+        <h2 class="section-title">{{ t('designSystem.tables') }}</h2>
+        <div class="section-body">
+          <h3 class="caption">Generic/EntityTable.vue</h3>
+          <EntityTable :columns="columns" :rows="rows" searchable show-count>
+            <template #row-actions>
+              <button type="button" class="btn-icon" :aria-label="t('designSystem.edit')"><i class="fas fa-edit"></i></button>
+            </template>
+          </EntityTable>
+          <h3 class="caption">table.ocf-data-table</h3>
+          <div class="table-scroll">
+            <table class="ocf-data-table">
+              <thead><tr><th v-for="c in columns" :key="c.key">{{ c.label }}</th></tr></thead>
+              <tbody>
+                <tr v-for="r in rows" :key="r.id"><td>{{ r.name }}</td><td>{{ r.email }}</td><td>{{ r.role }}</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
+      </section>
 
-        <!-- 6. SURFACE STATES -->
-        <div class="audit-section">
-          <div class="section-title"><i class="fas fa-layer-group"></i> {{ t('designSystem.surfaceTitle') }}</div>
-          <div class="section-body">
-            <div class="surface-states">
-              <div v-for="item in surfaceItems" :key="item.variable" class="surface-state-item">
-                <div class="swatch" :style="item.swatchStyle"></div>
-                <div class="info">
-                  <div>{{ item.label }}</div>
-                  <div class="var-name">{{ item.variable }}</div>
-                </div>
-              </div>
-            </div>
+      <!-- 10. Pagination and progress -->
+      <section class="audit-section">
+        <h2 class="section-title">{{ t('designSystem.progress') }}</h2>
+        <div class="section-body">
+          <h3 class="caption">Common/ClientPager.vue</h3>
+          <ClientPager
+            :current-page="page"
+            :total-pages="5"
+            :total-items="42"
+            :showing-from="(page - 1) * 10 + 1"
+            :showing-to="Math.min(page * 10, 42)"
+            testid-prefix="dsa"
+            @previous="page--"
+            @next="page++"
+          />
+          <h3 class="caption">Common/ProgressBar.vue</h3>
+          <div class="stack">
+            <ProgressBar :value="25" />
+            <ProgressBar :value="60" variant="success" />
+            <ProgressBar :value="85" variant="warning" />
+            <ProgressBar :value="100" variant="danger" />
+            <ProgressBar :value="0" indeterminate />
           </div>
         </div>
+      </section>
 
-      </div>
+      <!-- 11. Empty states -->
+      <section class="audit-section">
+        <h2 class="section-title">{{ t('designSystem.empty') }}</h2>
+        <div class="section-body">
+          <h3 class="caption">Common/EmptyState.vue</h3>
+          <EmptyState
+            icon-class="fas fa-flask"
+            :title="t('designSystem.emptyTitle')"
+            :description="t('designSystem.emptyText')"
+            :action-text="t('designSystem.create')"
+            action-icon="fas fa-plus"
+          />
+          <h3 class="caption">.empty-state</h3>
+          <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>{{ t('designSystem.emptyTitle') }}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 12. Modal -->
+      <section class="audit-section">
+        <h2 class="section-title">{{ t('designSystem.modal') }}</h2>
+        <div class="section-body">
+          <h3 class="caption">Modals/BaseModal.vue</h3>
+          <div class="row">
+            <button v-for="s in modalSizes" :key="s" type="button" class="btn btn-secondary" @click="modalSize = s">{{ s }}</button>
+          </div>
+          <BaseModal
+            :visible="modalSize !== null"
+            :size="modalSize ?? 'medium'"
+            :title="t('designSystem.modal')"
+            title-icon="fas fa-window-maximize"
+            show-default-footer
+            :confirm-text="t('designSystem.confirm')"
+            :cancel-text="t('designSystem.cancel')"
+            @close="modalSize = null"
+            @confirm="modalSize = null"
+          >
+            <p>{{ t('designSystem.cardBody') }}</p>
+          </BaseModal>
+        </div>
+      </section>
     </div>
   </div>
 </template>
@@ -334,74 +283,111 @@ tmux new-session -s dev</pre>
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
+import Button from '../UI/Button.vue'
+import FormGroup from '../UI/FormGroup.vue'
+import ErrorAlert from '../UI/ErrorAlert.vue'
+import SettingsCard from '../UI/SettingsCard.vue'
+import AdminBadge from '../Common/AdminBadge.vue'
+import BetaBadge from '../Common/BetaBadge.vue'
+import TabStrip from '../Common/TabStrip.vue'
+import DropdownMenu from '../Common/DropdownMenu.vue'
+import ClientPager from '../Common/ClientPager.vue'
+import ProgressBar from '../Common/ProgressBar.vue'
+import EmptyState from '../Common/EmptyState.vue'
+import EntityTable from '../Generic/EntityTable.vue'
+import BaseModal from '../Modals/BaseModal.vue'
 
 const { t } = useTranslations({
   en: {
     designSystem: {
-      title: 'Labinux CSS Variable Visual Audit',
+      title: 'Labinux design system audit',
       light: 'Light',
       dark: 'Dark',
-      sidebarTitle: '1. Sidebar — MainNavMenu + SettingsNavMenu',
-      treeTitle: '2. Tree Components — Hover / Active / Drag States',
-      treeHover: 'Organization Alpha (hover state)',
-      treeActive: 'Team Bravo (active/pressed state)',
-      treeDefault: 'Member — Default state',
-      treeDragOver: 'Drag-over target state',
-      treeDrop: 'Drop target state',
-      actionButtonHover: 'Action button hover',
-      userSettingsTitle: '5. UserSettingsMenu Overlay',
-      courseNodesTitle: '3. Course Editor Nodes + Node Library',
-      scenarioNodesTitle: '3b. Scenario step types',
-      courseTreePanel: 'Course Tree Panel',
-      nodeLibrary: 'Node Library',
-      terminalTitle: '4. Terminal Components',
-      terminalError: 'Terminal Connection Error',
-      terminalErrorDesc: 'Unable to connect to terminal session. Error code:',
-      codeExample: 'Help page code example',
-      badges: 'Terminal Badges',
-      surfaceTitle: '6. New Surface Variables',
-      surfaceBase: 'Surface (base)',
-      surfaceHover: 'Surface Hover',
-      surfaceActive: 'Surface Active',
-      surfaceVariant: 'Surface Variant',
-      primaryBg: 'Primary Background',
-      sidebarBg: 'Sidebar Background',
-      sidebarText: 'Sidebar Text (on sidebar bg)',
-      sidebarTextMuted: 'Sidebar Text Muted (on sidebar bg)'
+      tokens: '1. Tokens',
+      colors: 'Colors',
+      spacing: 'Spacing',
+      radius: 'Radius',
+      shadows: 'Shadows',
+      typography: 'Font sizes',
+      buttons: '2. Buttons',
+      noProps: 'No props',
+      forms: '3. Forms',
+      name: 'Name',
+      help: 'Help text under the field',
+      placeholder: 'Type here',
+      error: 'This value is not valid',
+      choice: 'Distribution',
+      description: 'Description',
+      disabled: 'Disabled',
+      checkbox: 'Checkbox',
+      alerts: '4. Alerts',
+      badges: '5. Badges',
+      cards: '6. Cards',
+      cardTitle: 'Profile',
+      cardBody: 'Sample content inside the container.',
+      edit: 'Edit',
+      delete: 'Delete',
+      more: 'More actions',
+      tabsMenus: '7-8. Tabs and menus',
+      tabOverview: 'Overview',
+      tabMembers: 'Members',
+      tabSettings: 'Settings',
+      tables: '9. Tables',
+      role: 'Role',
+      progress: '10. Pagination and progress',
+      empty: '11. Empty states',
+      emptyTitle: 'No scenario yet',
+      emptyText: 'Create your first scenario to see it here.',
+      create: 'Create',
+      modal: '12. Modal',
+      confirm: 'Confirm',
+      cancel: 'Cancel'
     }
   },
   fr: {
     designSystem: {
-      title: 'Audit visuel des variables CSS Labinux',
+      title: 'Audit du design system Labinux',
       light: 'Clair',
       dark: 'Sombre',
-      sidebarTitle: '1. Barre latérale — MainNavMenu + SettingsNavMenu',
-      treeTitle: '2. Composants Arbre — États Survol / Actif / Glisser',
-      treeHover: 'Organisation Alpha (état survol)',
-      treeActive: 'Équipe Bravo (état actif/pressé)',
-      treeDefault: 'Membre — État par défaut',
-      treeDragOver: 'État cible de glissement',
-      treeDrop: 'État cible de dépôt',
-      actionButtonHover: 'Survol bouton action',
-      userSettingsTitle: '5. Menu Paramètres Utilisateur',
-      courseNodesTitle: '3. Noeuds Éditeur de Cours + Bibliothèque',
-      scenarioNodesTitle: '3b. Types d’étape de scénario',
-      courseTreePanel: 'Panneau arbre de cours',
-      nodeLibrary: 'Bibliothèque de noeuds',
-      terminalTitle: '4. Composants Terminal',
-      terminalError: 'Erreur de connexion terminal',
-      terminalErrorDesc: 'Impossible de se connecter à la session terminal. Code d\'erreur :',
-      codeExample: 'Exemple de code page d\'aide',
-      badges: 'Badges Terminal',
-      surfaceTitle: '6. Nouvelles variables de surface',
-      surfaceBase: 'Surface (base)',
-      surfaceHover: 'Surface Survol',
-      surfaceActive: 'Surface Actif',
-      surfaceVariant: 'Surface Variante',
-      primaryBg: 'Arrière-plan Primaire',
-      sidebarBg: 'Arrière-plan Barre latérale',
-      sidebarText: 'Texte barre latérale (sur fond barre latérale)',
-      sidebarTextMuted: 'Texte atténué barre latérale (sur fond barre latérale)'
+      tokens: '1. Jetons',
+      colors: 'Couleurs',
+      spacing: 'Espacements',
+      radius: 'Arrondis',
+      shadows: 'Ombres',
+      typography: 'Tailles de police',
+      buttons: '2. Boutons',
+      noProps: 'Sans props',
+      forms: '3. Formulaires',
+      name: 'Nom',
+      help: 'Texte d’aide sous le champ',
+      placeholder: 'Saisissez ici',
+      error: 'Cette valeur n’est pas valide',
+      choice: 'Distribution',
+      description: 'Description',
+      disabled: 'Désactivé',
+      checkbox: 'Case à cocher',
+      alerts: '4. Alertes',
+      badges: '5. Badges',
+      cards: '6. Cartes',
+      cardTitle: 'Profil',
+      cardBody: 'Exemple de contenu dans le conteneur.',
+      edit: 'Modifier',
+      delete: 'Supprimer',
+      more: 'Plus d’actions',
+      tabsMenus: '7-8. Onglets et menus',
+      tabOverview: 'Aperçu',
+      tabMembers: 'Membres',
+      tabSettings: 'Paramètres',
+      tables: '9. Tableaux',
+      role: 'Rôle',
+      progress: '10. Pagination et progression',
+      empty: '11. États vides',
+      emptyTitle: 'Aucun scénario pour l’instant',
+      emptyText: 'Créez votre premier scénario pour le voir ici.',
+      create: 'Créer',
+      modal: '12. Fenêtre modale',
+      confirm: 'Confirmer',
+      cancel: 'Annuler'
     }
   }
 })
@@ -419,51 +405,55 @@ function setTheme(theme: 'light' | 'dark') {
   }
 }
 
-const surfaceItems = computed(() => [
+const tokenGroups = [
   {
-    label: t('designSystem.surfaceBase'),
-    variable: '--color-surface',
-    swatchStyle: 'background: var(--color-surface);'
+    key: 'colors',
+    prop: 'background',
+    tokens: [
+      '--color-primary', '--color-primary-hover', '--color-secondary',
+      '--color-success', '--color-success-bg', '--color-warning', '--color-warning-bg',
+      '--color-danger', '--color-danger-bg', '--color-info', '--color-info-bg',
+      '--color-text-primary', '--color-text-secondary', '--color-text-muted',
+      '--color-background', '--color-bg-primary', '--color-bg-secondary', '--color-bg-tertiary',
+      '--color-surface', '--color-border', '--color-border-light', '--color-border-medium'
+    ]
   },
-  {
-    label: t('designSystem.surfaceHover'),
-    variable: '--color-surface-hover',
-    swatchStyle: 'background: var(--color-surface-hover);'
-  },
-  {
-    label: t('designSystem.surfaceActive'),
-    variable: '--color-surface-active',
-    swatchStyle: 'background: var(--color-surface-active);'
-  },
-  {
-    label: t('designSystem.surfaceVariant'),
-    variable: '--color-surface-variant',
-    swatchStyle: 'background: var(--color-surface-variant);'
-  },
-  {
-    label: t('designSystem.primaryBg'),
-    variable: '--color-primary-bg',
-    swatchStyle: 'background: var(--color-primary-bg);'
-  },
-  {
-    label: t('designSystem.sidebarBg'),
-    variable: '--color-sidebar-bg',
-    swatchStyle: 'background: var(--color-sidebar-bg);'
-  },
-  {
-    label: t('designSystem.sidebarText'),
-    variable: '--color-sidebar-text',
-    swatchStyle: 'background: var(--color-sidebar-bg); color: var(--color-sidebar-text); text-align:center; display:flex; align-items:center; justify-content:center; font-size:0.7rem; width:auto; height:auto; padding:6px 8px; min-width:140px;'
-  },
-  {
-    label: t('designSystem.sidebarTextMuted'),
-    variable: '--color-sidebar-text-muted',
-    swatchStyle: 'background: var(--color-sidebar-bg); color: var(--color-sidebar-text-muted); text-align:center; display:flex; align-items:center; justify-content:center; font-size:0.7rem; width:auto; height:auto; padding:6px 8px; min-width:140px;'
-  }
+  { key: 'spacing', prop: 'width', tokens: ['--spacing-xs', '--spacing-sm', '--spacing-md', '--spacing-lg', '--spacing-xl', '--spacing-2xl'] },
+  { key: 'radius', prop: 'border-radius', tokens: ['--border-radius-sm', '--border-radius-md', '--border-radius-lg', '--border-radius-xl', '--border-radius-full'] },
+  { key: 'shadows', prop: 'box-shadow', tokens: ['--shadow-xs', '--shadow-sm', '--shadow-md', '--shadow-lg', '--shadow-xl'] },
+  { key: 'typography', prop: 'font-size', tokens: ['--font-size-xs', '--font-size-sm', '--font-size-base', '--font-size-lg', '--font-size-xl', '--font-size-2xl'] }
+]
+
+const buttonVariants = ['primary', 'secondary', 'danger', 'warning', 'info', 'outline-primary', 'outline-secondary'] as const
+const rawButtonClasses = ['btn-primary', 'btn-secondary', 'btn-danger', 'btn-success', 'btn-outline-primary', 'btn-outline-danger']
+const badgeClasses = ['badge-primary', 'badge-secondary', 'badge-success', 'badge-warning', 'badge-danger']
+
+const activeTab = ref('overview')
+const tabs = computed(() => [
+  { key: 'overview', label: t('designSystem.tabOverview'), icon: 'fas fa-eye' },
+  { key: 'members', label: t('designSystem.tabMembers'), icon: 'fas fa-users' },
+  { key: 'settings', label: t('designSystem.tabSettings'), icon: 'fas fa-cog' }
 ])
+
+const columns = computed(() => [
+  { key: 'name', label: t('designSystem.name'), sortable: true },
+  { key: 'email', label: 'Email', sortable: true },
+  { key: 'role', label: t('designSystem.role') }
+])
+const rows = [
+  { id: 1, name: 'Alice Martin', email: 'alice@example.com', role: 'owner' },
+  { id: 2, name: 'Bruno Petit', email: 'bruno@example.com', role: 'manager' },
+  { id: 3, name: 'Chloé Durand', email: 'chloe@example.com', role: 'member' }
+]
+
+const page = ref(1)
+
+const modalSizes = ['small', 'medium', 'large', 'xlarge'] as const
+const modalSize = ref<(typeof modalSizes)[number] | null>(null)
 </script>
 
 <style scoped>
+/* Showcase layout only: shared components and classes are shown as they are. */
 .design-system-audit {
   display: flex;
   flex-direction: column;
@@ -475,38 +465,33 @@ const surfaceItems = computed(() => [
   top: 0;
   z-index: 100;
   background: var(--color-bg-primary);
-  border-bottom: 2px solid var(--color-border-light);
-  padding: 12px 24px;
+  border-bottom: var(--border-width-medium) solid var(--color-border-light);
+  padding: var(--spacing-sm) var(--spacing-lg);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--spacing-md);
 }
 
 .audit-header h1 {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  letter-spacing: -0.02em;
+  font-size: var(--font-size-lg);
   margin: 0;
 }
 
 .theme-toggle {
   display: flex;
-  gap: 8px;
-  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .theme-toggle button {
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: 2px solid var(--color-border-medium);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: var(--border-width-medium) solid var(--color-border-medium);
   background: var(--color-surface);
   color: var(--color-text-primary);
-  font-weight: 600;
-  font-size: 0.85rem;
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all var(--transition-base);
 }
 
 .theme-toggle button.active {
@@ -515,563 +500,89 @@ const surfaceItems = computed(() => [
   border-color: var(--color-primary);
 }
 
-.theme-toggle button:hover:not(.active) {
-  background: var(--color-surface-hover);
-}
-
-.audit-content {
+.audit-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0;
-  flex: 1;
-}
-
-.audit-column {
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  border-right: 1px solid var(--color-border-light);
-}
-
-.audit-column:last-child { border-right: none; }
-
-.audit-section {
-  border: 1px solid var(--color-border-light);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.section-title {
-  padding: 10px 16px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-secondary);
-  border-bottom: 1px solid var(--color-border-light);
-}
-
-.section-body {
-  padding: 16px;
-}
-
-/* ========================================
-   1. SIDEBAR SIMULATION
-   ======================================== */
-.sidebar-demo {
-  display: flex;
-  gap: 16px;
-}
-
-.sidebar-panel {
-  width: 230px;
-  min-height: 400px;
-  border-radius: 8px;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.main-nav-sidebar {
-  background-color: var(--color-sidebar-bg);
-  color: var(--color-sidebar-text);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: var(--spacing-lg);
   padding: var(--spacing-lg);
 }
 
-.main-nav-sidebar .nav-category {
-  margin-bottom: var(--spacing-sm);
+.audit-section {
+  min-width: 0;
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-lg);
+  background: var(--color-bg-primary);
 }
 
-.main-nav-sidebar .category-header {
-  display: flex;
-  align-items: center;
+.audit-section--wide {
+  grid-column: 1 / -1;
+}
+
+.section-title {
+  margin: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-tertiary);
+  border-bottom: var(--border-width-thin) solid var(--color-border-light);
+}
+
+.section-body {
   padding: var(--spacing-md);
-  color: var(--color-white);
-  background-color: var(--color-gray-700);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: background-color 0.3s;
-  user-select: none;
-  min-height: 44px;
-  gap: 12px;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
 }
 
-.main-nav-sidebar .category-header:hover {
-  background-color: var(--color-gray-600);
-  transform: translateX(3px);
-}
-
-.main-nav-sidebar .category-header.admin-cat {
-  background: linear-gradient(135deg, var(--color-danger) 0%, var(--color-danger-hover) 100%);
-  border: var(--border-width-thin) solid var(--color-danger-hover);
-}
-
-.main-nav-sidebar .category-header.admin-cat:hover {
-  background: linear-gradient(135deg, var(--color-danger-hover) 0%, var(--color-danger-dark) 100%);
-}
-
-.main-nav-sidebar .category-items {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 0 0 4px 4px;
-}
-
-.main-nav-sidebar .category-items li a {
-  display: flex;
-  align-items: center;
-  padding: var(--spacing-md) var(--spacing-lg);
-  color: var(--color-gray-400);
-  text-decoration: none;
-  font-size: var(--font-size-sm);
-  gap: 12px;
-  transition: background-color 0.3s, color 0.3s;
-}
-
-.main-nav-sidebar .category-items li a:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--color-white);
-}
-
-.main-nav-sidebar .category-items li a.active {
-  background-color: var(--color-primary) !important;
-  color: var(--color-white) !important;
-  font-weight: var(--font-weight-semibold);
-  border-left: 4px solid var(--color-primary-hover);
-}
-
-.settings-nav-sidebar {
-  background-color: var(--color-gray-800);
-  color: var(--color-border-light);
-  padding: 20px;
-}
-
-.settings-nav-sidebar .settings-header {
-  margin-bottom: 24px;
-}
-
-.settings-nav-sidebar .settings-header a {
-  font-size: 1.25rem;
-  color: var(--color-border-light);
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.settings-nav-sidebar .settings-header a:hover {
-  color: var(--color-white);
-}
-
-.settings-nav-sidebar .menu-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 15px;
-  color: var(--color-sidebar-text-muted);
-  text-decoration: none;
-  border-radius: 4px;
-  font-size: 0.95rem;
-  gap: 12px;
-  transition: all 0.3s;
-  margin-bottom: 4px;
-}
-
-.settings-nav-sidebar .menu-item:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--color-white);
-}
-
-.settings-nav-sidebar .menu-item.active {
-  background-color: var(--color-primary) !important;
-  color: var(--color-white) !important;
-  font-weight: 600;
-  border-left: 4px solid var(--color-primary-hover);
-}
-
-/* ========================================
-   2. TREE COMPONENTS
-   ======================================== */
-.tree-demo {
-  --tree-indent: 1.25rem;
-  --tree-hover-bg: var(--color-surface-hover);
-}
-
-.tree-node {
-  margin-bottom: 2px;
-}
-
-.tree-node-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  cursor: pointer;
-  user-select: none;
-  transition: background 0.15s ease;
-  border-radius: var(--border-radius-sm);
-  font-size: 0.9rem;
-}
-
-.tree-node-header:hover {
-  background: var(--color-surface-hover);
-}
-
-.tree-node-header:active {
-  background: var(--color-surface-active);
-}
-
-.tree-node-header .expand-icon {
-  width: 0.75rem;
-  font-size: 0.625rem;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.tree-node-header .node-icon {
-  font-size: 1rem;
-  flex-shrink: 0;
-}
-
-.tree-node-header .node-label {
-  flex: 1;
-  color: var(--color-text-primary);
-  font-weight: var(--font-weight-medium);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.tree-node-actions {
-  display: flex;
-  gap: var(--spacing-xs);
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.tree-node-header:hover .tree-node-actions {
-  opacity: 1;
-}
-
-.tree-action-btn {
-  background: none;
-  border: none;
-  padding: var(--spacing-xs);
-  cursor: pointer;
-  font-size: 0.8rem;
-  border-radius: var(--border-radius-sm);
-  color: var(--color-text-secondary);
-  transition: background 0.15s;
-}
-
-.tree-action-btn:hover {
-  background: var(--color-surface-variant);
-  color: var(--color-text-primary);
-}
-
-.tree-children {
-  padding-left: var(--tree-indent);
-}
-
-/* ========================================
-   3. EDITOR NODES — styles from editor-nodes.css (global)
-   Only layout overrides for the audit grid go here.
-   ======================================== */
-.course-nodes-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-/* Audit-specific: node library demo container */
-.node-library {
-  background: var(--color-surface);
-  border-radius: 8px;
-  border: 1px solid var(--color-border-light);
-  overflow: hidden;
-}
-
-.node-library-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--color-border-light);
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--color-text-primary);
-}
-
-.node-library-items {
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* ========================================
-   4. TERMINAL COMPONENTS
-   ======================================== */
-.terminal-wrapper-demo {
-  min-height: 200px;
-  background-color: var(--terminal-bg);
-  border: 2px solid var(--terminal-border);
-  border-radius: var(--border-radius-md);
-  overflow: hidden;
-  font-family: var(--font-family-monospace);
-  padding: 16px;
-  color: var(--terminal-fg);
-  font-size: 0.85rem;
-  line-height: 1.6;
-}
-
-.terminal-wrapper-demo .prompt .user { color: #6a9955; }
-.terminal-wrapper-demo .prompt .path { color: #569cd6; }
-.terminal-wrapper-demo .prompt .dollar { color: #d4d4d4; }
-
-.cursor-blink {
-  border-right: 2px solid var(--terminal-cursor);
-  animation: blink 1s step-end infinite;
-}
-
-.terminal-error-demo {
-  background-color: var(--color-bg-dark);
-  border-radius: var(--border-radius-md);
-  padding: 24px;
-  text-align: center;
-}
-
-.terminal-error-demo h2 {
-  color: var(--terminal-fg);
-  margin: 12px 0;
-  font-size: 1.1rem;
-}
-
-.terminal-error-demo p {
-  color: var(--terminal-fg);
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.terminal-error-demo code {
-  background-color: var(--terminal-bg);
-  padding: 4px 8px;
-  border-radius: 4px;
-  color: var(--color-info);
-  font-family: var(--font-family-monospace);
-  font-size: 0.85rem;
-}
-
-.code-example-demo pre {
-  background: var(--terminal-bg);
-  color: var(--terminal-fg);
-  padding: 15px;
-  border-radius: 6px;
-  overflow-x: auto;
-  font-family: var(--font-family-monospace);
-  font-size: 0.85rem;
-  line-height: 1.5;
-}
-
-/* Badges */
-.badge-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.badge {
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.badge.read {
-  background-color: var(--color-info-bg);
-  color: var(--color-info-text);
-  border: 1px solid var(--color-info-border);
-}
-
-.badge.write {
-  background-color: var(--color-success-bg);
-  color: var(--color-success-text);
-  border: 1px solid var(--color-success-border);
-}
-
-.badge.owner {
-  background-color: var(--color-gray-200);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border-light);
-}
-
-.badge.warning {
-  background-color: var(--color-warning-bg);
-  color: var(--color-warning-text);
-  border: 1px solid var(--color-warning-border);
-}
-
-.badge.danger {
-  background-color: var(--color-danger-bg);
-  color: var(--color-danger-text);
-  border: 1px solid var(--color-danger-border);
-}
-
-/* ========================================
-   5. USER SETTINGS MENU
-   ======================================== */
-.user-settings-demo {
-  background-color: var(--color-gray-800);
-  color: var(--color-border-light);
-  border-radius: 8px;
-  overflow: hidden;
-  width: 100%;
-}
-
-.user-settings-demo .us-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--color-gray-700);
-  background-color: var(--color-sidebar-bg);
-}
-
-.user-settings-demo .us-header h2 {
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-}
-
-.user-settings-demo .us-close {
-  background: none;
-  border: none;
-  color: var(--color-border-light);
-  font-size: 1.2rem;
-  cursor: pointer;
-}
-
-.user-settings-demo .us-close:hover { color: var(--color-white); }
-
-.user-settings-demo .us-section {
-  margin: 8px 10px;
-}
-
-.user-settings-demo .us-cat-header {
-  display: flex;
-  align-items: center;
-  padding: 12px 15px;
-  color: var(--color-border-light);
-  background-color: var(--color-gray-700);
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.9rem;
-  gap: 10px;
-  transition: background-color 0.3s;
-}
-
-.user-settings-demo .us-cat-header:hover {
-  background-color: var(--color-secondary-hover);
-}
-
-/* ========================================
-   6. SURFACE STATES
-   ======================================== */
-.surface-states {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.surface-state-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  border: 1px solid var(--color-border-light);
-}
-
-.surface-state-item .swatch {
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
-  border: 1px solid var(--color-border-medium);
-  flex-shrink: 0;
-}
-
-.surface-state-item .info {
-  flex: 1;
-}
-
-.surface-state-item .var-name {
-  font-family: var(--font-family-monospace);
-  font-size: 0.75rem;
+.caption {
+  margin: var(--spacing-md) 0 var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  font-family: monospace;
   color: var(--color-text-muted);
 }
 
-/* Course Tree Node */
-.course-tree-demo .ct-node {
-  padding: 6px 10px;
-  border-radius: 4px;
-  margin-bottom: 2px;
+.caption:first-child {
+  margin-top: 0;
+}
+
+.row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: background 0.15s;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
 }
 
-.course-tree-demo .ct-node:hover {
-  background: var(--color-surface-hover);
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
-.course-tree-demo .ct-node.ct-course {
-  font-weight: 600;
-  border-left: 3px solid var(--course-node-course);
-  background: var(--course-node-course-bg);
+.token-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
 }
 
-.course-tree-demo .ct-node.ct-chapter {
-  font-weight: 500;
-  border-left: 3px solid var(--course-node-chapter);
-  background: var(--course-node-chapter-bg);
-  margin-left: 16px;
+.token {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
 }
 
-.course-tree-demo .ct-node.ct-section {
-  border-left: 3px solid var(--course-node-section);
-  background: var(--course-node-section-bg);
-  margin-left: 32px;
+.token-swatch {
+  min-width: var(--spacing-xs);
+  height: var(--spacing-xl);
+  min-height: var(--spacing-xl);
+  width: var(--spacing-3xl);
+  border: var(--border-width-thin) solid var(--color-border-light);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
 }
 
-.course-tree-demo .ct-node.ct-page {
-  border-left: 3px solid var(--course-node-page);
-  background: var(--course-node-page-bg);
-  margin-left: 48px;
-}
-
-@keyframes blink {
-  50% { border-color: transparent; }
-}
-
-@media (max-width: 1024px) {
-  .audit-content {
-    grid-template-columns: 1fr;
-  }
-  .sidebar-demo {
-    flex-direction: column;
-  }
-  .sidebar-panel { width: 100%; min-height: 300px; }
+.table-scroll {
+  overflow-x: auto;
 }
 </style>
