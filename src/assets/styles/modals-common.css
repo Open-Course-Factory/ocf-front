@@ -25,8 +25,6 @@
 
 .modal-container,
 .modal-content {
-  position: relative;
-  outline: 0;
   background-color: var(--color-bg-primary);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-xl);
@@ -100,7 +98,6 @@
 /* === MODAL BODY === */
 
 .modal-body {
-  position: relative;
   padding: var(--spacing-lg);
   overflow-y: auto;
   flex: 1;
@@ -126,8 +123,6 @@
   padding: var(--spacing-lg);
   border-top: var(--border-width-thin) solid var(--color-border-light);
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
   gap: var(--spacing-md);
   justify-content: flex-end;
   background-color: var(--color-bg-secondary);

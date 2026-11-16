@@ -26,12 +26,19 @@
   font-family: var(--font-family-primary);
 }
 
-.btn:focus-visible {
-  outline: 0;
-  box-shadow: var(--shadow-focus);
+/* Without a colour of its own, a link-button (<a class="btn">) would take a:hover's link colour. */
+.btn:hover {
+  color: var(--color-text-primary);
 }
 
-.btn:disabled {
+.btn:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(var(--color-primary-rgb), 0.5);
+}
+
+.btn:disabled,
+.btn.disabled {
+  pointer-events: none;
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -52,6 +59,7 @@
 }
 
 .btn-primary:hover:not(:disabled) {
+  color: var(--color-white);
   background-color: var(--color-primary-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px var(--color-primary-shadow);
@@ -63,6 +71,7 @@
 }
 
 .btn-secondary:hover:not(:disabled) {
+  color: var(--color-white);
   background-color: var(--color-secondary-hover);
 }
 
@@ -72,6 +81,7 @@
 }
 
 .btn-danger:hover:not(:disabled) {
+  color: var(--color-white);
   background-color: var(--color-danger-hover);
 }
 
@@ -81,6 +91,7 @@
 }
 
 .btn-success:hover:not(:disabled) {
+  color: var(--color-white);
   background-color: var(--color-success-hover);
 }
 
@@ -90,6 +101,7 @@
 }
 
 .btn-warning:hover:not(:disabled) {
+  color: var(--color-black);
   background-color: var(--color-warning-hover);
 }
 
@@ -99,6 +111,7 @@
 }
 
 .btn-info:hover:not(:disabled) {
+  color: var(--color-black);
   background-color: var(--color-info-hover);
 }
 
@@ -127,7 +140,6 @@
 .btn-outline-secondary {
   background-color: transparent;
   color: var(--color-secondary);
-  border: var(--border-width-thin) solid var(--color-secondary);
 }
 
 .btn-outline-secondary:hover:not(:disabled) {
@@ -179,7 +191,7 @@
 
 .btn-close:focus {
   outline: 0;
-  box-shadow: var(--shadow-focus);
+  box-shadow: 0 0 0 0.25rem rgba(var(--color-primary-rgb), 0.25);
   opacity: 1;
 }
 
@@ -363,17 +375,7 @@ button.ocf-btn-outline:disabled {
 
 .table {
   width: 100%;
-  margin-bottom: var(--spacing-md);
-  vertical-align: top;
   border-collapse: collapse;
-}
-
-.table > thead {
-  vertical-align: bottom;
-}
-
-.table > tbody {
-  vertical-align: inherit;
 }
 
 .table th,

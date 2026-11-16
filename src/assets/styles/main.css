@@ -262,6 +262,10 @@ legend + * {
   padding: 0;
 }
 
+::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
 ::-webkit-inner-spin-button {
   height: auto;
 }

@@ -170,6 +170,7 @@
 
 .btn-primary:hover {
   background-color: var(--color-primary-hover);
+  color: var(--color-white);
   transform: translateY(-1px);
 }
 
