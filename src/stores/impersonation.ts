@@ -21,6 +21,7 @@
 
 import { defineStore } from 'pinia'
 import axios from 'axios'
+import { extractErrorMessage } from '../utils/formatters'
 
 /**
  * Lightweight summary of a user surfaced in the impersonation UI (banner,
@@ -61,16 +62,6 @@ export const SESSION_STORAGE_KEY = 'ocf_impersonate_target'
 
 const START_URL = 'admin/impersonate/start'
 const STOP_URL = 'admin/impersonate/stop'
-
-function extractErrorMessage(err: any): string {
-  return (
-    err?.response?.data?.error_message ||
-    err?.response?.data?.message ||
-    err?.response?.data?.error ||
-    err?.message ||
-    'unknown error'
-  )
-}
 
 /**
  * Pinia store managing admin user-impersonation state on the frontend.
@@ -140,7 +131,7 @@ export const useImpersonationStore = defineStore('impersonation', {
         this.target = target
         return target
       } catch (err: any) {
-        this.error = extractErrorMessage(err)
+        this.error = extractErrorMessage(err, 'unknown error')
         throw err
       } finally {
         this.loading = false
@@ -160,7 +151,7 @@ export const useImpersonationStore = defineStore('impersonation', {
             await axios.post(STOP_URL)
           } catch (err: any) {
             // Swallow — local state must always be cleared
-            this.error = extractErrorMessage(err)
+            this.error = extractErrorMessage(err, 'unknown error')
           }
         }
       } finally {

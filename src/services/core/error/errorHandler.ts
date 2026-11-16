@@ -13,6 +13,7 @@ import {
   ErrorSeverity,
   BackendErrorResponse,
 } from '../../../types/errors';
+import { extractErrorMessage } from '../../../utils/formatters';
 
 /**
  * Options for error handling
@@ -170,16 +171,10 @@ export class ErrorHandlerService {
 
   /**
    * Extract user-friendly error message from backend response
-   * Priority: error_message > message > error > detail > fallback
+   * Shared body fields first, then detail, then fallback
    */
   private extractErrorMessage(data: BackendErrorResponse, fallback: string): string {
-    return (
-      data.error_message ||
-      data.message ||
-      data.error ||
-      data.detail ||
-      fallback
-    );
+    return extractErrorMessage({ response: { data } }, data?.detail || fallback);
   }
 
   /**
