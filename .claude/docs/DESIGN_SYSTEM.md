@@ -652,7 +652,7 @@ import ProgressBar from '../Common/ProgressBar.vue'
 **Props:** `align?: 'left' | 'right'` (default `'right'`), `triggerLabel?: string` (accessible name and tooltip of the default ⋯ trigger — set it when the menu repeats per row, e.g. "Actions for Alice"). The default trigger also carries `aria-expanded` (no `aria-haspopup`: the items are plain buttons, not a `role="menu"`).
 **Slots:** `#trigger` (optional; defaults to a `.btn-icon` ⋯ button) and the default slot for the menu items, which receives a `{ close }` slot prop. Clicking any item closes the menu automatically (the item's own `@click` still runs); clicking outside closes it too.
 
-Classes are `ocf-`-namespaced to avoid colliding with Bootstrap's global `.dropdown-menu`/`.dropdown-item` (Bootstrap sets `.dropdown-menu { display:none }`).
+Classes are `ocf-`-namespaced so generic names like `.dropdown-menu`/`.dropdown-item` cannot collide with other global or scoped rules.
 
 ```vue
 <script setup>

@@ -94,7 +94,7 @@ const { t } = useTranslations({
 </script>
 
 <style scoped>
-/* ocf- prefixed: Bootstrap is loaded globally in this app. */
+/* ocf- prefixed: generic class names collide with the global stylesheets. */
 .ocf-classroom-cta {
   display: flex;
   align-items: center;

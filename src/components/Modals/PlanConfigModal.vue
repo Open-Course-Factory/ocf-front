@@ -1421,8 +1421,8 @@ watch(() => props.visible, (newVal) => {
   }
 }
 
-/* Seat pricing. Classes are ocf- prefixed because Bootstrap is loaded globally
-   and unprefixed names here have collided before. */
+/* Seat pricing. Classes are ocf- prefixed because unprefixed names here have
+   collided with global classes before. */
 .ocf-seat-pricing {
   border-top: 1px solid var(--color-border);
   padding-top: 1rem;

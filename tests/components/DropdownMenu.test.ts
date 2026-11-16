@@ -15,13 +15,13 @@
  *     - clicking any item INSIDE also closes it (the item's own @click still fires);
  *     - align → `.ocf-dropdown-menu--left` / `.ocf-dropdown-menu--right`.
  *
- * CLASS NAMESPACING: the app loads Bootstrap globally, whose
- * `.dropdown-menu { display: none }` (and `.dropdown-item` styling) collide with
- * a generically-named menu and hide it. So the DS component namespaces its
+ * CLASS NAMESPACING: generic names like `.dropdown-menu`/`.dropdown-item` have
+ * collided with global rules (Bootstrap's `display: none` hid such a menu until
+ * Bootstrap was removed). So the DS component namespaces its
  * classes under `ocf-`: `.ocf-dropdown` (container), `.ocf-dropdown-menu`,
  * `.ocf-dropdown-menu--left/--right`, and the item convention `.ocf-dropdown-item`
  * (consumers use `.ocf-dropdown-item` for their menu items). The trigger stays a
- * plain `.btn-icon` (no Bootstrap collision). The menu renders INSIDE the
+ * plain `.btn-icon` (a house class). The menu renders INSIDE the
  * component (no <body> teleport).
  *
  * No i18n: this DS primitive uses no t(); it mounts without an i18n plugin.
