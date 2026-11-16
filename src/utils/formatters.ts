@@ -8,8 +8,8 @@ import { CANONICAL_SIZE_CATALOG } from './quotaFormatters'
 /**
  * Common timezone options for user selection
  */
+// shortcut: no UTC entry, since ocf-core stores 'UTC' as every user's default and dates read it as "not chosen"; add it back once ocf-core stores '' by default (ocf-core #619).
 export const COMMON_TIMEZONES = [
-  { value: 'UTC', label: 'UTC' },
   { value: 'America/New_York', label: 'Eastern Time (US & Canada)' },
   { value: 'America/Chicago', label: 'Central Time (US & Canada)' },
   { value: 'America/Denver', label: 'Mountain Time (US & Canada)' },

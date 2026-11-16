@@ -31,7 +31,7 @@ export function currentUserTimezone(): string {
   // must not depend on. Layout loads it on every signed-in page; until then
   // (or with no pinia at all), the browser zone applies.
   const saved = getActivePinia()?.state.value[USER_SETTINGS_STORE_ID]?.settings?.timezone
-  // shortcut: ocf-core stores 'UTC' as every user's default, so UTC reads as "not chosen" and a user who really wants UTC cannot have it; drop this once ocf-core stores '' by default.
+  // shortcut: ocf-core stores 'UTC' as every user's default, so UTC reads as "not chosen" and a user who really wants UTC cannot have it; drop this once ocf-core stores '' by default (ocf-core #619).
   return saved && saved !== 'UTC' ? saved : getBrowserTimezone()
 }
 

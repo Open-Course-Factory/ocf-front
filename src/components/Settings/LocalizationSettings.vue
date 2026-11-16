@@ -52,14 +52,17 @@ const { setLocale } = useLocale()
 // An empty timezone means "follow the machine" — the same rule useFormatters applies.
 const browserTimezone = getBrowserTimezone()
 
+// shortcut: ocf-core stores 'UTC' as every user's default and dates read it as "not chosen", so it shows as Automatic; drop this once ocf-core stores '' by default (ocf-core #619).
+const shownTimezone = (saved?: string) => (saved === 'UTC' ? '' : saved || '')
+
 const localSettings = ref({
   preferred_language: settingsStore.settings.preferred_language || 'en',
-  timezone: settingsStore.settings.timezone || ''
+  timezone: shownTimezone(settingsStore.settings.timezone)
 })
 
 watch(() => settingsStore.settings, (newSettings) => {
   localSettings.value.preferred_language = newSettings.preferred_language || 'en'
-  localSettings.value.timezone = newSettings.timezone || ''
+  localSettings.value.timezone = shownTimezone(newSettings.timezone)
 }, { deep: true })
 
 async function saveSettings() {
