@@ -116,7 +116,11 @@ function mountPage() {
 }
 
 async function resumeRejectedWith(response: any) {
-  mockStartSession.mockRejectedValueOnce({ response })
+  return resumeRejectedWithError({ response })
+}
+
+async function resumeRejectedWithError(err: any) {
+  mockStartSession.mockRejectedValueOnce(err)
   const wrapper = mountPage()
   await flushPromises()
   await wrapper.find('[data-testid="btn-start-sess-stopped"]').trigger('click')
@@ -178,5 +182,34 @@ describe('TerminalMySessions — resume rejections', () => {
     expect(mockShowError).toHaveBeenCalledTimes(1)
     expect(shownErrors()[0]).toContain('Web lab (S)')
     expect(mockRouterPush).not.toHaveBeenCalled()
+  })
+
+  it('stays on the page when the dunning dialog is dismissed', async () => {
+    mockShowConfirm.mockResolvedValueOnce(false)
+    await resumeRejectedWith({
+      status: 402,
+      data: { error_code: 'subscription_past_due', error_message: 'Subscription payment is past due', source: 'dunning' }
+    })
+
+    expect(mockShowConfirm).toHaveBeenCalledTimes(1)
+    expect(mockRouterPush).not.toHaveBeenCalled()
+    expect(mockShowError).not.toHaveBeenCalled()
+  })
+
+  it('shows the network error message when the request never got a response', async () => {
+    await resumeRejectedWithError(new Error('Network Error'))
+
+    expect(mockShowConfirm).not.toHaveBeenCalled()
+    expect(mockShowError).toHaveBeenCalledTimes(1)
+    expect(mockShowError.mock.calls[0][0]).toBe('Network Error')
+  })
+
+  it('falls back to the page copy when the rejection carries no message', async () => {
+    await resumeRejectedWith({ status: 500, data: {} })
+
+    expect(mockShowError).toHaveBeenCalledTimes(1)
+    const [message, title] = mockShowError.mock.calls[0]
+    expect(message).toBeTruthy()
+    expect(message).toBe(title) // fallbackMessage and title are both terminalMySessions.startFailed
   })
 })
