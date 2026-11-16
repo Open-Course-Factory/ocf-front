@@ -87,7 +87,6 @@ unit-tests:
         - .vitest-cache/
   script:
     - if node scripts/ci-version-only.mjs; then exit 0; fi
-    - nproc
     - npm ci --prefer-offline
     - npm test -- --fsModuleCachePath=.vitest-cache
   artifacts:
