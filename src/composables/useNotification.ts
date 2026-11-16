@@ -1,4 +1,10 @@
 import { ElMessageBox } from 'element-plus'
+// Element Plus is not installed globally: only the confirm box's own styles (input skipped, confirm shows none)
+import 'element-plus/theme-chalk/base.css'
+import 'element-plus/theme-chalk/el-overlay.css'
+import 'element-plus/theme-chalk/el-button.css'
+import 'element-plus/theme-chalk/el-message-box.css'
+import 'element-plus/theme-chalk/dark/css-vars.css'
 import i18n from '../i18n'
 import { useToast } from './useToast'
 

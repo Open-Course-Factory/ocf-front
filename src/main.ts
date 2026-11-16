@@ -25,9 +25,6 @@ import './assets/styles/main.css'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
-import 'element-plus/dist/index.css'
-import 'element-plus/theme-chalk/dark/css-vars.css'
-import ElementPlus from 'element-plus'
 import { piniaPluginPersist } from './piniaPluginPersist'
 import { useCurrentUserStore } from './stores/currentUser'
 import { useImpersonationStore } from './stores/impersonation'
@@ -71,7 +68,6 @@ async function initializeApp() {
     // Step 1: Create app instance and register Pinia FIRST
     // This allows tokenService and stores to work properly
     const app = createApp(App)
-        .use(ElementPlus)
         .use(router)
         .use(pinia)  // ← Pinia must be registered before feature flags are fetched!
         .use(i18n)
