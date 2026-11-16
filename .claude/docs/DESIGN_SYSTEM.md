@@ -906,14 +906,12 @@ import DropdownMenu from '../Common/DropdownMenu.vue'
 The design system includes dark mode variables. To implement:
 
 ```javascript
-// Toggle dark mode
-document.documentElement.setAttribute('data-theme', 'dark')
-
-// Remove dark mode
-document.documentElement.removeAttribute('data-theme')
+// Switch theme: sets data-theme (house tokens) and html.dark (Element Plus)
+import { useTheme } from '../composables/useTheme'
+useTheme().setTheme('dark')   // or 'light'
 ```
 
-All CSS variables automatically switch to dark variants defined in `variables.css`.
+All CSS variables automatically switch to dark variants defined in `variables.css`. Setting `data-theme` by hand leaves the Element Plus pieces (confirm box, select) light.
 
 ### Creating a Custom Theme
 

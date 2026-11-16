@@ -17,7 +17,7 @@ Vue.js frontend application for [Open Course Factory](https://usine.solution-lib
 - **Vue Router 4** with authentication guards
 - **Vue i18n** for internationalization
 - **Vite** as build tool and dev server
-- House components on **Bootstrap 5** CSS; **Element Plus** only for the confirm dialog and one filterable select
+- House components on the house CSS in `src/assets/styles/` (no Bootstrap); **Element Plus** only for the confirm dialog and one filterable select
 - **Axios** with custom interceptors
 
 ## 📦 Development Setup

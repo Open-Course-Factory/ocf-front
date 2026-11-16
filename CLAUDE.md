@@ -31,7 +31,7 @@ npm run preview  # Preview production build
 - Vue Router 4 (routing + auth guards)
 - Vue i18n (French default, English fallback)
 - Vite (build tool)
-- House components + Bootstrap 5 CSS (from `index.html`); Element Plus only for the confirm dialog (`showConfirm`) and the filterable select in `EntityModal.vue`
+- House components + the house CSS in `src/assets/styles/` (no Bootstrap); Element Plus only for the confirm dialog (`showConfirm`) and the filterable select in `EntityModal.vue`
 - Axios (API client with interceptors)
 
 ## Architecture Principles
@@ -54,7 +54,7 @@ See [SERVICES.md](.claude/docs/SERVICES.md) for import patterns.
 ### Component Architecture
 
 - `Entity.vue` - Generic CRUD interface for any entity
-- `BaseModal.vue` - Centralized modal system (18 props, 3 slots)
+- `BaseModal.vue` - Centralized modal system (21 props, 3 slots)
 - `EntityModal.vue` - Auto-generated forms based on store `fieldList`
 - `SettingsPageWrapper.vue` - Dynamic settings component loader
 

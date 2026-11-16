@@ -48,8 +48,8 @@ export function getTranslationKey(entityName: string): string {
  * // In a store:
  * const getSelectDatas = (inputEntities: Invoice[]) => {
  *   return buildSelectData(inputEntities, (invoice) => {
- *     const amount = formatCurrency(invoice.amount, invoice.currency)
- *     const date = formatDate(invoice.invoice_date)
+ *     const amount = formatCurrency(invoice.amount, invoice.currency, locale)
+ *     const date = formatDate(invoice.invoice_date, locale)
  *     return `${invoice.invoice_number} - ${amount} (${date})`
  *   })
  * }

@@ -62,11 +62,11 @@ export function intlLocale(appLocale: string): string {
  * Format a monetary amount from cents to a currency string
  * @param amount - Amount in cents (e.g., 1999 for $19.99)
  * @param currency - Currency code (default: 'EUR')
- * @param locale - Locale for formatting (default: 'fr-FR')
+ * @param locale - Locale for formatting (required; e.g. 'fr-FR', or intlLocale(appLocale))
  * @returns Formatted currency string (e.g., "19,99 €")
  *
  * @example
- * formatCurrency(1999, 'EUR') // "19,99 €"
+ * formatCurrency(1999, 'EUR', 'fr-FR') // "19,99 €"
  * formatCurrency(1999, 'USD', 'en-US') // "$19.99"
  */
 export function formatCurrency(
@@ -88,13 +88,13 @@ export function formatCurrency(
 /**
  * Format a date string to a localized date string
  * @param dateString - ISO date string or timestamp
- * @param locale - Locale for formatting (default: 'fr-FR')
+ * @param locale - Locale for formatting (required; e.g. 'fr-FR', or intlLocale(appLocale))
  * @param fallback - Fallback value if date is invalid (default: '-')
  * @param timezone - IANA timezone string (e.g., 'America/New_York', 'Europe/Paris')
  * @returns Formatted date string (e.g., "13/10/2025")
  *
  * @example
- * formatDate('2025-10-13T12:00:00Z') // "13/10/2025"
+ * formatDate('2025-10-13T12:00:00Z', 'fr-FR') // "13/10/2025"
  * formatDate('2025-10-13T12:00:00Z', 'fr-FR', '-', 'America/New_York') // "13/10/2025" (in NY time)
  * formatDate('invalid', 'fr-FR', 'N/A') // "N/A"
  */
@@ -116,13 +116,13 @@ export function formatDate(
 /**
  * Format a date string to a localized date and time string
  * @param dateString - ISO date string or timestamp
- * @param locale - Locale for formatting (default: 'fr-FR')
+ * @param locale - Locale for formatting (required; e.g. 'fr-FR', or intlLocale(appLocale))
  * @param fallback - Fallback value if date is invalid (default: '-')
  * @param timezone - IANA timezone string (e.g., 'America/New_York', 'Europe/Paris')
  * @returns Formatted date and time string (e.g., "13/10/2025 12:30:45")
  *
  * @example
- * formatDateTime('2025-10-13T12:30:45Z') // "13/10/2025 12:30:45"
+ * formatDateTime('2025-10-13T12:30:45Z', 'fr-FR') // "13/10/2025 12:30:45"
  * formatDateTime('2025-10-13T12:30:45Z', 'fr-FR', '-', 'America/New_York') // "13/10/2025 08:30:45" (in NY time)
  */
 export function formatDateTime(
@@ -242,11 +242,11 @@ export function effectiveCpuMcpu(size: { key: string; cpu_mcpu?: number }): numb
 /**
  * Format a number with locale-specific thousand separators
  * @param value - Number to format
- * @param locale - Locale for formatting (default: 'fr-FR')
+ * @param locale - Locale for formatting (required; e.g. 'fr-FR', or intlLocale(appLocale))
  * @returns Formatted number string (e.g., "1 234 567")
  *
  * @example
- * formatNumber(1234567) // "1 234 567" (fr-FR)
+ * formatNumber(1234567, 'fr-FR') // "1 234 567"
  * formatNumber(1234567, 'en-US') // "1,234,567"
  */
 export function formatNumber(value: number, locale: string): string {
@@ -257,12 +257,12 @@ export function formatNumber(value: number, locale: string): string {
  * Format a percentage value
  * @param value - Decimal value (0.5 for 50%)
  * @param decimals - Number of decimal places (default: 0)
- * @param locale - Locale for formatting (default: 'fr-FR')
+ * @param locale - Locale for formatting (required; e.g. 'fr-FR', or intlLocale(appLocale))
  * @returns Formatted percentage string (e.g., "50 %", "33.33 %")
  *
  * @example
- * formatPercentage(0.5) // "50 %"
- * formatPercentage(0.3333, 2) // "33.33 %"
+ * formatPercentage(0.5, 0, 'fr-FR') // "50 %"
+ * formatPercentage(0.3333, 2, 'en-GB') // "33.33%"
  */
 export function formatPercentage(
   value: number,

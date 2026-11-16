@@ -88,11 +88,10 @@ All shared styles are automatically available via `main.css`:
 ## Dark Mode Testing
 
 ```javascript
-// In browser console or via UI settings
-document.documentElement.setAttribute('data-theme', 'dark')
-
-// Switch back to light mode
-document.documentElement.setAttribute('data-theme', 'light')
+// Through the theme composable (or the UI settings): it also toggles html.dark,
+// which Element Plus reads; setting data-theme by hand leaves Element pieces light.
+useTheme().setTheme('dark')
+useTheme().setTheme('light')
 ```
 
 ## Compact Mode

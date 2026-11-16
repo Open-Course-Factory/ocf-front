@@ -70,8 +70,9 @@ Always use shared formatter functions instead of duplicating formatting logic:
 import { formatCurrency, formatDate, formatDateTime, formatStorageSize } from '../utils/formatters'
 
 // ✅ CORRECT - Use shared formatters
-const displayPrice = formatCurrency(priceInCents, 'EUR')
-const displayDate = formatDate(dateString, 'fr-FR')
+// The locale is required: take it from useFormatters() or intlLocale(locale.value)
+const displayPrice = formatCurrency(priceInCents, 'EUR', userLocale.value)
+const displayDate = formatDate(dateString, userLocale.value)
 
 // ❌ WRONG - Don't duplicate formatting logic
 const displayPrice = new Intl.NumberFormat('fr-FR', {
