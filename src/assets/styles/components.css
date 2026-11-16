@@ -264,23 +264,6 @@ button.ocf-btn-outline:disabled {
   max-width: var(--input-max-width);
 }
 
-.form-control:disabled {
-  background-color: var(--color-gray-100);
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.form-control.is-invalid:focus {
-  box-shadow: var(--shadow-focus-danger);
-}
-
-.form-text {
-  display: block;
-  margin-top: 6px;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
-
 /* === CARDS === */
 /* Note: Core card styles are in cards-common.css */
 
@@ -420,11 +403,6 @@ button.ocf-btn-outline:disabled {
   display: none;
 }
 
-.btn .badge {
-  position: relative;
-  top: -1px;
-}
-
 .badge-primary {
   background-color: var(--color-primary);
   color: var(--color-white);
@@ -459,8 +437,7 @@ button.ocf-btn-outline:disabled {
 }
 
 /* === UTILITIES ===
-   !important where these names have always been !important (Bootstrap's
-   utilities): a utility class wins over a component rule. */
+   !important: a utility class wins over a component rule. */
 
 .text-center {
   text-align: center !important;
@@ -534,27 +511,8 @@ button.ocf-btn-outline:disabled {
   gap: var(--spacing-lg);
 }
 
-.mt-0 { margin-top: 0 !important; }
 .mt-1 { margin-top: var(--spacing-xs) !important; }
 .mt-2 { margin-top: var(--spacing-sm) !important; }
-.mt-3 { margin-top: var(--spacing-md) !important; }
-.mt-4 { margin-top: var(--spacing-lg) !important; }
-
-.mb-0 { margin-bottom: 0 !important; }
-.mb-1 { margin-bottom: var(--spacing-xs) !important; }
-.mb-2 { margin-bottom: var(--spacing-sm) !important; }
-.mb-3 { margin-bottom: var(--spacing-md) !important; }
-.mb-4 { margin-bottom: var(--spacing-lg) !important; }
-
-.p-0 { padding: 0 !important; }
-.p-1 { padding: var(--spacing-xs) !important; }
-.p-2 { padding: var(--spacing-sm) !important; }
-.p-3 { padding: var(--spacing-md) !important; }
-.p-4 { padding: var(--spacing-lg) !important; }
-
-.d-block {
-  display: block !important;
-}
 
 .w-100 {
   width: 100% !important;

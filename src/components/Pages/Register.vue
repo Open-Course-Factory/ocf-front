@@ -170,7 +170,7 @@
               *
             </label>
           </div>
-          <div v-if="errors.tosAccepted" class="invalid-feedback d-block">
+          <div v-if="errors.tosAccepted" class="invalid-feedback">
             {{ errors.tosAccepted }}
           </div>
         </div>

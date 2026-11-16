@@ -122,7 +122,7 @@
   /* Font Families */
   --font-family-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-family-monospace: 'Courier New', monospace;
-  /* Preserves the pre-Bootstrap-removal code font; merge into --font-family-monospace once that stack is decided. */
+  /* Code font, apart from --font-family-monospace until one stack is decided. */
   --font-family-code: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 
   /* Font Sizes */
