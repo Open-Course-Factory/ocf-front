@@ -83,9 +83,8 @@ export const useUserMembershipsStore = defineStore('userMemberships', () => {
                     err.response?.data?.message ||
                     err.message ||
                     'Failed to load memberships'
-      orgMemberships.value = []
-      groupMemberships.value = []
-      // Not loaded: the next caller retries instead of deciding on nothing.
+      // Keep the last answer: a page reload that fails must not hide buttons
+      // the user had. A first load stays not loaded, so the next caller retries.
     } finally {
       isLoading.value = false
     }

@@ -188,12 +188,26 @@ describe('useUserMembershipsStore.loadMemberships', () => {
 
   /**
    * BEHAVIOR PROTECTED: When the top-level /users/me call itself fails (e.g.
-   * 500, network error, auth lapse), both arrays are cleared and an error is
-   * surfaced, but the store does NOT count as loaded: a failure marked
+   * 500, network error, auth lapse), the arrays keep what the last load
+   * returned and an error is surfaced; a first load does NOT count as loaded: a failure marked
    * "loaded, no memberships" used to be final, so the scenario editor's guard
    * turned a teacher away on every later refresh.
    */
-  it('clears both arrays and surfaces an error when /users/me fails', async () => {
+  it('a failed reload keeps the memberships the last load returned', async () => {
+    mockedAxios.get
+      .mockResolvedValueOnce({ data: { organization_memberships: [{ organization_id: 'org-1', role: 'manager' }], group_memberships: [{ group_id: 'g-1', role: 'owner' }] } })
+      .mockRejectedValueOnce({ message: 'Network Error' })
+
+    const store = useUserMembershipsStore()
+    await store.loadMemberships()
+    await store.loadMemberships()
+
+    expect(store.canManageOrg('org-1')).toBe(true)
+    expect(store.canManageGroup('g-1')).toBe(true)
+    expect(store.error).not.toBe('')
+  })
+
+  it('stays empty and surfaces an error when the first /users/me fails', async () => {
     mockedAxios.get.mockRejectedValueOnce({
       response: { status: 500, data: { message: 'internal error' } },
       message: 'Request failed',
