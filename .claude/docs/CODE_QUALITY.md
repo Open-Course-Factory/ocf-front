@@ -12,9 +12,7 @@ try {
   const response = await axios.post('/endpoint', data)
   return response.data
 } catch (err: any) {
-  error.value = err.response?.data?.error_message ||
-                err.response?.data?.message ||
-                t('myDomain.errorKey')
+  error.value = extractErrorMessage(err, t('myDomain.errorKey')) // from utils/formatters
   throw err
 }
 ```
@@ -22,7 +20,7 @@ try {
 ### Important Guidelines
 
 - ✅ **Always use translation keys** for error messages (never hardcode French or English)
-- ✅ **Check both `error_message` and `message`** fields from API responses
+- ✅ **Use `extractErrorMessage`** rather than reading response fields by hand
 - ✅ **Provide fallback translation key** for unknown errors
 - ✅ **Use try-catch-finally** for loading state management
 - ❌ **Never hardcode** error messages like `'Erreur de chargement'` or `'Error loading'`
@@ -30,9 +28,7 @@ try {
 
 ### Error Message Priority
 
-1. `err.response?.data?.error_message` - Backend-provided user-friendly message
-2. `err.response?.data?.message` - Alternative backend message field
-3. `t('domain.errorKey')` - Translated fallback message
+`extractErrorMessage` reads, in order: `error_message`, `error.message` (object), `message`, `detail`, `error` (string); then a non-axios `Error`'s message (e.g. one a store throws); then the translated fallback. Axios' own text ("Network Error", "Request failed with status code N") is never shown.
 
 ### Console Logging Standards
 
