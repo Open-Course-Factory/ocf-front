@@ -53,6 +53,10 @@ export default defineConfig({
   },
   test: {
     environment: 'happy-dom',
+    // Worker threads start cheaper than forked processes (~10% less CPU here).
+    pool: 'threads',
+    // Console output of passing tests is noise (~450 KB per CI log); failures keep theirs.
+    silent: 'passed-only',
     // Unmounts every wrapper after its test — see tests/setup.ts for why.
     setupFiles: ['tests/setup.ts'],
     // Spread into every vi.useFakeTimers() call. vitest does not fake
