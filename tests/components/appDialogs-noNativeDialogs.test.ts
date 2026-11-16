@@ -104,6 +104,29 @@ describe('InvoiceCleanup — execute selected', () => {
     expect(showConfirmMock).toHaveBeenCalledWith(expect.stringContaining('invoiceCleanup.confirmExecution'))
     expect((axios.post as any).mock.calls.at(-1)[1]).toMatchObject({ invoice_ids: ['in_1'], dry_run: false })
   })
+
+  it('runs nothing when the confirm is declined', async () => {
+    showConfirmMock.mockResolvedValue(false)
+    ;(axios.post as any).mockResolvedValue({
+      data: {
+        dry_run: true,
+        currency: 'eur',
+        total_amount_cleaned: 1000,
+        cleaned_details: [{ invoice_id: 'in_1', amount: 1000, currency: 'eur', status: 'open', created_at: '2026-01-01' }],
+      }
+    })
+    const wrapper = mount(InvoiceCleanup)
+
+    await wrapper.find('.btn-primary').trigger('click')
+    await flushPromises()
+    await wrapper.find('td.checkbox-column input').setValue(true)
+    const callsBefore = (axios.post as any).mock.calls.length
+    await wrapper.find('.btn-danger').trigger('click')
+    await flushPromises()
+
+    expect(showConfirmMock).toHaveBeenCalled()
+    expect((axios.post as any).mock.calls).toHaveLength(callsBefore)
+  })
 })
 
 describe('VersionSelector — delete version', () => {
