@@ -55,6 +55,7 @@ vi.mock('../../src/stores/currentUser', () => ({
 import GroupMembersManager from '../../src/components/Groups/GroupMembersManager.vue'
 import { bulkImportService } from '../../src/services/domain/bulkImport'
 import { sanitizeCSVField } from '../../src/utils/csv'
+import { userService } from '../../src/services/domain/user'
 
 function createTestI18n(locale: 'en' | 'fr' = 'en') {
   return createI18n({
@@ -100,6 +101,7 @@ function mountComponent(propsOverrides: Record<string, unknown> = {}, locale: 'e
         // Honours `visible` and renders the title and footer, so a dialog can be
         // seen opening, read, and its buttons clicked.
         BaseModal: {
+          name: 'BaseModal',
           template: '<div v-if="visible" class="base-modal-stub"><div class="base-modal-title">{{ title }}</div><slot /><div class="base-modal-footer"><slot name="footer" /></div></div>',
           props: ['visible', 'title', 'size', 'isLoading', 'showDefaultFooter',
                   'confirmText', 'cancelText']
@@ -302,6 +304,96 @@ describe('GroupMembersManager', () => {
     it('stays silent while the query is too short to search', async () => {
       const wrapper = await searchFor('a')
       expect(wrapper.find('.search-dropdown').exists()).toBe(false)
+    })
+  })
+
+  describe('add member: the picked user never outlives its query', () => {
+    const alice = { id: 'alice-id', name: 'alice', display_name: 'Alice', email: 'alice@example.com' }
+    const results = (q: string) => (q.toLowerCase().startsWith('al') ? [alice] : [])
+
+    beforeEach(() => {
+      // Only the timers: the search may be debounced, the dropdown hides on a timer.
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      vi.mocked(userService.searchUsers).mockImplementation(async (q: string) => results(q))
+      vi.mocked(axios.get).mockImplementation(async (url: string, config?: any) =>
+        url === '/users/search' ? { data: results(config?.params?.q ?? '') } : { data: { data: [] } }
+      )
+      vi.mocked(axios.post).mockClear()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+      vi.mocked(userService.searchUsers).mockReset().mockResolvedValue([])
+      vi.mocked(axios.get).mockReset().mockResolvedValue({ data: { data: [] } })
+    })
+
+    function addModal(wrapper: VueWrapper) {
+      return wrapper.findAllComponents({ name: 'BaseModal' }).find(m => m.props('visible') && m.props('confirmText') === 'Add Member')!
+    }
+
+    async function settle() {
+      await vi.advanceTimersByTimeAsync(1000)
+      await flushPromises()
+    }
+
+    async function type(wrapper: VueWrapper, query: string) {
+      const input = wrapper.find('.base-modal-stub .user-search-container input')
+      await input.trigger('focus')
+      await input.setValue(query)
+      await settle()
+    }
+
+    async function pickAlice(wrapper: VueWrapper) {
+      await type(wrapper, 'ali')
+      await wrapper.find('.base-modal-stub .search-result').trigger('click')
+      await settle()
+    }
+
+    function postedMembers() {
+      return vi.mocked(axios.post).mock.calls.filter(([url]) => url === '/group-members')
+    }
+
+    async function mountOpen() {
+      const wrapper = mountComponent()
+      await flushPromises()
+      await wrapper.find('[data-test="add-member"]').trigger('click')
+      return wrapper
+    }
+
+    it('adds the user the trainer picked', async () => {
+      const wrapper = await mountOpen()
+      await pickAlice(wrapper)
+
+      addModal(wrapper).vm.$emit('confirm')
+      await settle()
+
+      expect(postedMembers()).toHaveLength(1)
+      expect(postedMembers()[0][1]).toMatchObject({ user_id: 'alice-id' })
+    })
+
+    it('does not add a user picked before the dialog was cancelled', async () => {
+      const wrapper = await mountOpen()
+      await pickAlice(wrapper)
+      addModal(wrapper).vm.$emit('close')
+      await settle()
+
+      await wrapper.find('[data-test="add-member"]').trigger('click')
+      await type(wrapper, 'bob')
+      addModal(wrapper).vm.$emit('confirm')
+      await settle()
+
+      expect(postedMembers()).toEqual([])
+    })
+
+    it('does not add a user picked before the query was retyped', async () => {
+      const wrapper = await mountOpen()
+      await pickAlice(wrapper)
+
+      await type(wrapper, 'bob')
+      addModal(wrapper).vm.$emit('confirm')
+      await settle()
+
+      expect(postedMembers()).toEqual([])
     })
   })
 
