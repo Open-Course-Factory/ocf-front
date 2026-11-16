@@ -151,7 +151,7 @@ onMounted(refresh)
 .ocf-health-header h1 {
   font-size: 1.5rem;
   margin: 0 0 0.35rem;
-  color: var(--color-text);
+  color: var(--color-text-primary);
 }
 
 .ocf-health-subtitle {
@@ -171,7 +171,7 @@ onMounted(refresh)
   text-align: center;
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  background: var(--color-background-soft);
+  background: var(--color-background-secondary);
 }
 
 .ocf-health-clear i {
@@ -182,7 +182,7 @@ onMounted(refresh)
 .ocf-health-clear-title {
   margin: 0.75rem 0 0.25rem;
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--color-text-primary);
 }
 
 .ocf-health-clear-hint {
@@ -218,7 +218,7 @@ onMounted(refresh)
   border-radius: 0.5rem;
   padding: 1rem 1.25rem;
   margin-bottom: 1rem;
-  background: var(--color-background-soft);
+  background: var(--color-background-secondary);
 }
 
 .ocf-health-card-header {
@@ -234,7 +234,7 @@ onMounted(refresh)
 .ocf-health-card-header :slotted(h2) {
   font-size: 1.05rem;
   margin: 0;
-  color: var(--color-text);
+  color: var(--color-text-primary);
 }
 
 :slotted(.ocf-health-tag) {
@@ -293,6 +293,6 @@ onMounted(refresh)
 }
 
 .ocf-health-sentence {
-  color: var(--color-text);
+  color: var(--color-text-primary);
 }
 </style>

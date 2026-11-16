@@ -1225,7 +1225,7 @@ watch(() => props.visible, (newVal) => {
 }
 
 .btn-secondary:hover {
-  background-color: var(--color-secondary-dark, var(--color-secondary-hover));
+  background-color: var(--color-secondary-hover);
 }
 
 .quota-model-radio {
@@ -1454,8 +1454,8 @@ watch(() => props.visible, (newVal) => {
   padding: 0.75rem;
   min-height: 15rem;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md, 6px);
-  background: var(--color-surface-alt, var(--color-background));
+  border-radius: var(--border-radius-md);
+  background: var(--color-background);
 }
 
 .ocf-bracket-preview h5 {
