@@ -85,3 +85,21 @@ describe('paymentMethods store - formatPaymentMethod fallbacks (#264)', () => {
     expect(label).toContain('4242')
   })
 })
+
+describe('paymentMethods store - generic page actions', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('does not allow creation, which hides the generic Add and Import buttons', () => {
+    // Cards are added through the Stripe portal (createPortalSession); the
+    // backend no longer mounts a generic POST /payment-methods.
+    const store: any = usePaymentMethodsStore()
+    expect(store.allowCreation).toBe(false)
+  })
+
+  it('still allows deletion, which the backend keeps supporting', () => {
+    const store: any = usePaymentMethodsStore()
+    expect(store.allowDeletion).toBe(true)
+  })
+})
