@@ -151,6 +151,7 @@
         <UserSearchInput
           v-model="userSearchId"
           v-model:query="userSearchQuery"
+          class="user-lookup-input"
           :placeholder="t('securityAdmin.searchUser')"
           @keyup.enter="searchUserPermissions"
         />
@@ -672,7 +673,7 @@ onMounted(() => {
 }
 
 /* User Search Autocomplete: its width in the search bar */
-.user-search-container {
+.user-lookup-input {
   flex: 1;
   max-width: 400px;
 }
@@ -969,7 +970,7 @@ onMounted(() => {
     flex-direction: column;
   }
 
-  .user-search-container {
+  .user-lookup-input {
     max-width: none;
   }
 

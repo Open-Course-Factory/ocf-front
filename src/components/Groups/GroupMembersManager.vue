@@ -247,8 +247,12 @@ const isRegenerating = ref(false)
 const error = ref('')
 
 // A user picked in a cancelled dialog must not be added by the next one.
+// The text lives here too: the modal's loading state remounts the input, and
+// a failed add must still show the user it holds.
+const userSearchQuery = ref('')
 watch(showAddMemberModal, () => {
   groupMembersComposable.newMemberData.value.user_id = ''
+  userSearchQuery.value = ''
 })
 
 // Trainers (owners, managers) are pinned above the participants. Only
@@ -699,6 +703,7 @@ async function confirmRemoveMember() {
           <label>{{ t('groupMembers.selectUser') }}</label>
           <UserSearchInput
             v-model="groupMembersComposable.newMemberData.value.user_id"
+            v-model:query="userSearchQuery"
             :placeholder="t('groupMembers.userEmailPlaceholder')"
           />
           <small class="form-text text-muted">
