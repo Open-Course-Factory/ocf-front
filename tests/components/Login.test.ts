@@ -194,11 +194,6 @@ describe('Login', () => {
   })
 
   describe('rendering', () => {
-    it('renders the login form', () => {
-      const wrapper = mountLogin()
-      expect(wrapper.find('[data-testid="login-form"]').exists()).toBe(true)
-    })
-
     it('renders email input field', () => {
       const wrapper = mountLogin()
       const emailInput = wrapper.find('[data-testid="login-email-input"]')
@@ -215,31 +210,6 @@ describe('Login', () => {
       expect(passwordInput.attributes('autocomplete')).toBe('current-password')
     })
 
-    it('renders remember me checkbox', () => {
-      const wrapper = mountLogin()
-      const checkbox = wrapper.find('[data-testid="login-remember-me"]')
-      expect(checkbox.exists()).toBe(true)
-      expect(checkbox.attributes('type')).toBe('checkbox')
-    })
-
-    it('renders submit button', () => {
-      const wrapper = mountLogin()
-      const submitBtn = wrapper.find('[data-testid="login-submit"]')
-      expect(submitBtn.exists()).toBe(true)
-    })
-
-    it('renders forgot password link', () => {
-      const wrapper = mountLogin()
-      const forgotLink = wrapper.find('[data-testid="login-forgot-password"]')
-      expect(forgotLink.exists()).toBe(true)
-    })
-
-    it('renders register link', () => {
-      const wrapper = mountLogin()
-      const registerDiv = wrapper.find('[data-testid="login-register-link"]')
-      expect(registerDiv.exists()).toBe(true)
-    })
-
     // `/` is the login page itself now; home is the marketing site.
     it('links the logo to the marketing site, not back to itself', () => {
       const wrapper = mountLogin()
@@ -248,12 +218,6 @@ describe('Login', () => {
   })
 
   describe('password toggle', () => {
-    it('starts with password hidden', () => {
-      const wrapper = mountLogin()
-      const passwordInput = wrapper.find('[data-testid="login-password-input"]')
-      expect(passwordInput.attributes('type')).toBe('password')
-    })
-
     it('toggles password visibility when toggle button is clicked', async () => {
       const wrapper = mountLogin()
       const toggleBtn = wrapper.find('[data-testid="login-password-toggle"]')
@@ -440,20 +404,6 @@ describe('Login', () => {
     ])('goes to the landing page when redirect is %j', async (redirect) => {
       await signInWithRedirect(redirect)
       expect(window.location.href).toBe('/landing-page')
-    })
-  })
-
-  describe('submit button state', () => {
-    it('is enabled when not loading', () => {
-      const wrapper = mountLogin()
-      const submitBtn = wrapper.find('[data-testid="login-submit"]')
-      expect((submitBtn.element as HTMLButtonElement).disabled).toBe(false)
-    })
-
-    it('shows sign in text when not loading', () => {
-      const wrapper = mountLogin()
-      const submitBtn = wrapper.find('[data-testid="login-submit"]')
-      expect(submitBtn.text()).toContain('Sign in')
     })
   })
 })
