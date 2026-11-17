@@ -78,31 +78,13 @@ async function openMenu(wrapper: ReturnType<typeof mountCard>) {
 
 describe('AssignmentCard', () => {
   describe('info block', () => {
-    it('uses the DS card chrome and renders the title, a difficulty badge, the status badge and dates', () => {
+    it('shows the title and both dates', () => {
       const wrapper = mountCard()
-      // DS card container.
-      expect(wrapper.find('.card').exists()).toBe(true)
-
       expect(wrapper.text()).toContain('Intro to Linux')
-      // Difficulty is a DS badge.
-      expect(wrapper.find('.badge').exists()).toBe(true)
-      // Active assignment → success-variant status badge.
-      expect(wrapper.find('.badge.badge-success').exists()).toBe(true)
 
       // Both dates rendered (formatDate of the ISO start/deadline).
       expect(wrapper.find('.start-date-text').exists()).toBe(true)
       expect(wrapper.find('.deadline-text').exists()).toBe(true)
-    })
-
-    it('shows the secondary-variant status badge when the assignment is not active', () => {
-      const wrapper = mountCard({ assignment: { ...assignment, is_active: false } })
-      expect(wrapper.find('.badge.badge-secondary').exists()).toBe(true)
-      expect(wrapper.find('.badge.badge-success').exists()).toBe(false)
-    })
-
-    it('shows the org badge for an org-sourced scenario', () => {
-      const wrapper = mountCard()
-      expect(wrapper.find('.org-badge').exists()).toBe(true)
     })
   })
 

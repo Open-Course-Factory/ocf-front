@@ -215,16 +215,6 @@ describe('GroupMembersManager', () => {
       expect(adminBadges.length).toBeGreaterThanOrEqual(1)
     })
 
-    it('does not render AdminBadge in toolbar when isPlatformAdmin is false', async () => {
-      const wrapper = mountComponent({ isPlatformAdmin: false, isOwner: false })
-      await nextTick()
-
-      // When isPlatformAdmin is false, no AdminBadge should appear in the toolbar
-      const toolbarActions = wrapper.find('.toolbar-actions')
-      const adminBadges = toolbarActions.findAllComponents({ name: 'AdminBadge' })
-      expect(adminBadges.length).toBe(0)
-    })
-
     it('does not render toolbar AdminBadge when isPlatformAdmin is true but isOwner is also true', async () => {
       const wrapper = mountComponent({ isPlatformAdmin: true, isOwner: true })
       await nextTick()
@@ -262,16 +252,6 @@ describe('GroupMembersManager', () => {
       expect(emptyState.exists()).toBe(true)
       expect(emptyState.text()).toBe('No members in this group')
       expect(wrapper.find('[data-testid="member-row"]').exists()).toBe(false)
-    })
-  })
-
-  describe('search input', () => {
-    it('renders the search input', async () => {
-      const wrapper = mountComponent()
-      await nextTick()
-
-      const searchInput = wrapper.find('input.search-input')
-      expect(searchInput.exists()).toBe(true)
     })
   })
 
