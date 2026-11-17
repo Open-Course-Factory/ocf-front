@@ -5,9 +5,7 @@
  *
  * DS pieces the card now uses (all real children — NOT stubbed):
  *   - root chrome: `.card` (DS) + a thin local layout class.
- *   - difficulty + status: DS `.badge` (status = `.badge.badge-success` when
- *     active, `.badge.badge-secondary` when inactive). Replaces the old
- *     `.status-chip.status-active/-inactive`.
+ *   - difficulty + status: DS `.badge`.
  *   - progress: <ProgressBar :value :max :variant> → renders `.progress >
  *     .progress-bar` with the fill width. The card still renders the `12/20`
  *     count + `avg 78%` text alongside.
@@ -17,8 +15,7 @@
  *     of `.ocf-dropdown-item` buttons carrying the same `data-test` attrs.
  *
  * i18n note: empty test messages → assert on DOM structure, prop-driven data
- * (title, dates, progress numbers) and emits, not translated chrome. Status is
- * asserted by badge variant class, not text.
+ * (title, dates, progress numbers) and emits, not translated chrome.
  */
 
 import { describe, it, expect } from 'vitest'
