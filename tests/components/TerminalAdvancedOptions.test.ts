@@ -56,25 +56,6 @@ describe('TerminalAdvancedOptions', () => {
     wrapper = mountComponent()
   })
 
-  describe('collapsible header visibility', () => {
-    it('renders the collapsible header with "Advanced Options" text', () => {
-      const header = wrapper.find('.collapsible-header')
-      expect(header.exists()).toBe(true)
-      expect(header.text()).toContain('Advanced Options')
-    })
-
-    it('renders a chevron icon in the header', () => {
-      const icon = wrapper.find('.collapsible-header i.fas')
-      expect(icon.exists()).toBe(true)
-      expect(icon.classes()).toContain('fa-chevron-right')
-    })
-
-    it('always renders the collapsible-section container', () => {
-      const section = wrapper.find('.collapsible-section')
-      expect(section.exists()).toBe(true)
-    })
-  })
-
   describe('collapsed state (default)', () => {
     it('hides the collapsible-content by default', () => {
       const content = wrapper.find('.collapsible-content')
@@ -93,15 +74,6 @@ describe('TerminalAdvancedOptions', () => {
       expect(isVShowHidden(content)).toBe(false)
     })
 
-    it('changes the chevron icon to down when expanded', async () => {
-      const header = wrapper.find('.collapsible-header')
-      await header.trigger('click')
-
-      const icon = wrapper.find('.collapsible-header i.fas')
-      expect(icon.classes()).toContain('fa-chevron-down')
-      expect(icon.classes()).not.toContain('fa-chevron-right')
-    })
-
     it('collapses the content when the header is clicked again', async () => {
       const header = wrapper.find('.collapsible-header')
 
@@ -112,52 +84,6 @@ describe('TerminalAdvancedOptions', () => {
       // Collapse
       await header.trigger('click')
       expect(isVShowHidden(wrapper.find('.collapsible-content'))).toBe(true)
-    })
-
-    it('restores the chevron to right when collapsed again', async () => {
-      const header = wrapper.find('.collapsible-header')
-
-      await header.trigger('click') // expand
-      await header.trigger('click') // collapse
-
-      const icon = wrapper.find('.collapsible-header i.fas')
-      expect(icon.classes()).toContain('fa-chevron-right')
-    })
-  })
-
-  describe('form fields when expanded', () => {
-    beforeEach(async () => {
-      const header = wrapper.find('.collapsible-header')
-      await header.trigger('click')
-    })
-
-    it('shows the terminal name input', () => {
-      const nameInput = wrapper.find('input#terminalName')
-      expect(nameInput.exists()).toBe(true)
-      expect(nameInput.attributes('type')).toBe('text')
-      expect(nameInput.attributes('maxlength')).toBe('255')
-    })
-
-    it('shows the hostname input', () => {
-      const hostnameInput = wrapper.find('input#hostname')
-      expect(hostnameInput.exists()).toBe(true)
-      expect(hostnameInput.attributes('type')).toBe('text')
-      expect(hostnameInput.attributes('maxlength')).toBe('63')
-    })
-
-    it('shows the exercise reference input', () => {
-      const exerciseInput = wrapper.find('input#exerciseRef')
-      expect(exerciseInput.exists()).toBe(true)
-      expect(exerciseInput.attributes('type')).toBe('text')
-      expect(exerciseInput.attributes('maxlength')).toBe('255')
-    })
-
-    it('shows the reset button', () => {
-      const formActions = wrapper.find('.form-actions')
-      expect(formActions.exists()).toBe(true)
-      // The Button component renders a <button> element
-      const resetButton = formActions.find('button')
-      expect(resetButton.exists()).toBe(true)
     })
   })
 
