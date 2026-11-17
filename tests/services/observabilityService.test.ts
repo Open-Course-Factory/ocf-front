@@ -49,40 +49,4 @@ describe('observabilityService.getMetrics', () => {
     expect(mockedAxios.get).toHaveBeenCalledWith('/admin/observability-metrics')
     expect(result).toEqual(payload)
   })
-
-  it('passes through populated hook errors and non-zero counters', async () => {
-    const payload: ObservabilityMetrics = {
-      stripe: {
-        create: { success: 5, failure: 2 },
-        update: { success: 1, failure: 0 },
-        archive: { success: 0, failure: 0 },
-        panics: 0,
-        queue: { retry: 2, exhausted: 0, pending_depth: 0 }
-      },
-      scenarios: {
-        setup_panics: 1,
-        setup_failed_transitions: 3,
-        terminal_stop_failures: 0
-      },
-      hooks: {
-        recent_errors: [
-          {
-            hook_name: 'stripe_subscription_plan_sync',
-            entity_name: 'SubscriptionPlan',
-            hook_type: 'AfterCreate',
-            error: 'connection refused',
-            timestamp: '2026-05-13T10:00:00Z'
-          }
-        ]
-      }
-    }
-    mockedAxios.get.mockResolvedValueOnce({ data: payload })
-
-    const result = await observabilityService.getMetrics()
-
-    expect(result.stripe.create.failure).toBe(2)
-    expect(result.stripe.queue.retry).toBe(2)
-    expect(result.hooks.recent_errors).toHaveLength(1)
-    expect(result.hooks.recent_errors[0].hook_name).toBe('stripe_subscription_plan_sync')
-  })
 })

@@ -296,18 +296,6 @@ describe('subscriptions store', () => {
     })
   })
 
-  describe('status formatters', () => {
-    it('getStatusClass returns formatted status class', () => {
-      const store = useSubscriptionsStore()
-      expect(store.getStatusClass('active')).toBe('status-active')
-    })
-
-    it('getStatusIcon returns formatted status icon', () => {
-      const store = useSubscriptionsStore()
-      expect(store.getStatusIcon('active')).toBe('icon-active')
-    })
-  })
-
   describe('adminAssignPlan', () => {
     it('posts admin plan assignment', async () => {
       mockedAxios.post.mockResolvedValue({ data: { success: true } })

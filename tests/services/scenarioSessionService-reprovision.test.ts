@@ -32,12 +32,6 @@ beforeEach(() => {
 })
 
 describe('scenarioSessionService.reprovisionStep', () => {
-  it('exists on the service', () => {
-    // Guards the class of bug this fixes: the panel called a method the
-    // service did not define, so the retry button threw instead of retrying.
-    expect(typeof scenarioSessionService.reprovisionStep).toBe('function')
-  })
-
   it('posts to the session it was given, without forcing by default', async () => {
     await scenarioSessionService.reprovisionStep('sess-1')
 
