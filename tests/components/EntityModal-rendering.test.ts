@@ -77,6 +77,24 @@ describe('EntityModal — rendering', () => {
     setActivePinia(createPinia())
   })
 
+  // EntityModal forwards these to BaseModal; nothing else pins the wiring.
+  describe('what it hands to BaseModal', () => {
+    it('stays closed while visible is false', () => {
+      expect(mountEntityModal({ visible: false }).find('[role="dialog"]').exists()).toBe(false)
+    })
+
+    it('labels the footer buttons Add or Modify, and Cancel', () => {
+      const create = mountEntityModal()
+      expect(create.find('.base-modal-footer .btn-primary').text()).toContain('Add')
+      expect(create.find('.base-modal-footer .btn-secondary').text()).toContain('Cancel')
+
+      const edit = mountEntityModal({
+        entity: { id: '1', name: 'Test', description: '', status: '', is_active: false }
+      })
+      expect(edit.find('.base-modal-footer .btn-primary').text()).toContain('Modify')
+    })
+  })
+
   describe('create mode (no entity prop)', () => {
     it('shows title "Add" in create mode', () => {
       const wrapper = mountEntityModal()
