@@ -72,8 +72,19 @@ describe('TerminalAdvancedOptions', () => {
 
       const content = wrapper.find('.collapsible-content')
       expect(isVShowHidden(content)).toBe(false)
-      // A hostname label is at most 63 characters (RFC 1035).
-      expect(wrapper.find('input#hostname').attributes('maxlength')).toBe('63')
+    })
+
+    it('names the section and points the chevron down only while it is open', async () => {
+      const header = wrapper.find('.collapsible-header')
+      expect(header.text()).toContain('Advanced Options')
+      expect(header.find('i').classes()).toContain('fa-chevron-right')
+
+      await header.trigger('click')
+      expect(header.find('i').classes()).toContain('fa-chevron-down')
+      expect(header.find('i').classes()).not.toContain('fa-chevron-right')
+
+      await header.trigger('click')
+      expect(header.find('i').classes()).toContain('fa-chevron-right')
     })
 
     it('collapses the content when the header is clicked again', async () => {
@@ -86,6 +97,23 @@ describe('TerminalAdvancedOptions', () => {
       // Collapse
       await header.trigger('click')
       expect(isVShowHidden(wrapper.find('.collapsible-content'))).toBe(true)
+    })
+  })
+
+  describe('form fields', () => {
+    // A hostname label is at most 63 characters (RFC 1035); the backend
+    // stores the name and the exercise reference in 255.
+    it.each([
+      ['terminalName', '255'],
+      ['hostname', '63'],
+      ['exerciseRef', '255']
+    ])('limits %s to %s characters', (id, max) => {
+      expect(wrapper.find(`input#${id}`).attributes('maxlength')).toBe(max)
+    })
+
+    it('emits reset from the reset button', async () => {
+      await wrapper.find('.form-actions button').trigger('click')
+      expect(wrapper.emitted('reset')).toHaveLength(1)
     })
   })
 
