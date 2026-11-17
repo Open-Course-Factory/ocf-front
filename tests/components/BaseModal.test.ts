@@ -42,6 +42,30 @@ describe('BaseModal', () => {
     })
   })
 
+  describe('container contract', () => {
+    it('is medium sized unless a size is given', () => {
+      expect(mountModal().find('[role="dialog"]').classes()).toContain('base-modal-medium')
+      expect(mountModal({ size: 'large' }).find('[role="dialog"]').classes()).toContain('base-modal-large')
+    })
+
+    it('drops its padding only when noPadding is set', () => {
+      expect(mountModal().find('[role="dialog"]').classes()).not.toContain('base-modal-no-padding')
+      expect(mountModal({ noPadding: true }).find('[role="dialog"]').classes()).toContain('base-modal-no-padding')
+    })
+
+    it('shows the title icon beside the title, and none when no icon is given', () => {
+      const withIcon = mountModal({ title: 'Title', titleIcon: 'fas fa-info-circle' })
+      expect(withIcon.find('h2 i').classes()).toEqual(['fas', 'fa-info-circle'])
+      expect(mountModal({ title: 'Title' }).find('h2 i').exists()).toBe(false)
+    })
+
+    it('renders the header slot when no title is given, and no header without either', () => {
+      const wrapper = mountModal({}, { header: '<h3 data-testid="custom-header">Custom header</h3>' })
+      expect(wrapper.find('[data-testid="custom-header"]').text()).toBe('Custom header')
+      expect(mountModal().find('.base-modal-header').exists()).toBe(false)
+    })
+  })
+
   describe('loading state', () => {
     it('hides default slot content when loading', () => {
       const wrapper = mountModal(
