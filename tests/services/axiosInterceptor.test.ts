@@ -109,6 +109,10 @@ describe('axiosInterceptor', () => {
     })
 
     it('triggers autoLogout on 401 errors', async () => {
+      // The shared mock hands out a new store on each call; pin one to watch.
+      const autoLogout = vi.fn()
+      vi.mocked(useCurrentUserStore).mockReturnValue({ autoLogout } as any)
+
       const error = {
         response: { status: 401, data: {} },
         config: { method: 'post', url: '/test' }
@@ -116,9 +120,7 @@ describe('axiosInterceptor', () => {
 
       await expect(harness.responseErrorInterceptor(error)).rejects.toBe(error)
 
-      // Verify useCurrentUserStore was called and autoLogout invoked
-      const storeInstance = (useCurrentUserStore as any)()
-      expect(storeInstance.autoLogout).toBeDefined()
+      expect(autoLogout).toHaveBeenCalledOnce()
     })
 
     it('redirects to VerifyEmail on 403 EMAIL_NOT_VERIFIED', async () => {
