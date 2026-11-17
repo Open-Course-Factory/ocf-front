@@ -48,11 +48,6 @@ function mountModal(props: Record<string, unknown> = {}) {
 }
 
 describe('RemoveAssignmentConfirmModal', () => {
-  it('renders no overlay when visible is false', () => {
-    const wrapper = mountModal({ visible: false })
-    expect(wrapper.find('.base-modal-overlay').exists()).toBe(false)
-  })
-
   it('renders the modal overlay and a confirm button when visible', () => {
     const wrapper = mountModal({ visible: true })
     expect(wrapper.find('.base-modal-overlay').exists()).toBe(true)

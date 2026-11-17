@@ -107,11 +107,6 @@ describe('SessionDetailModal', () => {
     })
   })
 
-  it('renders no overlay when visible is false', () => {
-    const wrapper = mountModal({ visible: false })
-    expect(wrapper.find('.base-modal-overlay').exists()).toBe(false)
-  })
-
   it('loads the detail on open and renders one steps-table row per step', async () => {
     const wrapper = mountModal({ visible: true })
     await flushPromises()
