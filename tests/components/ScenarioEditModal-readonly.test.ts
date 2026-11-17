@@ -10,12 +10,12 @@ import { createTestI18n } from '../helpers/entityModalHelper'
 
 import ScenarioEditModal from '../../src/components/ScenarioEditor/ScenarioEditModal.vue'
 
-function mountModal(readonly: boolean) {
+function mountModal(readonly: boolean, scenario: Record<string, unknown> = {}) {
   return mount(ScenarioEditModal, {
     props: {
       visible: true,
       readonly,
-      editingScenario: { isNew: false, entityId: 'sc-1', title: 'Lab', setup_script: 'apt-get install -y nginx' },
+      editingScenario: { isNew: false, entityId: 'sc-1', title: 'Lab', setup_script: 'apt-get install -y nginx', ...scenario },
       title: 'Scenario settings',
       orgScopes: [],
       groupScopes: [],
@@ -44,5 +44,22 @@ describe('ScenarioEditModal — read only', () => {
     expect(wrapper.get('.ocf-scn-fields').attributes('disabled')).toBeUndefined()
     expect(wrapper.find('.base-modal-footer .btn-primary').exists()).toBe(true)
     expect(wrapper.find('#tab-vocabulary').exists()).toBe(true)
+  })
+})
+
+// "Public" is a platform notion: the API refuses it on an organization's
+// scenario, so the toggle is offered on a platform scenario only.
+describe('ScenarioEditModal — public toggle', () => {
+  it('offers the toggle on a platform scenario', () => {
+    expect(mountModal(false).find('#scenario-is-public').exists()).toBe(true)
+  })
+
+  it("hides it on an organization's scenario", () => {
+    expect(mountModal(false, { organization_id: 'org-1' }).find('#scenario-is-public').exists()).toBe(false)
+  })
+
+  it('follows the chosen destination on a new scenario', () => {
+    expect(mountModal(false, { isNew: true, _scopeKey: 'platform:*' }).find('#scenario-is-public').exists()).toBe(true)
+    expect(mountModal(false, { isNew: true, _scopeKey: 'org:org-1' }).find('#scenario-is-public').exists()).toBe(false)
   })
 })
