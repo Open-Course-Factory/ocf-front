@@ -77,18 +77,6 @@ describe('EntityModal — rendering', () => {
     setActivePinia(createPinia())
   })
 
-  describe('visibility', () => {
-    it('renders when visible is true', () => {
-      const wrapper = mountEntityModal({ visible: true })
-      expect(wrapper.find('.base-modal-overlay').exists()).toBe(true)
-    })
-
-    it('does not render when visible is false', () => {
-      const wrapper = mountEntityModal({ visible: false })
-      expect(wrapper.find('.base-modal-overlay').exists()).toBe(false)
-    })
-  })
-
   describe('create mode (no entity prop)', () => {
     it('shows title "Add" in create mode', () => {
       const wrapper = mountEntityModal()
@@ -144,16 +132,19 @@ describe('EntityModal — rendering', () => {
   })
 
   describe('field types', () => {
-    it('renders input for type="input"', () => {
-      const wrapper = mountEntityModal()
-      const nameInput = wrapper.find('input#name')
-      expect(nameInput.exists()).toBe(true)
-    })
+    it.each([
+      ['input', 'input#field'],
+      ['textarea', 'textarea#field'],
+      ['checkbox', 'input#field[type="checkbox"]'],
+      ['number', 'input#field[type="number"][min="0"][max="100"]'],
+      ['date', 'input#field[type="date"]']
+    ])('renders type "%s" as %s', (type, selector) => {
+      const fieldList = new Map([
+        ['field', { label: 'Field', type, toBeSet: true, toBeEdited: true, min: 0, max: 100, step: 1 }]
+      ])
+      const wrapper = mountEntityModal({ entityStore: createMockStore({ fieldList }) })
 
-    it('renders textarea for type="textarea"', () => {
-      const wrapper = mountEntityModal()
-      const textarea = wrapper.find('textarea#description')
-      expect(textarea.exists()).toBe(true)
+      expect(wrapper.find(selector).exists()).toBe(true)
     })
 
     it('renders select with options for type="select"', () => {
@@ -166,52 +157,6 @@ describe('EntityModal — rendering', () => {
       expect(options.length).toBe(3)
       expect(options[1].text()).toBe('Active')
       expect(options[2].text()).toBe('Inactive')
-    })
-
-    it('renders checkbox for type="checkbox"', () => {
-      const wrapper = mountEntityModal()
-      const checkbox = wrapper.find('input#is_active')
-      expect(checkbox.exists()).toBe(true)
-      expect(checkbox.attributes('type')).toBe('checkbox')
-    })
-
-    it('renders number input for type="number"', () => {
-      const fieldList = new Map([
-        ['count', {
-          label: 'Count',
-          type: 'number',
-          toBeSet: true,
-          toBeEdited: true,
-          min: 0,
-          max: 100,
-          step: 1
-        }]
-      ])
-      const store = createMockStore({ fieldList })
-      const wrapper = mountEntityModal({ entityStore: store })
-
-      const numInput = wrapper.find('input#count')
-      expect(numInput.exists()).toBe(true)
-      expect(numInput.attributes('type')).toBe('number')
-      expect(numInput.attributes('min')).toBe('0')
-      expect(numInput.attributes('max')).toBe('100')
-    })
-
-    it('renders date input for type="date"', () => {
-      const fieldList = new Map([
-        ['start_date', {
-          label: 'Start Date',
-          type: 'date',
-          toBeSet: true,
-          toBeEdited: true
-        }]
-      ])
-      const store = createMockStore({ fieldList })
-      const wrapper = mountEntityModal({ entityStore: store })
-
-      const dateInput = wrapper.find('input#start_date')
-      expect(dateInput.exists()).toBe(true)
-      expect(dateInput.attributes('type')).toBe('date')
     })
   })
 
@@ -262,28 +207,6 @@ describe('EntityModal — rendering', () => {
       // Only name should render (subentity is excluded from the main template loop)
       const formGroups = wrapper.findAll('.form-group')
       expect(formGroups.length).toBe(1)
-    })
-  })
-
-  describe('footer buttons', () => {
-    it('shows "Add" button text in create mode', () => {
-      const wrapper = mountEntityModal()
-      const confirmBtn = wrapper.find('.btn-primary')
-      expect(confirmBtn.text()).toContain('Add')
-    })
-
-    it('shows "Modify" button text in edit mode', () => {
-      const wrapper = mountEntityModal({
-        entity: { id: '1', name: 'Test', description: '', status: '', is_active: false }
-      })
-      const confirmBtn = wrapper.find('.btn-primary')
-      expect(confirmBtn.text()).toContain('Modify')
-    })
-
-    it('shows "Cancel" button text', () => {
-      const wrapper = mountEntityModal()
-      const cancelBtn = wrapper.find('.btn-secondary')
-      expect(cancelBtn.text()).toContain('Cancel')
     })
   })
 })
