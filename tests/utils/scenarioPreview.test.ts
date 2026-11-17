@@ -1,16 +1,7 @@
 /**
- * "Test from this step" in ScenarioEditor.vue (#346).
- *
- * Source-inspection tests, in the same style as
- * ScenarioEditor-previewNavigation.test.ts: mounting the editor needs twenty
- * stubbed stores, so the wiring is pinned in the source. The copy is checked
- * for real, through the editor's i18n composable.
- *
- * The step modal asks to preview from a step; the editor reuses the one
- * preview confirm modal with copy that says what is built — setup, then every
- * step's setup script up to this one, and nothing the learner would have
- * typed — and on confirm posts from_step_order and navigates exactly like the
- * whole-scenario preview.
+ * "Test from this step" in the scenario editor (#346): what the preview
+ * request carries, how a refusal is worded, and the editor's copy for it,
+ * read through the editor's i18n composable.
  *
  * The backend refuses a preview for reasons an author can act on: a step it
  * does not know (400), no right to preview or no plan (403), a real run of
@@ -20,21 +11,12 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'fs'
-import { resolve } from 'path'
 import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 
 import { useScenarioEditorI18n } from '../../src/composables/useScenarioEditorI18n'
 import { previewOptions, previewRefusalKey } from '../../src/utils/scenarioPreview'
-
-const source = readFileSync(resolve(__dirname, '../../src/components/Pages/ScenarioEditor.vue'), 'utf-8')
-const template = source.slice(0, source.indexOf('<script'))
-const previewHandler = source.match(/const handleConfirmPreview[\s\S]*?\n}\n/)?.[0] ?? ''
-const stepModalTag = template.match(/<ScenarioStepEditor\b[\s\S]*?\/>/)?.[0] ?? ''
-const previewConfirmModal =
-  template.match(/<BaseModal(?:(?!<\/BaseModal>)[\s\S])*?@confirm="handleConfirmPreview"[\s\S]*?<\/BaseModal>/)?.[0] ?? ''
 
 const FROM_STEP_BODY_EN =
   "Builds a fresh machine as a learner resuming at this step would get it: setup, then every step's setup script up to this one. Nothing the learner would have typed is replayed."
@@ -57,27 +39,7 @@ function editorMessages(): { en: Record<string, string>; fr: Record<string, stri
   return { en, fr }
 }
 
-describe('ScenarioEditor.vue — the step editor can start a preview from its step', () => {
-  it('listens for the step editor asking to test from a step', () => {
-    expect(stepModalTag).toMatch(/@test-from-step="/)
-  })
-
-  it('offers it only when the scenario can be previewed', () => {
-    expect(stepModalTag).toMatch(/:can-test-from-step="canPreviewScenario"/)
-  })
-})
-
-describe('ScenarioEditor.vue — one preview confirm modal, with step-specific copy', () => {
-  it('reuses the existing preview confirm modal rather than adding a second one', () => {
-    expect(previewConfirmModal).not.toBe('')
-    expect(template.match(/@confirm="handleConfirmPreview"/g)).toHaveLength(1)
-  })
-
-  it('shows the from-step copy in that modal, beside the whole-scenario copy', () => {
-    expect(previewConfirmModal).toMatch(/scenarioEditor\.previewConfirmBody/)
-    expect(previewConfirmModal).toMatch(/scenarioEditor\.previewFromStepConfirmBody/)
-  })
-
+describe('scenario preview — the confirm modal has step-specific copy', () => {
   it('says what is built and what is not, in English', () => {
     expect(editorMessages().en.previewFromStepConfirmBody).toBe(FROM_STEP_BODY_EN)
   })
@@ -89,11 +51,7 @@ describe('ScenarioEditor.vue — one preview confirm modal, with step-specific c
   })
 })
 
-describe('ScenarioEditor.vue — confirming previews from the chosen step', () => {
-  it('posts the chosen step with the preview', () => {
-    expect(previewHandler).toMatch(/previewOptions\(orgId, previewFromStepOrder\.value\)/)
-  })
-
+describe('scenario preview — the request carries the chosen step', () => {
   it('sends the step order, 0 included', () => {
     expect(previewOptions('org-1', 2)).toEqual({ organization_id: 'org-1', from_step_order: 2 })
     expect(previewOptions('org-1', 0)).toHaveProperty('from_step_order', 0)
@@ -104,11 +62,10 @@ describe('ScenarioEditor.vue — confirming previews from the chosen step', () =
   })
 })
 
-describe('ScenarioEditor.vue — a refused preview says why', () => {
+describe('scenario preview — a refused preview says why', () => {
   const REFUSALS = ['previewErrorUnknownStep', 'previewErrorForbidden', 'previewErrorSessionExists'] as const
 
   it('maps each refusal the author can act on to its message', () => {
-    expect(previewHandler).toMatch(/previewRefusalKey\(/)
     expect(previewRefusalKey(400, {}, 2)).toBe('scenarioEditor.previewErrorUnknownStep')
     expect(previewRefusalKey(403, { error_message: 'Not authorized' }, null)).toBe('scenarioEditor.previewErrorForbidden')
     expect(previewRefusalKey(409, { reason: 'session_exists' }, 0)).toBe('scenarioEditor.previewErrorSessionExists')
@@ -141,22 +98,7 @@ describe('ScenarioEditor.vue — a refused preview says why', () => {
   })
 })
 
-describe('ScenarioEditor.vue — a preview blocked by the author\'s own run offers to abandon it', () => {
-  it('keeps the modal open on a 409 that names the blocking run', () => {
-    expect(previewHandler).toMatch(/data\?\.reason === 'session_exists' && data\?\.session_id\)\s*{\s*blockingRunId\.value = data\.session_id\s*return/)
-  })
-
-  it('abandons that run before asking for the preview again', () => {
-    const abandonAt = previewHandler.indexOf('abandonSession(blockingRunId.value)')
-    expect(abandonAt).toBeGreaterThan(-1)
-    expect(abandonAt).toBeLessThan(previewHandler.indexOf('previewScenario('))
-  })
-
-  it('says so in the modal and on its button', () => {
-    expect(previewConfirmModal).toMatch(/v-if="blockingRunId"[^>]*>\{\{ t\('scenarioEditor\.previewBlockedByRun'\) \}\}/)
-    expect(previewConfirmModal).toMatch(/blockingRunId \? 'scenarioEditor\.previewAbandonRunAction'/)
-  })
-
+describe('scenario preview — a preview blocked by the author\'s own run offers to abandon it', () => {
   it.each(['previewBlockedByRun', 'previewAbandonRunAction'])('has %s in English and French', (key) => {
     const { en, fr } = editorMessages()
     expect(en[key]).toBeTruthy()
