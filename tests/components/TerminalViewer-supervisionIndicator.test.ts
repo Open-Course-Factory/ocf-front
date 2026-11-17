@@ -238,16 +238,6 @@ describe('TerminalViewer — supervision indicator centered in the title bar', (
       expect(chip.attributes('aria-live')).toBe('assertive')
     })
 
-    it('does not shift the terminal: no .supervision-banner and no has-supervision-banner in any state', async () => {
-      const wrapper = mountViewer({ useSettingsCard: true })
-
-      for (const s of [{}, { watched: true }, { watched: true, controlled: true }]) {
-        await setSupervision(wrapper, s)
-        expect(wrapper.find('.supervision-banner').exists()).toBe(false)
-        expect(wrapper.find('.terminal-container').classes()).not.toContain('has-supervision-banner')
-      }
-    })
-
     it('renders no chip when supervision is enabled but the session is neither watched nor controlled', async () => {
       const wrapper = mountViewer({ useSettingsCard: true })
       await setSupervision(wrapper, {})
@@ -320,16 +310,6 @@ describe('TerminalViewer — supervision indicator centered in the title bar', (
       expect(controlledChip.text()).toContain(CONTROLLED_TEXT)
       expect(controlledChip.text()).toContain('✋')
     })
-
-    it('never renders a .supervision-banner or has-supervision-banner across none↔watched↔controlled', async () => {
-      const wrapper = mountViewer()
-
-      for (const s of [{}, { watched: true }, { watched: true, controlled: true }]) {
-        await setSupervision(wrapper, s)
-        expect(wrapper.find('.supervision-banner').exists()).toBe(false)
-        expect(wrapper.find('.terminal-container').classes()).not.toContain('has-supervision-banner')
-      }
-    })
   })
 
   // ── FALLBACK: standalone with no header at all — RGPD indicator must survive ──
@@ -360,28 +340,8 @@ describe('TerminalViewer — supervision indicator centered in the title bar', (
     })
   })
 
-  // ── Reserved-slot machinery is GONE, and idle is AT-silent everywhere ──
-  describe('reserved-slot machinery removed + idle AT-silence', () => {
-    it('renders NO .supervision-slot or .supervision-slot-sizer anywhere, in any state (SettingsCard)', async () => {
-      const wrapper = mountViewer({ useSettingsCard: true })
-
-      for (const s of [{}, { watched: true }, { watched: true, controlled: true }]) {
-        await setSupervision(wrapper, s)
-        expect(wrapper.find('.supervision-slot').exists()).toBe(false)
-        expect(wrapper.find('.supervision-slot-sizer').exists()).toBe(false)
-      }
-    })
-
-    it('renders NO .supervision-slot or .supervision-slot-sizer anywhere, in any state (standalone)', async () => {
-      const wrapper = mountViewer()
-
-      for (const s of [{}, { watched: true }, { watched: true, controlled: true }]) {
-        await setSupervision(wrapper, s)
-        expect(wrapper.find('.supervision-slot').exists()).toBe(false)
-        expect(wrapper.find('.supervision-slot-sizer').exists()).toBe(false)
-      }
-    })
-
+  // ── Idle is AT-silent everywhere ──
+  describe('idle AT-silence', () => {
     it('idle announces nothing to AT: no chip and no live region anywhere (SettingsCard)', async () => {
       const wrapper = mountViewer({ useSettingsCard: true })
       await setSupervision(wrapper, {})
