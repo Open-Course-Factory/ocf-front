@@ -43,9 +43,18 @@ describe('BaseModal', () => {
   })
 
   describe('container contract', () => {
-    it('is medium sized unless a size is given', () => {
-      expect(mountModal().find('[role="dialog"]').classes()).toContain('base-modal-medium')
-      expect(mountModal({ size: 'large' }).find('[role="dialog"]').classes()).toContain('base-modal-large')
+    it.each([
+      [undefined, 'medium'],
+      ['small', 'small'],
+      ['medium', 'medium'],
+      ['large', 'large'],
+      ['xlarge', 'xlarge']
+    ])('with size %s it is %s sized, and only that', (size, expected) => {
+      const sizes = mountModal(size ? { size } : {})
+        .find('[role="dialog"]')
+        .classes()
+        .filter(name => /^base-modal-(small|medium|large|xlarge)$/.test(name))
+      expect(sizes).toEqual([`base-modal-${expected}`])
     })
 
     it('drops its padding only when noPadding is set', () => {
@@ -57,6 +66,14 @@ describe('BaseModal', () => {
       const withIcon = mountModal({ title: 'Title', titleIcon: 'fas fa-info-circle' })
       expect(withIcon.find('h2 i').classes()).toEqual(['fas', 'fa-info-circle'])
       expect(mountModal({ title: 'Title' }).find('h2 i').exists()).toBe(false)
+    })
+
+    it('shows the confirm and cancel icons when given, and none otherwise', () => {
+      const footer = { showDefaultFooter: true, confirmText: 'Save', cancelText: 'Back' }
+      const withIcons = mountModal({ ...footer, confirmIcon: 'fas fa-save', cancelIcon: 'fas fa-arrow-left' })
+      expect(withIcons.find('.base-modal-footer .btn-primary i').classes()).toEqual(['fas', 'fa-save'])
+      expect(withIcons.find('.base-modal-footer .btn-secondary i').classes()).toEqual(['fas', 'fa-arrow-left'])
+      expect(mountModal(footer).find('.base-modal-footer i').exists()).toBe(false)
     })
 
     it('renders the header slot when no title is given, and no header without either', () => {
