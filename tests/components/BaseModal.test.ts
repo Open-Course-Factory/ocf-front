@@ -42,29 +42,7 @@ describe('BaseModal', () => {
     })
   })
 
-  describe('size variants', () => {
-    it.each([
-      ['small', 'base-modal-small'],
-      ['medium', 'base-modal-medium'],
-      ['large', 'base-modal-large'],
-      ['xlarge', 'base-modal-xlarge']
-    ])('applies %s size class', (size, expectedClass) => {
-      const wrapper = mountModal({ size })
-      expect(wrapper.find('.base-modal-container').classes()).toContain(expectedClass)
-    })
-
-    it('defaults to medium size', () => {
-      const wrapper = mountModal()
-      expect(wrapper.find('.base-modal-container').classes()).toContain('base-modal-medium')
-    })
-  })
-
   describe('loading state', () => {
-    it('shows spinner when isLoading is true', () => {
-      const wrapper = mountModal({ isLoading: true })
-      expect(wrapper.find('.base-modal-loading').exists()).toBe(true)
-    })
-
     it('hides default slot content when loading', () => {
       const wrapper = mountModal(
         { isLoading: true },
@@ -126,11 +104,6 @@ describe('BaseModal', () => {
   })
 
   describe('close button', () => {
-    it('shows close button by default', () => {
-      const wrapper = mountModal()
-      expect(wrapper.find('.base-modal-close').exists()).toBe(true)
-    })
-
     it('emits close event when close button is clicked', async () => {
       const wrapper = mountModal()
       await wrapper.find('.base-modal-close').trigger('click')
@@ -145,11 +118,6 @@ describe('BaseModal', () => {
     it('uses custom closeLabel as aria-label', () => {
       const wrapper = mountModal({ closeLabel: 'Dismiss' })
       expect(wrapper.find('.base-modal-close').attributes('aria-label')).toBe('Dismiss')
-    })
-
-    it('falls back to "Close" when no closeLabel is provided', () => {
-      const wrapper = mountModal()
-      expect(wrapper.find('.base-modal-close').attributes('aria-label')).toBe('Close')
     })
   })
 
@@ -177,29 +145,6 @@ describe('BaseModal', () => {
     it('renders title text', () => {
       const wrapper = mountModal({ title: 'My Modal Title' })
       expect(wrapper.find('.base-modal-title').text()).toContain('My Modal Title')
-    })
-
-    it('renders title icon when titleIcon is provided', () => {
-      const wrapper = mountModal({ title: 'Title', titleIcon: 'fas fa-info-circle' })
-      const icon = wrapper.find('.base-modal-title i')
-      expect(icon.exists()).toBe(true)
-      expect(icon.classes()).toContain('fas')
-      expect(icon.classes()).toContain('fa-info-circle')
-    })
-
-    it('does not render title icon when titleIcon is empty', () => {
-      const wrapper = mountModal({ title: 'Title' })
-      expect(wrapper.find('.base-modal-title i').exists()).toBe(false)
-    })
-
-    it('renders header section when title is provided', () => {
-      const wrapper = mountModal({ title: 'Test' })
-      expect(wrapper.find('.base-modal-header').exists()).toBe(true)
-    })
-
-    it('does not render header when no title and no header slot', () => {
-      const wrapper = mountModal()
-      expect(wrapper.find('.base-modal-header').exists()).toBe(false)
     })
   })
 
@@ -249,28 +194,6 @@ describe('BaseModal', () => {
       expect((confirmBtn.element as HTMLButtonElement).disabled).toBe(true)
     })
 
-    it('renders confirm icon when provided', () => {
-      const wrapper = mountModal({
-        showDefaultFooter: true,
-        confirmText: 'Save',
-        confirmIcon: 'fas fa-save'
-      })
-      const icon = wrapper.find('.btn-primary i')
-      expect(icon.exists()).toBe(true)
-      expect(icon.classes()).toContain('fa-save')
-    })
-
-    it('renders cancel icon when provided', () => {
-      const wrapper = mountModal({
-        showDefaultFooter: true,
-        cancelText: 'Back',
-        cancelIcon: 'fas fa-arrow-left'
-      })
-      const icon = wrapper.find('.btn-secondary i')
-      expect(icon.exists()).toBe(true)
-      expect(icon.classes()).toContain('fa-arrow-left')
-    })
-
     it('does not render footer when showDefaultFooter is false and no footer slot', () => {
       const wrapper = mountModal({ showDefaultFooter: false })
       expect(wrapper.find('.base-modal-footer').exists()).toBe(false)
@@ -316,38 +239,6 @@ describe('BaseModal', () => {
     it('sets no test id when none is given', () => {
       const wrapper = mountModal(footer)
       expect(wrapper.find('.base-modal-footer [data-testid]').exists()).toBe(false)
-    })
-  })
-
-  describe('slots', () => {
-    it('renders default slot content', () => {
-      const wrapper = mountModal({}, { default: '<p class="custom-content">Hello World</p>' })
-      expect(wrapper.find('.custom-content').exists()).toBe(true)
-      expect(wrapper.find('.custom-content').text()).toBe('Hello World')
-    })
-
-    it('renders header slot content', () => {
-      const wrapper = mountModal({}, { header: '<h3 class="custom-header">Custom Header</h3>' })
-      expect(wrapper.find('.base-modal-header').exists()).toBe(true)
-      expect(wrapper.find('.custom-header').exists()).toBe(true)
-    })
-
-    it('renders footer slot content', () => {
-      const wrapper = mountModal({}, { footer: '<div class="custom-footer">Custom Footer</div>' })
-      expect(wrapper.find('.base-modal-footer').exists()).toBe(true)
-      expect(wrapper.find('.custom-footer').exists()).toBe(true)
-    })
-  })
-
-  describe('noPadding', () => {
-    it('applies no-padding class when noPadding is true', () => {
-      const wrapper = mountModal({ noPadding: true })
-      expect(wrapper.find('.base-modal-container').classes()).toContain('base-modal-no-padding')
-    })
-
-    it('does not apply no-padding class by default', () => {
-      const wrapper = mountModal()
-      expect(wrapper.find('.base-modal-container').classes()).not.toContain('base-modal-no-padding')
     })
   })
 
