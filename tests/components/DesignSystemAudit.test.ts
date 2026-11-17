@@ -39,8 +39,12 @@ describe('DesignSystemAudit', () => {
   })
 
   it('labels a swatch for every color token defined in variables.css', () => {
-    const labels = new Set(mountPage().findAll('code').map(c => c.text()))
+    const wrapper = mountPage()
+    const labels = new Set(wrapper.findAll('code').map(c => c.text()))
     expect(colorTokens.filter(token => !labels.has(token))).toEqual([])
+    // Each swatch is painted with its own token.
+    const painted = wrapper.findAll('[style]').map(el => el.attributes('style')!).join(';')
+    expect(colorTokens.filter(token => !painted.includes(`var(${token})`))).toEqual([])
   })
 
   it('switches theme through the app theme, with pressed state on the toggle', async () => {
