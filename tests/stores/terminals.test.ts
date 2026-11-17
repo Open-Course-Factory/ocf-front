@@ -100,4 +100,20 @@ describe('terminals store', () => {
       expect(store.activeSessions).toEqual([])
     })
   })
+
+  // What the terminal form and table are built from.
+  describe('fieldList', () => {
+    it('exposes the session fields', () => {
+      const fields = useTerminalsStore().fieldList
+      const expected = ['id', 'session_id', 'status', 'expires_at', 'terms', 'expiry', 'created_at']
+      expect(expected.filter(name => !fields.has(name))).toEqual([])
+    })
+
+    it.each([
+      ['terms', { type: 'textarea', toBeSet: true, required: true }],
+      ['status', { toBeSet: false, toBeEdited: false }]
+    ])('configures %s as the form expects', (name, config) => {
+      expect(useTerminalsStore().fieldList.get(name)).toMatchObject(config)
+    })
+  })
 })
