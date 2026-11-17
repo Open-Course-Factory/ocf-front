@@ -72,6 +72,8 @@ describe('TerminalAdvancedOptions', () => {
 
       const content = wrapper.find('.collapsible-content')
       expect(isVShowHidden(content)).toBe(false)
+      // A hostname label is at most 63 characters (RFC 1035).
+      expect(wrapper.find('input#hostname').attributes('maxlength')).toBe('63')
     })
 
     it('collapses the content when the header is clicked again', async () => {
