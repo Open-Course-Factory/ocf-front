@@ -113,6 +113,39 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  // One-line pass-throughs, each with a caller: Login refreshes the flags
+  // after sign-in and waits for them; the admin debug page forces a fetch,
+  // syncs usage limits and lists every flag.
+  describe('service calls behind the composable', () => {
+    it('refreshes the flags after login', async () => {
+      await useFeatureFlags().refreshAfterLogin()
+      expect(mockFeatureFlagService.refreshAfterLogin).toHaveBeenCalledTimes(1)
+    })
+
+    it('waits for the flags to be initialized', async () => {
+      await useFeatureFlags().waitForInitialization()
+      expect(mockFeatureFlagService.waitForInitialization).toHaveBeenCalledTimes(1)
+    })
+
+    it('fetches from the backend, forcing only when asked', async () => {
+      const { fetchFromBackend } = useFeatureFlags()
+      await fetchFromBackend()
+      await fetchFromBackend(true)
+      expect(mockFeatureFlagService.fetchFromBackend.mock.calls).toEqual([[undefined], [true]])
+    })
+
+    it('syncs the usage limits', async () => {
+      await useFeatureFlags().syncUsageLimits()
+      expect(mockFeatureFlagService.syncUsageLimits).toHaveBeenCalledTimes(1)
+    })
+
+    it('lists every flag the service knows', () => {
+      const all = { terminal_sessions: { enabled: true } }
+      mockFeatureFlagService.getAllFlags.mockReturnValue(all)
+      expect(useFeatureFlags().flags.value).toEqual(all)
+    })
+  })
+
   describe('isMetricVisible', () => {
     it('delegates to service.isMetricVisible with actor', () => {
       const { isMetricVisible } = useFeatureFlags()
