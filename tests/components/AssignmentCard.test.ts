@@ -85,6 +85,14 @@ describe('AssignmentCard', () => {
     })
   })
 
+  describe('scenario source', () => {
+    it("marks an organization's scenario, and not a platform one", () => {
+      expect(mountCard().find('.org-badge').exists()).toBe(true)
+      const platform = { ...assignment, scenario: { ...assignment.scenario, organization_id: null } }
+      expect(mountCard({ assignment: platform }).find('.org-badge').exists()).toBe(false)
+    })
+  })
+
   describe('progress section', () => {
     it('renders the DS ProgressBar at the right fill, plus the x/y text and the avg chip', () => {
       const wrapper = mountCard({
