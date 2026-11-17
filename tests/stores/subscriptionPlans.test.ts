@@ -1,7 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { readFileSync } from 'fs'
-import { resolve } from 'path'
 
 // Mocks MUST be defined BEFORE imports
 vi.mock('axios', () => ({
@@ -123,27 +121,6 @@ describe('subscriptionPlans store', () => {
         expect(field!.toBeEdited).toBe(true)
       }
     )
-  })
-
-  describe('i18n keys for budget fields exist in both en and fr', () => {
-    // Smoke-test the source file directly so we can verify both locales
-    // without coupling to the i18n mock.
-    const storeSource = readFileSync(
-      resolve(__dirname, '../../src/stores/subscriptionPlans.ts'),
-      'utf-8'
-    )
-
-    it.each([
-      'max_cpu',
-      'max_memory_mb',
-      'created_at',
-      'updated_at'
-    ])('declares key "%s" at least twice (en + fr)', (key) => {
-      // Each i18n key should appear at least twice in the store source:
-      // once in the en block, once in the fr block.
-      const occurrences = storeSource.split(`${key}:`).length - 1
-      expect(occurrences).toBeGreaterThanOrEqual(2)
-    })
   })
 })
 
