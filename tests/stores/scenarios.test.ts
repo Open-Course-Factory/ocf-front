@@ -36,6 +36,38 @@ describe('scenarios store', () => {
   })
 
   describe('fieldList', () => {
+    // What the admin scenario form is built from.
+    it('exposes the fields the scenario form needs', () => {
+      const fields = useScenariosStore().fieldList
+      const expected = [
+        'id', 'name', 'title', 'description', 'difficulty', 'estimated_time_minutes', 'os_type',
+        'instance_type', 'source_type', 'git_repository', 'git_branch', 'is_public',
+        'flags_enabled', 'crash_traps', 'hostname'
+      ]
+      expect(expected.filter(name => !fields.has(name))).toEqual([])
+    })
+
+    it.each([
+      ['difficulty', ['beginner', 'intermediate', 'advanced']],
+      ['os_type', ['deb', 'rpm', 'apk', 'pacman']],
+      ['source_type', ['git', 'upload', 'builtin', 'seed']]
+    ])('offers the %s choices the backend accepts', (name, values) => {
+      const field = useScenariosStore().fieldList.get(name)!
+      expect(field.type).toBe('select')
+      expect(field.options.map((o: any) => o.value)).toEqual(values)
+    })
+
+    it.each([
+      ['name', { required: true, toBeSet: true }],
+      ['id', { display: false, toBeSet: false, toBeEdited: false }],
+      ['instance_type', { type: 'searchable-select', required: true }],
+      ['is_public', { type: 'checkbox', toBeSet: true, toBeEdited: true }],
+      ['flags_enabled', { type: 'checkbox', toBeSet: true, toBeEdited: true }],
+      ['crash_traps', { type: 'checkbox', toBeSet: true, toBeEdited: true }]
+    ])('configures %s as the form expects', (name, config) => {
+      expect(useScenariosStore().fieldList.get(name)).toMatchObject(config)
+    })
+
     // The backend still persists gsh_enabled so existing archives round-trip,
     // but nothing consumes it: the editor must not offer it.
     it('does not expose the dropped gsh_enabled flag', () => {
