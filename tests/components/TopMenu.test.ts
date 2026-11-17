@@ -1,44 +1,78 @@
-import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'fs'
-import { resolve } from 'path'
-
 /**
- * Bug: isPersonalOrg function must not recurse.
- *
- * A replace_all accidentally turned the function body into a self-call:
- *   const isPersonalOrg = (org) => isPersonalOrg(org) || ...
- * This causes "too much recursion" and crashes the dropdown.
- *
- * The function must check org.organization_type directly, not call itself.
+ * The top bar is on every page. Its organization block once crashed with
+ * "too much recursion" (a helper rewritten into a call to itself), which took
+ * every page down as soon as the user menu opened.
  */
-describe('TopMenu — isPersonalOrg helper', () => {
-  const filePath = resolve(__dirname, '../../src/components/Menus/TopMenu.vue')
-  const source = readFileSync(filePath, 'utf-8')
 
-  it('isPersonalOrg must not call itself (no recursion)', () => {
-    // Extract the isPersonalOrg function definition line
-    const match = source.match(/const isPersonalOrg\s*=\s*\([^)]*\)\s*=>\s*(.+)/)
-    expect(match, 'isPersonalOrg function not found in TopMenu.vue').toBeTruthy()
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { mount, flushPromises, RouterLinkStub } from '@vue/test-utils'
+import { createI18n } from 'vue-i18n'
+import { createPinia, setActivePinia } from 'pinia'
 
-    const functionBody = match![1]
+vi.mock('axios', () => ({
+  default: {
+    get: vi.fn().mockResolvedValue({ data: [] }),
+    post: vi.fn().mockResolvedValue({ data: {} }),
+    patch: vi.fn().mockResolvedValue({ data: {} }),
+    delete: vi.fn().mockResolvedValue({ data: {} }),
+    defaults: { baseURL: '', timeout: 30000, headers: { common: {} } },
+    interceptors: {
+      request: { use: vi.fn(), eject: vi.fn() },
+      response: { use: vi.fn(), eject: vi.fn() }
+    }
+  }
+}))
 
-    // The function body must NOT contain a call to isPersonalOrg (that would be recursion)
-    expect(functionBody).not.toMatch(/isPersonalOrg\s*\(/)
+vi.mock('vue-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('vue-router')>()),
+  useRouter: () => ({ push: vi.fn() })
+}))
+
+import TopMenu from '../../src/components/Menus/TopMenu.vue'
+import { useOrganizationsStore } from '../../src/stores/organizations'
+
+async function mountWithOrganizations(...organizations: Array<Record<string, unknown>>) {
+  const store = useOrganizationsStore() as any
+  store.loadOrganizations = vi.fn().mockResolvedValue(undefined)
+  store.entities.splice(0, Infinity, ...organizations)
+  const wrapper = mount(TopMenu, {
+    global: {
+      plugins: [createI18n({ legacy: false, locale: 'en', fallbackLocale: 'en', messages: { en: {}, fr: {} } })],
+      stubs: { RouterLink: RouterLinkStub, InstanceBrand: true, BetaBadge: true, LanguageSelector: true }
+    }
+  })
+  await flushPromises()
+  await wrapper.get('.user-info').trigger('click')
+  return wrapper
+}
+
+describe('TopMenu — organization block of the user menu', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
   })
 
-  it('isPersonalOrg must check organization_type field directly', () => {
-    const match = source.match(/const isPersonalOrg\s*=\s*\([^)]*\)\s*=>\s*(.+)/)
-    const functionBody = match![1]
+  it('names the current organization and says whether it is personal or a team', async () => {
+    const wrapper = await mountWithOrganizations(
+      { id: 'org-p', name: 'Mine', organization_type: 'personal' },
+      { id: 'org-t', name: 'Acme', organization_type: 'team' }
+    )
 
-    // Must reference organization_type directly
-    expect(functionBody).toMatch(/organization_type\s*===\s*['"]personal['"]/)
+    const current = wrapper.get('.current-organization-info')
+    expect(current.text()).toContain('Mine')
+    expect(current.text()).toContain('Personal')
+
+    await wrapper.get('.org-switch-btn').trigger('click')
+    const choices = wrapper.findAll('.org-switcher-item').map(item => item.text())
+    expect(choices).toHaveLength(2)
+    expect(choices[0]).toContain('Personal')
+    expect(choices[1]).toContain('Acme')
+    expect(choices[1]).toContain('Team')
   })
 
-  it('isPersonalOrg must also check is_personal for legacy data', () => {
-    const match = source.match(/const isPersonalOrg\s*=\s*\([^)]*\)\s*=>\s*(.+)/)
-    const functionBody = match![1]
+  it('still calls a legacy organization personal, from its is_personal flag', async () => {
+    const wrapper = await mountWithOrganizations({ id: 'org-legacy', name: 'Old', is_personal: true })
 
-    // Must reference is_personal for backward compat
-    expect(functionBody).toMatch(/is_personal/)
+    expect(wrapper.get('.current-organization-info').text()).toContain('Personal')
   })
 })
