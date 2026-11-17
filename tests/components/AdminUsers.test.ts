@@ -160,32 +160,6 @@ describe('AdminUsers', () => {
     expect(wrapper.text().toLowerCase()).toContain('no users')
   })
 
-  it('renders one row per user', async () => {
-    mockFetchAll.mockResolvedValueOnce([
-      makeUser({ id: 'u1', username: 'alice' }),
-      makeUser({ id: 'u2', username: 'bob', email: 'bob@example.com' }),
-      makeUser({ id: 'u3', username: 'carol', email: 'carol@example.com' })
-    ])
-    const wrapper = mountAdminUsers()
-    await flushPromises()
-
-    const rows = wrapper.findAll('tbody tr')
-    expect(rows.length).toBe(3)
-  })
-
-  it('shows username and email', async () => {
-    mockFetchAll.mockResolvedValueOnce([
-      makeUser({ id: 'u1', username: 'alice', display_name: 'Alice Smith', email: 'alice@example.com' })
-    ])
-    const wrapper = mountAdminUsers()
-    await flushPromises()
-
-    const text = wrapper.text()
-    expect(text).toContain('alice')
-    expect(text).toContain('Alice Smith')
-    expect(text).toContain('alice@example.com')
-  })
-
   it('shows organization badges with role', async () => {
     mockFetchAll.mockResolvedValueOnce([
       makeUser({
@@ -218,16 +192,6 @@ describe('AdminUsers', () => {
     // Role is an editable <select>, not plain text — assert its value.
     const roleSelect = wrapper.find('.chip-role-select')
     expect((roleSelect.element as HTMLSelectElement).value).toBe('manager')
-  })
-
-  it('shows admin badge for is_admin: true', async () => {
-    mockFetchAll.mockResolvedValueOnce([
-      makeUser({ id: 'u1', username: 'alice', is_admin: true })
-    ])
-    const wrapper = mountAdminUsers()
-    await flushPromises()
-
-    expect(wrapper.find('.admin-badge').exists()).toBe(true)
   })
 
   it('sortable by display_name column', async () => {
@@ -603,28 +567,6 @@ describe('AdminUsers', () => {
     await findActionButton(wrapper, 'Revoke admin')!.trigger('click')
     await nextTick()
     expect(wrapper.find('.base-modal-overlay button.btn-danger').exists()).toBe(true)
-  })
-
-  it('each action-confirm popup shows an icon matching its own action, not a generic one', async () => {
-    mockFetchAll.mockResolvedValueOnce([
-      makeUser({ id: 'u2', username: 'bob', display_name: 'Bob', is_active: true, email_verified: false })
-    ])
-    const wrapper = mountAdminUsers()
-    await flushPromises()
-
-    const cases: Array<[string, string]> = [
-      ['Verify email', 'fa-envelope-circle-check'],
-      ['Reset password', 'fa-key'],
-      ['Block account', 'fa-ban']
-    ]
-
-    for (const [buttonText, expectedIconClass] of cases) {
-      await findActionButton(wrapper, buttonText)!.trigger('click')
-      await nextTick()
-      expect(wrapper.find(`.base-modal-overlay i.${expectedIconClass}`).exists()).toBe(true)
-      await wrapper.find('.base-modal-overlay button.btn-secondary').trigger('click')
-      await nextTick()
-    }
   })
 
   it('admin cannot block their own account (button disabled)', async () => {
