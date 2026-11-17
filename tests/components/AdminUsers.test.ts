@@ -160,6 +160,21 @@ describe('AdminUsers', () => {
     expect(wrapper.text().toLowerCase()).toContain('no users')
   })
 
+  it('shows the @username and marks a platform administrator, and only them', async () => {
+    mockFetchAll.mockResolvedValueOnce([
+      makeUser({ id: 'u1', username: 'alice', is_admin: true }),
+      makeUser({ id: 'u2', username: 'bob', email: 'bob@example.com', is_admin: false })
+    ])
+    const wrapper = mountAdminUsers()
+    await flushPromises()
+
+    const rows = wrapper.findAll('tbody tr')
+    const alice = rows.find(row => row.text().includes('@alice'))!
+    const bob = rows.find(row => row.text().includes('@bob'))!
+    expect(alice.find('.admin-badge').exists()).toBe(true)
+    expect(bob.find('.admin-badge').exists()).toBe(false)
+  })
+
   it('shows organization badges with role', async () => {
     mockFetchAll.mockResolvedValueOnce([
       makeUser({
