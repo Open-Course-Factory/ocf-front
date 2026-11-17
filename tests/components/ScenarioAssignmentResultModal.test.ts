@@ -55,6 +55,10 @@ function mountModal(props: MountProps = {}) {
 }
 
 describe('ScenarioAssignmentResultModal', () => {
+  it('stays closed while visible is false', () => {
+    expect(mountModal({ visible: false }).find('[role="dialog"]').exists()).toBe(false)
+  })
+
   it('renders the result message when visible', () => {
     const wrapper = mountModal({ message: 'Started 5 sessions.' })
     expect(wrapper.find('.base-modal-overlay').exists()).toBe(true)

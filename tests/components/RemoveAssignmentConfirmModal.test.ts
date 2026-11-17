@@ -48,6 +48,10 @@ function mountModal(props: Record<string, unknown> = {}) {
 }
 
 describe('RemoveAssignmentConfirmModal', () => {
+  it('stays closed while visible is false', () => {
+    expect(mountModal({ visible: false }).find('[role="dialog"]').exists()).toBe(false)
+  })
+
   it('renders the modal overlay and a confirm button when visible', () => {
     const wrapper = mountModal({ visible: true })
     expect(wrapper.find('.base-modal-overlay').exists()).toBe(true)
