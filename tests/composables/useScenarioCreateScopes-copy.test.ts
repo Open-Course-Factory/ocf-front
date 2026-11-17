@@ -93,3 +93,30 @@ describe('useScenarioCreateScopes.groupScopes — role from the class member lis
   })
 })
 
+
+describe('useScenarioCreateScopes.pickDefaultScopeKey', () => {
+  it('defaults to the current organization when the user authors in it', () => {
+    localStorage.setItem('currentOrganizationId', 'org-b')
+    useOrganizationsStore().initCurrentOrganization()
+    expect(useScenarioCreateScopes().pickDefaultScopeKey()).toBe('org:org-b')
+  })
+
+  it('falls back to the first authoring organization when the current one is member-only', () => {
+    localStorage.setItem('currentOrganizationId', 'org-c')
+    useOrganizationsStore().initCurrentOrganization()
+    expect(useScenarioCreateScopes().pickDefaultScopeKey()).toBe('org:org-a')
+  })
+})
+
+// A teacher re-imports a lab of their organization into that organization,
+// not into one of their classes.
+describe('useScenarioCreateScopes.scopeKeyForScenario', () => {
+  it("updates a scenario in place in its organization when the user may author there", () => {
+    expect(useScenarioCreateScopes().scopeKeyForScenario({ organization_id: 'org-a' })).toBe('org:org-a')
+  })
+
+  it("falls back to the user's class in that organization when they may not author in it", () => {
+    useUserMembershipsStore().orgMemberships = [{ organization_id: 'org-a', role: 'member' }]
+    expect(useScenarioCreateScopes().scopeKeyForScenario({ organization_id: 'org-a' })).toBe('group:class-a')
+  })
+})
