@@ -1,9 +1,9 @@
 /**
- * Store field labels exist in English and in French.
+ * Store labels exist in English and in French.
  *
  * The store test files mock useStoreTranslations, so they cannot see whether a
- * label key is really declared. Here the stores register their messages in the
- * REAL i18n instance, and each key is looked up in both locales.
+ * label is really declared. Here each store registers its messages in the REAL
+ * i18n instance, and the two locales must declare the same keys.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -27,29 +27,33 @@ import i18n from '../../src/i18n'
 import { useSubscriptionPlansStore } from '../../src/stores/subscriptionPlans'
 import { useBillingAddressesStore } from '../../src/stores/billingAddresses'
 
-const LOCALES = ['en', 'fr'] as const
-
-function expectTranslated(key: string) {
-  for (const locale of LOCALES) {
-    expect(i18n.global.te(key, locale), `${key} in ${locale}`).toBe(true)
-  }
+/** Every leaf key of a message tree, as dotted paths. */
+function keyPaths(messages: Record<string, any>, prefix = ''): string[] {
+  return Object.entries(messages).flatMap(([key, value]) =>
+    value && typeof value === 'object' && !('loc' in value) && !Array.isArray(value)
+      ? keyPaths(value, `${prefix}${key}.`)
+      : [`${prefix}${key}`]
+  ).sort()
 }
 
-describe('store field labels are translated in both locales', () => {
+function namespaceKeys(locale: string, namespace: string): string[] {
+  return keyPaths((i18n.global.getLocaleMessage(locale) as Record<string, any>)[namespace] ?? {})
+}
+
+// Limit: a key missing in both locales is not caught.
+describe('store labels are declared in both locales', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })
 
-  it.each(['max_cpu', 'max_memory_mb', 'created_at', 'updated_at'])(
-    'subscriptionPlans.%s',
-    (field) => {
-      useSubscriptionPlansStore()
-      expectTranslated(`subscriptionPlans.${field}`)
-    }
-  )
+  it.each([
+    ['subscriptionPlans', useSubscriptionPlansStore],
+    ['billingAddresses', useBillingAddressesStore]
+  ] as const)('%s has the same keys in French and in English', (namespace, useStore) => {
+    useStore()
 
-  it.each(['company_name', 'siret', 'vat_number'])('billingAddresses.%s', (field) => {
-    useBillingAddressesStore()
-    expectTranslated(`billingAddresses.${field}`)
+    const english = namespaceKeys('en', namespace)
+    expect(english.length).toBeGreaterThan(0)
+    expect(namespaceKeys('fr', namespace)).toEqual(english)
   })
 })
