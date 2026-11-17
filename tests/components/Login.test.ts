@@ -210,6 +210,19 @@ describe('Login', () => {
       expect(passwordInput.attributes('autocomplete')).toBe('current-password')
     })
 
+    it('offers "remember me", the forgotten-password link and the way to register', () => {
+      const wrapper = mountLogin()
+      expect(wrapper.find('[data-testid="login-remember-me"]').attributes('type')).toBe('checkbox')
+      expect(wrapper.find('[data-testid="login-forgot-password"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="login-register-link"] a').exists()).toBe(true)
+    })
+
+    it('has an enabled, labelled submit button before anything is sent', () => {
+      const submit = mountLogin().find('[data-testid="login-submit"]')
+      expect(submit.attributes('disabled')).toBeUndefined()
+      expect(submit.text()).toBe('Sign in')
+    })
+
     // `/` is the login page itself now; home is the marketing site.
     it('links the logo to the marketing site, not back to itself', () => {
       const wrapper = mountLogin()
