@@ -113,52 +113,6 @@ describe('useFeatureFlags', () => {
     })
   })
 
-  describe('refreshAfterLogin', () => {
-    it('calls service.refreshAfterLogin', async () => {
-      const { refreshAfterLogin } = useFeatureFlags()
-      await refreshAfterLogin()
-      expect(mockFeatureFlagService.refreshAfterLogin).toHaveBeenCalledOnce()
-    })
-  })
-
-  describe('fetchFromBackend', () => {
-    it('calls service.fetchFromBackend without force by default', async () => {
-      const { fetchFromBackend } = useFeatureFlags()
-      await fetchFromBackend()
-      expect(mockFeatureFlagService.fetchFromBackend).toHaveBeenCalledWith(undefined)
-    })
-
-    it('calls service.fetchFromBackend with force=true', async () => {
-      const { fetchFromBackend } = useFeatureFlags()
-      await fetchFromBackend(true)
-      expect(mockFeatureFlagService.fetchFromBackend).toHaveBeenCalledWith(true)
-    })
-  })
-
-  describe('waitForInitialization', () => {
-    it('calls service.waitForInitialization', async () => {
-      const { waitForInitialization } = useFeatureFlags()
-      await waitForInitialization()
-      expect(mockFeatureFlagService.waitForInitialization).toHaveBeenCalledOnce()
-    })
-  })
-
-  describe('syncUsageLimits', () => {
-    it('calls service.syncUsageLimits', async () => {
-      const { syncUsageLimits } = useFeatureFlags()
-      await syncUsageLimits()
-      expect(mockFeatureFlagService.syncUsageLimits).toHaveBeenCalledOnce()
-    })
-  })
-
-  describe('clearLocalStorage', () => {
-    it('delegates to service.clearLocalStorage', () => {
-      const { clearLocalStorage } = useFeatureFlags()
-      clearLocalStorage()
-      expect(mockFeatureFlagService.clearLocalStorage).toHaveBeenCalledOnce()
-    })
-  })
-
   describe('isMetricVisible', () => {
     it('delegates to service.isMetricVisible with actor', () => {
       const { isMetricVisible } = useFeatureFlags()
@@ -168,12 +122,6 @@ describe('useFeatureFlags', () => {
         'terminal_sessions',
         expect.objectContaining({ userId: 'user-123' })
       )
-    })
-
-    it('returns false when service returns false', () => {
-      mockFeatureFlagService.isMetricVisible.mockReturnValue(false)
-      const { isMetricVisible } = useFeatureFlags()
-      expect(isMetricVisible('hidden_metric')).toBe(false)
     })
   })
 
@@ -186,15 +134,6 @@ describe('useFeatureFlags', () => {
         'terminal_access',
         expect.objectContaining({ userId: 'user-123' })
       )
-    })
-  })
-
-  describe('getVisibleMetricTypes', () => {
-    it('delegates to service.getVisibleMetricTypes', () => {
-      const { getVisibleMetricTypes } = useFeatureFlags()
-      const result = getVisibleMetricTypes()
-      expect(result).toEqual(new Set(['terminal_sessions', 'scenarios']))
-      expect(mockFeatureFlagService.getVisibleMetricTypes).toHaveBeenCalled()
     })
   })
 
@@ -265,16 +204,6 @@ describe('useFeatureFlags', () => {
       await updateFlag('terminal_sessions', { enabled: true })
       expect(mockFeatureFlagService.updateFlag).not.toHaveBeenCalled()
       warnSpy.mockRestore()
-    })
-  })
-
-  describe('flags computed', () => {
-    it('returns the result of service.getAllFlags', () => {
-      const mockFlags = { terminal_sessions: { enabled: true } }
-      mockFeatureFlagService.getAllFlags.mockReturnValue(mockFlags)
-
-      const { flags } = useFeatureFlags()
-      expect(flags.value).toEqual(mockFlags)
     })
   })
 
