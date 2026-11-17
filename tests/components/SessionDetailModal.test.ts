@@ -107,6 +107,10 @@ describe('SessionDetailModal', () => {
     })
   })
 
+  it('stays closed while visible is false', () => {
+    expect(mountModal({ visible: false }).find('[role="dialog"]').exists()).toBe(false)
+  })
+
   it('loads the detail on open and renders one steps-table row per step', async () => {
     const wrapper = mountModal({ visible: true })
     await flushPromises()
