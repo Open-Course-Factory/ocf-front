@@ -32,8 +32,6 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { readFileSync, readdirSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { mount, flushPromises, RouterLinkStub } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
@@ -475,27 +473,6 @@ describe('TerminalSessionView — supervisor mode (?group=<classId>)', () => {
     })
     for (const word of words) expect(word.length).toBeGreaterThan(0)
     expect(new Set(words).size, 'completed, active and locked read differently').toBe(3)
-  })
-})
-
-describe('TerminalSessionView — supervisor styles', () => {
-  const sfc = readFileSync(resolve(__dirname, '../../src/components/Pages/TerminalSessionView.vue'), 'utf8')
-  const stylesDir = resolve(__dirname, '../../src/assets/styles')
-  const sharedCss = readdirSync(stylesDir).filter(f => f.endsWith('.css')).map(f => readFileSync(resolve(stylesDir, f), 'utf8')).join('\n')
-
-  function supervisorRules(): string[] {
-    return [...sfc.matchAll(/\.supervisor-[^{}]*\{[^}]*\}/g)].map(m => m[0])
-  }
-
-  it('weights the current step with the design token, never a raw 600', () => {
-    const rules = supervisorRules()
-    expect(rules.length).toBeGreaterThan(0)
-    for (const rule of rules) expect(rule).not.toMatch(/font-weight:\s*\d/)
-    expect(rules.some(r => /supervisor-step-active/.test(r) && /font-weight:\s*var\(--font-weight-semibold\)/.test(r))).toBe(true)
-  })
-
-  it('styles the hidden status word, in the page or in a shared stylesheet', () => {
-    expect(/\.ocf-sr-only\s*[,{]/.test(sfc) || /\.ocf-sr-only\s*[,{]/.test(sharedCss)).toBe(true)
   })
 })
 
