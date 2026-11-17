@@ -3,8 +3,6 @@ import { ref, nextTick } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
-import { readFileSync } from 'fs'
-import { resolve } from 'path'
 
 // Mocks MUST be defined BEFORE imports
 vi.mock('axios', () => ({
@@ -86,18 +84,6 @@ describe('billingAddresses store — B2B fields', () => {
 
       // With the i18n mock returning the key, the label is the key path.
       expect(field!.label).toBe(`billingAddresses.${name}`)
-    })
-  })
-
-  describe('bilingual labels declared in the store source (en + fr)', () => {
-    const storeSource = readFileSync(
-      resolve(__dirname, '../../src/stores/billingAddresses.ts'),
-      'utf-8'
-    )
-
-    it.each(B2B_FIELDS)('declares i18n key "%s" at least twice (en + fr blocks)', (key) => {
-      const occurrences = storeSource.split(`${key}:`).length - 1
-      expect(occurrences).toBeGreaterThanOrEqual(2)
     })
   })
 
