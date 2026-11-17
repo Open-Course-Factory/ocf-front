@@ -120,3 +120,11 @@ describe('useScenarioCreateScopes.scopeKeyForScenario', () => {
     expect(useScenarioCreateScopes().scopeKeyForScenario({ organization_id: 'org-a' })).toBe('group:class-a')
   })
 })
+
+// A platform administrator authors anywhere, whatever their role in the organization.
+describe('useScenarioCreateScopes.orgScopes — platform administrator', () => {
+  it('keeps an organization the administrator does not author in', () => {
+    useCurrentUserStore().userRoles = ['administrator']
+    expect(ids(useScenarioCreateScopes().orgScopes.value)).toEqual(['org-a', 'org-b', 'org-c'])
+  })
+})
