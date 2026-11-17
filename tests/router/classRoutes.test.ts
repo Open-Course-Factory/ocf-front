@@ -60,6 +60,12 @@ describe('the six class pages', () => {
     expect(meta.requiredPermissions).toEqual(['view_groups'])
   })
 
+  it.each(['/my-classes', '/group-members'])('serves %s behind that same permission', path => {
+    const { meta } = router.resolve(path)
+    expect(meta.requiresAuth).toBe(true)
+    expect(meta.requiredPermissions).toEqual(['view_groups'])
+  })
+
   // The entitlement asks whether the caller may create classes in the active
   // organization: a co-trainer who is a plain org member, or anyone in another
   // org context, would be turned away from a class they do teach.
