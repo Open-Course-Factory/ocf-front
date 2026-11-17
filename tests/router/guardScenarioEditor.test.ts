@@ -50,7 +50,7 @@ describe('Router guard — scenario editor manager check (#213)', () => {
   beforeEach(async () => {
     canAccess.value = false
     memberships.isLoaded = true
-    memberships.ensureLoaded.mockClear()
+    memberships.ensureLoaded.mockReset()
     // Start away from TerminalSessions, so landing there proves a redirect.
     await router.replace('/organizations').catch(() => undefined)
   })
@@ -70,12 +70,13 @@ describe('Router guard — scenario editor manager check (#213)', () => {
     expect(await landOn('/scenario-editor')).toBe('ScenarioEditor')
   })
 
-  it('decides only once the memberships are loaded', async () => {
-    canAccess.value = true
+  it('waits for the memberships before deciding, so a non-manager is not let in on a reload', async () => {
+    memberships.isLoaded = false
+    memberships.ensureLoaded.mockImplementation(async () => {
+      memberships.isLoaded = true
+    })
 
-    await landOn('/scenario-editor')
-
-    expect(memberships.ensureLoaded).toHaveBeenCalled()
+    expect(await landOn('/scenario-editor')).toBe('TerminalSessions')
   })
 
   it('lets the page through when the memberships could not be loaded', async () => {

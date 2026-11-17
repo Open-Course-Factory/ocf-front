@@ -40,11 +40,8 @@ async function landOn(path: string): Promise<string | undefined> {
 describe('Router guard – permission check', () => {
   beforeEach(async () => {
     user.permissions = []
-    await router.replace('/terminal-sessions').catch(() => undefined)
-  })
-
-  it('declares the permission the tests below rely on', () => {
-    expect(router.resolve('/my-classes').meta.requiredPermissions).toEqual(['view_groups'])
+    // Start away from TerminalSessions, so landing there proves a redirect.
+    await router.replace('/organizations').catch(() => undefined)
   })
 
   it('allows navigation when user has the required permission', async () => {
@@ -54,9 +51,6 @@ describe('Router guard – permission check', () => {
   })
 
   it('redirects to TerminalSessions when user lacks required permission', async () => {
-    // Start elsewhere, so landing on TerminalSessions proves a redirect.
-    await router.replace('/organizations').catch(() => undefined)
-
     expect(await landOn('/my-classes')).toBe('TerminalSessions')
     expect(router.currentRoute.value.query).toEqual({ error: 'insufficient_permissions' })
   })

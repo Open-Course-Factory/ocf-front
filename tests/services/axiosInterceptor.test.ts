@@ -111,7 +111,7 @@ describe('axiosInterceptor', () => {
     it('triggers autoLogout on 401 errors', async () => {
       // The shared mock hands out a new store on each call; pin one to watch.
       const autoLogout = vi.fn()
-      vi.mocked(useCurrentUserStore).mockReturnValue({ autoLogout } as any)
+      vi.mocked(useCurrentUserStore).mockReturnValueOnce({ autoLogout } as any)
 
       const error = {
         response: { status: 401, data: {} },
