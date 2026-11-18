@@ -27,8 +27,6 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
-import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
 
 // ---- Mocks (must be declared before component imports) ----
@@ -121,46 +119,9 @@ vi.mock('../../src/composables/useNotification', () => ({
   useNotification: () => ({ showError, showSuccess, showConfirm }),
 }))
 
-import SubscriptionPlansCustomer from '../../src/components/Pages/SubscriptionPlansCustomer.vue'
+import { PAID_PLAN, mountPlansPage } from '../helpers/subscriptionPlansCustomerHelper'
 
-function createTestI18n() {
-  return createI18n({
-    legacy: false,
-    locale: 'en',
-    fallbackLocale: 'en',
-    messages: { en: {}, fr: {} },
-    missingWarn: false,
-    fallbackWarn: false,
-  })
-}
-
-const PAID_PLAN = {
-  id: 'plan-solo',
-  name: 'Solo',
-  price_amount: 1200,
-  currency: 'eur',
-  billing_interval: 'month',
-  is_active: true,
-  priority: 10,
-}
-
-function mountPage(plans: any[]) {
-  planEntities.length = 0
-  planEntities.push(...plans)
-  setActivePinia(createPinia())
-  return mount(SubscriptionPlansCustomer, {
-    global: {
-      plugins: [createTestI18n()],
-      stubs: {
-        AdminBadge: true,
-        'router-link': {
-          props: ['to'],
-          template: '<a class="router-link-stub" :data-to="JSON.stringify(to)"><slot /></a>',
-        },
-      },
-    },
-  })
-}
+const mountPage = (plans: any[]) => mountPlansPage(planEntities, plans)
 
 async function flushPromises() {
   await new Promise(resolve => setTimeout(resolve, 0))

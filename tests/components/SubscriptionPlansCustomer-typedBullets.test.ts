@@ -29,7 +29,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
 
 // ---- Mocks (must be declared before component imports) ----
@@ -115,17 +114,7 @@ vi.mock('../../src/composables/useNotification', () => ({
 }))
 
 import SubscriptionPlansCustomer from '../../src/components/Pages/SubscriptionPlansCustomer.vue'
-
-function createTestI18n() {
-  return createI18n({
-    legacy: false,
-    locale: 'en',
-    fallbackLocale: 'en',
-    messages: { en: {}, fr: {} },
-    missingWarn: false,
-    fallbackWarn: false,
-  })
-}
+import { createTestI18n } from '../helpers/subscriptionPlansCustomerHelper'
 
 function mountPage(plans: any[]) {
   planEntities.length = 0

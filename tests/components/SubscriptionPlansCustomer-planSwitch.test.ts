@@ -62,7 +62,6 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createPinia, setActivePinia } from 'pinia'
 
@@ -173,7 +172,7 @@ vi.mock('../../src/composables/useNotification', () => ({
   useNotification: () => ({ showError, showSuccess, showConfirm }),
 }))
 
-import SubscriptionPlansCustomer from '../../src/components/Pages/SubscriptionPlansCustomer.vue'
+import { FREE_PLAN, PAID_PLAN, PAID_PLAN_B, mountPlansPage, clickSubscribe } from '../helpers/subscriptionPlansCustomerHelper'
 
 const ORIGIN = window.location.origin
 
@@ -199,36 +198,6 @@ function createTestI18n() {
   })
 }
 
-const FREE_PLAN = {
-  id: 'plan-free',
-  name: 'Free',
-  price_amount: 0,
-  currency: 'eur',
-  billing_interval: 'month',
-  is_active: true,
-  priority: 0,
-}
-
-const PAID_PLAN = {
-  id: 'plan-solo',
-  name: 'Solo',
-  price_amount: 1200,
-  currency: 'eur',
-  billing_interval: 'month',
-  is_active: true,
-  priority: 10,
-}
-
-const PAID_PLAN_B = {
-  id: 'plan-pro',
-  name: 'Pro',
-  price_amount: 3900,
-  currency: 'eur',
-  billing_interval: 'month',
-  is_active: true,
-  priority: 20,
-}
-
 // An active, personal (non-assigned) paid subscription on the Solo plan.
 function paidSoloSubscription() {
   return {
@@ -251,35 +220,7 @@ function freeSubscription() {
   }
 }
 
-function mountPage(plans: any[]) {
-  planEntities.length = 0
-  planEntities.push(...plans)
-  setActivePinia(createPinia())
-  return mount(SubscriptionPlansCustomer, {
-    global: {
-      plugins: [createTestI18n()],
-      stubs: {
-        AdminBadge: true,
-        'router-link': {
-          props: ['to'],
-          template: '<a class="router-link-stub" :data-to="JSON.stringify(to)"><slot /></a>',
-        },
-      },
-    },
-  })
-}
-
-async function clickSubscribe(wrapper: any, planName: string) {
-  const card = wrapper
-    .findAll('.plan-card-compact')
-    .find((c: any) => c.text().includes(planName))
-  expect(card, `plan card for ${planName} should render`).toBeTruthy()
-  const btn = card.find('button.btn-subscribe-compact')
-  expect(btn.exists(), `Subscribe button for ${planName} should render`).toBe(true)
-  await btn.trigger('click')
-  await wrapper.vm.$nextTick()
-  return btn
-}
+const mountPage = (plans: any[]) => mountPlansPage(planEntities, plans, createTestI18n())
 
 async function flushPromises() {
   await new Promise(resolve => setTimeout(resolve, 0))
