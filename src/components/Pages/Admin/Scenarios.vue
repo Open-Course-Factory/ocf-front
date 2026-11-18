@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useScenariosStore } from '../../../stores/scenarios'
+import { useOrganizationsStore } from '../../../stores/organizations'
 import { useTranslations } from '../../../composables/useTranslations'
 import { useNotification } from '../../../composables/useNotification'
 import { teacherService } from '../../../services/domain/scenario'
@@ -12,6 +13,8 @@ import ScenarioImportModal from '../../Modals/ScenarioImportModal.vue'
 
 const router = useRouter()
 const entityStore = useScenariosStore()
+// Remount the list when the top-menu organization changes, so it reloads scoped to it.
+const organizationsStore = useOrganizationsStore()
 const importFormat = ref<'json' | 'archive' | null>(null)
 
 const { showError: notifyError, showSuccess: notifySuccess } = useNotification()
@@ -107,7 +110,7 @@ async function duplicateScenario(entity: any) {
 </script>
 
 <template>
-  <Entity :entity-name="'scenarios'" :entity-store="entityStore">
+  <Entity :key="organizationsStore.currentOrganizationId ?? 'none'" :entity-name="'scenarios'" :entity-store="entityStore">
     <template #toolbar-extra>
       <button class="btn btn-secondary" @click="importFormat = 'archive'">
         <i class="fas fa-file-import"></i>

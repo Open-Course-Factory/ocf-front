@@ -13,6 +13,7 @@ vi.mock('vue-router', async (importOriginal) => ({
   useRouter: () => ({ push: vi.fn() }),
 }))
 vi.mock('../../src/stores/scenarios', () => ({ useScenariosStore: () => ({ loadEntities: vi.fn() }) }))
+vi.mock('../../src/stores/organizations', () => ({ useOrganizationsStore: () => ({ currentOrganizationId: null }) }))
 vi.mock('../../src/composables/useNotification', () => ({
   useNotification: () => ({ showError: vi.fn(), showSuccess: vi.fn() }),
 }))
