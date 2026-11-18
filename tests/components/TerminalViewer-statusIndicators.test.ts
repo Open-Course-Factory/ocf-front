@@ -1,13 +1,7 @@
 /**
- * Tests for TerminalViewer's internet-access indicator in the status bar.
- *
- * The indicator lives alongside the recording / countdown badges and is driven
- * by the single source of truth `sessionHasNetwork(sessionInfo)`, which parses
- * the session's `composed_features` JSON string. A session with
- * `{"network":true}` renders the "on" badge (globe, success color); anything
- * else — undefined, malformed, or a different feature set — renders "off"
- * (crossed circle, muted). This must hold symmetrically in both the standalone
- * and SettingsCard render branches.
+ * The status-bar indicators of TerminalViewer that share one setup: internet
+ * access and the disconnected pill. One block of describes per former file;
+ * each keeps its notes.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -56,6 +50,7 @@ vi.mock('../../src/services/domain/terminal/terminalService', () => ({
   }
 }))
 
+// Stub the xterm dynamic imports so initXterm() doesn't try to load real DOM.
 vi.mock('@xterm/xterm', () => ({ Terminal: class { open() {} loadAddon() {} attachCustomKeyEventHandler() {} dispose() {} onResize() {} focus() {} reset() {} cols = 80; rows = 24; element = null } }))
 vi.mock('@xterm/addon-fit', () => ({ FitAddon: class { fit() {} dispose() {} } }))
 
@@ -83,6 +78,8 @@ function mountViewer(props: Record<string, unknown> = {}) {
     global: {
       plugins: [createTestI18n()],
       stubs: {
+        // Render the default + headerActions slots so the status pill ends
+        // up in wrapper.html() — the default `true` stub drops slot content.
         SettingsCard: {
           template: '<div class="settings-card-stub"><slot name="headerActions" /><slot /></div>'
         },
@@ -95,6 +92,17 @@ function mountViewer(props: Record<string, unknown> = {}) {
   })
 }
 
+/**
+ * Tests for TerminalViewer's internet-access indicator in the status bar.
+ *
+ * The indicator lives alongside the recording / countdown badges and is driven
+ * by the single source of truth `sessionHasNetwork(sessionInfo)`, which parses
+ * the session's `composed_features` JSON string. A session with
+ * `{"network":true}` renders the "on" badge (globe, success color); anything
+ * else — undefined, malformed, or a different feature set — renders "off"
+ * (crossed circle, muted). This must hold symmetrically in both the standalone
+ * and SettingsCard render branches.
+ */
 describe('TerminalViewer — internet-access indicator', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -197,5 +205,98 @@ describe('TerminalViewer — internet cut by a trainer (#384)', () => {
     const wrapper = mountWithPorts({ session_id: 'sess-test', composed_features: '{"network":true}', network_disabled: false })
 
     expect(wrapper.findComponent({ name: 'ExposedPortsChip' }).props('hasNetwork')).toBe(true)
+  })
+})
+
+/**
+ * Tests for TerminalViewer's disconnect-indicator suppression.
+ *
+ * Bug being fixed: when the user clicks Stop, the WebSocket closes immediately
+ * (isWsOpen → false) and the header showed a red "Déconnecté" indicator for
+ * the brief window before the parent's loadSession() resolved and rendered
+ * the end-state overlay. The user already knows they pressed Stop — that
+ * indicator is noise (the orchestrator briefing called this out as "disconnect
+ * indicator shown during intentional stop").
+ *
+ * The fix gates the "disconnected" status pill on:
+ *   - props.isStopping === true (parent communicates an intentional stop), OR
+ *   - activeEndState !== null (we're already rendering the end-state overlay,
+ *     so the header indicator is redundant)
+ *
+ * Normal disconnects (network issue, server crash) must still surface the
+ * indicator — the suppression is opt-in via those two signals.
+ */
+describe('TerminalViewer — disconnect-indicator suppression', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe('standalone mode (default)', () => {
+    it('shows the "disconnected" indicator when the socket is closed and there is no intentional-stop signal', () => {
+      const wrapper = mountViewer({
+        sessionInfo: { session_id: 'sess-test', status: 'active' },
+        isStopping: false,
+        endReason: ''
+      })
+
+      // isWsOpen defaults to false on mount → isConnected is false.
+      expect(wrapper.find('.status-disconnected').exists()).toBe(true)
+    })
+
+    it('hides the "disconnected" indicator while isStopping=true (user-initiated stop)', () => {
+      const wrapper = mountViewer({
+        sessionInfo: { session_id: 'sess-test', status: 'active' },
+        isStopping: true,
+        endReason: ''
+      })
+
+      expect(wrapper.find('.status-disconnected').exists()).toBe(false)
+    })
+
+    it('hides the "disconnected" indicator when an end-state overlay is active', () => {
+      const wrapper = mountViewer({
+        sessionInfo: { session_id: 'sess-test', status: 'stopped' },
+        isStopping: false,
+        endReason: 'stopped'
+      })
+
+      expect(wrapper.find('.status-disconnected').exists()).toBe(false)
+    })
+  })
+
+  describe('SettingsCard mode', () => {
+    // The SettingsCard branch renders the same status pill inside the card's
+    // header slot. The component slots the action area into the stub; checking
+    // for .status-disconnected confirms the gating applies symmetrically.
+    it('shows "disconnected" by default (no intentional stop, no end-state)', () => {
+      const wrapper = mountViewer({
+        sessionInfo: { session_id: 'sess-test', status: 'active' },
+        useSettingsCard: true,
+        isStopping: false,
+        endReason: ''
+      })
+      // SettingsCard is stubbed; the slot content still renders inside the stub.
+      expect(wrapper.html()).toContain('status-disconnected')
+    })
+
+    it('hides "disconnected" when isStopping=true', () => {
+      const wrapper = mountViewer({
+        sessionInfo: { session_id: 'sess-test', status: 'active' },
+        useSettingsCard: true,
+        isStopping: true,
+        endReason: ''
+      })
+      expect(wrapper.html()).not.toContain('status-disconnected')
+    })
+
+    it('hides "disconnected" when an end-state overlay is active', () => {
+      const wrapper = mountViewer({
+        sessionInfo: { session_id: 'sess-test', status: 'stopped' },
+        useSettingsCard: true,
+        isStopping: false,
+        endReason: 'stopped'
+      })
+      expect(wrapper.html()).not.toContain('status-disconnected')
+    })
   })
 })
