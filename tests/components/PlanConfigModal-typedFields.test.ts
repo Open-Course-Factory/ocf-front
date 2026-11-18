@@ -1,26 +1,7 @@
 /**
- * RED tests for PlanConfigModal under the features[]-strings removal campaign.
- *
- * Three changes are pinned here:
- *   (e1) the features[]-catalog toggle section (Section 2, "Plan Configuration"
- *        from the plan_features catalog) is REMOVED — the modal no longer
- *        consumes planFeaturesStore, so no per-catalog-feature checkbox renders.
- *   (e2) a NEW dedicated group_management toggle (mirroring the supervision
- *        toggle precedent) drives plan.group_management_enabled in the save
- *        payload, reflects a loaded plan, and defaults off.
- *   (e3) max_courses is GONE from the emitted payload (ocf-core dropped the
- *        column — !319 front-safety list).
- *
- * Assertions read rendered DOM and the emitted save payload (the field-loss
- * lesson: assert the payload, not spy calls).
- *
- * Pinned DOM seam (contract for the dev):
- *   - group management toggle: [data-test="plan-group-management-toggle"]
- *
- * EXPECTED STATE against current code:
- *   (e1) a supplied catalog feature still renders #feature-<key>   → RED (assert absent)
- *   (e2) no group-management toggle exists                          → RED
- *   (e3) handleSave still emits max_courses                         → RED (assert absent)
+ * The plan fields PlanConfigModal edits as dedicated typed columns: group
+ * management, network access, data persistence, supervision and server
+ * routing. One block of describes per former file; each keeps its notes.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -120,6 +101,30 @@ async function mountModal(plan: any = null) {
   return wrapper
 }
 
+/**
+ * RED tests for PlanConfigModal under the features[]-strings removal campaign.
+ *
+ * Three changes are pinned here:
+ *   (e1) the features[]-catalog toggle section (Section 2, "Plan Configuration"
+ *        from the plan_features catalog) is REMOVED — the modal no longer
+ *        consumes planFeaturesStore, so no per-catalog-feature checkbox renders.
+ *   (e2) a NEW dedicated group_management toggle (mirroring the supervision
+ *        toggle precedent) drives plan.group_management_enabled in the save
+ *        payload, reflects a loaded plan, and defaults off.
+ *   (e3) max_courses is GONE from the emitted payload (ocf-core dropped the
+ *        column — !319 front-safety list).
+ *
+ * Assertions read rendered DOM and the emitted save payload (the field-loss
+ * lesson: assert the payload, not spy calls).
+ *
+ * Pinned DOM seam (contract for the dev):
+ *   - group management toggle: [data-test="plan-group-management-toggle"]
+ *
+ * EXPECTED STATE against current code:
+ *   (e1) a supplied catalog feature still renders #feature-<key>   → RED (assert absent)
+ *   (e2) no group-management toggle exists                          → RED
+ *   (e3) handleSave still emits max_courses                         → RED (assert absent)
+ */
 describe('PlanConfigModal — features[] catalog removal', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -243,5 +248,215 @@ describe('PlanConfigModal — features never emitted', () => {
 
     const payload = wrapper.emitted('save')![0][0] as any
     expect(payload).not.toHaveProperty('features')
+  })
+})
+
+/**
+ * Tests for the network-access toggle in PlanConfigModal.
+ *
+ * network_access_enabled is a dedicated column on the plan. The modal had no
+ * UI for it — handleSave always re-sent whatever the plan already had
+ * (preservedBoolean), so an admin editing a plan had no control that could
+ * actually flip it. These tests pin that the toggle renders, reflects a
+ * loaded plan, and round-trips into the emitted save payload.
+ */
+describe('PlanConfigModal — network access', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('renders the network access toggle', async () => {
+    const wrapper = await mountModal()
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="plan-network-access-toggle"]').exists()).toBe(true)
+  })
+
+  it('reflects a loaded plan into the toggle', async () => {
+    const wrapper = await mountModal({
+      id: 'plan-1',
+      name: 'Networked',
+      max_cpu: 1000,
+      max_memory_mb: 512,
+      features: [],
+      network_access_enabled: true
+    })
+    await flushPromises()
+
+    const toggle = wrapper.find('[data-test="plan-network-access-toggle"]').element as HTMLInputElement
+    expect(toggle.checked).toBe(true)
+  })
+
+  it('defaults the toggle to unchecked for a new plan', async () => {
+    const wrapper = await mountModal()
+    await flushPromises()
+
+    const toggle = wrapper.find('[data-test="plan-network-access-toggle"]').element as HTMLInputElement
+    expect(toggle.checked).toBe(false)
+  })
+
+  it('carries a checked toggle into the save payload', async () => {
+    const wrapper = await mountModal()
+    await flushPromises()
+
+    await wrapper.find('#plan-name').setValue('New Plan')
+    await wrapper.find('[data-test="plan-network-access-toggle"]').setValue(true)
+    await nextTick()
+
+    await wrapper.find('[data-test="plan-save-button"]').trigger('click')
+
+    const payload = wrapper.emitted('save')![0][0] as any
+    expect(payload.network_access_enabled).toBe(true)
+  })
+
+  it('can turn network access back off on an existing plan and have it stick', async () => {
+    const wrapper = await mountModal({
+      id: 'plan-1',
+      name: 'Networked',
+      max_cpu: 1000,
+      max_memory_mb: 512,
+      features: [],
+      network_access_enabled: true
+    })
+    await flushPromises()
+
+    await wrapper.find('[data-test="plan-network-access-toggle"]').setValue(false)
+    await nextTick()
+    await wrapper.find('[data-test="plan-save-button"]').trigger('click')
+
+    const payload = wrapper.emitted('save')![0][0] as any
+    expect(payload.network_access_enabled).toBe(false)
+  })
+})
+
+describe('PlanConfigModal — data persistence', () => {
+  const persistentPlan = {
+    id: 'plan-1',
+    name: 'Persistent',
+    max_cpu: 1000,
+    max_memory_mb: 512,
+    features: [],
+    network_access_enabled: true,
+    data_persistence_enabled: true
+  }
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('reflects a loaded plan into the toggle', async () => {
+    const wrapper = await mountModal(persistentPlan)
+
+    const toggle = wrapper.find('[data-test="plan-data-persistence-toggle"]').element as HTMLInputElement
+    expect(toggle.checked).toBe(true)
+  })
+
+  it('turns data persistence off without touching network access', async () => {
+    const wrapper = await mountModal(persistentPlan)
+
+    await wrapper.find('[data-test="plan-data-persistence-toggle"]').setValue(false)
+    await wrapper.find('[data-test="plan-save-button"]').trigger('click')
+
+    const payload = wrapper.emitted('save')![0][0] as any
+    expect(payload.data_persistence_enabled).toBe(false)
+    expect(payload.network_access_enabled).toBe(true)
+    expect(payload.name).toBe('Persistent')
+  })
+
+  it('keeps data persistence on when another toggle is edited', async () => {
+    const wrapper = await mountModal(persistentPlan)
+
+    await wrapper.find('[data-test="plan-network-access-toggle"]').setValue(false)
+    await wrapper.find('[data-test="plan-save-button"]').trigger('click')
+
+    const payload = wrapper.emitted('save')![0][0] as any
+    expect(payload.data_persistence_enabled).toBe(true)
+  })
+})
+
+/**
+ * Tests for the supervision toggle + backend-routing inputs in PlanConfigModal.
+ *
+ * These fields are persisted as dedicated columns on the plan
+ * (session_supervision_enabled, default_backend, allowed_backends). The modal
+ * historically had no UI for them; these tests pin that the toggle/inputs
+ * render, reflect a loaded plan, and round-trip into the emitted save payload
+ * (the field-loss lesson: assert the payload, not spy calls).
+ */
+describe('PlanConfigModal — supervision & backend routing', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('renders the supervision toggle and backend inputs', async () => {
+    const wrapper = await mountModal()
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="plan-supervision-toggle"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="plan-default-backend"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="plan-allowed-backends"]').exists()).toBe(true)
+  })
+
+  it('reflects a loaded plan into the toggle and backend inputs', async () => {
+    const wrapper = await mountModal({
+      id: 'plan-1',
+      name: 'Supervised',
+      max_cpu: 1000,
+      max_memory_mb: 512,
+      features: [],
+      session_supervision_enabled: true,
+      default_backend: 'incus-a',
+      allowed_backends: ['incus-a', 'incus-b']
+    })
+    await flushPromises()
+
+    const toggle = wrapper.find('[data-test="plan-supervision-toggle"]')
+      .element as HTMLInputElement
+    expect(toggle.checked).toBe(true)
+
+    const defaultBackend = wrapper.find('[data-test="plan-default-backend"]')
+      .element as HTMLInputElement
+    expect(defaultBackend.value).toBe('incus-a')
+
+    const allowed = wrapper.find('[data-test="plan-allowed-backends"]')
+      .element as HTMLTextAreaElement
+    expect(allowed.value).toBe('incus-a\nincus-b')
+  })
+
+  it('carries the supervision flag and backend routing into the save payload', async () => {
+    const wrapper = await mountModal()
+    await flushPromises()
+
+    await wrapper.find('#plan-name').setValue('New Plan')
+    await wrapper.find('[data-test="plan-supervision-toggle"]').setValue(true)
+    await wrapper.find('[data-test="plan-default-backend"]').setValue('incus-main')
+    await wrapper.find('[data-test="plan-allowed-backends"]').setValue('incus-main\nincus-edge\n')
+    await nextTick()
+
+    await wrapper.find('[data-test="plan-save-button"]').trigger('click')
+
+    const emitted = wrapper.emitted('save')
+    expect(emitted).toBeTruthy()
+    const payload = emitted![0][0] as any
+    expect(payload.session_supervision_enabled).toBe(true)
+    expect(payload.default_backend).toBe('incus-main')
+    // Newline-separated textarea → trimmed, empty-line-filtered string[].
+    expect(payload.allowed_backends).toEqual(['incus-main', 'incus-edge'])
+  })
+
+  it('defaults supervision off and backend lists empty for a new plan', async () => {
+    const wrapper = await mountModal()
+    await flushPromises()
+
+    await wrapper.find('#plan-name').setValue('Plain Plan')
+    await wrapper.find('[data-test="plan-save-button"]').trigger('click')
+
+    const payload = wrapper.emitted('save')![0][0] as any
+    expect(payload.session_supervision_enabled).toBe(false)
+    expect(payload.default_backend).toBe('')
+    expect(payload.allowed_backends).toEqual([])
   })
 })
