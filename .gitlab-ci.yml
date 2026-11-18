@@ -22,7 +22,7 @@ workflow:
 
 default:
   tags:
-    - ocf-core
+    - labinux
   # Lets workflow:auto_cancel cancel this job when a newer commit lands.
   interruptible: true
   # Docker Hub pulls fail under load (TLS handshake or token timeouts); retry once.
