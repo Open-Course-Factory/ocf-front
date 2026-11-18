@@ -1,19 +1,7 @@
 /**
- * Tests for budget-mode 403 error handling in TerminalStarter (MR-FRONT-A).
- *
- * The previous version of this file asserted only that the notification
- * composable was called. That allowed a wrong i18n key (or a missing
- * translation) to slip through unnoticed: the spy fires either way. This
- * version captures the actual message + title that the component renders, so
- * tests fail when the wrong copy is shown.
- *
- * Covers:
- *   - When the launch request rejects with 403 + source='budget', the
- *     starter shows the size-count-agnostic budget confirm dialog (not the
- *     generic error toast) and refreshes session-options to refresh the
- *     per-size badges.
- *   - When `reason === 'plan_restriction'`, the starter shows the "size not
- *     in plan" copy and does NOT call getSessionOptions a second time.
+ * What the learner sees when ocf-core refuses a launch from TerminalStarter:
+ * budget, dunning (past due) and blocked session. One describe per refusal;
+ * each keeps the notes of the file it came from.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -43,15 +31,16 @@ const mockStartComposed = vi.fn().mockResolvedValue({
   expires_at: '',
   status: 'active'
 })
-const mockGetSessionOptions = vi.fn().mockResolvedValue({
+const SIZE_XS = { key: 'xs', name: 'XS', cpu: 1, cpu_allowance: '100%', memory: '1GiB', disk: '4GiB', processes: 100, sort_order: 0, allowed: true, remaining_count: 4 }
+const SIZE_L = { key: 'l', name: 'L', cpu: 4, cpu_allowance: '100%', memory: '4GiB', disk: '16GiB', processes: 200, sort_order: 0, allowed: true, remaining_count: 0 }
+// The refresh that follows a refusal: each describe sets the sizes it answers with.
+const sessionOptions = (sizes: unknown[]) => ({
   distribution: { name: 'ubuntu', prefix: 'u', description: '', is_global: true },
-  allowed_sizes: [
-    { key: 'xs', name: 'XS', cpu: 1, cpu_allowance: '100%', memory: '1GiB', disk: '4GiB', processes: 100, sort_order: 0, allowed: true, remaining_count: 4 },
-    { key: 'l', name: 'L', cpu: 4, cpu_allowance: '100%', memory: '4GiB', disk: '16GiB', processes: 200, sort_order: 0, allowed: true, remaining_count: 0 }
-  ],
+  allowed_sizes: sizes,
   allowed_features: [],
   quota: { max_cpu: 4, max_memory_mb: 4096, used_cpu: 4, used_memory_mb: 4096, remaining_cpu: 0, remaining_memory_mb: 0, scope: 'user' }
 })
+const mockGetSessionOptions = vi.fn()
 vi.mock('../../src/services/domain/terminal', () => ({
   terminalService: {
     startComposedSession: (...args: any[]) => mockStartComposed(...args),
@@ -214,9 +203,27 @@ async function launchSession(wrapper: VueWrapper<any>) {
   await flushPromises()
 }
 
+/**
+ * Tests for budget-mode 403 error handling in TerminalStarter (MR-FRONT-A).
+ *
+ * The previous version of this file asserted only that the notification
+ * composable was called. That allowed a wrong i18n key (or a missing
+ * translation) to slip through unnoticed: the spy fires either way. This
+ * version captures the actual message + title that the component renders, so
+ * tests fail when the wrong copy is shown.
+ *
+ * Covers:
+ *   - When the launch request rejects with 403 + source='budget', the
+ *     starter shows the size-count-agnostic budget confirm dialog (not the
+ *     generic error toast) and refreshes session-options to refresh the
+ *     per-size badges.
+ *   - When `reason === 'plan_restriction'`, the starter shows the "size not
+ *     in plan" copy and does NOT call getSessionOptions a second time.
+ */
 describe('TerminalStarter — budget error handling', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockGetSessionOptions.mockResolvedValue(sessionOptions([SIZE_XS, SIZE_L]))
     renderedToasts.length = 0
     confirmReturn = false
     routerPushMock.mockResolvedValue(undefined)
@@ -367,5 +374,131 @@ describe('TerminalStarter — budget error handling', () => {
     // the user shouldn't see "CPU" vs "memory" wording leak into the UI.
     expect(memToast.title).toBe(cpuTitle)
     expect(memToast.message).toBe(cpuMessage)
+  })
+})
+
+/**
+ * RED — dunning (past-due) rejection UX on the composed-start flow
+ * (issue #255 / MR !243).
+ *
+ * Backend contract (ocf-core !274): when a past_due subscription exceeds its
+ * grace period, POST /terminals/start-composed-session rejects with HTTP 402,
+ * body shaped like the budget rejections but with a STRING error_code:
+ *   { error_code: 'subscription_past_due', error_message, source: 'dunning' }
+ *
+ * Desired behavior (pinned loosely, mirroring the budget-rejection tests): the
+ * launcher must render a DEDICATED dunning treatment — a confirm dialog offering
+ * the subscription dashboard, NOT the generic launch-error toast — and, on
+ * confirm, navigate to /subscription-dashboard so the user can settle the
+ * overdue invoice. (We pin the route target + that it's distinguishable from the
+ * generic error, not the exact copy — the fix adds new i18n keys.)
+ *
+ * EXPECTED STATE against current code: RED — a 402 falls through every branch of
+ * the launch catch to the generic `else`, which shows a plain error toast (level
+ * 'error', title = terminalStarter.errorStarting) and never routes anywhere.
+ *
+ * The #guard test pins that 403 source=budget STILL renders the existing budget
+ * confirm dialog unchanged (GREEN today, must stay green once dunning is added).
+ */
+describe('TerminalStarter — dunning (past-due) rejection handling', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetSessionOptions.mockResolvedValue(sessionOptions([SIZE_L]))
+    renderedToasts.length = 0
+    confirmReturn = false
+    routerPushMock.mockResolvedValue(undefined)
+    mockGetSessionOptions.mockClear()
+  })
+
+  it('renders a dedicated dunning dialog (not the generic launch error) and routes to the dashboard on confirm', async () => {
+    // Backend rejects the composed start with the 402 dunning contract.
+    mockStartComposed.mockRejectedValueOnce({
+      response: {
+        status: 402,
+        data: {
+          error_code: 'subscription_past_due', // STRING, unlike numeric budget codes
+          error_message: 'Subscription payment is past due',
+          source: 'dunning'
+        }
+      }
+    })
+    confirmReturn = true
+
+    const wrapper = mountStarter()
+    await flushPromises()
+    await launchSession(wrapper)
+
+    // Distinguishable from the generic launch-error toast: it's a confirm
+    // dialog (the dunning treatment offers the dashboard), mirroring how a
+    // budget rejection surfaces — NOT a plain error toast.
+    expect(renderedToasts.length).toBe(1)
+    expect(renderedToasts[0].level).toBe('confirm')
+
+    // The dialog's action target is the subscription dashboard, where the user
+    // settles the overdue invoice. (Route target, not styling.)
+    expect(routerPushMock).toHaveBeenCalledWith('/subscription-dashboard')
+  })
+
+  it('[guard] a 403 source=budget rejection still renders the existing budget dialog unchanged', async () => {
+    mockStartComposed.mockRejectedValueOnce({
+      response: {
+        status: 403,
+        data: {
+          error_code: 403,
+          error_message: 'Budget exhausted',
+          source: 'budget',
+          reason: 'budget_cpu_exceeded',
+        }
+      }
+    })
+
+    const wrapper = mountStarter()
+    await flushPromises()
+    await launchSession(wrapper)
+
+    expect(renderedToasts.length).toBe(1)
+    const toast = renderedToasts[0]
+    expect(toast.level).toBe('confirm')
+    // Budget copy is unchanged — adding dunning must not hijack the budget path.
+    expect(toast.title).toBe("You've reached your plan's session limit")
+  })
+})
+
+/**
+ * A blocked learner is told why (#384).
+ *
+ * Starting, resuming or launching while blocked is refused by ocf-core with
+ * 403 { error_message: "session_start_blocked", scope: "group"|"org"|"global",
+ * reason }. The learner sees one error naming the scope and the trainer's
+ * reason, in their language — not the raw code, not the generic limit copy.
+ */
+const BLOCKED = {
+  response: {
+    status: 403,
+    data: { error_message: 'session_start_blocked', scope: 'group', reason: 'Exam in progress' }
+  }
+}
+
+describe('TerminalStarter — a blocked learner', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetSessionOptions.mockResolvedValue(sessionOptions([SIZE_L]))
+    renderedToasts.length = 0
+    confirmReturn = false
+  })
+
+  it('names the class and gives the reason', async () => {
+    mockStartComposed.mockRejectedValueOnce(BLOCKED)
+
+    const wrapper = mountStarter()
+    await flushPromises()
+    await launchSession(wrapper)
+
+    expect(renderedToasts).toHaveLength(1)
+    const shown = `${renderedToasts[0].title ?? ''} ${renderedToasts[0].message}`
+    expect(renderedToasts[0].level).toBe('error')
+    expect(shown).toContain('Exam in progress')
+    expect(shown).toMatch(/class/i)
+    expect(shown).not.toContain('session_start_blocked')
   })
 })

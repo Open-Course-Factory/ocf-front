@@ -1,13 +1,7 @@
 /**
- * Tests for the persistence-mode toggle on TerminalStarter.
- *
- * Covers MR-I scope:
- *   - Toggle hidden when plan.data_persistence_enabled !== true (free tier).
- *   - Toggle disabled and persistenceMode forced to 'ephemeral' when the active
- *     scenario has crash_traps=true.
- *   - Submitted payload contains persistence_mode for paid tiers; omits it for
- *     free tier.
- *   - Last choice persisted to localStorage and restored on mount.
+ * The advanced options of TerminalStarter that shape the composed-session
+ * request: persistence mode and network (internet egress). One describe per
+ * option; each keeps the notes of the file it came from.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -138,7 +132,8 @@ function createTestI18n() {
   })
 }
 
-function mountStarter(props: Record<string, unknown> = {}) {
+// `composer` adds to what the SessionComposer stub exposes (e.g. networkAllowed).
+function mountStarter(props: Record<string, unknown> = {}, composer: Record<string, unknown> = {}) {
   setActivePinia(createPinia())
   return mount(TerminalStarter, {
     props,
@@ -158,7 +153,8 @@ function mountStarter(props: Record<string, unknown> = {}) {
               enabledFeatures: {},
               loadingOptions: false,
               loadDistributions: vi.fn(),
-              saveLastConfig: vi.fn()
+              saveLastConfig: vi.fn(),
+              ...composer
             })
             return {}
           }
@@ -180,6 +176,34 @@ function mountStarter(props: Record<string, unknown> = {}) {
   })
 }
 
+/**
+ * Find the actual launch button. The Button stub hardcodes data-testid for
+ * every Button instance, and TerminalAdvancedOptions now renders a Reset
+ * Button before the launch section — so we scope the lookup to the launch
+ * section to avoid hitting the Reset button.
+ */
+function findLaunchButton(wrapper: VueWrapper) {
+  return wrapper.find('.launch-section [data-testid="launch-btn"]')
+}
+
+async function launchSession(wrapper: VueWrapper) {
+  const launchBtn = findLaunchButton(wrapper)
+  expect(launchBtn.exists()).toBe(true)
+  await launchBtn.trigger('click')
+  await flushPromises()
+}
+
+/**
+ * Tests for the persistence-mode toggle on TerminalStarter.
+ *
+ * Covers MR-I scope:
+ *   - Toggle hidden when plan.data_persistence_enabled !== true (free tier).
+ *   - Toggle disabled and persistenceMode forced to 'ephemeral' when the active
+ *     scenario has crash_traps=true.
+ *   - Submitted payload contains persistence_mode for paid tiers; omits it for
+ *     free tier.
+ *   - Last choice persisted to localStorage and restored on mount.
+ */
 function setPaidPlan(enabled: boolean) {
   subscriptionsStub.currentSubscription = enabled
     ? { subscription_plan: { data_persistence_enabled: true } }
@@ -354,21 +378,112 @@ describe('TerminalStarter — persistence toggle', () => {
   })
 })
 
-// ---- Helpers ----
-
 /**
- * Find the actual launch button. The Button stub hardcodes data-testid for
- * every Button instance, and TerminalAdvancedOptions now renders a Reset
- * Button before the launch section — so we scope the lookup to the launch
- * section to avoid hitting the Reset button.
+ * Tests for the opt-in network (internet egress) toggle on TerminalStarter.
+ *
+ * Covers the payload contract for the composed-session request:
+ *   - features.network defaults ON when the plan allows network, OFF otherwise.
+ *   - packages are omitted when network is off (input is cleared + gated).
+ *   - packages are included when network is on and the user typed some.
+ *
+ * Mirrors the harness in TerminalStarter-persistenceToggle.test.ts. The only
+ * difference is the SessionComposer stub exposes `networkAllowed: true` so the
+ * network fieldset renders (TerminalStarter drives it via composerRef).
  */
-function findLaunchButton(wrapper: VueWrapper) {
-  return wrapper.find('.launch-section [data-testid="launch-btn"]')
-}
 
-async function launchSession(wrapper: VueWrapper) {
-  const launchBtn = findLaunchButton(wrapper)
-  expect(launchBtn.exists()).toBe(true)
-  await launchBtn.trigger('click')
-  await flushPromises()
-}
+describe('TerminalStarter — network toggle payload', () => {
+  // `networkAllowed` decides whether the network fieldset is enabled in
+  // TerminalAdvancedOptions (the parent passes it on as `network-plan-enabled`).
+  const mountNetworkStarter = (networkAllowed = true) => mountStarter({}, { networkAllowed })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    // The persistence cases above change the plan: back to the free tier.
+    setPaidPlan(false)
+  })
+
+  it('sends features.network = true by default when the plan allows network', async () => {
+    const wrapper = mountNetworkStarter()
+    await flushPromises()
+
+    await launchSession(wrapper)
+
+    expect(mockStartComposed).toHaveBeenCalledTimes(1)
+    const payload = mockStartComposed.mock.calls[0][0]
+    expect(payload.features.network).toBe(true)
+    // No packages typed, so they're still omitted even though network is on.
+    expect(payload.packages).toBeUndefined()
+  })
+
+  it('enables the packages input by default when the plan allows network', async () => {
+    const wrapper = mountNetworkStarter()
+    await flushPromises()
+
+    const packagesInput = wrapper.find('input#packages')
+    expect(packagesInput.exists()).toBe(true)
+    expect(packagesInput.attributes('disabled')).toBeUndefined()
+  })
+
+  it('sends features.network = false after the user turns internet off', async () => {
+    const wrapper = mountNetworkStarter()
+    await flushPromises()
+
+    const networkOff = wrapper.find('[data-testid="network-off"]')
+    expect(networkOff.exists()).toBe(true)
+    await networkOff.trigger('change')
+
+    await launchSession(wrapper)
+
+    const payload = mockStartComposed.mock.calls[0][0]
+    expect(payload.features.network).toBe(false)
+  })
+
+  it('includes packages when network is on (default) and packages were typed', async () => {
+    const wrapper = mountNetworkStarter()
+    await flushPromises()
+
+    // Network defaults on, so the packages input is enabled out of the box.
+    const packagesInput = wrapper.find('input#packages')
+    expect(packagesInput.exists()).toBe(true)
+    await packagesInput.setValue('git, curl')
+
+    await launchSession(wrapper)
+
+    const payload = mockStartComposed.mock.calls[0][0]
+    expect(payload.features.network).toBe(true)
+    expect(payload.packages).toEqual(['git', 'curl'])
+  })
+
+  it('clears typed packages and omits them when the user turns network off', async () => {
+    const wrapper = mountNetworkStarter()
+    await flushPromises()
+
+    // Default on → type packages → off. Turning off clears the input, so the
+    // packages must not leak into the payload.
+    await wrapper.find('input#packages').setValue('git, curl')
+    await wrapper.find('[data-testid="network-off"]').trigger('change')
+
+    await launchSession(wrapper)
+
+    const payload = mockStartComposed.mock.calls[0][0]
+    expect(payload.features.network).toBe(false)
+    expect(payload.packages).toBeUndefined()
+  })
+
+  it('renders the network fieldset disabled and stays off when the plan disallows network', async () => {
+    const wrapper = mountNetworkStarter(false)
+    await flushPromises()
+
+    // The toggle is always rendered now, but disabled + forced off.
+    const fieldset = wrapper.find('[data-testid="network-toggle"]')
+    expect(fieldset.exists()).toBe(true)
+    expect(wrapper.find('[data-testid="network-on"]').attributes('disabled')).toBeDefined()
+
+    await launchSession(wrapper)
+
+    const payload = mockStartComposed.mock.calls[0][0]
+    expect(payload.features.network).toBe(false)
+    expect(payload.packages).toBeUndefined()
+  })
+})
