@@ -1,11 +1,7 @@
 /**
- * Tests for the budget-aware rendering of SessionComposer.
- *
- * Covers:
- *   - Each pill renders a `×N` badge for the per-size `remaining_count`.
- *   - Sizes whose `remaining_count === 0` are rendered disabled (cannot be
- *     selected).
- *   - The top-line "You can spawn …" summary is shown for any non-empty budget.
+ * How SessionComposer renders the sizes against the plan budget: the per-size
+ * counts (budget mode) and what it does when the budget scope is unknown.
+ * One describe per former file; each keeps its notes.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -70,6 +66,26 @@ function size(key: string, opts: { allowed?: boolean; remaining_count?: number; 
 
 const ubuntu = { name: 'Ubuntu', prefix: 'u', description: 'Ubuntu LTS', is_global: true, default_size_key: 'l' }
 
+// Find the rendered .size-pill for a given size key by its uppercased label.
+function pillForKey(wrapper: ReturnType<typeof mountComposer>, key: string) {
+  return wrapper.findAll('.size-pill').find(p => p.text().trim().startsWith(key.toUpperCase()))!
+}
+
+// What every former file started from; each describe sets its own answers.
+beforeEach(() => {
+  mockGetDistributions.mockReset()
+  mockGetSessionOptions.mockReset()
+})
+
+/**
+ * Tests for the budget-aware rendering of SessionComposer.
+ *
+ * Covers:
+ *   - Each pill renders a `×N` badge for the per-size `remaining_count`.
+ *   - Sizes whose `remaining_count === 0` are rendered disabled (cannot be
+ *     selected).
+ *   - The top-line "You can spawn …" summary is shown for any non-empty budget.
+ */
 describe('SessionComposer — budget mode', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -279,5 +295,172 @@ describe('SessionComposer — budget mode', () => {
       return txt.split(/\s/)[0]
     })
     expect(labels).toEqual(['XL', 'L', 'M', 'S', 'XS'])
+  })
+})
+
+/**
+ * Tests for unknown-scope rendering of SessionComposer.
+ *
+ * When ocf-core cannot compute a budget — the quota service is unreachable, or
+ * no plan resolved — GET /terminals/session-options returns every size with
+ * `remaining_count: 0` and a top-level `quota.scope: "unknown"` meaning "these
+ * counts are not real". The composer must keep those size pills SELECTABLE
+ * (not disabled, not marked exhausted).
+ *
+ * Being optimistic is deliberate: the start request is enforced server-side by
+ * EnforceBudgetTx regardless, so a transient read failure must not freeze the
+ * launcher for everyone.
+ *
+ * Regression guard for the contract mismatch where the composer treated
+ * `remaining_count === 0` as "exhausted" without consulting `quota.scope`,
+ * greying out every size and blocking launch. That guard is unchanged; the
+ * scope value it keys off was renamed from "unlimited" when plans lost the
+ * ability to be uncapped at all.
+ *
+ * Covers:
+ *   - unknown scope + remaining_count 0  => pill SELECTABLE (not disabled).
+ *   - budget scope (user) + remaining_count 0 => pill DISABLED (preserved).
+ *   - `allowed: false` => pill LOCKED regardless of scope.
+ */
+describe('SessionComposer — unknown scope', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    mockGetDistributions.mockResolvedValue([ubuntu])
+    // Seed localStorage so the composer auto-restores Ubuntu on mount, which
+    // triggers selectDistribution() -> getSessionOptions() automatically.
+    localStorage.setItem('ocf-last-session-config', JSON.stringify({
+      distribution: 'Ubuntu', size: 'l', features: {}
+    }))
+  })
+
+  it('keeps allowed size pills selectable when scope is unknown even with remaining_count 0', async () => {
+    mockGetSessionOptions.mockResolvedValue({
+      distribution: ubuntu,
+      // Unlimited plan: backend marks everything allowed but reports 0 remaining.
+      allowed_sizes: [
+        size('xs', { allowed: true, remaining_count: 0 }),
+        size('s', { allowed: true, remaining_count: 0 }),
+        size('m', { allowed: true, remaining_count: 0 }),
+        size('l', { allowed: true, remaining_count: 0 }),
+        size('xl', { allowed: true, remaining_count: 0 }),
+      ],
+      allowed_features: [],
+      quota: {
+        max_cpu: 0, max_memory_mb: 0,
+        used_cpu: 0, used_memory_mb: 0,
+        remaining_cpu: 0, remaining_memory_mb: 0,
+        scope: 'unknown'
+      }
+    })
+
+    const wrapper = mountComposer()
+    await flushPromises()
+    await flushPromises()
+    await flushPromises()
+
+    const pills = wrapper.findAll('.size-pill')
+    expect(pills.length).toBe(5)
+
+    // Every allowed pill must be clickable: not disabled, not marked exhausted.
+    for (const p of pills) {
+      expect(p.attributes('disabled')).toBeUndefined()
+      expect(p.classes()).not.toContain('exhausted')
+    }
+  })
+
+  it('lets the user pick an unknown-scope size that reports remaining_count 0', async () => {
+    mockGetSessionOptions.mockResolvedValue({
+      distribution: ubuntu,
+      allowed_sizes: [
+        size('m', { allowed: true, remaining_count: 0 }),
+        size('l', { allowed: true, remaining_count: 0 }),
+      ],
+      allowed_features: [],
+      quota: {
+        max_cpu: 0, max_memory_mb: 0,
+        used_cpu: 0, used_memory_mb: 0,
+        remaining_cpu: 0, remaining_memory_mb: 0,
+        scope: 'unknown'
+      }
+    })
+
+    const wrapper = mountComposer()
+    await flushPromises()
+    await flushPromises()
+    await flushPromises()
+
+    const mPill = pillForKey(wrapper, 'm')
+    expect(mPill.attributes('disabled')).toBeUndefined()
+
+    await mPill.trigger('click')
+    // The clicked pill becomes the selected one.
+    expect(mPill.classes()).toContain('selected')
+  })
+
+  it('still marks remaining_count 0 pills as exhausted in budget mode (scope user)', async () => {
+    mockGetSessionOptions.mockResolvedValue({
+      distribution: ubuntu,
+      allowed_sizes: [
+        size('xs', { allowed: true, remaining_count: 50 }),
+        size('s', { allowed: true, remaining_count: 0 }),
+        size('m', { allowed: true, remaining_count: 0 }),
+      ],
+      allowed_features: [],
+      quota: {
+        max_cpu: 1, max_memory_mb: 1024,
+        used_cpu: 0, used_memory_mb: 0,
+        remaining_cpu: 1, remaining_memory_mb: 1024,
+        scope: 'user'
+      }
+    })
+
+    const wrapper = mountComposer()
+    await flushPromises()
+    await flushPromises()
+    await flushPromises()
+
+    const exhausted = wrapper.findAll('.size-pill').filter(p => p.classes().includes('exhausted'))
+    expect(exhausted.length).toBe(2)
+    for (const p of exhausted) {
+      // Exhausted pills stay selectable (specs inspection) but are flagged
+      // aria-disabled rather than natively disabled.
+      expect(p.attributes('disabled')).toBeUndefined()
+      expect(p.attributes('aria-disabled')).toBe('true')
+    }
+    // The size with capacity is not flagged unavailable.
+    expect(pillForKey(wrapper, 'xs').attributes('aria-disabled')).toBe('false')
+  })
+
+  it('keeps an unallowed size locked regardless of scope (unknown)', async () => {
+    mockGetSessionOptions.mockResolvedValue({
+      distribution: ubuntu,
+      allowed_sizes: [
+        size('m', { allowed: true, remaining_count: 0 }),
+        size('xl', { allowed: false, remaining_count: 0, reason: 'plan_limit' }),
+      ],
+      allowed_features: [],
+      quota: {
+        max_cpu: 0, max_memory_mb: 0,
+        used_cpu: 0, used_memory_mb: 0,
+        remaining_cpu: 0, remaining_memory_mb: 0,
+        scope: 'unknown'
+      }
+    })
+
+    const wrapper = mountComposer()
+    await flushPromises()
+    await flushPromises()
+    await flushPromises()
+
+    const xlPill = pillForKey(wrapper, 'xl')
+    // Plan-locked: keeps its dimmed visual class and is flagged aria-disabled,
+    // but remains clickable so the user can inspect its specs.
+    expect(xlPill.classes()).toContain('disabled')
+    expect(xlPill.attributes('disabled')).toBeUndefined()
+    expect(xlPill.attributes('aria-disabled')).toBe('true')
+
+    // The allowed size is not flagged unavailable.
+    expect(pillForKey(wrapper, 'm').attributes('aria-disabled')).toBe('false')
   })
 })
