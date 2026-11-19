@@ -373,7 +373,7 @@ e2e:gameshell:fr:
 # ============================================================================
 
 include:
-  - component: usine.solution-libre.fr/gitlab/components/release/default@0.3.2
+  - component: usine.solution-libre.fr/gitlab/components/release/default@0.3.3
     inputs:
       # Enable all new features
       enable_version_check: true
@@ -396,12 +396,3 @@ include:
 
       # Disable old changelog component (using enhanced notes instead)
       disable_changelog: true
-
-# The labinux runner shares the dind TLS certs, and buildx refuses to create a
-# builder from TLS environment variables without a docker context.
-# shortcut: duplicates the component's before_script, drop once the component creates the context.
-build-docker:
-  before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-    - docker context create ci-context
-    - docker buildx create --use --name ci-builder --driver docker-container ci-context
