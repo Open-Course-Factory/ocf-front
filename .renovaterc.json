@@ -3,18 +3,39 @@
   "extends": [
     "config:recommended"
   ],
+  "timezone": "Europe/Paris",
+  "schedule": [
+    "before 7am on monday"
+  ],
+  "rebaseWhen": "behind-base-branch",
   "constraints": {
     "npm": "^11"
   },
   "packageRules": [
     {
+      "description": "One weekly MR for every non-major update; majors keep their own MR.",
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "groupName": "non-major dependencies",
+      "groupSlug": "non-major"
+    },
+    {
       "description": "The CI image ships the browsers for one Playwright version; @playwright/test must move with it.",
-      "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"],
+      "matchPackageNames": [
+        "@playwright/test",
+        "mcr.microsoft.com/playwright"
+      ],
       "groupName": "playwright"
     },
     {
       "description": "TypeScript 7 drops typescript/lib/tsc, which vue-tsc loads; lift once vue-tsc runs on the native compiler.",
-      "matchPackageNames": ["typescript"],
+      "matchPackageNames": [
+        "typescript"
+      ],
       "allowedVersions": "<7"
     }
   ]
