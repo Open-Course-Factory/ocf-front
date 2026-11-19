@@ -130,6 +130,8 @@ typecheck:
 
 e2e:payment:
   stage: test
+  # Needs the host Docker socket, which only the labinux-e2e runner mounts.
+  tags: [labinux-e2e]
   # Both e2e jobs build a full ocf-core stack on the shared host Docker daemon;
   # one stack at a time per project, or they starve the runner host together.
   resource_group: e2e-stack
@@ -218,6 +220,8 @@ e2e:payment:
 # Runs on main only (post-merge) by design — not offered on MR pipelines.
 e2e:scenarios:
   stage: test
+  # Needs the host Docker socket, which only the labinux-e2e runner mounts.
+  tags: [labinux-e2e]
   # Both e2e jobs build a full ocf-core stack on the shared host Docker daemon;
   # one stack at a time per project, or they starve the runner host together.
   resource_group: e2e-stack
