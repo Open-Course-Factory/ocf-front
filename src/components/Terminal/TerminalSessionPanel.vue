@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Shared terminal session panel: TerminalViewer + CommandHistory + stop
  * Used by TerminalStarter (just created) and TerminalSessionView (dedicated page)

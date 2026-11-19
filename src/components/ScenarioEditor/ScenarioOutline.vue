@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * The scenario's steps as what they are: a numbered sequence. Select a step to
  * edit it beside the list; drag, or use the move buttons / Alt+arrows, to

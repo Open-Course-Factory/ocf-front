@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * "Mes classes" — the teaching console (issue #309). The teacher's home: every
  * class they own or manage, live attendance, and what is assigned, from a

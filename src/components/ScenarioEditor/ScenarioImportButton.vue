@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * "Import" button for scenarios: asks for the format (KillerCoda archive or
  * OCF JSON) and the destination (an organization or class the user manages,

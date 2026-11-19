@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * One row above the scenario editor: which scenario, where it lives, whether it
  * is ready to play, whether the open step is saved, and what can be done with

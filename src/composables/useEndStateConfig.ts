@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Shared composable for end-of-session state configurations.
  * Used by TerminalViewer (overlay) and TerminalSessionView (banner).

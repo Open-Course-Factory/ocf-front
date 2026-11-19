@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Where a new or copied scenario goes: the platform (admin), an organization or
  * a class the user manages, with a line saying what that choice means. Binds a scope

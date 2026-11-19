@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * The scenario editor's step list. A scenario is a sequence, so the list order
  * IS the step order: every reorder, insert or delete ends in renumberSteps.

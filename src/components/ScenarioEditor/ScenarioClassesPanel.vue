@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Where a scenario is assigned, among the classes the user manages, and the way
  * to assign it to one more. Reads the teacher-groups cache (GET /teacher/groups)

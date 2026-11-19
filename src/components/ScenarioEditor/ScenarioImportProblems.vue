@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * The problems a refused scenario import lists, one per line, so an author
  * can fix them all in one pass. The default slot holds the caller's actions.

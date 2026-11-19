@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * A stopped persistent terminal: Resume starts it again (disk kept), Delete
  * removes it. A scenario run is worded as such: what is kept is the learner's

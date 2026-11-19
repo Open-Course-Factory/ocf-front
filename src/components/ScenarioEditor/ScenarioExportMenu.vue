@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * "Export" button with its format menu (KillerCoda archive / JSON). Emits the
  * chosen format; the caller downloads (see useScenarioExport). Always rendered

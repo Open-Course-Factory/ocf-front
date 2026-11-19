@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Session countdown micro-component for terminal sessions
  * Displays remaining time with urgency-based styling and emits threshold warnings

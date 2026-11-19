@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Session/step DATA, loading, review-navigation and DOM-helper logic for the
  * scenario panel. Extracted from ScenarioPanel.vue (commit #6 of #243).

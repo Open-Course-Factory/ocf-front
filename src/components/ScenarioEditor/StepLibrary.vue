@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * The step library: every scenario the user can see, with its steps, to reuse
  * one or several in the scenario being edited. Search, expand, preview a step

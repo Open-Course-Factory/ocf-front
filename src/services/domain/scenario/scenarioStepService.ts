@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * The step reads and question writes of the scenario editor. Creating, updating
  * and deleting a step itself go through the scenarioSteps store.

@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * A step as the learner reads it: its title and its instructions, rendered by
  * the learner panel's own pipeline and styles. The step editor shows it beside

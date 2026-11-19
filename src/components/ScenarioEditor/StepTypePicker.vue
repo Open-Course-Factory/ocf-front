@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * The kinds of step (STEP_TYPES), as a small menu. Escape or a click elsewhere closes it.
  */

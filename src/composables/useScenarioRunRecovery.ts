@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * The ways back into a scenario run whose environment is gone — Rebuild and
  * resume, and Start over — for the launcher card, the scenario history and

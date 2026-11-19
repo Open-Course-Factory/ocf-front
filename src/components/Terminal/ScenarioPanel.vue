@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Collapsible right sidebar panel for scenario interaction during terminal sessions.
  * Displays step content, hints, verify button, flag input, and progress indicator.

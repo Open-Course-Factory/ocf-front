@@ -2,7 +2,7 @@
 
 /*
  * Open Course Factory - Color Replacement Script
- * Copyright (C) 2023-2025 Solution Libre
+ * Copyright (C) 2023-2025 Labinux
  *
  * Replaces hardcoded hex colors with CSS variables for dark mode support
  */

@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Results-panel state + lifecycle for an assignment, extracted from
  * GroupScenariosTab.vue (commit c5 of #244). Owns the open assignment, the

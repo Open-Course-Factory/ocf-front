@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Return page from Stripe Checkout. An ordinary page of the application, not a
  * splash screen: the buyer is signed in and the next thing they do happens in

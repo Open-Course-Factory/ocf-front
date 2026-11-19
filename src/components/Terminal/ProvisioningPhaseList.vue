@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Progress path shown while a scenario environment (or its next step) is
  * being prepared: the running phase in a sentence, then one dot per phase on a

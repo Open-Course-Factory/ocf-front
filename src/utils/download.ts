@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Browser file-download side-effect helpers, extracted verbatim from
  * GroupScenariosTab.vue (commit c4 of #244). Each builds (or passes through) a

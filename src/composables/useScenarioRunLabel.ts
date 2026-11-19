@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * How a learner's scenario run reads — paused, or ended — for the launcher
  * card and the scenario history alike. Whether a run can be resumed is the

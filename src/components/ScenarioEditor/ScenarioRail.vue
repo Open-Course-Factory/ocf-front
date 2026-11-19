@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * The editor's right rail: what the health check found, the scenario's
  * settings in plain words, and the classes it is assigned to. Below ~1500px it

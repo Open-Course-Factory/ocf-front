@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * "Create with AI" and "Improve with AI", next to Import. Both stay in place
  * whatever is selected: Improve is disabled with a reason rather than hidden,

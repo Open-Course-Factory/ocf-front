@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * "Import ▾" in the editor header: every way a new scenario comes in — a
  * KillerCoda archive, an OCF JSON file, or the answer of the teacher's own AI.

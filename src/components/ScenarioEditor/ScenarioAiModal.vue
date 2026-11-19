@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Writes a scenario with the teacher's own AI assistant, in three steps:
  * describe what to write (or what to change), copy the prompt into any chat

@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Session-detail subsystem (steps + commands) state/logic, extracted from
  * GroupScenariosTab.vue (commit c6 of #244). Owns the session detail, the

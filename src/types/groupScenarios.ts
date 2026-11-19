@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Shared types for the group scenarios feature (GroupScenariosTab + its modals).
  * Extracted from the previously-local interfaces in GroupScenariosTab.vue

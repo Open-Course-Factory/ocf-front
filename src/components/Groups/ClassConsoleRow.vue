@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * One class on the "Mes classes" console (issue #309): who is connected, what
  * is assigned, and the ways in.

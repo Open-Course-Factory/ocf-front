@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Shared i18n for the scenario editor. Owns the entire scenarioEditor.*
  * namespace so ScenarioEditor.vue, ScenarioEditModal.vue and

@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Graph-editor logic for the course editor's node/edge canvas. Owns the
  * nodes/edges refs and the topology operations — edge-insert (drop-on-edge),

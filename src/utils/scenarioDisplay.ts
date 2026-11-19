@@ -1,6 +1,6 @@
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Pure, i18n-free display/parse helpers for scenario session detail rendering,
  * extracted verbatim from GroupScenariosTab.vue (commit c1 of #244).

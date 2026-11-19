@@ -1,7 +1,7 @@
 <!--
 /*
  * Open Course Factory - Front
- * Copyright (C) 2023-2026 Solution Libre
+ * Copyright (C) 2023-2026 Labinux
  *
  * Shared provisioning overlay shown while a scenario environment is being prepared.
  * Used by both ScenarioLauncher and TerminalSessionView.
