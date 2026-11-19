@@ -11,7 +11,8 @@ ARG VITE_FEATURE_TERMINALS_ENABLED="true"
 
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# Download cache mount: only speeds up installs, works when empty
+RUN --mount=type=cache,target=/root/.npm npm ci
 COPY . .
 
 RUN npm run build
