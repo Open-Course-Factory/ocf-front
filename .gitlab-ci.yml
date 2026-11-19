@@ -75,7 +75,7 @@ stages:
 
 unit-tests:
   stage: test
-  image: node:${NODE_VERSION}
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/node:${NODE_VERSION}
   extends: .npm_cache
   cache:
     - *npm_cache
@@ -99,7 +99,7 @@ unit-tests:
 
 typecheck:
   stage: test
-  image: node:${NODE_VERSION}
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/node:${NODE_VERSION}
   extends: .npm_cache
   cache:
     - *npm_cache
