@@ -401,6 +401,10 @@ include:
       # Disable old changelog component (using enhanced notes instead)
       disable_changelog: true
 
+# The component's dind service is unused with buildkit_endpoint: builds run on the runner's buildkitd.
+build-docker:
+  services: []
+
 # Asks renovate-runner to open the deploy-to-k8s bump MR now instead of at its daily run.
 # Best effort: if the trigger fails, the daily run still opens the MR.
 request-deploy:
