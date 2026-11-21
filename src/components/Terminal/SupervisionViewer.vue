@@ -70,6 +70,7 @@
           {{ t('supervisionViewer.ended') }}
         </span>
 
+        <TerminalZoomControl v-if="!compact" />
         <button
           v-if="!compact"
           class="ocf-btn ocf-btn-sm"
@@ -119,6 +120,8 @@ import {
   type SupervisionState
 } from '../../services/domain/terminal/supervisionProtocol'
 import { useSupervisionControl } from '../../composables/useSupervisionControl'
+import { useTerminalZoom } from '../../composables/useTerminalZoom'
+import TerminalZoomControl from './TerminalZoomControl.vue'
 
 interface Props {
   sessionId: string
@@ -224,7 +227,7 @@ async function initTerminal() {
   terminal = new Terminal({
     cursorBlink: false,
     fontFamily: '"Cascadia Code", "Fira Code", "SF Mono", Monaco, "Roboto Mono", monospace',
-    fontSize: baseFontSize(),
+    fontSize: baseFontSize() * zoomFactor(),
     rows: props.compact ? 12 : 24,
     cols: 80,
     theme: getTerminalTheme(),
@@ -254,16 +257,19 @@ async function initTerminal() {
   dataDisposable = terminal.onData((data: string) => forwardKeystroke(data))
 }
 
+// Follow the learner's grid when tt-backend reports it, else fit the grid to the tile.
+function refit() {
+  if (!fitAddon || !terminal) return
+  if (controlState.value.cols) {
+    scaleToTile()
+    return
+  }
+  try { fitAddon.fit() } catch { /* container not measured yet */ }
+}
+
 function setupResizeObserver() {
   if (terminalRef.value && window.ResizeObserver) {
-    resizeObserver = new ResizeObserver(() => {
-      if (!fitAddon || !terminal) return
-      if (controlState.value.cols) {
-        scaleToTile()
-        return
-      }
-      try { fitAddon.fit() } catch { /* container not measured yet */ }
-    })
+    resizeObserver = new ResizeObserver(refit)
     resizeObserver.observe(terminalRef.value)
   }
 }
@@ -281,7 +287,8 @@ function applyLearnerSize() {
 }
 
 // Font size, not a CSS transform: xterm then measures its own cells, so the
-// scroll area and mouse mapping stay right. Never grows past the base size.
+// scroll area and mouse mapping stay right. The fitted size never grows past the
+// base size; the trainer's zoom then multiplies it, and the tile scrolls.
 const MIN_FONT_SIZE = 4
 
 function scaleToTile() {
@@ -292,13 +299,28 @@ function scaleToTile() {
   const width = el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
   const height = el.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
   const ratio = Math.min(width / screen.offsetWidth, height / screen.offsetHeight)
-  const size = Math.max(MIN_FONT_SIZE, Math.min(baseFontSize(), Math.floor(terminal.options.fontSize * ratio * 2) / 2))
+  const fitted = Math.min(baseFontSize(), terminal.options.fontSize * ratio)
+  const size = Math.max(MIN_FONT_SIZE, Math.floor(fitted * zoomFactor() * 2) / 2)
   if (size !== terminal.options.fontSize) terminal.options.fontSize = size
 }
 
 function baseFontSize() {
   return props.compact ? 11 : 14
 }
+
+// Wall thumbnails stay unzoomed: clicking one already opens the focused view.
+const { zoom } = useTerminalZoom()
+function zoomFactor() {
+  return props.compact ? 1 : zoom.value
+}
+
+watch(zoom, () => {
+  if (!terminal || props.compact) return
+  // Fit mode sizes the grid from the font, so the font is set first; scale mode
+  // derives the font from the grid and overwrites this.
+  terminal.options.fontSize = baseFontSize() * zoomFactor()
+  refit()
+})
 
 watch(() => [controlState.value.cols, controlState.value.rows], applyLearnerSize)
 
@@ -482,6 +504,11 @@ onBeforeUnmount(cleanup)
 .supervision-viewer-terminal {
   width: 100%;
   height: 100%;
+}
+
+/* A zoomed learner grid is larger than the tile: scroll to it. */
+.supervision-viewer:not(.supervision-viewer-compact) .supervision-viewer-terminal {
+  overflow: auto;
 }
 
 .supervision-viewer-overlay {

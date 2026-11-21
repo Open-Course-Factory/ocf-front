@@ -62,6 +62,8 @@
 
       <RecordingIndicator :isRecording="isRecording" />
 
+      <TerminalZoomControl />
+
       <SessionCountdown
         v-if="sessionInfo?.expires_at"
         :expires-at="sessionInfo.expires_at"
@@ -171,6 +173,7 @@
           :network-cut="sessionInfo?.network_disabled === true"
           />
         <RecordingIndicator :isRecording="isRecording" />
+        <TerminalZoomControl />
         <SessionCountdown
           v-if="sessionInfo?.expires_at"
           :expires-at="sessionInfo.expires_at"
@@ -274,6 +277,8 @@ import RecordingIndicator from './RecordingIndicator.vue'
 import SessionCountdown from './SessionCountdown.vue'
 import TerminalEndStateOverlay from './TerminalEndStateOverlay.vue'
 import SupervisionChip from './SupervisionChip.vue'
+import TerminalZoomControl from './TerminalZoomControl.vue'
+import { useTerminalZoom } from '../../composables/useTerminalZoom'
 import ExposedPortsChip from './ExposedPortsChip.vue'
 
 interface SessionInfo {
@@ -598,7 +603,7 @@ async function initXterm(): Promise<boolean> {
     terminal.value = new Terminal({
       cursorBlink: true,
       fontFamily: '"Cascadia Code", "Fira Code", "SF Mono", Monaco, "Inconsolata", "Roboto Mono", "Source Code Pro", Menlo, "DejaVu Sans Mono", "Lucida Console", monospace',
-      fontSize: 14,
+      fontSize: BASE_FONT_SIZE * zoom.value,
       rows: 24,
       cols: 80,
       theme: getTerminalTheme(),
@@ -711,6 +716,17 @@ function fitTerminal() {
     requestAnimationFrame(() => { isFitting = false })
   }
 }
+
+const BASE_FONT_SIZE = 14
+const { zoom } = useTerminalZoom()
+
+// A bigger font means fewer columns: the refit sends the new size to the shell,
+// like zooming a desktop terminal.
+watch(zoom, (level) => {
+  if (!terminal.value) return
+  terminal.value.options.fontSize = BASE_FONT_SIZE * level
+  fitTerminal()
+})
 
 function handleResize() {
   if (resizeTimeout) clearTimeout(resizeTimeout)
