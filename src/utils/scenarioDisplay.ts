@@ -125,6 +125,34 @@ export function quizQuestionTotal(step: SessionStepDetail): number {
   return (step.questions || []).length
 }
 
+interface PointedQuestion {
+  option_points?: string
+  earned_points?: number
+  max_points?: number
+}
+
+// A quiz holding a question scored by the option picked reads in points, not
+// in right answers: "2/3 correct" would call a 2-point choice wrong. Null when
+// no question is scored that way.
+export function optionPointsTotal(questions: PointedQuestion[]): { earned: number; max: number } | null {
+  if (!questions.some(q => q.option_points)) return null
+  return {
+    earned: questions.reduce((sum, q) => sum + (q.earned_points ?? 0), 0),
+    max: questions.reduce((sum, q) => sum + (q.max_points ?? 0), 0)
+  }
+}
+
+// One option's points, or null when the question has none.
+export function optionPointsAt(optionPoints: string | undefined, index: number): number | null {
+  if (!optionPoints) return null
+  try {
+    const points = JSON.parse(optionPoints)
+    return Array.isArray(points) && typeof points[index] === 'number' ? points[index] : null
+  } catch {
+    return null
+  }
+}
+
 export function normalizedStepType(stepType?: string): 'terminal' | 'flag' | 'info' | 'quiz' | 'survey' {
   switch (stepType) {
     case 'flag': return 'flag'

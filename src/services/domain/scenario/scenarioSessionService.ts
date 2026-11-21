@@ -24,6 +24,7 @@ export interface CurrentStepResponse {
   step_type?: string // 'terminal' | 'flag' | 'info' | 'quiz' | 'survey' (defaults to 'terminal' when empty)
   show_immediate_feedback?: boolean // quiz only
   quiz_scoring_mode?: QuizScoringMode | '' // quiz only; empty = all_or_nothing
+  show_terminal?: boolean // quiz/survey only: open with the console docked beside it
   questions?: CurrentStepQuestion[] // quiz only
   hint?: string
   status: string // 'locked' | 'active' | 'completed' | 'skipped'
@@ -49,6 +50,11 @@ export interface QuizQuestionResult {
   correct: boolean
   correct_answer?: string
   explanation?: string
+  // Set on a question scored by the option picked: show earned/max points,
+  // not right/wrong.
+  option_points?: string
+  earned_points?: number
+  max_points?: number
 }
 
 export type QuizScoringMode = 'all_or_nothing' | 'partial' | 'partial_question_floor'

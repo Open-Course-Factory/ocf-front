@@ -1,6 +1,9 @@
 <template>
   <div class="quiz-questions-block">
-    <div v-if="!survey" class="quiz-questions-summary">
+    <div v-if="!survey && pointsTotal(step)" class="quiz-questions-summary">
+      {{ t('groupScenarios.questionsPoints', pointsTotal(step)!) }}
+    </div>
+    <div v-else-if="!survey" class="quiz-questions-summary">
       {{ t('groupScenarios.questionsCorrect', {
         correct: quizCorrectCount(step),
         total: quizQuestionTotal(step)
@@ -11,13 +14,16 @@
         v-for="(q, qIdx) in (step.questions || [])"
         :key="q.id || qIdx"
         class="quiz-question-item"
-        :class="survey ? '' : (q.is_correct ? 'quiz-q-correct' : 'quiz-q-incorrect')"
+        :class="survey || q.option_points ? '' : (q.is_correct ? 'quiz-q-correct' : 'quiz-q-incorrect')"
       >
         <div class="quiz-question-header">
           <span class="quiz-question-label">
             {{ t('groupScenarios.question') }} {{ q.order != null ? q.order + 1 : qIdx + 1 }}
           </span>
-          <span v-if="!survey" :class="['quiz-question-indicator', q.is_correct ? 'indicator-correct' : 'indicator-incorrect']">
+          <span v-if="!survey && q.option_points" class="quiz-question-indicator indicator-points">
+            {{ t('groupScenarios.pointsOf', { earned: q.earned_points ?? 0, max: q.max_points ?? 0 }) }}
+          </span>
+          <span v-else-if="!survey" :class="['quiz-question-indicator', q.is_correct ? 'indicator-correct' : 'indicator-incorrect']">
             <i :class="q.is_correct ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
             {{ q.is_correct
               ? t('groupScenarios.correctIndicator')
@@ -36,6 +42,9 @@
             :class="survey ? '' : optionRoleClass(optIdx, q)"
           >
             <span class="quiz-option-label">{{ opt }}</span>
+            <span v-if="!survey && optionPointsAt(q.option_points, optIdx) !== null" class="quiz-option-points">
+              {{ t('groupScenarios.optionPoints', { points: optionPointsAt(q.option_points, optIdx) }) }}
+            </span>
             <span
               v-if="!survey && optionRole(optIdx, q)"
               class="quiz-option-tag"
@@ -96,7 +105,9 @@ import {
   parseQuizOptions,
   resolveAnswerText,
   quizCorrectCount,
-  quizQuestionTotal
+  quizQuestionTotal,
+  optionPointsTotal,
+  optionPointsAt
 } from '../../utils/scenarioDisplay'
 import type { SessionStepDetail, SessionStepQuestionDetail } from '../../services/domain/scenario'
 
@@ -120,7 +131,10 @@ const { t } = useTranslations({
       noAnswer: 'No answer',
       true: 'True',
       false: 'False',
-      questionsCorrect: '{correct}/{total} correct'
+      questionsCorrect: '{correct}/{total} correct',
+      questionsPoints: '{earned}/{max} points',
+      pointsOf: '{earned}/{max} pts',
+      optionPoints: '{points} pts'
     }
   },
   fr: {
@@ -134,7 +148,10 @@ const { t } = useTranslations({
       noAnswer: 'Pas de réponse',
       true: 'Vrai',
       false: 'Faux',
-      questionsCorrect: '{correct}/{total} correctes'
+      questionsCorrect: '{correct}/{total} correctes',
+      questionsPoints: '{earned}/{max} points',
+      pointsOf: '{earned}/{max} pts',
+      optionPoints: '{points} pts'
     }
   }
 })
@@ -145,6 +162,10 @@ function answerText(q: SessionStepQuestionDetail, raw: string): string {
     return t(`groupScenarios.${raw}`)
   }
   return displayAnswer(resolveAnswerText(q, raw))
+}
+
+function pointsTotal(step: SessionStepDetail) {
+  return optionPointsTotal(step.questions || [])
 }
 
 function optionRoleText(optIdx: number, q: SessionStepQuestionDetail): string {
@@ -219,6 +240,17 @@ function optionRoleText(optIdx: number, q: SessionStepQuestionDetail): string {
   font-weight: var(--font-weight-semibold);
   padding: 2px 8px;
   border-radius: var(--border-radius-sm);
+}
+
+.indicator-points {
+  color: var(--color-primary);
+}
+
+.quiz-option-points {
+  margin-left: auto;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
 .indicator-correct {

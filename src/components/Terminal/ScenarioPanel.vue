@@ -1247,11 +1247,15 @@ const layoutStepType = computed<string | undefined>(() => {
 const isQuizStep = computed(() =>
   (layoutStepType.value === 'quiz' || layoutStepType.value === 'survey') && !isReviewMode.value
 )
+// The author asked for the console beside this quiz: it asks about what the
+// terminal just showed.
+const dockTerminalBesideQuiz = computed(() => isQuizStep.value && !!currentStep.value?.show_terminal)
 
 defineExpose({
   toggleCollapse,
   isCollapsed,
   isQuizStep,
+  dockTerminalBesideQuiz,
   // The abandon button lives in the page's nav row now; the confirm flow and
   // the API call stay here, with the session state they belong to.
   abandon: handleAbandon,

@@ -1287,6 +1287,11 @@ function startPanelResize(event: MouseEvent) {
 // Quiz steps: the quiz takes the main area and the console steps aside.
 const quizWide = computed(() => !!scenarioPanelRef.value?.isQuizStep && !scenarioPanelCollapsed.value)
 const quizTerminal = ref<'closed' | 'docked' | 'popup'>('closed')
+// A step that asks for the console opens with it docked; the learner can still
+// close it, and nothing changes for a quiz that does not ask.
+watch(() => scenarioPanelRef.value?.dockTerminalBesideQuiz, (dock) => {
+  if (dock && quizTerminal.value === 'closed') quizTerminal.value = 'docked'
+})
 // The build's progress is laid over the console: while it runs, a quiz keeps
 // the console docked beside it, or the learner would watch an empty page.
 const quizTerminalMode = computed(() => showsBuild.value && quizTerminal.value === 'closed' ? 'docked' : quizTerminal.value)

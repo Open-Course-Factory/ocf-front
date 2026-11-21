@@ -141,6 +141,8 @@ ${effects ? `- "intro_effect", "outro_effect": leave out unless asked; otherwise
 ` : ''}- "show_immediate_feedback" (boolean): quiz steps — true shows right/wrong after each answer and lets the learner retry (a learning quiz); false is exam mode: one attempt, no correction, only the score.
 - "quiz_scoring_mode": quiz steps — "all_or_nothing" (the default) counts a question only when it is exactly right; "partial" gives each right option ticked its share of the points and takes back "quiz_wrong_penalty" times that share for each wrong one, and the quiz total never goes below 0; "partial_question_floor" is the same except that no question scores below 0, so a wrong guess cannot pull the grade down.
 - "quiz_wrong_penalty" (number, 0 to 10, default 1): "partial" and "partial_question_floor" modes only. 0.25 is a usual exam penalty.
+- "show_terminal" (boolean): quiz and survey steps — true opens the step with the terminal docked beside the questions, for questions about what the terminal just showed. Leave out otherwise.
+- "ungraded" (boolean): any step — true leaves the step out of the grade, as a survey is. Leave out unless the grade must come from other steps only.
 - "flag_path" (string): flag steps only. See the flag rules below.
 - "questions" (array): quiz steps only, at least one. See the quiz rules below.
 - "translations" (array): this step's text in other languages: [{"locale", "title", "text_content", "hint_content"${effects ? ', "intro_text", "outro_text"' : ''}}]. At most one entry per locale. Scripts are never translated.
@@ -157,6 +159,7 @@ The learner gets ONE Linux container (an LXC system container) and a root shell 
 - On failure, print ONE short line to stderr telling the learner what is still missing (it is shown to them), in the content language. Example: \`[ -d /srv/app ] || { echo "The directory /srv/app does not exist yet." >&2; exit 1; }\`
 - Start each script with #!/bin/bash and use \`set -u\`, not \`set -e\`, in verify scripts.
 - A terminal step with no verify_script is passed by clicking Verify: use that only for "try this" steps.
+- The answers already given to earlier quiz and survey steps are in /etc/ocf-quiz-answers.json, rewritten before each step starts: {"<step position from 0>": {"<question order>": "<answer as submitted>"}} ("2" for a multiple_choice, "[0,2]" for a multi_answer). No answers yet means no file. Scripts may read it to act on the learner's earlier choices.
 
 ### Flag steps (step_type "flag")
 - The platform generates a secret flag per learner and per step. The learner must find it in the container and paste it.
@@ -169,6 +172,7 @@ The learner gets ONE Linux container (an LXC system container) and a root shell 
 - Each question: {"order": 1, "question_text": "...", "question_type": "...", "options": "...", "correct_answer": "...", "explanation": "...", "points": 1}.
 - "options" is a JSON array of strings ENCODED AS A STRING: "options": "[\\"ls\\", \\"cd\\", \\"pwd\\"]". At least 2 options.
 - "multiple_choice": one right option; correct_answer is its 0-based index as a string: "0", "1", …
+- "option_points" (multiple_choice only, optional): each option's own points, a JSON array of integers encoded as a string, one per option: "[3,1,0,2]". The question is worth its best option and earns the chosen one's; correct_answer must be a best option. Use it for decisions where some choices are better than others, not right or wrong.
 - "multi_answer": several right options; correct_answer is the sorted index array without spaces, as a string: "[0,2]".
 - "true_false": no options; correct_answer is "true" or "false".
 - "free_text": no options; correct_answer is the exact expected text, kept short (one word or one command).
@@ -275,6 +279,8 @@ ${effects ? `- "intro_effect", "outro_effect" : à omettre sauf demande ; sinon 
 ` : ''}- "show_immediate_feedback" (booléen) : étapes quiz — true indique juste/faux après chaque réponse et permet de recommencer (un quiz d'apprentissage) ; false, c'est le mode examen : une seule tentative, pas de correction, seulement le score.
 - "quiz_scoring_mode" : étapes quiz — "all_or_nothing" (par défaut) ne compte une question que si elle est exactement juste ; "partial" donne à chaque bonne option cochée sa part des points, et retire "quiz_wrong_penalty" fois cette part pour chaque mauvaise, sans que le total du quiz descende sous 0 ; "partial_question_floor" fait de même, mais aucune question ne descend sous 0, une réponse au hasard ne fait donc pas baisser la note.
 - "quiz_wrong_penalty" (nombre, de 0 à 10, 1 par défaut) : modes "partial" et "partial_question_floor" seulement. 0.25 est une pénalité d'examen courante.
+- "show_terminal" (booléen) : étapes quiz et questionnaire — true ouvre l'étape avec le terminal ancré à côté des questions, pour des questions sur ce que le terminal vient de montrer. À omettre sinon.
+- "ungraded" (booléen) : toute étape — true sort l'étape de la note, comme un questionnaire. À omettre, sauf si la note doit venir des autres étapes seulement.
 - "flag_path" (chaîne) : étapes à drapeau uniquement. Voir les règles des drapeaux ci-dessous.
 - "questions" (tableau) : étapes quiz uniquement, au moins une. Voir les règles des quiz ci-dessous.
 - "translations" (tableau) : les textes de l'étape dans d'autres langues : [{"locale", "title", "text_content", "hint_content"${effects ? ', "intro_text", "outro_text"' : ''}}]. Une entrée au plus par langue. Les scripts ne se traduisent jamais.
@@ -291,6 +297,7 @@ L'apprenant dispose d'UN SEUL conteneur Linux (un conteneur système LXC) et d'u
 - En cas d'échec, affichez sur stderr UNE ligne courte qui dit à l'apprenant ce qui manque encore (elle lui est montrée), dans la langue du contenu. Exemple : \`[ -d /srv/app ] || { echo "Le répertoire /srv/app n'existe pas encore." >&2; exit 1; }\`
 - Commencez chaque script par #!/bin/bash et utilisez \`set -u\`, pas \`set -e\`, dans les scripts de vérification.
 - Une étape terminal sans verify_script est validée d'un simple clic sur Vérifier : réservez cela aux étapes « essayez ceci ».
+- Les réponses déjà données aux étapes quiz et questionnaire précédentes sont dans /etc/ocf-quiz-answers.json, réécrit avant chaque étape : {"<position de l'étape, depuis 0>": {"<order de la question>": "<réponse telle que soumise>"}} ("2" pour un multiple_choice, "[0,2]" pour un multi_answer). Pas encore de réponse, pas de fichier. Les scripts peuvent le lire pour tenir compte des choix précédents de l'apprenant.
 
 ### Étapes à drapeau (step_type "flag")
 - La plateforme génère un drapeau secret par apprenant et par étape. L'apprenant doit le trouver dans le conteneur et le coller.
@@ -303,6 +310,7 @@ L'apprenant dispose d'UN SEUL conteneur Linux (un conteneur système LXC) et d'u
 - Chaque question : {"order": 1, "question_text": "...", "question_type": "...", "options": "...", "correct_answer": "...", "explanation": "...", "points": 1}.
 - "options" est un tableau JSON de chaînes ENCODÉ DANS UNE CHAÎNE : "options": "[\\"ls\\", \\"cd\\", \\"pwd\\"]". Au moins 2 options.
 - "multiple_choice" : une seule bonne option ; correct_answer est son index à partir de 0, sous forme de chaîne : "0", "1", …
+- "option_points" (multiple_choice seulement, facultatif) : les points propres à chaque option, un tableau JSON d'entiers encodé en chaîne, un par option : "[3,1,0,2]". La question vaut sa meilleure option et rapporte celle choisie ; correct_answer doit désigner une meilleure option. Utile pour des décisions où certains choix valent mieux que d'autres, sans être justes ou faux.
 - "multi_answer" : plusieurs bonnes options ; correct_answer est le tableau des index triés, sans espaces, sous forme de chaîne : "[0,2]".
 - "true_false" : pas d'options ; correct_answer vaut "true" ou "false".
 - "free_text" : pas d'options ; correct_answer est le texte exact attendu, court (un mot ou une commande).

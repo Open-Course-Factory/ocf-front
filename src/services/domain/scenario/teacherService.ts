@@ -20,6 +20,11 @@ export interface SessionStepQuestionDetail {
   is_correct: boolean
   points: number
   explanation?: string
+  // Set on a question scored by the option picked: show earned/max points,
+  // not right/wrong. JSON-encoded int array, one per option.
+  option_points?: string
+  earned_points?: number
+  max_points?: number
 }
 
 // Step shape inside SessionDetailResponse — mirror of backend GET /teacher/groups/:gid/sessions/:sid/detail

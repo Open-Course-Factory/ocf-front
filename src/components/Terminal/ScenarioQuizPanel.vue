@@ -229,6 +229,17 @@
         {{ t('scenarioPanel.surveyRecorded') }}
       </p>
       <h4
+        v-else-if="result.score !== undefined && result.score !== null && pointsTotal"
+        class="quiz-results-score"
+        data-testid="quiz-results-score"
+      >
+        {{ t('scenarioPanel.quizPointsScore', {
+          score: Math.round(result.score * 100),
+          earned: pointsTotal.earned,
+          max: pointsTotal.max
+        }) }}
+      </h4>
+      <h4
         v-else-if="result.score !== undefined && result.score !== null"
         class="quiz-results-score"
         data-testid="quiz-results-score"
@@ -250,10 +261,13 @@
           :key="r.question_id"
           class="quiz-breakdown-item"
           data-testid="quiz-breakdown-item"
-          :class="{ 'is-correct': r.correct, 'is-incorrect': !r.correct }"
+          :class="r.option_points ? undefined : { 'is-correct': r.correct, 'is-incorrect': !r.correct }"
         >
           <div class="qb-line">
-            <i :class="r.correct ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+            <span v-if="r.option_points" class="qb-points" data-testid="quiz-breakdown-points">
+              {{ t('scenarioPanel.pointsOf', { earned: r.earned_points ?? 0, max: r.max_points ?? 0 }) }}
+            </span>
+            <i v-else :class="r.correct ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
             <span class="qb-text">{{ findQuestionText(r.question_id) }}</span>
           </div>
           <div class="qb-yours" data-testid="quiz-breakdown-yours">
@@ -261,7 +275,7 @@
             {{ formatAnswer(r.question_id, submittedAnswer(r.question_id)) || t('scenarioPanel.noAnswer') }}
           </div>
           <div v-if="!r.correct && r.correct_answer" class="qb-correct">
-            <strong>{{ t('scenarioPanel.correctAnswerWas') }}</strong>
+            <strong>{{ r.option_points ? t('scenarioPanel.bestAnswerWas') : t('scenarioPanel.correctAnswerWas') }}</strong>
             {{ formatAnswer(r.question_id, r.correct_answer) }}
           </div>
           <div v-if="r.explanation" class="qb-explanation">{{ r.explanation }}</div>
@@ -315,6 +329,7 @@ import { ref, computed, watch } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import BaseModal from '../Modals/BaseModal.vue'
 import { quizResultAwaitsReview, isPartialScoringMode } from '../../services/domain/scenario'
+import { optionPointsTotal } from '../../utils/scenarioDisplay'
 import type {
   CurrentStepResponse,
   CurrentStepQuestion,
@@ -370,6 +385,9 @@ const { t } = useTranslations({
       nextStepBtn: 'Next step',
       finishScenario: 'Finish scenario',
       quizScore: 'Score: {score}% ({correct}/{total} correct)',
+      quizPointsScore: 'Score: {score}% ({earned}/{max} points)',
+      pointsOf: '{earned}/{max} pts',
+      bestAnswerWas: 'Best answer:',
       quizSubmitError: 'Failed to submit your answers. Please try again.',
       correctAnswerWas: 'Correct answer:',
       yourAnswerWas: 'Your answer:',
@@ -407,6 +425,9 @@ const { t } = useTranslations({
       nextStepBtn: 'Étape suivante',
       finishScenario: 'Terminer le scénario',
       quizScore: 'Score : {score} % ({correct}/{total} bonnes réponses)',
+      quizPointsScore: 'Score : {score} % ({earned}/{max} points)',
+      pointsOf: '{earned}/{max} pts',
+      bestAnswerWas: 'Meilleure réponse :',
       quizSubmitError: 'Échec de l\'envoi de vos réponses. Réessayez.',
       correctAnswerWas: 'Bonne réponse :',
       yourAnswerWas: 'Votre réponse :',
@@ -488,6 +509,8 @@ const isPartialScoring = computed(() => isPartialScoringMode(props.step.quiz_sco
 const scoringRule = computed(() => props.step.quiz_scoring_mode === 'partial_question_floor'
   ? t('scenarioPanel.partialQuestionFloorRule')
   : t('scenarioPanel.partialScoringRule'))
+
+const pointsTotal = computed(() => optionPointsTotal(props.result?.per_question_results ?? []))
 
 const awaitsReview = computed(() => !!props.result && quizResultAwaitsReview(props.step, props.result))
 
@@ -926,6 +949,13 @@ function onTryAgain() {
   gap: var(--spacing-sm);
   font-size: var(--font-size-sm);
   color: var(--color-text-primary);
+}
+
+.qb-points {
+  flex-shrink: 0;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  white-space: nowrap;
 }
 
 .is-correct .qb-line i {
