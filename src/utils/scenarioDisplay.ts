@@ -142,15 +142,34 @@ export function optionPointsTotal(questions: PointedQuestion[]): { earned: numbe
   }
 }
 
-// One option's points, or null when the question has none.
-export function optionPointsAt(optionPoints: string | undefined, index: number): number | null {
-  if (!optionPoints) return null
+export interface RankedOption {
+  index: number
+  text: string
+  points: number
+  // 🥇🥈🥉 for the three best point values (ties share one); '' below that or at 0.
+  medal: string
+}
+
+const MEDALS = ['🥇', '🥈', '🥉']
+
+// A decision's options, best first, so the reader sees at a glance which choice
+// was worth what. Empty when the points do not match the options.
+export function rankOptionsByPoints(options: string[], optionPoints: string | undefined): RankedOption[] {
+  let points: unknown
   try {
-    const points = JSON.parse(optionPoints)
-    return Array.isArray(points) && typeof points[index] === 'number' ? points[index] : null
+    points = JSON.parse(optionPoints || '')
   } catch {
-    return null
+    return []
   }
+  if (!Array.isArray(points) || points.length !== options.length) return []
+  const values = [...new Set(points as number[])].sort((a, b) => b - a)
+  return options
+    .map((text, index) => {
+      const value = (points as number[])[index]
+      const rank = values.indexOf(value)
+      return { index, text, points: value, medal: value > 0 ? (MEDALS[rank] ?? '') : '' }
+    })
+    .sort((a, b) => b.points - a.points || a.index - b.index)
 }
 
 export function normalizedStepType(stepType?: string): 'terminal' | 'flag' | 'info' | 'quiz' | 'survey' {

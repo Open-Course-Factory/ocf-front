@@ -31,8 +31,15 @@
           </span>
         </div>
         <div class="quiz-question-text">{{ q.question_text }}</div>
+        <OptionPointsRanking
+          v-if="!survey && q.option_points"
+          :options="parseQuizOptions(q.options)"
+          :option-points="q.option_points"
+          :chosen="q.student_answer"
+          :chosen-label="t('groupScenarios.learnerChoice')"
+        />
         <div
-          v-if="isChoiceQuestion(q) && parseQuizOptions(q.options).length > 0"
+          v-else-if="isChoiceQuestion(q) && parseQuizOptions(q.options).length > 0"
           class="quiz-question-options"
         >
           <div
@@ -42,9 +49,6 @@
             :class="survey ? '' : optionRoleClass(optIdx, q)"
           >
             <span class="quiz-option-label">{{ opt }}</span>
-            <span v-if="!survey && optionPointsAt(q.option_points, optIdx) !== null" class="quiz-option-points">
-              {{ t('groupScenarios.optionPoints', { points: optionPointsAt(q.option_points, optIdx) }) }}
-            </span>
             <span
               v-if="!survey && optionRole(optIdx, q)"
               class="quiz-option-tag"
@@ -95,6 +99,7 @@
 
 <script setup lang="ts">
 import { useTranslations } from '../../composables/useTranslations'
+import OptionPointsRanking from '../Terminal/OptionPointsRanking.vue'
 import {
   optionRole,
   optionRoleClass,
@@ -106,8 +111,7 @@ import {
   resolveAnswerText,
   quizCorrectCount,
   quizQuestionTotal,
-  optionPointsTotal,
-  optionPointsAt
+  optionPointsTotal
 } from '../../utils/scenarioDisplay'
 import type { SessionStepDetail, SessionStepQuestionDetail } from '../../services/domain/scenario'
 
@@ -134,7 +138,7 @@ const { t } = useTranslations({
       questionsCorrect: '{correct}/{total} correct',
       questionsPoints: '{earned}/{max} points',
       pointsOf: '{earned}/{max} pts',
-      optionPoints: '{points} pts'
+      learnerChoice: 'learner\'s choice'
     }
   },
   fr: {
@@ -151,7 +155,7 @@ const { t } = useTranslations({
       questionsCorrect: '{correct}/{total} correctes',
       questionsPoints: '{earned}/{max} points',
       pointsOf: '{earned}/{max} pts',
-      optionPoints: '{points} pts'
+      learnerChoice: 'choix de l\'apprenant'
     }
   }
 })
@@ -244,13 +248,6 @@ function optionRoleText(optIdx: number, q: SessionStepQuestionDetail): string {
 
 .indicator-points {
   color: var(--color-primary);
-}
-
-.quiz-option-points {
-  margin-left: auto;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  white-space: nowrap;
 }
 
 .indicator-correct {

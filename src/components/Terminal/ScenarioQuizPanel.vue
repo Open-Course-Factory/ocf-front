@@ -270,14 +270,23 @@
             <i v-else :class="r.correct ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
             <span class="qb-text">{{ findQuestionText(r.question_id) }}</span>
           </div>
-          <div class="qb-yours" data-testid="quiz-breakdown-yours">
-            <strong>{{ t('scenarioPanel.yourAnswerWas') }}</strong>
-            {{ formatAnswer(r.question_id, submittedAnswer(r.question_id)) || t('scenarioPanel.noAnswer') }}
-          </div>
-          <div v-if="!r.correct && r.correct_answer" class="qb-correct">
-            <strong>{{ r.option_points ? t('scenarioPanel.bestAnswerWas') : t('scenarioPanel.correctAnswerWas') }}</strong>
-            {{ formatAnswer(r.question_id, r.correct_answer) }}
-          </div>
+          <OptionPointsRanking
+            v-if="r.option_points"
+            :options="optionsOf(r.question_id)"
+            :option-points="r.option_points"
+            :chosen="submittedAnswer(r.question_id)"
+            :chosen-label="t('scenarioPanel.yourChoice')"
+          />
+          <template v-else>
+            <div class="qb-yours" data-testid="quiz-breakdown-yours">
+              <strong>{{ t('scenarioPanel.yourAnswerWas') }}</strong>
+              {{ formatAnswer(r.question_id, submittedAnswer(r.question_id)) || t('scenarioPanel.noAnswer') }}
+            </div>
+            <div v-if="!r.correct && r.correct_answer" class="qb-correct">
+              <strong>{{ t('scenarioPanel.correctAnswerWas') }}</strong>
+              {{ formatAnswer(r.question_id, r.correct_answer) }}
+            </div>
+          </template>
           <div v-if="r.explanation" class="qb-explanation">{{ r.explanation }}</div>
         </li>
       </ul>
@@ -330,6 +339,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import BaseModal from '../Modals/BaseModal.vue'
 import { quizResultAwaitsReview, isPartialScoringMode } from '../../services/domain/scenario'
 import { optionPointsTotal } from '../../utils/scenarioDisplay'
+import OptionPointsRanking from './OptionPointsRanking.vue'
 import type {
   CurrentStepResponse,
   CurrentStepQuestion,
@@ -387,7 +397,7 @@ const { t } = useTranslations({
       quizScore: 'Score: {score}% ({correct}/{total} correct)',
       quizPointsScore: 'Score: {score}% ({earned}/{max} points)',
       pointsOf: '{earned}/{max} pts',
-      bestAnswerWas: 'Best answer:',
+      yourChoice: 'your choice',
       quizSubmitError: 'Failed to submit your answers. Please try again.',
       correctAnswerWas: 'Correct answer:',
       yourAnswerWas: 'Your answer:',
@@ -427,7 +437,7 @@ const { t } = useTranslations({
       quizScore: 'Score : {score} % ({correct}/{total} bonnes réponses)',
       quizPointsScore: 'Score : {score} % ({earned}/{max} points)',
       pointsOf: '{earned}/{max} pts',
-      bestAnswerWas: 'Meilleure réponse :',
+      yourChoice: 'votre choix',
       quizSubmitError: 'Échec de l\'envoi de vos réponses. Réessayez.',
       correctAnswerWas: 'Bonne réponse :',
       yourAnswerWas: 'Votre réponse :',
@@ -561,6 +571,11 @@ function formatAnswer(questionId: string, raw: string): string {
 
 // What the learner answered: recorded by the backend when the quiz is
 // revisited, otherwise what this panel just submitted.
+function optionsOf(questionId: string): string[] {
+  const q = quizQuestions.value.find(x => x.id === questionId)
+  return q ? parseQuestionOptions(q) : []
+}
+
 function submittedAnswer(questionId: string): string {
   if (props.step.quiz_answers) return props.step.quiz_answers[questionId] ?? ''
   const q = quizQuestions.value.find(x => x.id === questionId)
