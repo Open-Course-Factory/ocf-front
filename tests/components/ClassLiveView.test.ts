@@ -5,9 +5,8 @@
  * The contracts a teacher would notice:
  *   - both representations of the class are one button apart, and only one is
  *     mounted at a time (leaving the wall must stop the tiles streaming);
- *   - the eye on a learner's row lands on THAT learner's tile, which is where
- *     taking the hand lives — the wall's focused viewer owns that control, so
- *     the row does not duplicate it;
+ *   - the eye on a learner's row opens THAT learner's terminal page, whose back
+ *     link returns to the class;
  *   - `?view=wall` opens on the tiles, so the classes console can link straight
  *     to them, and the last view used on a class is remembered per class.
  *
@@ -76,7 +75,10 @@ function learnerRow() {
 function createTestRouter() {
   return createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/class-groups/:id', component: { template: '<div />' } }]
+    routes: [
+      { path: '/class-groups/:id', component: { template: '<div />' } },
+      { path: '/terminal-session/:sessionId', name: 'TerminalSessionView', component: { template: '<div />' } }
+    ]
   })
 }
 
@@ -153,29 +155,16 @@ describe('ClassLiveView — from a row to that learner’s terminal', () => {
     getGroupLiveProgress.mockResolvedValue([learnerRow()])
   })
 
-  it('opens the wall on the learner whose terminal the teacher asked to watch', async () => {
-    const wrapper = await mountLiveView(createTestRouter())
+  it('opens the terminal page of the learner the teacher asked to watch, with a way back', async () => {
+    const router = createTestRouter()
+    const wrapper = await mountLiveView(router)
 
     await wrapper.find('.ocf-prog-icon-btn').trigger('click')
     await flushPromises()
 
-    const wall = wrapper.find('.wall-stub')
-    expect(wall.exists()).toBe(true)
-    expect(wall.attributes('data-focus')).toBe('sess-42')
-  })
-
-  it('forgets the watched learner once the teacher is back on the table', async () => {
-    const wrapper = await mountLiveView(createTestRouter())
-
-    await wrapper.find('.ocf-prog-icon-btn').trigger('click')
-    await flushPromises()
-    await viewButtons(wrapper)[0].trigger('click')
-    await flushPromises()
-    await viewButtons(wrapper)[1].trigger('click')
-    await flushPromises()
-
-    // Going to the wall on purpose shows the wall, not whoever was watched last.
-    expect(wrapper.find('.wall-stub').attributes('data-focus')).toBeUndefined()
+    expect(router.currentRoute.value.name).toBe('TerminalSessionView')
+    expect(router.currentRoute.value.params.sessionId).toBe('sess-42')
+    expect(router.currentRoute.value.query.returnTo).toBe('/class-groups/g-1?tab=live')
   })
 })
 

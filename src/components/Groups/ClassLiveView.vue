@@ -107,9 +107,14 @@ function showView(view: ClassLiveViewMode) {
   activeView.value = view
 }
 
+// The eye opens that learner's own terminal page (watch, take the hand, full
+// screen) and its back link returns to this class.
 function watchLearnerTerminal(sessionId: string) {
-  focusSessionId.value = sessionId
-  activeView.value = 'wall'
+  router.push({
+    name: 'TerminalSessionView',
+    params: { sessionId },
+    query: { returnTo: route.fullPath }
+  })
 }
 
 // Remember the view as soon as it is on screen, deep link included: opening a
