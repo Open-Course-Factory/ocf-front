@@ -315,7 +315,7 @@ onMounted(() => {
           :placeholder="t('orgScenarios.searchPlaceholder')"
         />
       </div>
-      <label class="ocf-archived-toggle">
+      <label class="ocf-toolbar-toggle">
         <input v-model="showArchived" type="checkbox" />
         {{ t('orgScenarios.showArchived') }}
       </label>
@@ -498,7 +498,7 @@ onMounted(() => {
   flex: 1;
 }
 
-.ocf-archived-toggle {
+.ocf-toolbar-toggle {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);

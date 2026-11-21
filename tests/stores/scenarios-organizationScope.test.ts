@@ -60,6 +60,15 @@ describe('scenarios store — organization scoping', () => {
     expect(url(1)).toContain('organization_id=org-mds')
   })
 
+  it('lists every organization when asked to, so scenarios without one stay reachable', async () => {
+    const store = useScenariosStore()
+    store.allOrganizations = true
+    await store.loadEntitiesWithCursor('/scenarios', undefined, 20, { difficulty: 'easy' })
+
+    expect(url()).not.toContain('organization_id')
+    expect(url()).toContain('difficulty=easy')
+  })
+
   it('stays unscoped without an active organization', async () => {
     activeOrganization.value = null
     await useScenariosStore().loadEntitiesWithCursor('/scenarios', undefined, 20, {})

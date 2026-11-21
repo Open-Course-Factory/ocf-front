@@ -25,6 +25,7 @@ const { t } = useTranslations({
   en: {
     scenarios: {
       importKillercoda: 'Import KillerCoda',
+      allOrganizations: 'All organizations',
       importJson: 'Import JSON',
       importSuccess: 'Scenario imported successfully',
       exportJson: 'Export JSON',
@@ -40,6 +41,7 @@ const { t } = useTranslations({
   fr: {
     scenarios: {
       importKillercoda: 'Importer KillerCoda',
+      allOrganizations: 'Toutes les organisations',
       importJson: 'Importer JSON',
       importSuccess: 'Scénario importé avec succès',
       exportJson: 'Exporter JSON',
@@ -110,8 +112,18 @@ async function duplicateScenario(entity: any) {
 </script>
 
 <template>
-  <Entity :key="organizationsStore.currentOrganizationId ?? 'none'" :entity-name="'scenarios'" :entity-store="entityStore">
+  <Entity
+    :key="`${organizationsStore.currentOrganizationId ?? 'none'}:${entityStore.allOrganizations}`"
+    :entity-name="'scenarios'"
+    :entity-store="entityStore"
+  >
     <template #toolbar-extra>
+      <!-- The list follows the top-menu organization; scenarios that belong to
+           none (platform ones) are only reachable with every organization. -->
+      <label v-if="organizationsStore.currentOrganizationId" class="ocf-toolbar-toggle">
+        <input v-model="entityStore.allOrganizations" type="checkbox" data-test="scenarios-all-organizations" />
+        {{ t('scenarios.allOrganizations') }}
+      </label>
       <button class="btn btn-secondary" @click="importFormat = 'archive'">
         <i class="fas fa-file-import"></i>
         {{ t('scenarios.importKillercoda') }}
