@@ -185,3 +185,10 @@ export function sendTakeHand(socket: Pick<WebSocket, 'send' | 'readyState'>): vo
 export function sendReleaseHand(socket: Pick<WebSocket, 'send' | 'readyState'>): void {
   sendWhenOpen(socket, SUPERVISION_MESSAGES.releaseHand)
 }
+
+// A supervisor holding the hand sizes the learner's terminal to their own view,
+// so zooming refits the grid instead of pushing it out of sight. ocf-core relays
+// it as tt-backend's resize, which applies only while the hand is held.
+export function sendResize(socket: Pick<WebSocket, 'send' | 'readyState'>, cols: number, rows: number): void {
+  sendWhenOpen(socket, JSON.stringify({ type: 'resize', cols, rows }))
+}

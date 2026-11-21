@@ -23,6 +23,7 @@
 
 <template>
   <div
+    ref="rootRef"
     class="supervision-viewer"
     :class="{ 'supervision-viewer-compact': compact }"
     :role="compact ? 'button' : undefined"
@@ -73,6 +74,17 @@
         <TerminalZoomControl v-if="!compact" />
         <button
           v-if="!compact"
+          type="button"
+          class="ocf-btn ocf-btn-sm ocf-btn-secondary"
+          data-testid="supervision-fullscreen"
+          :title="isFullscreen ? t('supervisionViewer.exitFullscreen') : t('supervisionViewer.fullscreen')"
+          :aria-label="isFullscreen ? t('supervisionViewer.exitFullscreen') : t('supervisionViewer.fullscreen')"
+          @click.stop="toggleFullscreen"
+        >
+          <i :class="isFullscreen ? 'fas fa-compress' : 'fas fa-expand'" aria-hidden="true"></i>
+        </button>
+        <button
+          v-if="!compact"
           class="ocf-btn ocf-btn-sm"
           :class="hasControl ? 'ocf-btn-danger' : 'ocf-btn-primary'"
           :disabled="!isConnected || controlState.ended || isControlledByOther"
@@ -106,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import '@xterm/xterm/css/xterm.css'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import { useTranslations } from '../../composables/useTranslations'
@@ -117,11 +129,13 @@ import { webSocketAuthProtocols } from '../../utils/webSocketAuth'
 import {
   createSupervisionMessageHandler,
   initialSupervisionState,
+  sendResize,
   type SupervisionState
 } from '../../services/domain/terminal/supervisionProtocol'
 import { useSupervisionControl } from '../../composables/useSupervisionControl'
 import { useTerminalZoom } from '../../composables/useTerminalZoom'
 import TerminalZoomControl from './TerminalZoomControl.vue'
+import { fontSizeToFit } from '../../utils/terminalFit'
 
 interface Props {
   sessionId: string
@@ -147,6 +161,8 @@ const { t } = useTranslations({
   en: {
     supervisionViewer: {
       takeHand: 'Type in the terminal',
+      fullscreen: 'Present full screen',
+      exitFullscreen: 'Leave full screen',
       releaseHand: 'Stop typing',
       connecting: 'Connecting to session…',
       controlled: 'You are in control',
@@ -163,6 +179,8 @@ const { t } = useTranslations({
   fr: {
     supervisionViewer: {
       takeHand: 'Écrire dans le terminal',
+      fullscreen: 'Présenter en plein écran',
+      exitFullscreen: 'Quitter le plein écran',
       releaseHand: 'Arrêter d’écrire',
       connecting: 'Connexion à la session…',
       controlled: 'Vous avez le contrôle',
@@ -257,9 +275,27 @@ async function initTerminal() {
   dataDisposable = terminal.onData((data: string) => forwardKeystroke(data))
 }
 
-// Follow the learner's grid when tt-backend reports it, else fit the grid to the tile.
+// While this trainer holds the hand, their view sizes the learner's terminal, as
+// the learner's own window does: the grid fits the tile at the zoomed font, and
+// tt-backend resizes the PTY (vim and top redraw on the resize). Only once
+// tt-backend confirmed the hand: before that, it ignores a resize.
+const drivesLearnerSize = computed(() => hasControl.value && controlState.value.controlled && !props.compact)
+
+function driveLearnerSize() {
+  if (!fitAddon || !terminal || !socket.value) return
+  terminal.options.fontSize = baseFontSize() * zoomFactor()
+  try { fitAddon.fit() } catch { return /* container not measured yet */ }
+  sendResize(socket.value, terminal.cols, terminal.rows)
+}
+
+// Drive the learner's size while holding the hand; otherwise follow the learner's
+// grid when tt-backend reports it, else fit the grid to the tile.
 function refit() {
   if (!fitAddon || !terminal) return
+  if (drivesLearnerSize.value) {
+    driveLearnerSize()
+    return
+  }
   if (controlState.value.cols) {
     scaleToTile()
     return
@@ -281,29 +317,19 @@ function setupResizeObserver() {
 // tt-backend reports no size; the grid then keeps fitting the tile.
 function applyLearnerSize() {
   const { cols, rows } = controlState.value
-  if (!terminal || !cols || !rows) return
+  // While driving, the reported size is the one this view just sent.
+  if (!terminal || !cols || !rows || drivesLearnerSize.value) return
   if (terminal.cols !== cols || terminal.rows !== rows) terminal.resize(cols, rows)
   scaleToTile()
 }
 
-// Font size, not a CSS transform: xterm then measures its own cells, so the
-// scroll area and mouse mapping stay right. The font never grows past the base
-// size times the trainer's zoom, and never past what fits the tile: the
-// learner's grid cannot reflow, so a bigger font would push the line ends and
-// the last rows out of sight.
-const MIN_FONT_SIZE = 4
-
+// The font never grows past the base size times the trainer's zoom, and never
+// past what fits the tile: a bigger font would push the line ends and the last
+// rows out of sight. Taking the hand is how the zoom gets past that.
 function scaleToTile() {
-  const el = terminal?.element as HTMLElement | undefined
-  const screen = el?.querySelector('.xterm-screen') as HTMLElement | null
-  if (!el || !screen || !screen.offsetWidth || !screen.offsetHeight) return
-  const style = getComputedStyle(el)
-  const width = el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
-  const height = el.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
-  const ratio = Math.min(width / screen.offsetWidth, height / screen.offsetHeight)
-  const fitted = Math.min(baseFontSize() * zoomFactor(), terminal.options.fontSize * ratio)
-  const size = Math.max(MIN_FONT_SIZE, Math.floor(fitted * 2) / 2)
-  if (size !== terminal.options.fontSize) terminal.options.fontSize = size
+  if (!terminal) return
+  const size = fontSizeToFit(terminal, baseFontSize() * zoomFactor())
+  if (size !== null && size !== terminal.options.fontSize) terminal.options.fontSize = size
 }
 
 function baseFontSize() {
@@ -325,6 +351,26 @@ watch(zoom, () => {
 })
 
 watch(() => [controlState.value.cols, controlState.value.rows], applyLearnerSize)
+// On release the learner's window takes its size back, and the next reported
+// size is theirs again.
+watch(drivesLearnerSize, (driving) => (driving ? refit() : applyLearnerSize()))
+
+// Full screen makes the tile the whole screen, so the learner's grid gets the
+// biggest font that fits it; the resize observer refits on the way in and out.
+const rootRef = ref<HTMLElement | null>(null)
+const isFullscreen = ref(false)
+
+function toggleFullscreen() {
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {})
+  } else {
+    rootRef.value?.requestFullscreen().catch(() => {})
+  }
+}
+
+function onFullscreenChange() {
+  isFullscreen.value = document.fullscreenElement === rootRef.value
+}
 
 function connect() {
   const url = buildSuperviseWsUrl(props.sessionId)
@@ -399,11 +445,15 @@ watch(() => props.sessionId, async () => {
 })
 
 onMounted(async () => {
+  document.addEventListener('fullscreenchange', onFullscreenChange)
   await initTerminal()
   if (props.autoConnect) connect()
 })
 
-onBeforeUnmount(cleanup)
+onBeforeUnmount(() => {
+  document.removeEventListener('fullscreenchange', onFullscreenChange)
+  cleanup()
+})
 </script>
 
 <style scoped>
@@ -414,6 +464,11 @@ onBeforeUnmount(cleanup)
   border: var(--border-width-thin) solid var(--color-border-medium);
   border-radius: var(--border-radius-md);
   overflow: hidden;
+}
+
+.supervision-viewer:fullscreen {
+  border: none;
+  border-radius: 0;
 }
 
 .supervision-viewer-compact {

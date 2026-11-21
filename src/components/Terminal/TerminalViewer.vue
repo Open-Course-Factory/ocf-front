@@ -279,6 +279,7 @@ import TerminalEndStateOverlay from './TerminalEndStateOverlay.vue'
 import SupervisionChip from './SupervisionChip.vue'
 import TerminalZoomControl from './TerminalZoomControl.vue'
 import { useTerminalZoom } from '../../composables/useTerminalZoom'
+import { fontSizeToFit } from '../../utils/terminalFit'
 import ExposedPortsChip from './ExposedPortsChip.vue'
 
 interface SessionInfo {
@@ -696,7 +697,8 @@ let isFitting = false
 // The size must only ever follow something the user did — resizing the window,
 // opening a panel — never the arrival of output.
 function fitTerminal() {
-  if (!fitAddon || !terminal.value || isFitting) return
+  // While a trainer holds the hand, the grid is theirs: see the watch below.
+  if (!fitAddon || !terminal.value || isFitting || supervisionState.value.controlled) return
 
   // Skipping a fit that would change nothing is an optimisation, not the
   // contract: an addon without proposeDimensions still has to be able to fit,
@@ -723,10 +725,30 @@ const { zoom } = useTerminalZoom()
 // A bigger font means fewer columns: the refit sends the new size to the shell,
 // like zooming a desktop terminal.
 watch(zoom, (level) => {
-  if (!terminal.value) return
+  // While a trainer sizes the terminal, the grid is theirs; the zoom applies on release.
+  if (!terminal.value || supervisionState.value.controlled) return
   terminal.value.options.fontSize = BASE_FONT_SIZE * level
   fitTerminal()
 })
+
+// While a trainer holds the hand and sizes the terminal from their own view, this
+// window shows their grid, the font giving way if it is larger than the window.
+// On release the window refits, which sends its own size back.
+watch(
+  () => [supervisionState.value.controlled, supervisionState.value.cols, supervisionState.value.rows] as const,
+  ([controlled, cols, rows], [wasControlled]) => {
+    const term = terminal.value
+    if (!term) return
+    if (controlled && cols && rows) {
+      if (term.cols !== cols || term.rows !== rows) term.resize(cols, rows)
+      const size = fontSizeToFit(term, BASE_FONT_SIZE * zoom.value)
+      if (size !== null) term.options.fontSize = size
+    } else if (wasControlled && !controlled) {
+      term.options.fontSize = BASE_FONT_SIZE * zoom.value
+      fitTerminal()
+    }
+  }
+)
 
 function handleResize() {
   if (resizeTimeout) clearTimeout(resizeTimeout)
@@ -828,6 +850,8 @@ async function connectToTerminal() {
       // Send resize events to backend as binary WebSocket frames
       // so the container PTY dimensions stay in sync with the browser
       terminal.value.onResize(({ cols, rows }: { cols: number; rows: number }) => {
+        // While a trainer holds the hand, their view sizes the terminal.
+        if (supervisionState.value.controlled) return
         if (socket.value && socket.value.readyState === WebSocket.OPEN) {
           const msg = JSON.stringify({ type: 'resize', cols, rows })
           socket.value.send(new TextEncoder().encode(msg))
