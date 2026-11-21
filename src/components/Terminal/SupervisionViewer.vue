@@ -287,8 +287,10 @@ function applyLearnerSize() {
 }
 
 // Font size, not a CSS transform: xterm then measures its own cells, so the
-// scroll area and mouse mapping stay right. The fitted size never grows past the
-// base size; the trainer's zoom then multiplies it, and the tile scrolls.
+// scroll area and mouse mapping stay right. The font never grows past the base
+// size times the trainer's zoom, and never past what fits the tile: the
+// learner's grid cannot reflow, so a bigger font would push the line ends and
+// the last rows out of sight.
 const MIN_FONT_SIZE = 4
 
 function scaleToTile() {
@@ -299,8 +301,8 @@ function scaleToTile() {
   const width = el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
   const height = el.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
   const ratio = Math.min(width / screen.offsetWidth, height / screen.offsetHeight)
-  const fitted = Math.min(baseFontSize(), terminal.options.fontSize * ratio)
-  const size = Math.max(MIN_FONT_SIZE, Math.floor(fitted * zoomFactor() * 2) / 2)
+  const fitted = Math.min(baseFontSize() * zoomFactor(), terminal.options.fontSize * ratio)
+  const size = Math.max(MIN_FONT_SIZE, Math.floor(fitted * 2) / 2)
   if (size !== terminal.options.fontSize) terminal.options.fontSize = size
 }
 
@@ -504,11 +506,6 @@ onBeforeUnmount(cleanup)
 .supervision-viewer-terminal {
   width: 100%;
   height: 100%;
-}
-
-/* A zoomed learner grid is larger than the tile: scroll to it. */
-.supervision-viewer:not(.supervision-viewer-compact) .supervision-viewer-terminal {
-  overflow: auto;
 }
 
 .supervision-viewer-overlay {
