@@ -48,75 +48,79 @@
       <span v-if="exposedPorts.length > 0" class="ports-chip-count">{{ exposedPorts.length }}</span>
     </button>
 
-    <div v-if="open" class="ports-popover" data-testid="exposed-ports-popover" @click.stop>
-      <div class="ports-popover-header">
-        <strong>{{ t('exposedPorts.title') }}</strong>
-        <span class="ports-popover-hint">{{ t('exposedPorts.hint') }}</span>
-      </div>
+    <!-- Teleported: the terminal card and the session columns clip their overflow,
+         so an in-place popover got cut off by the terminal frame on small screens. -->
+    <Teleport to="body">
+      <div v-if="open" class="ports-popover" :style="popoverStyle" data-testid="exposed-ports-popover" @click.stop>
+        <div class="ports-popover-header">
+          <strong>{{ t('exposedPorts.title') }}</strong>
+          <span class="ports-popover-hint">{{ t('exposedPorts.hint') }}</span>
+        </div>
 
-      <p v-if="!hasNetwork" class="ports-locked">
-        <i class="fas fa-lock"></i> {{ noNetworkText }}
-      </p>
-
-      <form v-else class="ports-form" @submit.prevent="createExposure">
-        <input
-          id="exposed-port-input"
-          v-model.number="portInput"
-          type="number"
-          class="port-input"
-          :placeholder="t('exposedPorts.portPlaceholder')"
-          min="1024"
-          max="65535"
-          :disabled="!isActive || isCreating"
-        />
-        <Button
-          type="submit"
-          variant="primary"
-          size="sm"
-          :loading="isCreating"
-          :disabled="!isActive || !portInput"
-        >
-          {{ t('exposedPorts.forward') }}
-        </Button>
-      </form>
-
-      <div class="ports-list">
-        <p v-if="isLoading" class="ports-empty">
-          <i class="fas fa-spinner fa-spin"></i> {{ t('exposedPorts.loading') }}
+        <p v-if="!hasNetwork" class="ports-locked">
+          <i class="fas fa-lock"></i> {{ noNetworkText }}
         </p>
-        <p v-else-if="exposedPorts.length === 0 && hasNetwork" class="ports-empty">
-          {{ t('exposedPorts.empty') }}
-        </p>
-        <div v-for="ep in exposedPorts" :key="ep.id" class="exposed-port-entry">
-          <span class="exposed-port-number">:{{ ep.port }}</span>
-          <a :href="ep.url" target="_blank" rel="noopener noreferrer" class="exposed-port-url" :title="ep.url">
-            {{ ep.url }}
-          </a>
-          <span class="exposed-port-expiry" :title="t('exposedPorts.expiresAt', { time: expiryClock(ep) })">
-            <i class="fas fa-hourglass-half"></i> {{ remaining(ep) }}
-          </span>
-          <button
-            type="button"
-            class="entry-btn"
-            :title="copiedId === ep.id ? t('exposedPorts.copied') : t('exposedPorts.copy')"
-            :aria-label="t('exposedPorts.copy')"
-            @click="copyUrl(ep)"
+
+        <form v-else class="ports-form" @submit.prevent="createExposure">
+          <input
+            id="exposed-port-input"
+            v-model.number="portInput"
+            type="number"
+            class="port-input"
+            :placeholder="t('exposedPorts.portPlaceholder')"
+            min="1024"
+            max="65535"
+            :disabled="!isActive || isCreating"
+          />
+          <Button
+            type="submit"
+            variant="primary"
+            size="sm"
+            :loading="isCreating"
+            :disabled="!isActive || !portInput"
           >
-            <i :class="copiedId === ep.id ? 'fas fa-check' : 'fas fa-copy'"></i>
-          </button>
-          <button
-            type="button"
-            class="entry-btn stop-btn"
-            :disabled="deletingId === ep.id"
-            :title="t('exposedPorts.stop')"
-            :aria-label="t('exposedPorts.stop')"
-            @click="deleteExposure(ep)"
-          >
-            <i :class="deletingId === ep.id ? 'fas fa-spinner fa-spin' : 'fas fa-trash'"></i>
-          </button>
+            {{ t('exposedPorts.forward') }}
+          </Button>
+        </form>
+
+        <div class="ports-list">
+          <p v-if="isLoading" class="ports-empty">
+            <i class="fas fa-spinner fa-spin"></i> {{ t('exposedPorts.loading') }}
+          </p>
+          <p v-else-if="exposedPorts.length === 0 && hasNetwork" class="ports-empty">
+            {{ t('exposedPorts.empty') }}
+          </p>
+          <div v-for="ep in exposedPorts" :key="ep.id" class="exposed-port-entry">
+            <span class="exposed-port-number">:{{ ep.port }}</span>
+            <a :href="ep.url" target="_blank" rel="noopener noreferrer" class="exposed-port-url" :title="ep.url">
+              {{ ep.url }}
+            </a>
+            <span class="exposed-port-expiry" :title="t('exposedPorts.expiresAt', { time: expiryClock(ep) })">
+              <i class="fas fa-hourglass-half"></i> {{ remaining(ep) }}
+            </span>
+            <button
+              type="button"
+              class="entry-btn"
+              :title="copiedId === ep.id ? t('exposedPorts.copied') : t('exposedPorts.copy')"
+              :aria-label="t('exposedPorts.copy')"
+              @click="copyUrl(ep)"
+            >
+              <i :class="copiedId === ep.id ? 'fas fa-check' : 'fas fa-copy'"></i>
+            </button>
+            <button
+              type="button"
+              class="entry-btn stop-btn"
+              :disabled="deletingId === ep.id"
+              :title="t('exposedPorts.stop')"
+              :aria-label="t('exposedPorts.stop')"
+              @click="deleteExposure(ep)"
+            >
+              <i :class="deletingId === ep.id ? 'fas fa-spinner fa-spin' : 'fas fa-trash'"></i>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
@@ -236,8 +240,34 @@ function dropExpired() {
   exposedPorts.value = exposedPorts.value.filter(ep => new Date(ep.expires_at).getTime() > now.value)
 }
 
+const popoverStyle = ref<Record<string, string>>({})
+
+// Fixed coordinates under the chip, right-aligned to it and clamped to the
+// viewport; the max-height lets the list scroll instead of running off-screen.
+function placePopover() {
+  const chip = rootRef.value?.getBoundingClientRect()
+  if (!chip) return
+  const margin = 8
+  const preferredWidth = 416 // 26rem
+  const width = Math.min(preferredWidth, window.innerWidth - 2 * margin)
+  const left = Math.min(Math.max(margin, chip.right - width), window.innerWidth - width - margin)
+  const top = chip.bottom + 4
+  popoverStyle.value = {
+    top: `${top}px`,
+    left: `${left}px`,
+    width: `${width}px`,
+    maxHeight: `${window.innerHeight - top - margin}px`
+  }
+}
+
 function toggle() {
   open.value = !open.value
+  if (open.value) placePopover()
+}
+
+// ponytail: closes on resize rather than tracking the chip; re-open re-anchors.
+function closePopover() {
+  open.value = false
 }
 
 function onDocClick(e: MouseEvent) {
@@ -320,12 +350,14 @@ watch(
 
 onMounted(() => {
   document.addEventListener('click', onDocClick)
+  window.addEventListener('resize', closePopover)
   if (props.sessionId && props.isActive) fetchExposedPorts()
   clock = setInterval(dropExpired, 60000)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', onDocClick)
+  window.removeEventListener('resize', closePopover)
   if (clock) clearInterval(clock)
 })
 </script>
@@ -379,10 +411,8 @@ onUnmounted(() => {
 }
 
 .ports-popover {
-  position: absolute;
-  top: calc(100% + var(--spacing-xs));
-  right: 0;
-  width: min(26rem, 90vw);
+  position: fixed;
+  overflow-y: auto;
   padding: var(--spacing-sm) var(--spacing-md);
   background-color: var(--color-bg-primary);
   border: var(--border-width-thin) solid var(--color-border-light);

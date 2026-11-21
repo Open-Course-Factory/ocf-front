@@ -36,7 +36,7 @@ async function mountChip(props: Record<string, unknown>, locale: 'en' | 'fr' = '
     attachTo: document.body,
     global: {
       plugins: [createI18n({ legacy: false, locale, fallbackLocale: 'en', messages: { en: {}, fr: {} }, missingWarn: false, fallbackWarn: false })],
-      stubs: { Button: { template: '<button><slot /></button>' } }
+      stubs: { Button: { template: '<button><slot /></button>' }, Teleport: true }
     }
   })
   await flushPromises()
