@@ -77,7 +77,7 @@
         </div>
 
         <!-- The groups route returns archived rows too; the view hides them itself -->
-        <label class="ocf-archived-toggle">
+        <label class="ocf-toolbar-toggle">
           <input
             v-model="showArchived"
             type="checkbox"
@@ -654,16 +654,6 @@ watch(shouldFilterAsStandardUser, () => {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-}
-
-.ocf-archived-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  white-space: nowrap;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
 }
 
 /* Expand/Collapse Button Group */

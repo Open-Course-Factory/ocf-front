@@ -176,7 +176,7 @@ test('a trainer archives from the library and can still find it there', async ({
     'an archived scenario leaves the default library view'
   ).toHaveCount(0, { timeout: 15_000 });
 
-  await page.locator('.ocf-archived-toggle input').check();
+  await page.locator('.ocf-toolbar-toggle input').check();
 
   const archived = page.locator('.scenario-card').filter({ hasText: LIBRARY_TITLE });
   await expect(archived, 'and comes back once archived ones are shown').toBeVisible();

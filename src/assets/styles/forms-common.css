@@ -256,3 +256,16 @@ textarea.form-control {
     width: 100%;
   }
 }
+
+/* A checkbox that widens or narrows a list from its toolbar ("show archived",
+   "all organizations"). Global because a toolbar mixes Entity's own controls
+   with ones its pages add through a slot, which Entity's scoped styles miss. */
+.ocf-toolbar-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}

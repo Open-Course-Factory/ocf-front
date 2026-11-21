@@ -105,14 +105,14 @@ describe('OrganizationScenariosTab — archived scenarios', () => {
     expect(cardTitles(wrapper).join(' ')).toContain('Docker Basics')
     expect(cardTitles(wrapper).join(' ')).not.toContain('Old Lab')
 
-    await wrapper.find('.ocf-archived-toggle input').setValue(true)
+    await wrapper.find('.ocf-toolbar-toggle input').setValue(true)
 
     expect(cardTitles(wrapper).join(' ')).toContain('Old Lab')
   })
 
   it('labels an archived scenario so it is not mistaken for an active one', async () => {
     const wrapper = await mountTab()
-    await wrapper.find('.ocf-archived-toggle input').setValue(true)
+    await wrapper.find('.ocf-toolbar-toggle input').setValue(true)
 
     expect(wrapper.find('.ocf-archived-badge').exists()).toBe(true)
   })
@@ -121,7 +121,7 @@ describe('OrganizationScenariosTab — archived scenarios', () => {
     orgListScenariosMock.mockResolvedValue([activeScenario])
     const wrapper = await mountTab()
 
-    expect(wrapper.find('.ocf-archived-toggle').exists()).toBe(true)
+    expect(wrapper.find('.ocf-toolbar-toggle').exists()).toBe(true)
   })
 
   it('archives through the store action and reloads the library', async () => {
@@ -148,7 +148,7 @@ describe('OrganizationScenariosTab — archived scenarios', () => {
 
   it('restores an archived scenario without a confirmation step', async () => {
     const wrapper = await mountTab()
-    await wrapper.find('.ocf-archived-toggle input').setValue(true)
+    await wrapper.find('.ocf-toolbar-toggle input').setValue(true)
 
     const restoreButton = wrapper.findAll('.scenario-actions button')
       .find(b => b.find('.fa-rotate-left').exists())

@@ -97,6 +97,14 @@ async function openAdminScenarios(page: Page): Promise<void> {
   }
   await category.locator('a[href="/admin/scenarios"]').click();
   await expect(page.locator('.toolbar h2')).toBeVisible();
+  // The list follows the top-menu organization, and the spec's scenarios
+  // belong to none: they are listed with every organization. An admin with no
+  // organization has no toggle, and an unscoped list already.
+  const allOrganizations = page.locator('[data-test="scenarios-all-organizations"]');
+  const scoped = await allOrganizations.waitFor({ timeout: 5_000 }).then(() => true, () => false);
+  if (scoped) {
+    await allOrganizations.check();
+  }
 }
 
 test.beforeAll(async () => {

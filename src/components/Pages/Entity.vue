@@ -92,7 +92,7 @@
           </div>
 
           <!-- Archived rows are hidden by the backend unless asked for -->
-          <label v-if="isArchivable" class="ocf-archived-toggle">
+          <label v-if="isArchivable" class="ocf-toolbar-toggle">
             <input
               v-model="showArchived"
               type="checkbox"
@@ -1436,16 +1436,6 @@ ul {
 
 .actions .btn i {
   margin-right: var(--spacing-xs);
-}
-
-.ocf-archived-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  white-space: nowrap;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
 }
 
 @keyframes fadeIn {

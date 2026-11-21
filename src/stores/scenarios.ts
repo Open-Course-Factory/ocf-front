@@ -20,7 +20,7 @@
  */
 
 import { defineStore } from "pinia"
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useBaseStore } from "./baseStore"
 import { useOrganizationsStore } from "./organizations"
 import { useStoreTranslations } from '../composables/useTranslations'
@@ -253,8 +253,10 @@ export const useScenariosStore = defineStore('scenarios', () => {
      * The scenarios list follows the organization picked in the top menu, as
      * the class groups list does: the backend turns `organization_id` into an
      * exact-match WHERE on top of the visibility scope. Without an active
-     * organization the call stays unscoped.
+     * organization, or when every organization is asked for, the call stays
+     * unscoped: scenarios that belong to no organization are only reachable so.
      */
+    const allOrganizations = ref(false)
     const loadEntitiesWithCursor = async (
         endpoint: string,
         cursor?: string,
@@ -262,11 +264,11 @@ export const useScenariosStore = defineStore('scenarios', () => {
         filters: Record<string, string> = {}
     ) => {
         const currentOrganizationId = useOrganizationsStore().currentOrganization?.id
-        const scopedFilters = currentOrganizationId
+        const scopedFilters = currentOrganizationId && !allOrganizations.value
             ? { ...filters, organization_id: currentOrganizationId }
             : filters
         return await base.loadEntitiesWithCursor(endpoint, cursor, limit, scopedFilters)
     }
 
-    return { ...base, fieldList, loadActiveEntities, loadEntitiesWithCursor }
+    return { ...base, fieldList, loadActiveEntities, loadEntitiesWithCursor, allOrganizations }
 })
