@@ -241,6 +241,24 @@ describe('BaseModal', () => {
     })
   })
 
+  describe('while loading', () => {
+    // The request is in flight: a second confirm would send it again (a second
+    // scenario preview), and cancel would hide a modal whose action still runs.
+    it('disables confirm and cancel, then re-enables them', async () => {
+      const wrapper = mountModal({ showDefaultFooter: true, confirmText: 'Start', cancelText: 'Cancel', isLoading: true })
+      const [confirm, cancel] = wrapper.findAll('.base-modal-footer button')
+      expect(confirm.attributes('disabled')).toBeDefined()
+      expect(cancel.attributes('disabled')).toBeDefined()
+      await confirm.trigger('click')
+      expect(wrapper.emitted('confirm')).toBeUndefined()
+
+      await wrapper.setProps({ isLoading: false })
+      const [confirmAgain, cancelAgain] = wrapper.findAll('.base-modal-footer button')
+      expect(confirmAgain.attributes('disabled')).toBeUndefined()
+      expect(cancelAgain.attributes('disabled')).toBeUndefined()
+    })
+  })
+
   describe('confirm variant and test ids', () => {
     const footer = { showDefaultFooter: true, confirmText: 'Confirm', cancelText: 'Cancel' }
 

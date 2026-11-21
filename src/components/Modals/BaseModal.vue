@@ -63,7 +63,7 @@
             :class="['btn', confirmVariant === 'danger' ? 'btn-danger' : 'btn-primary']"
             :data-testid="confirmTestId || undefined"
             @click="handleConfirm"
-            :disabled="confirmDisabled"
+            :disabled="confirmDisabled || isLoading"
           >
             <i v-if="confirmIcon" :class="confirmIcon"></i>
             {{ confirmText }}
@@ -72,6 +72,7 @@
             v-if="showDefaultFooter && cancelText"
             class="btn btn-secondary"
             :data-testid="cancelTestId || undefined"
+            :disabled="isLoading"
             @click="closeModal"
           >
             <i v-if="cancelIcon" :class="cancelIcon"></i>
