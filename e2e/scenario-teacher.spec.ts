@@ -165,9 +165,12 @@ test('the trainer rehearsal opens a session the class results do not count', asy
 
   // The player replaces the editor in this tab. A host with no room refuses
   // the launch instead — skip, don't fail.
+  // Raced on the URL, not on the step: the step only shows once the setup is
+  // over, by when the briefing modal is open, and two locator waits racing
+  // through its handler never returned.
   const stepTitle = page.getByTestId('scenario-step-title');
   const refused = await Promise.race([
-    stepTitle.waitFor({ state: 'visible', timeout: 240_000 }).then(() => false),
+    page.waitForURL(/\/terminal-session\//, { timeout: 240_000 }).then(() => false),
     page
       .locator('.ocf-toast')
       .waitFor({ state: 'visible', timeout: 240_000 })
