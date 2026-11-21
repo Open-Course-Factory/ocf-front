@@ -356,7 +356,8 @@ import type {
   VerifyStepResponse,
   SubmitFlagResponse,
   SubmitQuizResponse,
-  ScenarioInfo
+  ScenarioInfo,
+  CurrentStepResponse
 } from '../../services/domain/scenario'
 
 interface Props {
@@ -551,7 +552,29 @@ const isCollapsed = ref(false)
 const showHint = ref(false)
 
 // Progressive hints state
-const revealedHints = ref<Array<{ level: number; content: string }>>([])
+type RevealedHint = { level: number; content: string }
+// Revealed hints belong to their step: the current step's and a reviewed past
+// step's are kept apart, so a review never overwrites the hints the learner
+// returns to.
+const currentHints = ref<RevealedHint[]>([])
+const reviewedHints = ref<RevealedHint[]>([])
+const revealedHints = computed(() => (reviewingStep.value ? reviewedHints.value : currentHints.value))
+
+// A step's already-revealed hints, fetched level by level. The caller keeps them
+// only if that step is still the one it loaded them for: a slow fetch must not
+// land on the step that replaced it.
+async function fetchRevealedHints(step: CurrentStepResponse): Promise<RevealedHint[]> {
+  const hints: RevealedHint[] = []
+  for (let level = 1; level <= step.hints_revealed; level++) {
+    try {
+      const hint = await scenarioSessionService.revealHint(props.scenarioSessionId, step.step_order, level)
+      hints.push({ level: hint.level, content: hint.content })
+    } catch {
+      break
+    }
+  }
+  return hints
+}
 const isRevealingHint = ref(false)
 
 
@@ -916,7 +939,7 @@ async function handleRevealNextHint() {
       displayedStep.value.step_order,
       nextLevel
     )
-    revealedHints.value.push({ level: result.level, content: result.content })
+    ;(reviewingStep.value ? reviewedHints : currentHints).value.push({ level: result.level, content: result.content })
     // Dismiss the hint-nudge for the rest of the session once a hint has been revealed
     hintNudgeDismissed.value = true
     stopHintNudgeTimer()
@@ -932,20 +955,10 @@ async function handleRevealNextHint() {
 // hint state stays here). Clearing review (back to current) just hides the hint.
 watch(reviewingStep, async (step) => {
   showHint.value = false
+  reviewedHints.value = []
   if (!step) return
-  revealedHints.value = []
-  if (step.hints_total_count > 0 && step.hints_revealed > 0) {
-    for (let level = 1; level <= step.hints_revealed; level++) {
-      try {
-        const hint = await scenarioSessionService.revealHint(
-          props.scenarioSessionId, step.step_order, level
-        )
-        revealedHints.value.push({ level: hint.level, content: hint.content })
-      } catch {
-        break
-      }
-    }
-  }
+  const hints = await fetchRevealedHints(step)
+  if (reviewingStep.value === step) reviewedHints.value = hints
 })
 
 // Load collapse state from localStorage
@@ -968,7 +981,7 @@ async function loadCurrentStep() {
   flagResult.value = null
   flagValue.value = ''
   showHint.value = false
-  revealedHints.value = []
+  currentHints.value = []
   reviewingStep.value = null
   quizResult.value = null
   quizSubmitError.value = ''
@@ -982,19 +995,9 @@ async function loadCurrentStep() {
   incomingStepType.value = undefined
 
   if (step) {
-    // Load already-revealed progressive hints
-    if (step.hints_total_count > 0 && step.hints_revealed > 0) {
-      for (let level = 1; level <= step.hints_revealed; level++) {
-        try {
-          const hint = await scenarioSessionService.revealHint(
-            props.scenarioSessionId, step.step_order, level
-          )
-          revealedHints.value.push({ level: hint.level, content: hint.content })
-        } catch {
-          break
-        }
-      }
-    }
+    const hints = await fetchRevealedHints(step)
+    if (currentStep.value?.step_order !== step.step_order) return
+    currentHints.value = hints
 
     // Start the hint-nudge timer for terminal steps that still have an unrevealed hint
     if (resolvedStepType.value === 'terminal' && hasProgressiveHints.value && revealedHints.value.length === 0) {
