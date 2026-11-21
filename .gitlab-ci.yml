@@ -405,6 +405,33 @@ include:
 build-docker:
   services: []
 
+# Cuts a release from a main pipeline whose tests passed: commits the version
+# bump straight to main, and that commit's pipeline (tests skipped as
+# version-only, see scripts/ci-version-only.mjs) builds and tags it. No release
+# branch, MR or merge. Manual, and only offered once this pipeline's earlier
+# stages passed: a failed E2E leaves nothing to release.
+.release:
+  stage: release
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/node:${NODE_VERSION}
+  # The push below starts a new main pipeline, which would cancel this job.
+  interruptible: false
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
+      when: manual
+      allow_failure: true
+  script:
+    - bash scripts/ci-release.sh "$RELEASE_LEVEL"
+
+release:patch:
+  extends: .release
+  variables:
+    RELEASE_LEVEL: patch
+
+release:minor:
+  extends: .release
+  variables:
+    RELEASE_LEVEL: minor
+
 # Asks renovate-runner to open the deploy-to-k8s bump MR now instead of at its daily run.
 # Best effort: if the trigger fails, the daily run still opens the MR.
 request-deploy:
