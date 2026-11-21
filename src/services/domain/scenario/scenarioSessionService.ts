@@ -14,6 +14,9 @@ export interface CurrentStepResponse {
   // Every step's order in display order, for mapping a display position
   // back to the order to navigate to (progress dots, Previous button).
   step_orders?: number[]
+  // Each step's type, paired with step_orders: the learner's copy of the
+  // scenario has no steps, so this is how the page knows what comes next.
+  step_types?: string[]
   total_steps: number
   title: string
   text?: string

@@ -58,10 +58,11 @@
       </div>
 
       <!-- Loading state -->
-      <div v-if="panelState === 'loading'" class="panel-loading">
-        <i class="fas fa-spinner fa-spin"></i>
-        <span>{{ t('scenarioPanel.loading') }}</span>
-      </div>
+      <!-- A step loading, first or next: in the shape of the one coming. -->
+      <ScenarioStepSkeleton
+        v-if="panelState === 'loading' || (panelState === 'transitioning' && transitionState === 'loading')"
+        :step-type="layoutStepType"
+      />
 
       <!-- Error state -->
       <div v-else-if="panelState === 'load-error'" class="panel-error" data-testid="scenario-panel-error">
@@ -136,24 +137,12 @@
           </div>
         </template>
         <!-- Phase 2 (async next step): preparing the environment -->
-        <template v-else-if="transitionState === 'provisioning'">
+        <template v-else>
           <div class="transition-provisioning" data-testid="scenario-step-preparing">
             <i class="fas fa-check-circle validated-icon"></i>
             <span class="transition-provisioning-title">{{ t('scenarioPanel.preparingNextStep') }}</span>
             <p class="transition-provisioning-hint">{{ t('scenarioPanel.preparingHint') }}</p>
             <ProvisioningPhaseList :phase="stepProvisioningPhase" :phases="['step_setup']" />
-          </div>
-        </template>
-        <!-- Phase 3: Loading next step -->
-        <template v-else>
-          <div class="transition-animation">
-            <div class="transition-progress">
-              <div class="transition-bar"></div>
-            </div>
-            <div class="transition-content">
-              <i class="fas fa-arrow-right transition-icon"></i>
-              <span class="transition-text">{{ t('scenarioPanel.nextStep') }}</span>
-            </div>
           </div>
         </template>
       </div>
@@ -362,6 +351,7 @@ import ScenarioFlagSubmit from './ScenarioFlagSubmit.vue'
 import ScenarioQuizPanel from './ScenarioQuizPanel.vue'
 import ScenarioHintPanel from './ScenarioHintPanel.vue'
 import ProvisioningPhaseList from './ProvisioningPhaseList.vue'
+import ScenarioStepSkeleton from './ScenarioStepSkeleton.vue'
 import type {
   VerifyStepResponse,
   SubmitFlagResponse,
@@ -416,7 +406,6 @@ const { t } = useTranslations({
       cancelButtonText: 'Cancel',
       completed: 'Scenario Completed!',
       completedMessage: 'Congratulations! You have completed all steps.',
-      loading: 'Loading scenario...',
       error: 'Failed to load scenario data.',
       retry: 'Retry',
       noScenario: 'No active scenario',
@@ -425,7 +414,6 @@ const { t } = useTranslations({
       viewMyScenarios: 'View my scenarios',
       stepValidated: 'Step validated!',
       surveyRecorded: 'Thank you, your answers have been sent.',
-      nextStep: 'Loading next step...',
       preparingNextStep: 'Preparing the next step…',
       preparingHint: 'Installing what the next step needs. This usually takes a few seconds.',
       // Scenario-neutral on purpose: this panel serves every scenario, so the
@@ -479,7 +467,6 @@ const { t } = useTranslations({
       cancelButtonText: 'Annuler',
       completed: 'Scénario terminé !',
       completedMessage: 'Félicitations ! Vous avez terminé toutes les étapes.',
-      loading: 'Chargement du scénario...',
       error: 'Échec du chargement des données du scénario.',
       retry: 'Réessayer',
       noScenario: 'Aucun scénario actif',
@@ -488,7 +475,6 @@ const { t } = useTranslations({
       viewMyScenarios: 'Voir mes scénarios',
       stepValidated: 'Étape validée !',
       surveyRecorded: 'Merci, vos réponses ont été envoyées.',
-      nextStep: 'Chargement de l\'étape suivante...',
       preparingNextStep: 'Préparation de l\'étape suivante…',
       preparingHint: 'Installation des éléments nécessaires à l\'étape suivante. Cela prend généralement quelques secondes.',
       preparingFailedTitle: 'La machine n\'a pas pu être préparée pour cette étape.',
@@ -595,6 +581,20 @@ const isTransitioning = computed(
 )
 const provisioningError = computed(() => transitionState.value === 'failed')
 
+// The type of the step being moved to, from the moment the move starts until
+// it is loaded. Left unknown, the page fell back to the terminal layout for
+// every transition and the learner saw a console between two quizzes.
+const incomingStepType = ref<string | undefined>()
+
+// The type of the step with this order, from the list the current step carries.
+// No order means the next step in display order.
+function stepTypeAt(order: number | undefined): string | undefined {
+  const step = currentStep.value
+  if (!step?.step_types || !step.step_orders) return undefined
+  const index = order === undefined ? stepPosition(step) : step.step_orders.indexOf(order)
+  return step.step_types[index]
+}
+
 // ---- Per-step provisioning (async next-step preparation) ----
 const STEP_PROVISION_POLL_MS = 2_000
 // Poll ceiling when the backend states no timeout of its own. It must sit above
@@ -668,6 +668,7 @@ function startStepProvisioningPoll(timeoutSeconds?: number) {
 // stop.
 function advanceAfterSuccess(
   result: {
+    next_step?: number
     next_step_provisioning?: boolean
     provisioning_timeout_seconds?: number
     next_step_provisioning_failed?: boolean
@@ -675,6 +676,7 @@ function advanceAfterSuccess(
   validatedMs = 2000
 ) {
   stopStepProvisioningPoll()
+  incomingStepType.value = stepTypeAt(result.next_step)
   transitionState.value = 'validated'
   validatedHoldTimer = setTimeout(() => {
     validatedHoldTimer = null
@@ -723,7 +725,9 @@ async function onDotClick(position: number) {
   )
   if (!confirmed) return
   try {
-    const result = await scenarioSessionService.skipToStep(props.scenarioSessionId, orderForPosition(position))
+    const target = orderForPosition(position)
+    const result = await scenarioSessionService.skipToStep(props.scenarioSessionId, target)
+    incomingStepType.value = stepTypeAt(target)
     enterStep(result)
   } catch (err: any) {
     showError(err.response?.data?.error_message || t('scenarioPanel.skipFailed'))
@@ -850,7 +854,8 @@ interface StepTypeMeta {
 type PanelState = 'loading' | 'load-error' | 'provisioning-error' | 'completed' | 'transitioning' | 'step' | 'empty'
 
 const panelState = computed<PanelState>(() => {
-  if (isLoading.value) return 'loading'
+  // ocf-core's "Setting up environment..." placeholder is not a step to show.
+  if (isLoading.value || currentStep.value?.status === 'provisioning') return 'loading'
   if (loadError.value) return 'load-error'
   if (provisioningError.value) return 'provisioning-error'
   if (isSessionCompleted.value) return 'completed'
@@ -974,6 +979,7 @@ async function loadCurrentStep() {
   // The composable owns the step DATA load + DOM refresh and returns the step.
   const step = await session.loadStepData({ skipSpinner: isTransitioning.value })
   transitionState.value = 'idle'
+  incomingStepType.value = undefined
 
   if (step) {
     // Load already-revealed progressive hints
@@ -1229,10 +1235,17 @@ onBeforeUnmount(() => {
 // A quiz being answered takes the main area of the page; the console steps
 // aside. Not in review mode: the quiz is not shown there, and the console
 // carries the end-of-run controls.
+//
+// The layout follows the step being moved to while it loads, so the page takes
+// its final shape once and the console is not resized — and redrawn — twice.
+const layoutStepType = computed<string | undefined>(() => {
+  if (panelState.value === 'step') return resolvedStepType.value
+  if (panelState.value === 'transitioning') return incomingStepType.value
+  if (panelState.value === 'loading') return incomingStepType.value ?? currentStep.value?.step_type
+  return undefined
+})
 const isQuizStep = computed(() =>
-  panelState.value === 'step'
-    && (resolvedStepType.value === 'quiz' || resolvedStepType.value === 'survey')
-    && !isReviewMode.value
+  (layoutStepType.value === 'quiz' || layoutStepType.value === 'survey') && !isReviewMode.value
 )
 
 defineExpose({

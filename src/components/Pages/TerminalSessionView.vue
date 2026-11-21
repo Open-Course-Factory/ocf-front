@@ -139,15 +139,15 @@
       <div
         v-if="scenarioSessionId"
         class="terminal-session-layout"
-        :class="[{ resizing: isPanelResizing, 'quiz-wide': quizWide }, quizWide && `quiz-terminal-${quizTerminal}`]"
+        :class="[{ resizing: isPanelResizing, 'quiz-wide': quizWide }, quizWide && `quiz-terminal-${quizTerminalMode}`]"
       >
         <!-- On a quiz step the console steps aside: closed to a strip, docked
              beside the quiz, or floating over it. Only CSS moves it, so the
              shell stays connected whichever the learner picks. -->
-        <div class="terminal-main-area" :style="quizWide && quizTerminal === 'popup' ? popupStyle : undefined">
+        <div class="terminal-main-area" :style="quizWide && quizTerminalMode === 'popup' ? popupStyle : undefined">
           <div v-if="quizWide" class="quiz-terminal-bar" data-testid="quiz-terminal-bar" @pointerdown="startPopupDrag">
             <button
-              v-if="quizTerminal === 'closed'"
+              v-if="quizTerminalMode === 'closed'"
               class="quiz-terminal-open"
               data-testid="quiz-terminal-open"
               :title="t('sessionView.openTerminal')"
@@ -168,6 +168,7 @@
                 <i :class="quizTerminal === 'docked' ? 'far fa-window-restore' : 'fas fa-columns'" aria-hidden="true"></i>
               </button>
               <button
+                v-if="!showsBuild"
                 class="quiz-terminal-btn"
                 data-testid="quiz-terminal-close"
                 :title="t('sessionView.hideTerminal')"
@@ -1286,6 +1287,9 @@ function startPanelResize(event: MouseEvent) {
 // Quiz steps: the quiz takes the main area and the console steps aside.
 const quizWide = computed(() => !!scenarioPanelRef.value?.isQuizStep && !scenarioPanelCollapsed.value)
 const quizTerminal = ref<'closed' | 'docked' | 'popup'>('closed')
+// The build's progress is laid over the console: while it runs, a quiz keeps
+// the console docked beside it, or the learner would watch an empty page.
+const quizTerminalMode = computed(() => showsBuild.value && quizTerminal.value === 'closed' ? 'docked' : quizTerminal.value)
 const popupPos = ref({ left: 0, top: 0 })
 const popupStyle = computed(() => ({ left: `${popupPos.value.left}px`, top: `${popupPos.value.top}px` }))
 

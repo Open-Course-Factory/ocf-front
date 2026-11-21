@@ -113,7 +113,9 @@ describe('ScenarioPanel opened mid-setup', () => {
     mockGetCurrentStep.mockResolvedValueOnce(SETUP_PLACEHOLDER).mockResolvedValue(STEP)
     const wrapper = mountPanel({ props: { sessionStatus: 'provisioning' } })
     await flushPromises()
-    expect(wrapper.text()).toContain('Setting up environment...')
+    // The placeholder is not a step: the panel stands in for the one coming.
+    expect(wrapper.find('[data-testid="scenario-step-skeleton"]').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('Setting up environment...')
 
     await wrapper.setProps({ sessionStatus: 'active' })
     await flushPromises()
