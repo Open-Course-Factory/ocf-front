@@ -30,10 +30,9 @@
   therefore says "typing in your terminal", never "taken control" — a promise the
   mechanic does not keep.
 
-  It is centered in the terminal title bar (absolutely, via
-  .supervision-center-anchor in TerminalViewer) so appearing/disappearing never
-  shifts the terminal or the header controls. When there is no title bar to host
-  it, the parent renders it as an `overlay` chip over the terminal.
+  TerminalViewer renders it as an `overlay` chip at the terminal's top-right corner:
+  absolute, so appearing/disappearing never shifts the terminal, and outside the
+  title bar, whose controls it used to cover on narrow screens.
 
   Distinct from the trainer-side `.supervision-chip` in SupervisionViewer.vue: that
   one badges the observer/control status on a supervisor's tile. Both are scoped, so

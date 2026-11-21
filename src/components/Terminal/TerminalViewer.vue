@@ -24,16 +24,6 @@
 <template>
   <!-- SettingsCard wrapper mode -->
   <SettingsCard v-if="useSettingsCard" :title="title" :icon="icon">
-    <template v-if="supervisionChip" #headerCenter>
-      <div class="supervision-center-anchor">
-        <SupervisionChip
-          :icon="supervisionChip.icon"
-          :text="supervisionChip.text"
-          :controlled="supervisionChip.controlled"
-        />
-      </div>
-    </template>
-
     <template #headerActions>
       <Button
         variant="warning"
@@ -104,6 +94,15 @@
     </template>
 
     <div class="terminal-wrapper">
+      <!-- Over the terminal, not in the crowded title bar where it covered the
+           header controls on narrow screens. -->
+      <SupervisionChip
+        v-if="supervisionChip"
+        overlay
+        :icon="supervisionChip.icon"
+        :text="supervisionChip.text"
+        :controlled="supervisionChip.controlled"
+      />
       <div ref="terminalRef" class="terminal-container" :class="{ 'terminal-full-height': fullHeight }"></div>
       <TerminalEndStateOverlay v-if="activeEndState" :reason="(effectiveEndReason as EndStateReason)" :config="activeEndState" @action="handleEndStateAction" />
       <div v-else-if="error" class="terminal-error">
@@ -179,15 +178,6 @@
           @expired="handleSessionExpired"
         />
       </div>
-      <!-- Centered indicator, absolutely positioned so it never displaces the
-           session info or the controls. Sibling of both, not inside either. -->
-      <div v-if="supervisionChip" class="supervision-center-anchor">
-        <SupervisionChip
-          :icon="supervisionChip.icon"
-          :text="supervisionChip.text"
-          :controlled="supervisionChip.controlled"
-        />
-      </div>
       <div class="terminal-controls" v-if="!hideControls">
         <button
           class="btn btn-sm btn-warning"
@@ -220,10 +210,9 @@
 
     <!-- Terminal container -->
     <div class="terminal-wrapper">
-      <!-- With a header the chip lives in it; without one it overlays the terminal
-           so the learner indicator survives without shifting the layout. -->
+      <!-- Over the terminal, not in the title bar, so it never covers a header control. -->
       <SupervisionChip
-        v-if="supervisionChip && !showHeader"
+        v-if="supervisionChip"
         overlay
         :icon="supervisionChip.icon"
         :text="supervisionChip.text"
@@ -1163,21 +1152,6 @@ defineExpose({
   background-color: var(--color-bg-secondary);
   border-bottom: var(--border-width-thin) solid var(--color-border-medium);
   flex-shrink: 0;
-  /* Containing block for the absolutely-centered supervision indicator. */
-  position: relative;
-}
-
-/* Centers the supervision chip over the whole title bar without joining the flex
-   flow, so it never displaces the side groups. Clicks fall through to the bar; a
-   long title + narrow bar degrade gracefully (max-width + ellipsis on the chip). */
-.supervision-center-anchor {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1;
-  max-width: min(60%, 22rem);
-  pointer-events: none;
 }
 
 .session-info {
@@ -1354,9 +1328,6 @@ defineExpose({
   opacity: 0.9;
   transform: translateY(-1px);
 }
-
-/* The learner-facing supervision indicator now lives in the title bar as a chip
-   (see SupervisionChip.vue) so it never shifts the terminal's layout box. */
 
 /* Internet-access indicator in the status bar. Globe = on (success),
    crossed = off (muted). Sits alongside the recording / countdown badges. */
