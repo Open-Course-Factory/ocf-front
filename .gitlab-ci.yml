@@ -402,8 +402,12 @@ include:
       disable_changelog: true
 
 # The component's dind service is unused with buildkit_endpoint: builds run on the runner's buildkitd.
+# needs: [] starts the build alongside the tests instead of after them; the
+# version tag still waits for every test, since check-version sits in the
+# release stage with no needs of its own.
 build-docker:
   services: []
+  needs: []
 
 # Cuts a release from a main pipeline whose tests passed: commits the version
 # bump straight to main, and that commit's pipeline (tests skipped as
