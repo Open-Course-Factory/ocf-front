@@ -63,10 +63,11 @@ const { t } = useTranslations({
       deadlinePassed: 'deadline passed',
       assignmentPicker: 'Watched scenario',
       sortLabel: 'Sort:',
-      sortStep: 'Step',
+      sortStep: 'Progression',
       sortHints: 'Hints',
       sortAttention: 'Inactivity',
-      sortStepHint: 'Least advanced learners first',
+      sortStepHint: 'Least advanced learners first — click again for the most advanced first',
+      sortStepDescHint: 'Most advanced learners first — click again for the least advanced first',
       sortHintsHint: 'Most hints used first',
       sortAttentionHint: 'Learners to look at first'
     }
@@ -85,10 +86,11 @@ const { t } = useTranslations({
       deadlinePassed: 'échéance dépassée',
       assignmentPicker: 'Scénario suivi',
       sortLabel: 'Trier :',
-      sortStep: 'Étape',
+      sortStep: 'Progression',
       sortHints: 'Indices',
       sortAttention: 'Inactivité',
-      sortStepHint: 'Les apprenants les moins avancés en premier',
+      sortStepHint: 'Les apprenants les moins avancés en premier — recliquer pour les plus avancés en premier',
+      sortStepDescHint: 'Les apprenants les plus avancés en premier — recliquer pour les moins avancés en premier',
       sortHintsHint: 'Le plus d’indices consommés en premier',
       sortAttentionHint: 'Les apprenants à regarder en premier'
     }
@@ -133,6 +135,21 @@ const SORT_OPTIONS: { key: ClassProgressionSort; labelKey: string; hintKey: stri
   { key: 'hints', labelKey: 'sortHints', hintKey: 'sortHintsHint' },
   { key: 'attention', labelKey: 'sortAttention', hintKey: 'sortAttentionHint' }
 ]
+
+// The progression chip sorts least advanced first; clicking it again reverses.
+function isActive(key: ClassProgressionSort): boolean {
+  return sort.value === key || (key === 'step' && sort.value === 'stepDesc')
+}
+
+function chooseSort(key: ClassProgressionSort) {
+  sort.value = key === 'step' && sort.value === 'step' ? 'stepDesc' : key
+}
+
+function sortHint(option: { key: ClassProgressionSort; hintKey: string }): string {
+  return option.key === 'step' && sort.value === 'stepDesc'
+    ? t('classProgression.sortStepDescHint')
+    : t(`classProgression.${option.hintKey}`)
+}
 
 /** Placeholder rows for the very first load, sized like the real ones. */
 const SKELETON_ROWS = [1, 2, 3, 4]
@@ -266,12 +283,18 @@ useVisiblePolling(loadProgress, 30000)
           :key="option.key"
           type="button"
           class="ocf-clp-chip"
-          :class="{ 'ocf-clp-chip-active': sort === option.key }"
-          :aria-pressed="sort === option.key"
-          :title="t(`classProgression.${option.hintKey}`)"
-          @click="sort = option.key"
+          :class="{ 'ocf-clp-chip-active': isActive(option.key) }"
+          :aria-pressed="isActive(option.key)"
+          :title="sortHint(option)"
+          :data-testid="`class-progress-sort-${option.key}`"
+          @click="chooseSort(option.key)"
         >
           {{ t(`classProgression.${option.labelKey}`) }}
+          <i
+            v-if="option.key === 'step' && isActive('step')"
+            :class="sort === 'stepDesc' ? 'fas fa-arrow-down' : 'fas fa-arrow-up'"
+            aria-hidden="true"
+          ></i>
         </button>
       </div>
 

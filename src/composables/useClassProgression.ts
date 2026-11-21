@@ -40,9 +40,10 @@ import type {
 /**
  * Row orders the teacher can ask for. `step` is the default and sorts
  * ASCENDING: the least advanced learners are the ones an invigilator walks over
- * to, so they belong at the top of the list.
+ * to, so they belong at the top of the list. `stepDesc` is the same axis the
+ * other way round, the most advanced first.
  */
-export type ClassProgressionSort = 'step' | 'hints' | 'attention'
+export type ClassProgressionSort = 'step' | 'stepDesc' | 'hints' | 'attention'
 
 /** One assignment the class can be watched on. */
 export interface ClassAssignmentOption {
@@ -176,6 +177,7 @@ export function useClassProgression(learners: Ref<LearnerLiveProgress[]>) {
 
     const compare: Record<ClassProgressionSort, (a: ClassProgressionRow, b: ClassProgressionRow) => number> = {
       step: (a, b) => byProgress(a, b) || byName(a, b),
+      stepDesc: (a, b) => byProgress(b, a) || byName(a, b),
       hints: (a, b) => (b.assignment?.hints_used ?? 0) - (a.assignment?.hints_used ?? 0) || byName(a, b),
       attention: (a, b) =>
         Number(b.needsAttention) - Number(a.needsAttention) || byProgress(a, b) || byName(a, b)

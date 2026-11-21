@@ -233,6 +233,13 @@ describe('useClassProgression — row order', () => {
     expect(names(sortedRows.value)).toEqual(['Jean', 'Léa', 'Karim', 'Nadia'])
   })
 
+  it('puts the most advanced learners first when the progression sort is reversed', () => {
+    const { sortedRows, sort } = useClassProgression(learners)
+    sort.value = 'stepDesc'
+
+    expect(names(sortedRows.value)).toEqual(['Nadia', 'Karim', 'Léa', 'Jean'])
+  })
+
   it('puts the biggest hint consumers first when sorting by hints', () => {
     const { sortedRows, sort } = useClassProgression(learners)
     sort.value = 'hints'
