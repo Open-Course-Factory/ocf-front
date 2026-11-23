@@ -80,9 +80,11 @@ function onDocClick(e: MouseEvent) {
   }
 }
 
-// A fixed menu would drift away from its trigger on scroll, so close it instead.
+// A fixed menu would drift away from its trigger on scroll, so it follows it.
+// Closing instead is not an option: clicking a half-hidden trigger scrolls its
+// table to reveal it, which would shut the menu the moment it opened.
 function onScrollOrResize() {
-  if (open.value) open.value = false
+  if (open.value) place()
 }
 
 onMounted(() => {

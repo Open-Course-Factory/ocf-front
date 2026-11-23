@@ -14,7 +14,8 @@
  *     - clicking OUTSIDE closes it (document listener + container ref .contains);
  *     - clicking any item INSIDE also closes it (the item's own @click still fires);
  *     - the menu is position: fixed under its trigger, so a table's overflow
- *       cannot clip it; align picks the trigger edge it anchors to.
+ *       cannot clip it; align picks the trigger edge it anchors to, and it
+ *       follows the trigger when the page or a container scrolls.
  *
  * CLASS NAMESPACING: generic names like `.dropdown-menu`/`.dropdown-item` have
  * collided with global rules (Bootstrap's `display: none` hid such a menu until
@@ -158,15 +159,22 @@ describe('DropdownMenu', () => {
     left.unmount()
   })
 
-  it('closes on scroll, since a fixed menu would otherwise drift from its trigger', async () => {
+  it('stays open and follows its trigger when something scrolls', async () => {
+    let top = 100
+    const spy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      () => ({ top, bottom: top + 30, left: 40, right: 80, width: 40, height: 30, x: 40, y: top, toJSON: () => ({}) }) as DOMRect
+    )
     const wrapper = mount(DropdownMenu, { slots: { default: '<span class="ocf-dropdown-item">a</span>' } })
     await wrapper.find('.btn-icon').trigger('click')
-    expect(wrapper.find('.ocf-dropdown-menu').exists()).toBe(true)
 
+    top = 60
     window.dispatchEvent(new Event('scroll'))
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.find('.ocf-dropdown-menu').exists()).toBe(false)
+    const menu = wrapper.find('.ocf-dropdown-menu')
+    expect(menu.exists()).toBe(true)
+    expect((menu.element as HTMLElement).style.top).toBe('94px')
+    spy.mockRestore()
     wrapper.unmount()
   })
 

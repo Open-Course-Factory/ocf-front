@@ -51,30 +51,30 @@
         <div class="user-cell">
           <span class="user-display">{{ row.display_name || row.username }}</span>
           <span class="user-username">@{{ row.username }}</span>
+          <span class="user-email">
+            <span class="email-cell" :title="row.email">{{ row.email }}</span>
+            <span
+              :class="['verified-badge', row.email_verified ? 'verified-yes' : 'verified-no']"
+              :title="row.email_verified ? t('adminUsers.emailVerified') : t('adminUsers.emailNotVerified')"
+            >
+              <i :class="row.email_verified ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'"></i>
+            </span>
+          </span>
         </div>
       </template>
 
-      <template #cell-email="{ row }">
-        <span class="email-cell">{{ row.email }}</span>
-        <span
-          :class="['verified-badge', row.email_verified ? 'verified-yes' : 'verified-no']"
-          :title="row.email_verified ? t('adminUsers.emailVerified') : t('adminUsers.emailNotVerified')"
-        >
-          <i :class="row.email_verified ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'"></i>
-        </span>
-      </template>
 
+      <!-- Status and platform role share a column: two small badges, stacked. -->
       <template #cell-is_active="{ row }">
-        <span :class="['badge', row.is_active ? 'badge-success' : 'badge-secondary']">
-          {{ row.is_active ? t('adminUsers.statusActive') : t('adminUsers.statusInactive') }}
-        </span>
-      </template>
-
-      <template #cell-is_admin="{ row }">
-        <span v-if="!row.is_admin" class="badge badge-primary">
-          {{ t('adminUsers.roleMember') }}
-        </span>
-        <AdminBadge v-else />
+        <div class="account-badges">
+          <span :class="['badge', row.is_active ? 'badge-success' : 'badge-secondary']">
+            {{ row.is_active ? t('adminUsers.statusActive') : t('adminUsers.statusInactive') }}
+          </span>
+          <span v-if="!row.is_admin" class="badge badge-primary">
+            {{ t('adminUsers.roleMember') }}
+          </span>
+          <AdminBadge v-else />
+        </div>
       </template>
 
       <template #cell-created_at="{ row }">
@@ -86,7 +86,7 @@
       <template #cell-organizations="{ row }">
         <div v-if="row.organizations.length > 0" class="chip-list">
           <span v-for="org in row.organizations" :key="org.id" class="chip">
-            <span class="chip-name">{{ org.name }}</span>
+            <span class="chip-name" :title="org.name">{{ org.name }}</span>
             <select
               class="chip-role-select"
               :value="org.role"
@@ -106,7 +106,7 @@
       <template #cell-groups="{ row }">
         <div v-if="row.groups.length > 0" class="chip-list">
           <span v-for="group in row.groups" :key="group.id" class="chip">
-            <span class="chip-name">{{ group.name }}</span>
+            <span class="chip-name" :title="group.name">{{ group.name }}</span>
             <select
               class="chip-role-select"
               :value="group.role"
@@ -131,11 +131,11 @@
             class="btn btn-sm btn-outline-primary"
             data-test="impersonate"
             :disabled="isImpersonateDisabled(row.id)"
-            :title="impersonateButtonTitle(row.id)"
+            :title="impersonateButtonTitle(row.id) || t('adminUsers.impersonate')"
+            :aria-label="t('adminUsers.impersonate')"
             @click="openConfirmModal(row)"
           >
             <i class="fas fa-user-secret"></i>
-            {{ t('adminUsers.impersonate') }}
           </button>
 
           <DropdownMenu :trigger-label="t('adminUsers.moreActions', { name: row.display_name || row.username })">
@@ -336,9 +336,7 @@ const { t, locale } = useTranslations({
       loadError: 'Failed to load users',
       noUsers: 'No users found',
       colUser: 'User',
-      colEmail: 'Email',
       colStatus: 'Status',
-      colRole: 'Role',
       colOrganizations: 'Organizations',
       colGroups: 'Groups',
       colRegistered: 'Registered',
@@ -414,9 +412,7 @@ const { t, locale } = useTranslations({
       loadError: 'Echec du chargement des utilisateurs',
       noUsers: 'Aucun utilisateur trouvé',
       colUser: 'Utilisateur',
-      colEmail: 'Email',
       colStatus: 'Statut',
-      colRole: 'Rôle',
       colOrganizations: 'Organisations',
       colGroups: 'Groupes',
       colRegistered: 'Inscription',
@@ -531,22 +527,10 @@ const columns = computed<TableColumn<AdminUserListing>[]>(() => [
     sortValue: (u) => (u.display_name || u.username || '').toLowerCase()
   },
   {
-    key: 'email',
-    label: t('adminUsers.colEmail'),
-    sortable: true,
-    sortValue: (u) => (u.email || '').toLowerCase()
-  },
-  {
     key: 'is_active',
     label: t('adminUsers.colStatus'),
     sortable: true,
     sortValue: (u) => (u.is_active ? 1 : 0)
-  },
-  {
-    key: 'is_admin',
-    label: t('adminUsers.colRole'),
-    sortable: true,
-    sortValue: (u) => (u.is_admin ? 1 : 0)
   },
   {
     key: 'created_at',
@@ -847,7 +831,18 @@ onMounted(async () => {
   color: var(--color-text-muted);
 }
 
+.user-email {
+  display: flex;
+  align-items: center;
+  font-size: var(--font-size-sm);
+}
+
+/* One line, cut with an ellipsis: wrapping an address mid-word reads badly. */
 .email-cell {
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--color-text-secondary);
 }
 
@@ -871,18 +866,24 @@ onMounted(async () => {
   gap: var(--spacing-xs);
 }
 
+/* Name above role: side by side, two membership columns overflow a laptop screen. */
 .chip {
   display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
+  flex-direction: column;
+  align-items: flex-start;
   padding: 2px var(--spacing-sm);
-  border-radius: var(--border-radius-full);
+  border-radius: var(--border-radius-md);
   background-color: var(--color-bg-secondary);
   border: var(--border-width-thin) solid var(--color-border-light);
   font-size: var(--font-size-xs);
 }
 
 .chip-name {
+  /* Personal orgs are named after a UUID: cap it so one chip cannot widen the table. */
+  max-width: 12ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--color-text-primary);
   font-weight: var(--font-weight-medium);
 }
@@ -915,11 +916,18 @@ onMounted(async () => {
   font-style: italic;
 }
 
+.account-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+}
+
 /* Row actions */
 .row-actions {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
+  gap: 2px;
 }
 
 .menu-divider {
