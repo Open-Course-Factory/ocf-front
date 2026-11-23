@@ -16,10 +16,12 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 
 const getGroupLiveProgress = vi.fn()
+const setStepGate = vi.fn()
 
 vi.mock('../../src/services/domain/scenario', () => ({
   teacherService: {
-    getGroupLiveProgress: (...args: unknown[]) => getGroupLiveProgress(...args)
+    getGroupLiveProgress: (...args: unknown[]) => getGroupLiveProgress(...args),
+    setStepGate: (...args: unknown[]) => setStepGate(...args)
   }
 }))
 
@@ -287,5 +289,96 @@ describe('ClassProgressionView — the deadline', () => {
     await flushPromises()
 
     expect(wrapper.find('.ocf-clp-deadline').exists()).toBe(false)
+  })
+})
+
+describe('ClassProgressionView — holding the class before a step', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setStepGate.mockResolvedValue({ step_gate: null })
+  })
+
+  function lockButtons(wrapper: ReturnType<typeof mountView>) {
+    return wrapper.findAll('.ocf-dist-lock')
+  }
+
+  it('offers a padlock on every step and none on the other columns', async () => {
+    getGroupLiveProgress.mockResolvedValue([learner('u-1', 'Léa')])
+    const wrapper = mountView()
+    await flushPromises()
+
+    // Six steps, one padlock each; the "finished" column has none.
+    expect(lockButtons(wrapper)).toHaveLength(6)
+    expect(wrapper.find('.ocf-dist-gate').exists()).toBe(false)
+  })
+
+  it('holds the class before the step whose padlock the teacher clicks, then reloads', async () => {
+    getGroupLiveProgress.mockResolvedValue([learner('u-1', 'Léa')])
+    setStepGate.mockResolvedValue({ step_gate: 4 })
+    const wrapper = mountView()
+    await flushPromises()
+
+    await lockButtons(wrapper)[3].trigger('click')
+    await flushPromises()
+
+    expect(setStepGate).toHaveBeenCalledWith('g-1', 'sc-1', 4)
+    expect(getGroupLiveProgress).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows the locked step and counts the learners waiting at it', async () => {
+    getGroupLiveProgress.mockResolvedValue([
+      learner('u-1', 'Karim', { assignments: [assignment({ step_gate: 4, current_step: 3, waiting_at_gate: true })] }),
+      learner('u-2', 'Léa', { assignments: [assignment({ step_gate: 4, current_step: 3, waiting_at_gate: true })] }),
+      learner('u-3', 'Nadia', { assignments: [assignment({ step_gate: 4, current_step: 2, waiting_at_gate: false })] })
+    ])
+    const wrapper = mountView()
+    await flushPromises()
+
+    const locks = lockButtons(wrapper)
+    expect(locks[3].attributes('aria-pressed')).toBe('true')
+    expect(locks.filter(l => l.attributes('aria-pressed') === 'true')).toHaveLength(1)
+    expect(wrapper.find('.ocf-dist-gate').text()).toContain('2 waiting')
+    // Each waiting learner's row says so.
+    expect(wrapper.findAll('.ocf-prog-waiting')).toHaveLength(2)
+  })
+
+  it('moves the gate to a later step when the teacher clicks another padlock', async () => {
+    getGroupLiveProgress.mockResolvedValue([
+      learner('u-1', 'Léa', { assignments: [assignment({ step_gate: 4, waiting_at_gate: true })] })
+    ])
+    const wrapper = mountView()
+    await flushPromises()
+
+    await lockButtons(wrapper)[4].trigger('click')
+    await flushPromises()
+
+    expect(setStepGate).toHaveBeenCalledWith('g-1', 'sc-1', 5)
+  })
+
+  it('releases everyone from the gate banner', async () => {
+    getGroupLiveProgress.mockResolvedValue([
+      learner('u-1', 'Léa', { assignments: [assignment({ step_gate: 4, waiting_at_gate: true })] })
+    ])
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.find('[data-testid="class-progress-release-gate"]').trigger('click')
+    await flushPromises()
+
+    expect(setStepGate).toHaveBeenCalledWith('g-1', 'sc-1', null)
+    expect(getGroupLiveProgress).toHaveBeenCalledTimes(2)
+  })
+
+  it('releases everyone when the teacher clicks the locked padlock again', async () => {
+    getGroupLiveProgress.mockResolvedValue([
+      learner('u-1', 'Léa', { assignments: [assignment({ step_gate: 4 })] })
+    ])
+    const wrapper = mountView()
+    await flushPromises()
+
+    await lockButtons(wrapper)[3].trigger('click')
+    await flushPromises()
+
+    expect(setStepGate).toHaveBeenCalledWith('g-1', 'sc-1', null)
   })
 })

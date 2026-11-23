@@ -48,9 +48,12 @@ export type ClassProgressionSort = 'step' | 'stepDesc' | 'hints' | 'attention'
 /** One assignment the class can be watched on. */
 export interface ClassAssignmentOption {
   assignmentId: string
+  scenarioId: string
   scenarioTitle: string
   deadline?: string
   totalSteps: number
+  /** Order of the step the teacher holds the class before; absent when open. */
+  stepGate?: number
 }
 
 /** One learner's line in the progression table. */
@@ -133,9 +136,11 @@ export function useClassProgression(learners: Ref<LearnerLiveProgress[]>) {
         }
         byId.set(assignment.assignment_id, {
           assignmentId: assignment.assignment_id,
+          scenarioId: assignment.scenario_id,
           scenarioTitle: assignment.scenario_title,
           deadline: assignment.deadline,
-          totalSteps: assignment.total_steps
+          totalSteps: assignment.total_steps,
+          stepGate: assignment.step_gate
         })
       }
     }
@@ -234,6 +239,9 @@ export function useClassProgression(learners: Ref<LearnerLiveProgress[]>) {
 
   const connectedCount = computed(() => learners.value.filter(l => l.connected).length)
 
+  // The backend decides who waits (waiting_at_gate); this only counts them.
+  const waitingCount = computed(() => rows.value.filter(r => r.assignment?.waiting_at_gate).length)
+
   return {
     requestedAssignmentId,
     sort,
@@ -243,6 +251,7 @@ export function useClassProgression(learners: Ref<LearnerLiveProgress[]>) {
     rows,
     sortedRows,
     distribution,
-    connectedCount
+    connectedCount,
+    waitingCount
   }
 }

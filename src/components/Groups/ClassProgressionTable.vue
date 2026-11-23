@@ -76,7 +76,9 @@ const { t } = useTranslations({
       watchUnavailable: 'No live terminal to watch',
       sessionAbandoned: 'attempt abandoned',
       sessionSetupFailed: 'environment setup failed',
-      sessionRaw: 'session: {status}'
+      sessionRaw: 'session: {status}',
+      waiting: 'waiting',
+      waitingHint: 'Finished the step before the gate, waits for the class to be released'
     }
   },
   fr: {
@@ -106,7 +108,9 @@ const { t } = useTranslations({
       watchUnavailable: 'Aucun terminal en direct à observer',
       sessionAbandoned: 'tentative abandonnée',
       sessionSetupFailed: 'échec de préparation de l’environnement',
-      sessionRaw: 'session : {status}'
+      sessionRaw: 'session : {status}',
+      waiting: 'en attente',
+      waitingHint: 'A fini l’étape avant le blocage et attend que la classe soit libérée'
     }
   }
 })
@@ -242,6 +246,14 @@ function hintLabel(assignment: LearnerAssignmentProgress | null): string {
         <span class="ocf-prog-position-label">{{
           hasAssignment ? positionLabel(row.assignment) : t('classProgressionTable.noSteps')
         }}</span>
+        <span
+          v-if="row.assignment?.waiting_at_gate"
+          class="badge ocf-prog-waiting"
+          :title="t('classProgressionTable.waitingHint')"
+        >
+          <i class="fas fa-lock" aria-hidden="true"></i>
+          {{ t('classProgressionTable.waiting') }}
+        </span>
         <span v-if="sessionAnnotation(row.assignment)" class="ocf-prog-session-note">
           {{ sessionAnnotation(row.assignment) }}
         </span>
@@ -395,6 +407,18 @@ function hintLabel(assignment: LearnerAssignmentProgress | null): string {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.ocf-prog-waiting {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning-amber);
+  background: var(--color-warning-amber-bg);
+  border: var(--border-width-thin) solid var(--color-warning-amber-border);
+  white-space: nowrap;
 }
 
 .ocf-prog-session-note {

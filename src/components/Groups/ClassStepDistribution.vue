@@ -37,6 +37,15 @@ import type { ClassStepBucket } from '../../composables/useClassProgression'
 
 const props = defineProps<{
   buckets: ClassStepBucket[]
+  /** Step the class is held before; null or absent when the scenario is open. */
+  gateStep?: number | null
+  waitingCount?: number
+  /** A gate change is on its way: the padlocks wait for it. */
+  gateBusy?: boolean
+}>()
+
+const emit = defineEmits<{
+  (event: 'set-gate', step: number | null): void
 }>()
 
 const { t } = useTranslations({
@@ -53,7 +62,11 @@ const { t } = useTranslations({
       tooltipNotStarted: 'Not started — {count}',
       tooltipDone: 'Finished — {count}',
       learnerCountOne: '{count} learner',
-      learnerCountMany: '{count} learners'
+      learnerCountMany: '{count} learners',
+      holdBefore: 'Hold the class before this step',
+      gateOn: 'The class is held before step {step}',
+      waiting: '{n} waiting',
+      releaseAll: 'Release everyone'
     }
   },
   fr: {
@@ -69,7 +82,11 @@ const { t } = useTranslations({
       tooltipNotStarted: 'Non commencé — {count}',
       tooltipDone: 'Terminé — {count}',
       learnerCountOne: '{count} apprenant',
-      learnerCountMany: '{count} apprenants'
+      learnerCountMany: '{count} apprenants',
+      holdBefore: 'Bloquer la classe avant cette étape',
+      gateOn: 'La classe attend avant l\'étape {step}',
+      waiting: '{n} en attente',
+      releaseAll: 'Libérer tout le monde'
     }
   }
 })
@@ -119,6 +136,19 @@ const peakStep = computed<ClassStepBucket | null>(() => {
   return tied ? null : best
 })
 
+const hasGate = computed(() => props.gateStep != null)
+
+function lockLabel(bucket: ClassStepBucket): string {
+  return props.gateStep === bucket.step
+    ? t('classDistribution.releaseAll')
+    : t('classDistribution.holdBefore')
+}
+
+// Clicking the padlock already in force opens the scenario again.
+function toggleGate(step: number) {
+  emit('set-gate', props.gateStep === step ? null : step)
+}
+
 const caption = computed(() => {
   if (!peakStep.value) return t('classDistribution.caption')
   const step = peakStep.value.title
@@ -141,9 +171,41 @@ const caption = computed(() => {
         <span class="ocf-dist-count">{{ bucket.count > 0 ? bucket.count : '' }}</span>
         <span class="ocf-dist-bar" :style="{ height: barHeight(bucket) }"></span>
         <span class="ocf-dist-x">{{ shortLabel(bucket) }}</span>
+        <!-- Every column keeps the padlock's height, so the x labels stay level. -->
+        <button
+          v-if="bucket.kind === 'step'"
+          type="button"
+          class="ocf-dist-lock"
+          :class="{ 'ocf-dist-lock-on': gateStep === bucket.step }"
+          :aria-pressed="gateStep === bucket.step"
+          :disabled="gateBusy"
+          :title="lockLabel(bucket)"
+          :aria-label="`${lockLabel(bucket)} — ${shortLabel(bucket)}`"
+          @click="toggleGate(bucket.step!)"
+        >
+          <i :class="gateStep === bucket.step ? 'fas fa-lock' : 'fas fa-lock-open'" aria-hidden="true"></i>
+        </button>
+        <span v-else class="ocf-dist-lock-slot" aria-hidden="true"></span>
       </li>
     </ul>
-    <figcaption class="ocf-dist-caption">{{ caption }}</figcaption>
+    <!-- The gate line takes the caption's place, whose height is reserved for
+         it: setting a gate must not push the table down. -->
+    <figcaption v-if="hasGate" class="ocf-dist-caption ocf-dist-gate" role="status">
+      <i class="fas fa-lock" aria-hidden="true"></i>
+      <span>{{ t('classDistribution.gateOn', { step: gateStep }) }}</span>
+      <span class="ocf-dist-waiting">{{ t('classDistribution.waiting', { n: waitingCount ?? 0 }) }}</span>
+      <button
+        type="button"
+        class="ocf-btn ocf-btn-secondary ocf-btn-sm"
+        data-testid="class-progress-release-gate"
+        :disabled="gateBusy"
+        @click="emit('set-gate', null)"
+      >
+        <i class="fas fa-lock-open" aria-hidden="true"></i>
+        {{ t('classDistribution.releaseAll') }}
+      </button>
+    </figcaption>
+    <figcaption v-else class="ocf-dist-caption">{{ caption }}</figcaption>
   </figure>
 </template>
 
@@ -157,7 +219,7 @@ const caption = computed(() => {
   display: flex;
   align-items: flex-end;
   gap: var(--spacing-sm);
-  height: 96px;
+  height: 124px;
   margin: 0;
   padding: 0 var(--spacing-xs);
   list-style: none;
@@ -216,10 +278,69 @@ const caption = computed(() => {
   white-space: nowrap;
 }
 
+.ocf-dist-lock,
+.ocf-dist-lock-slot {
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.ocf-dist-lock {
+  width: 24px;
+  padding: 0;
+  border: var(--border-width-thin) solid transparent;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.ocf-dist-lock:not(:disabled):hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.ocf-dist-lock:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.ocf-dist-lock:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.ocf-dist-lock-on {
+  color: var(--color-warning-amber);
+  background: var(--color-warning-amber-bg);
+  border-color: var(--color-warning-amber-border);
+}
+
+/* Tall enough for the gate line's button, so swapping the plain caption for
+   it moves nothing below. */
 .ocf-dist-caption {
+  min-height: 28px;
   margin: var(--spacing-xs) 0 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   text-align: center;
+}
+
+.ocf-dist-gate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  color: var(--color-text-primary);
+}
+
+.ocf-dist-gate > .fa-lock {
+  color: var(--color-warning-amber);
+}
+
+.ocf-dist-waiting {
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
 }
 </style>

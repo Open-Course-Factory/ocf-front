@@ -69,7 +69,8 @@ const { t } = useTranslations({
       sortStepHint: 'Least advanced learners first — click again for the most advanced first',
       sortStepDescHint: 'Most advanced learners first — click again for the least advanced first',
       sortHintsHint: 'Most hints used first',
-      sortAttentionHint: 'Learners to look at first'
+      sortAttentionHint: 'Learners to look at first',
+      gateError: 'Could not change the step the class is held before'
     }
   },
   fr: {
@@ -92,7 +93,8 @@ const { t } = useTranslations({
       sortStepHint: 'Les apprenants les moins avancés en premier — recliquer pour les plus avancés en premier',
       sortStepDescHint: 'Les apprenants les plus avancés en premier — recliquer pour les moins avancés en premier',
       sortHintsHint: 'Le plus d’indices consommés en premier',
-      sortAttentionHint: 'Les apprenants à regarder en premier'
+      sortAttentionHint: 'Les apprenants à regarder en premier',
+      gateError: 'Impossible de changer l’étape où la classe attend'
     }
   }
 })
@@ -117,7 +119,8 @@ const {
   totalSteps,
   sortedRows,
   distribution,
-  connectedCount
+  connectedCount,
+  waitingCount
 } = useClassProgression(learners)
 
 /**
@@ -203,6 +206,24 @@ async function loadProgress() {
   }
 }
 
+const gateBusy = ref(false)
+
+// Moving the gate later releases the learners held at the old one; null
+// releases everyone. The backend owns who waits, so the page just reloads.
+async function setGate(stepOrder: number | null) {
+  const assignment = selectedAssignment.value
+  if (!assignment || gateBusy.value) return
+  gateBusy.value = true
+  try {
+    await teacherService.setStepGate(props.groupId, assignment.scenarioId, stepOrder)
+    await loadProgress()
+  } catch (err: any) {
+    error.value = err?.response?.data?.error_message || t('classProgression.gateError')
+  } finally {
+    gateBusy.value = false
+  }
+}
+
 onMounted(loadProgress)
 useVisiblePolling(loadProgress, 30000)
 </script>
@@ -274,7 +295,14 @@ useVisiblePolling(loadProgress, 30000)
 
       <p v-if="assignments.length === 0" class="ocf-clp-note">{{ t('classProgression.noAssignment') }}</p>
 
-      <ClassStepDistribution v-if="distribution.length > 0" :buckets="distribution" />
+      <ClassStepDistribution
+        v-if="distribution.length > 0"
+        :buckets="distribution"
+        :gate-step="selectedAssignment?.stepGate ?? null"
+        :waiting-count="waitingCount"
+        :gate-busy="gateBusy"
+        @set-gate="setGate"
+      />
 
       <div v-if="assignments.length > 0" class="ocf-clp-sorts">
         <span class="ocf-clp-sort-label">{{ t('classProgression.sortLabel') }}</span>
