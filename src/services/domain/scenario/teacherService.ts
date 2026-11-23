@@ -5,6 +5,7 @@
 
 import axios from 'axios'
 import type { AssignmentProgress } from '../../../types/groupScenarios'
+import type { VerifyStepResponse } from './scenarioSessionService'
 
 // Per-question result on a quiz step (returned by /detail endpoint)
 export interface SessionStepQuestionDetail {
@@ -282,6 +283,11 @@ export interface LearnerAssignmentProgress {
   grade?: number
   started_at?: string
   completed_at?: string
+  // Order of the first step the teacher holds the class before; absent when
+  // the assignment is open. Same value on every row of the assignment.
+  step_gate?: number
+  // The learner finished the step before the gate and waits for its release.
+  waiting_at_gate: boolean
 }
 
 // One row of the merged class view: who the learner is, whether they are
@@ -512,6 +518,24 @@ export const teacherService = {
       `/teacher/groups/${groupId}/sessions/${sessionId}/skip-to-step`,
       { step_order: stepOrder }
     )
+    return response.data
+  },
+
+  // Holds the class before the step with this order: learners who finish the
+  // step before it wait. null releases everyone. Returns the gate now in force.
+  async setStepGate(groupId: string, scenarioId: string, stepOrder: number | null): Promise<number | null> {
+    const response = await axios.put(
+      `/teacher/groups/${groupId}/scenarios/${scenarioId}/step-gate`,
+      { step_order: stepOrder }
+    )
+    return response.data?.step_gate ?? null
+  },
+
+  // Counts the learner's current step as passed; the run then advances as
+  // after a passed check, still subject to the gate. Refused for quiz and exam
+  // steps.
+  async validateStep(groupId: string, sessionId: string): Promise<VerifyStepResponse> {
+    const response = await axios.post(`/teacher/groups/${groupId}/sessions/${sessionId}/validate-step`)
     return response.data
   },
 

@@ -35,6 +35,9 @@ export interface CurrentStepResponse {
   // and the correction. Absent on an exam step and before submission.
   quiz_answers?: Record<string, string>
   quiz_result?: SubmitQuizResponse
+  // The step is passed but the teacher holds the class before the next one:
+  // the run stays here until POST /continue says otherwise.
+  waiting_at_gate?: boolean
 }
 
 export interface CurrentStepQuestion {
@@ -78,6 +81,9 @@ export interface SubmitQuizResponse {
   next_step_provisioning?: boolean
   provisioning_timeout_seconds?: number
   next_step_provisioning_failed?: boolean
+  // The step is passed but the teacher holds the class before the next one:
+  // the run stays here until POST /continue says otherwise.
+  waiting_at_gate?: boolean
 }
 
 /**
@@ -126,6 +132,9 @@ export interface VerifyStepResponse {
   // here. The client must offer the reprovision retry instead of loading a
   // step whose environment was never built.
   next_step_provisioning_failed?: boolean
+  // The step is passed but the teacher holds the class before the next one:
+  // the run stays here until POST /continue says otherwise.
+  waiting_at_gate?: boolean
 }
 
 export interface SubmitFlagResponse {
@@ -135,6 +144,9 @@ export interface SubmitFlagResponse {
   next_step_provisioning?: boolean
   provisioning_timeout_seconds?: number
   next_step_provisioning_failed?: boolean
+  // The step is passed but the teacher holds the class before the next one:
+  // the run stays here until POST /continue says otherwise.
+  waiting_at_gate?: boolean
 }
 
 export interface SkipToStepResponse {
@@ -340,6 +352,13 @@ export const scenarioSessionService = {
   /** Runs `script` in a preview's container; the session itself does not move. */
   async testVerifyScript(sessionId: string, script: string): Promise<TestVerifyResponse> {
     const response = await axios.post(`/scenario-sessions/${sessionId}/test-verify`, { script }, { timeout: 30000 })
+    return response.data
+  },
+
+  // Moves on past the teacher's gate once it is released. While it still
+  // holds the response says waiting_at_gate; 409 when the step is not done.
+  async continueAfterGate(sessionId: string): Promise<VerifyStepResponse> {
+    const response = await axios.post(`/scenario-sessions/${sessionId}/continue`)
     return response.data
   },
 
