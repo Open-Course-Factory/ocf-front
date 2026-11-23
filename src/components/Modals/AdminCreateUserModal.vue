@@ -160,6 +160,7 @@ async function submit() {
       is_active: true,
       is_admin: false,
       email_verified: form.value.email_verified,
+      created_at: new Date().toISOString(),
       organizations: [],
       groups: []
     })

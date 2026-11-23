@@ -22,7 +22,7 @@
 -->
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 
 interface Props {
   align?: 'left' | 'right'
@@ -30,16 +30,36 @@ interface Props {
   triggerLabel?: string
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   align: 'right'
 })
 
 const containerRef = ref<HTMLElement | null>(null)
 const triggerRef = ref<HTMLElement | null>(null)
+const menuRef = ref<HTMLElement | null>(null)
 const open = ref(false)
+const menuStyle = ref<Record<string, string>>({})
+
+// The menu is position: fixed, placed from the trigger's box, so a table's or
+// card's overflow cannot clip it. It opens upward when the space below is short.
+async function place() {
+  const rect = triggerRef.value?.getBoundingClientRect()
+  if (!rect) return
+  const gap = 4
+  const horizontal = props.align === 'right'
+    ? { right: `${window.innerWidth - rect.right}px` }
+    : { left: `${rect.left}px` }
+  menuStyle.value = { ...horizontal, top: `${rect.bottom + gap}px` }
+  await nextTick()
+  const height = menuRef.value?.offsetHeight ?? 0
+  if (rect.bottom + gap + height > window.innerHeight && rect.top - gap - height >= 0) {
+    menuStyle.value = { ...horizontal, top: `${rect.top - gap - height}px` }
+  }
+}
 
 function toggle() {
   open.value = !open.value
+  if (open.value) place()
 }
 
 function close() {
@@ -60,12 +80,21 @@ function onDocClick(e: MouseEvent) {
   }
 }
 
+// A fixed menu would drift away from its trigger on scroll, so close it instead.
+function onScrollOrResize() {
+  if (open.value) open.value = false
+}
+
 onMounted(() => {
   document.addEventListener('click', onDocClick)
+  window.addEventListener('scroll', onScrollOrResize, true)
+  window.addEventListener('resize', onScrollOrResize)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', onDocClick)
+  window.removeEventListener('scroll', onScrollOrResize, true)
+  window.removeEventListener('resize', onScrollOrResize)
 })
 </script>
 
@@ -91,8 +120,9 @@ onUnmounted(() => {
          item's own @click runs first), and `close` is exposed for explicit use. -->
     <div
       v-if="open"
+      ref="menuRef"
       class="ocf-dropdown-menu"
-      :class="'ocf-dropdown-menu--' + align"
+      :style="menuStyle"
       @click="close"
     >
       <slot :close="close" />
@@ -111,8 +141,7 @@ onUnmounted(() => {
 }
 
 .ocf-dropdown-menu {
-  position: absolute;
-  top: calc(100% + var(--spacing-xs));
+  position: fixed;
   min-width: 200px;
   background-color: var(--color-bg-primary);
   border: var(--border-width-thin) solid var(--color-border-light);
@@ -120,14 +149,6 @@ onUnmounted(() => {
   box-shadow: var(--shadow-lg);
   z-index: var(--z-index-dropdown);
   overflow: hidden;
-}
-
-.ocf-dropdown-menu--right {
-  right: 0;
-}
-
-.ocf-dropdown-menu--left {
-  left: 0;
 }
 
 /* Generic menu item look — consumers may pass plain .ocf-dropdown-item buttons. */

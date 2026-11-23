@@ -13,13 +13,14 @@
  *     - the menu renders only when open;
  *     - clicking OUTSIDE closes it (document listener + container ref .contains);
  *     - clicking any item INSIDE also closes it (the item's own @click still fires);
- *     - align → `.ocf-dropdown-menu--left` / `.ocf-dropdown-menu--right`.
+ *     - the menu is position: fixed under its trigger, so a table's overflow
+ *       cannot clip it; align picks the trigger edge it anchors to.
  *
  * CLASS NAMESPACING: generic names like `.dropdown-menu`/`.dropdown-item` have
  * collided with global rules (Bootstrap's `display: none` hid such a menu until
  * Bootstrap was removed). So the DS component namespaces its
  * classes under `ocf-`: `.ocf-dropdown` (container), `.ocf-dropdown-menu`,
- * `.ocf-dropdown-menu--left/--right`, and the item convention `.ocf-dropdown-item`
+ * and the item convention `.ocf-dropdown-item`
  * (consumers use `.ocf-dropdown-item` for their menu items). The trigger stays a
  * plain `.btn-icon` (a house class). The menu renders INSIDE the
  * component (no <body> teleport).
@@ -133,17 +134,40 @@ describe('DropdownMenu', () => {
     wrapper.unmount()
   })
 
-  it('applies the right alignment class by default and the left class when align="left"', async () => {
+  it('anchors the menu under the trigger, to its right edge by default and its left edge when align="left"', async () => {
+    const box = { top: 100, bottom: 130, left: 40, right: 80, width: 40, height: 30, x: 40, y: 100, toJSON: () => ({}) }
+    const spy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(box as DOMRect)
+
     const right = mount(DropdownMenu, { slots: { default: '<span class="ocf-dropdown-item">a</span>' } })
     await right.find('.btn-icon').trigger('click')
-    expect(right.find('.ocf-dropdown-menu').classes()).toContain('ocf-dropdown-menu--right')
+    const rightStyle = (right.find('.ocf-dropdown-menu').element as HTMLElement).style
+    expect(rightStyle.right).toBe(`${window.innerWidth - 80}px`)
+    expect(rightStyle.top).toBe('134px')
 
     const left = mount(DropdownMenu, {
       props: { align: 'left' },
       slots: { default: '<span class="ocf-dropdown-item">a</span>' },
     })
     await left.find('.btn-icon').trigger('click')
-    expect(left.find('.ocf-dropdown-menu').classes()).toContain('ocf-dropdown-menu--left')
+    const leftStyle = (left.find('.ocf-dropdown-menu').element as HTMLElement).style
+    expect(leftStyle.left).toBe('40px')
+    expect(leftStyle.right).toBe('')
+
+    spy.mockRestore()
+    right.unmount()
+    left.unmount()
+  })
+
+  it('closes on scroll, since a fixed menu would otherwise drift from its trigger', async () => {
+    const wrapper = mount(DropdownMenu, { slots: { default: '<span class="ocf-dropdown-item">a</span>' } })
+    await wrapper.find('.btn-icon').trigger('click')
+    expect(wrapper.find('.ocf-dropdown-menu').exists()).toBe(true)
+
+    window.dispatchEvent(new Event('scroll'))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('.ocf-dropdown-menu').exists()).toBe(false)
+    wrapper.unmount()
   })
 
   it('names the default trigger with triggerLabel, announces a menu popup and reports its open state', async () => {

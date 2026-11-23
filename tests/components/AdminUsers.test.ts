@@ -99,6 +99,7 @@ function makeUser(overrides: Partial<AdminUserListing> = {}): AdminUserListing {
     is_active: true,
     is_admin: false,
     email_verified: true,
+    created_at: '2026-01-01T00:00:00Z',
     organizations: [],
     groups: [],
     ...overrides
@@ -218,14 +219,16 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    // Default order should be ascending by display_name (Alice, Bob, Carol)
+    // The first click on the display_name header sorts ascending (Alice, Bob, Carol)
+    const header = wrapper.find('th[data-sort="display_name"]')
+    expect(header.exists()).toBe(true)
+    await header.trigger('click')
+    await nextTick()
     let rows = wrapper.findAll('tbody tr')
     expect(rows[0].text()).toContain('Alice')
     expect(rows[2].text()).toContain('Carol')
 
-    // Click the display_name header to toggle to descending
-    const header = wrapper.find('th[data-sort="display_name"]')
-    expect(header.exists()).toBe(true)
+    // The second click toggles to descending
     await header.trigger('click')
     await nextTick()
 
@@ -276,7 +279,7 @@ describe('AdminUsers', () => {
     })
     await flushPromises()
 
-    const buttons = wrapper.findAll('button.impersonate-btn')
+    const buttons = wrapper.findAll('button[data-test="impersonate"]')
     expect(buttons.length).toBeGreaterThan(0)
     for (const btn of buttons) {
       expect((btn.element as HTMLButtonElement).disabled).toBe(true)
@@ -292,7 +295,7 @@ describe('AdminUsers', () => {
 
     expect(wrapper.find('.base-modal-overlay').exists()).toBe(false)
 
-    const btn = wrapper.find('button.impersonate-btn')
+    const btn = wrapper.find('button[data-test="impersonate"]')
     expect(btn.exists()).toBe(true)
     await btn.trigger('click')
     await nextTick()
@@ -315,7 +318,7 @@ describe('AdminUsers', () => {
       email: 'alice@example.com'
     })
 
-    await wrapper.find('button.impersonate-btn').trigger('click')
+    await wrapper.find('button[data-test="impersonate"]').trigger('click')
     await nextTick()
 
     const confirmBtn = wrapper.find('button.impersonate-confirm')
@@ -341,7 +344,7 @@ describe('AdminUsers', () => {
       email: 'alice@example.com'
     })
 
-    await wrapper.find('button.impersonate-btn').trigger('click')
+    await wrapper.find('button[data-test="impersonate"]').trigger('click')
     await nextTick()
     await wrapper.find('button.impersonate-confirm').trigger('click')
     await flushPromises()
@@ -361,7 +364,7 @@ describe('AdminUsers', () => {
     const store = useImpersonationStore()
     vi.spyOn(store, 'start').mockRejectedValue(new Error('nope'))
 
-    await wrapper.find('button.impersonate-btn').trigger('click')
+    await wrapper.find('button[data-test="impersonate"]').trigger('click')
     await nextTick()
     await wrapper.find('button.impersonate-confirm').trigger('click')
     await flushPromises()
@@ -384,7 +387,7 @@ describe('AdminUsers', () => {
       email: 'alice@example.com'
     })
 
-    await wrapper.find('button.impersonate-btn').trigger('click')
+    await wrapper.find('button[data-test="impersonate"]').trigger('click')
     await nextTick()
     expect(wrapper.find('.base-modal-overlay').exists()).toBe(true)
 
@@ -408,16 +411,25 @@ describe('AdminUsers', () => {
     const rows = wrapper.findAll('tbody tr')
     expect(rows.length).toBe(2)
 
-    const adminRowBtn = rows[0].find('button.impersonate-btn')
-    const bobRowBtn = rows[1].find('button.impersonate-btn')
+    const adminRowBtn = rows[0].find('button[data-test="impersonate"]')
+    const bobRowBtn = rows[1].find('button[data-test="impersonate"]')
     expect((adminRowBtn.element as HTMLButtonElement).disabled).toBe(true)
     expect((bobRowBtn.element as HTMLButtonElement).disabled).toBe(false)
   })
 
   // --- Reset password / admin role / block account actions ---------------
 
-  function findActionButton(wrapper: ReturnType<typeof mountAdminUsers>, text: string) {
-    return wrapper.findAll('button.action-btn').find((b) => b.text().includes(text))
+  // Account actions live in each row's ⋯ menu, which renders its items only
+  // while open: open every closed menu in scope, then look up the item.
+  async function openMenus(scope: { findAll: ReturnType<typeof mountAdminUsers>['findAll'] }) {
+    for (const menu of scope.findAll('.ocf-dropdown')) {
+      if (!menu.find('.ocf-dropdown-menu').exists()) await menu.find('.btn-icon').trigger('click')
+    }
+  }
+
+  async function findActionButton(wrapper: ReturnType<typeof mountAdminUsers>, text: string) {
+    await openMenus(wrapper)
+    return wrapper.findAll('button.ocf-dropdown-item').find((b) => b.text().includes(text))
   }
 
   it('clicking reset password opens a confirmation modal and calls the service', async () => {
@@ -426,7 +438,7 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    const btn = findActionButton(wrapper, 'Reset password')
+    const btn = (await findActionButton(wrapper, 'Reset password'))
     expect(btn?.exists()).toBe(true)
     await btn!.trigger('click')
     await nextTick()
@@ -445,7 +457,7 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    const btn = findActionButton(wrapper, 'Set password')
+    const btn = (await findActionButton(wrapper, 'Set password'))
     expect(btn?.exists()).toBe(true)
     await btn!.trigger('click')
     await nextTick()
@@ -461,7 +473,7 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    await findActionButton(wrapper, 'Set password')!.trigger('click')
+    await (await findActionButton(wrapper, 'Set password'))!.trigger('click')
     await nextTick()
 
     await wrapper.find('#sp-password').setValue('correct-horse-battery-staple')
@@ -479,7 +491,7 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    await findActionButton(wrapper, 'Set password')!.trigger('click')
+    await (await findActionButton(wrapper, 'Set password'))!.trigger('click')
     await nextTick()
 
     await wrapper.find('#sp-password').setValue('correct-horse-battery-staple')
@@ -502,14 +514,14 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    expect(findActionButton(wrapper, 'Grant admin')?.exists()).toBe(true)
-    await findActionButton(wrapper, 'Grant admin')!.trigger('click')
+    expect((await findActionButton(wrapper, 'Grant admin'))?.exists()).toBe(true)
+    await (await findActionButton(wrapper, 'Grant admin'))!.trigger('click')
     await nextTick()
     await wrapper.find('.base-modal-overlay button.btn-primary').trigger('click')
     await flushPromises()
 
     expect(mockGrantAdminRole).toHaveBeenCalledWith('u2')
-    expect(findActionButton(wrapper, 'Revoke admin')?.exists()).toBe(true)
+    expect((await findActionButton(wrapper, 'Revoke admin'))?.exists()).toBe(true)
   })
 
   it('admin cannot grant/revoke their own admin role (button disabled)', async () => {
@@ -517,7 +529,7 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    const btn = findActionButton(wrapper, 'Grant admin')
+    const btn = (await findActionButton(wrapper, 'Grant admin'))
     expect((btn!.element as HTMLButtonElement).disabled).toBe(true)
   })
 
@@ -527,7 +539,7 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    await findActionButton(wrapper, 'Block account')!.trigger('click')
+    await (await findActionButton(wrapper, 'Block account'))!.trigger('click')
     await nextTick()
     // Blocking is a sensitive action — its confirm button is styled danger,
     // not the neutral btn-primary the other action-confirm modals use.
@@ -535,7 +547,7 @@ describe('AdminUsers', () => {
     await flushPromises()
 
     expect(mockSetForbidden).toHaveBeenCalledWith('u2', true)
-    expect(findActionButton(wrapper, 'Unblock account')?.exists()).toBe(true)
+    expect((await findActionButton(wrapper, 'Unblock account'))?.exists()).toBe(true)
   })
 
   // --- Action-confirm popup consistency ------------------------------------
@@ -549,14 +561,14 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    await findActionButton(wrapper, 'Reset password')!.trigger('click')
+    await (await findActionButton(wrapper, 'Reset password'))!.trigger('click')
     await nextTick()
     expect(wrapper.find('.base-modal-overlay button.btn-primary').exists()).toBe(true)
     expect(wrapper.find('.base-modal-overlay button.btn-danger').exists()).toBe(false)
     await wrapper.find('.base-modal-overlay button.btn-secondary').trigger('click')
     await nextTick()
 
-    await findActionButton(wrapper, 'Block account')!.trigger('click')
+    await (await findActionButton(wrapper, 'Block account'))!.trigger('click')
     await nextTick()
     expect(wrapper.find('.base-modal-overlay button.btn-danger').exists()).toBe(true)
   })
@@ -566,7 +578,7 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    await findActionButton(wrapper, 'Grant admin')!.trigger('click')
+    await (await findActionButton(wrapper, 'Grant admin'))!.trigger('click')
     await nextTick()
     expect(wrapper.find('.base-modal-overlay button.btn-primary').exists()).toBe(true)
     expect(wrapper.find('.base-modal-overlay button.btn-danger').exists()).toBe(false)
@@ -574,12 +586,12 @@ describe('AdminUsers', () => {
     await nextTick()
 
     mockGrantAdminRole.mockResolvedValueOnce(undefined)
-    await findActionButton(wrapper, 'Grant admin')!.trigger('click')
+    await (await findActionButton(wrapper, 'Grant admin'))!.trigger('click')
     await nextTick()
     await wrapper.find('.base-modal-overlay button.btn-primary').trigger('click')
     await flushPromises()
 
-    await findActionButton(wrapper, 'Revoke admin')!.trigger('click')
+    await (await findActionButton(wrapper, 'Revoke admin'))!.trigger('click')
     await nextTick()
     expect(wrapper.find('.base-modal-overlay button.btn-danger').exists()).toBe(true)
   })
@@ -589,7 +601,7 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    const btn = findActionButton(wrapper, 'Block account')
+    const btn = (await findActionButton(wrapper, 'Block account'))
     expect((btn!.element as HTMLButtonElement).disabled).toBe(true)
   })
 
@@ -600,7 +612,7 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    const btn = findActionButton(wrapper, 'Delete user')
+    const btn = (await findActionButton(wrapper, 'Delete user'))
     expect((btn!.element as HTMLButtonElement).disabled).toBe(true)
   })
 
@@ -609,7 +621,7 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    await findActionButton(wrapper, 'Delete user')!.trigger('click')
+    await (await findActionButton(wrapper, 'Delete user'))!.trigger('click')
     await nextTick()
 
     expect(wrapper.find('.base-modal-overlay').exists()).toBe(true)
@@ -626,7 +638,7 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    await findActionButton(wrapper, 'Delete user')!.trigger('click')
+    await (await findActionButton(wrapper, 'Delete user'))!.trigger('click')
     await nextTick()
 
     await wrapper.find('#du-confirm').setValue('not-bob')
@@ -642,7 +654,7 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    await findActionButton(wrapper, 'Delete user')!.trigger('click')
+    await (await findActionButton(wrapper, 'Delete user'))!.trigger('click')
     await nextTick()
     await wrapper.find('#du-confirm').setValue('bob')
     await nextTick()
@@ -663,7 +675,7 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    await findActionButton(wrapper, 'Delete user')!.trigger('click')
+    await (await findActionButton(wrapper, 'Delete user'))!.trigger('click')
     await nextTick()
     await wrapper.find('#du-confirm').setValue('bob')
     await nextTick()
@@ -810,9 +822,10 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
+    await openMenus(wrapper)
     const rows = wrapper.findAll('tbody tr')
-    expect(rows[0].findAll('button.action-btn').some((b) => b.text().includes('Verify email'))).toBe(false)
-    expect(rows[1].findAll('button.action-btn').some((b) => b.text().includes('Verify email'))).toBe(true)
+    expect(rows[0].findAll('button.ocf-dropdown-item').some((b) => b.text().includes('Verify email'))).toBe(false)
+    expect(rows[1].findAll('button.ocf-dropdown-item').some((b) => b.text().includes('Verify email'))).toBe(true)
   })
 
   it('clicking "Verify email" calls adminUsersService.verifyEmail and flips the badge', async () => {
@@ -821,7 +834,7 @@ describe('AdminUsers', () => {
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    const btn = wrapper.findAll('button.action-btn').find((b) => b.text().includes('Verify email'))
+    const btn = await findActionButton(wrapper, 'Verify email')
     expect(btn?.exists()).toBe(true)
     await btn!.trigger('click')
     await nextTick()
@@ -829,7 +842,7 @@ describe('AdminUsers', () => {
     await flushPromises()
 
     expect(mockVerifyEmail).toHaveBeenCalledWith('u2')
-    expect(wrapper.findAll('button.action-btn').some((b) => b.text().includes('Verify email'))).toBe(false)
+    expect(await findActionButton(wrapper, 'Verify email')).toBeUndefined()
   })
 
   // --- Review fixes ---------------------------------------------------------
@@ -909,11 +922,17 @@ describe('AdminUsers', () => {
     expect(mockUpdateGroupMemberRole).toHaveBeenCalledWith('gm1', 'manager')
   })
 
-  it('reserves the "Verify email" slot on verified rows so the buttons do not shift', async () => {
-    mockFetchAll.mockResolvedValueOnce([makeUser({ id: 'u1', username: 'alice', email_verified: true })])
+  it('lists the newest registrations first and shows the registration date', async () => {
+    mockFetchAll.mockResolvedValueOnce([
+      makeUser({ id: 'u1', username: 'old', display_name: 'Old', created_at: '2025-01-10T10:00:00Z' }),
+      makeUser({ id: 'u2', username: 'new', display_name: 'New', created_at: '2026-11-20T10:00:00+01:00' })
+    ])
     const wrapper = mountAdminUsers()
     await flushPromises()
 
-    expect(wrapper.find('tbody tr .action-btn-placeholder').exists()).toBe(true)
+    const rows = wrapper.findAll('tbody tr')
+    expect(rows[0].text()).toContain('New')
+    expect(rows[1].text()).toContain('Old')
+    expect(rows[0].find('.date-cell').text()).toBe(new Date('2026-11-20T10:00:00+01:00').toLocaleDateString('en-GB'))
   })
 })

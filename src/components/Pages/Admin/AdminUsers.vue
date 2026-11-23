@@ -65,16 +65,22 @@
       </template>
 
       <template #cell-is_active="{ row }">
-        <span :class="['status-badge', row.is_active ? 'status-active' : 'status-inactive']">
+        <span :class="['badge', row.is_active ? 'badge-success' : 'badge-secondary']">
           {{ row.is_active ? t('adminUsers.statusActive') : t('adminUsers.statusInactive') }}
         </span>
       </template>
 
       <template #cell-is_admin="{ row }">
-        <span v-if="!row.is_admin" class="role-badge role-member">
+        <span v-if="!row.is_admin" class="badge badge-primary">
           {{ t('adminUsers.roleMember') }}
         </span>
         <AdminBadge v-else />
+      </template>
+
+      <template #cell-created_at="{ row }">
+        <span class="date-cell" :title="formatDateTime(row.created_at, intlLocale(locale))">
+          {{ formatDate(row.created_at, intlLocale(locale)) }}
+        </span>
       </template>
 
       <template #cell-organizations="{ row }">
@@ -117,111 +123,76 @@
       </template>
 
       <template #row-actions="{ row }">
-        <div class="row-actions-group">
-          <!-- Acting-as-this-user: kept alone and visually distinct (its own
-               button class, own icon) since it's unlike every other action
-               here — nothing else makes the admin temporarily become the user. -->
-          <div class="action-group">
-            <button
-              type="button"
-              class="impersonate-btn"
-              :disabled="isImpersonateDisabled(row.id)"
-              :title="impersonateButtonTitle(row.id)"
-              @click="openConfirmModal(row)"
-            >
-              <i class="fas fa-user-secret"></i>
-              {{ t('adminUsers.impersonate') }}
-            </button>
-          </div>
+        <div class="row-actions">
+          <!-- Acting as the user stays a visible button: nothing else here makes
+               the admin temporarily become someone else. -->
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-primary"
+            data-test="impersonate"
+            :disabled="isImpersonateDisabled(row.id)"
+            :title="impersonateButtonTitle(row.id)"
+            @click="openConfirmModal(row)"
+          >
+            <i class="fas fa-user-secret"></i>
+            {{ t('adminUsers.impersonate') }}
+          </button>
 
-          <span class="action-group-divider" aria-hidden="true"></span>
-
-          <!-- Account help: none of these change what the account can do. -->
-          <div class="action-group">
+          <DropdownMenu :trigger-label="t('adminUsers.moreActions', { name: row.display_name || row.username })">
+            <!-- Account help: none of these change what the account can do. -->
             <button
               v-if="!row.email_verified"
               type="button"
-              class="action-btn"
-              :title="t('adminUsers.verifyEmail')"
+              class="ocf-dropdown-item"
               @click="openActionConfirm(row, 'verify-email')"
             >
               <i class="fas fa-envelope-circle-check"></i>
-              {{ t('adminUsers.verifyEmail') }}
+              <span>{{ t('adminUsers.verifyEmail') }}</span>
             </button>
-            <!-- Same footprint as the button above, so verified and
-                 unverified rows keep their buttons in the same place. -->
-            <span v-else class="action-btn action-btn-placeholder" aria-hidden="true">
-              <i class="fas fa-envelope-circle-check"></i>
-              {{ t('adminUsers.verifyEmail') }}
-            </span>
-            <button
-              type="button"
-              class="action-btn"
-              :title="t('adminUsers.resetPassword')"
-              @click="openActionConfirm(row, 'reset-password')"
-            >
+            <button type="button" class="ocf-dropdown-item" @click="openActionConfirm(row, 'reset-password')">
               <i class="fas fa-key"></i>
-              {{ t('adminUsers.resetPassword') }}
+              <span>{{ t('adminUsers.resetPassword') }}</span>
             </button>
-            <button
-              type="button"
-              class="action-btn"
-              :title="t('adminUsers.setPassword')"
-              @click="setPasswordUser = row"
-            >
+            <button type="button" class="ocf-dropdown-item" @click="setPasswordUser = row">
               <i class="fas fa-unlock-keyhole"></i>
-              {{ t('adminUsers.setPassword') }}
+              <span>{{ t('adminUsers.setPassword') }}</span>
             </button>
-            <button
-              type="button"
-              class="action-btn"
-              :title="t('adminUsers.assignPlan')"
-              @click="openPlanModal(row)"
-            >
+            <button type="button" class="ocf-dropdown-item" @click="openPlanModal(row)">
               <i class="fas fa-layer-group"></i>
-              {{ t('adminUsers.assignPlan') }}
+              <span>{{ t('adminUsers.assignPlan') }}</span>
             </button>
-          </div>
 
-          <span class="action-group-divider" aria-hidden="true"></span>
-
-          <!-- Access-changing: these take something away from, or hand
-               something to, the account — grouped together and styled danger
-               so they read as a different kind of action at a glance. -->
-          <div class="action-group">
+            <!-- Access-changing: these take something away from, or hand
+                 something to, the account. -->
+            <hr class="menu-divider" />
             <button
               type="button"
-              class="action-btn"
-              :class="{ 'action-btn-danger': row.is_admin }"
+              :class="['ocf-dropdown-item', { 'ocf-dropdown-item--danger': row.is_admin }]"
               :disabled="row.id === currentUserStore.userId"
-              :title="row.is_admin ? t('adminUsers.revokeAdmin') : t('adminUsers.grantAdmin')"
               @click="openActionConfirm(row, row.is_admin ? 'revoke-admin' : 'grant-admin')"
             >
               <i class="fas fa-shield-alt"></i>
-              {{ row.is_admin ? t('adminUsers.revokeAdmin') : t('adminUsers.grantAdmin') }}
+              <span>{{ row.is_admin ? t('adminUsers.revokeAdmin') : t('adminUsers.grantAdmin') }}</span>
             </button>
             <button
               type="button"
-              class="action-btn"
-              :class="{ 'action-btn-danger': row.is_active }"
+              :class="['ocf-dropdown-item', { 'ocf-dropdown-item--danger': row.is_active }]"
               :disabled="row.id === currentUserStore.userId"
-              :title="row.is_active ? t('adminUsers.blockAccount') : t('adminUsers.unblockAccount')"
               @click="openActionConfirm(row, row.is_active ? 'block' : 'unblock')"
             >
               <i :class="row.is_active ? 'fas fa-ban' : 'fas fa-unlock'"></i>
-              {{ row.is_active ? t('adminUsers.blockAccount') : t('adminUsers.unblockAccount') }}
+              <span>{{ row.is_active ? t('adminUsers.blockAccount') : t('adminUsers.unblockAccount') }}</span>
             </button>
             <button
               type="button"
-              class="action-btn action-btn-delete"
+              class="ocf-dropdown-item ocf-dropdown-item--danger"
               :disabled="row.id === currentUserStore.userId"
-              :title="t('adminUsers.deleteUser')"
               @click="deleteUserTarget = row"
             >
               <i class="fas fa-trash-alt"></i>
-              {{ t('adminUsers.deleteUser') }}
+              <span>{{ t('adminUsers.deleteUser') }}</span>
             </button>
-          </div>
+          </DropdownMenu>
         </div>
       </template>
     </EntityTable>
@@ -349,12 +320,14 @@ import { organizationService } from '../../../services/domain/organization'
 import EntityTable from '../../Generic/EntityTable.vue'
 import BaseModal from '../../Modals/BaseModal.vue'
 import AdminBadge from '../../Common/AdminBadge.vue'
+import DropdownMenu from '../../Common/DropdownMenu.vue'
+import { formatDate, formatDateTime, intlLocale } from '../../../utils/formatters'
 import AdminAssignPlanModal from '../../Modals/AdminAssignPlanModal.vue'
 import AdminCreateUserModal from '../../Modals/AdminCreateUserModal.vue'
 import AdminSetPasswordModal from '../../Modals/AdminSetPasswordModal.vue'
 import AdminDeleteUserModal from '../../Modals/AdminDeleteUserModal.vue'
 
-const { t } = useTranslations({
+const { t, locale } = useTranslations({
   en: {
     adminUsers: {
       pageTitle: 'User management',
@@ -368,6 +341,8 @@ const { t } = useTranslations({
       colRole: 'Role',
       colOrganizations: 'Organizations',
       colGroups: 'Groups',
+      colRegistered: 'Registered',
+      moreActions: 'More actions for {name}',
       statusActive: 'Active',
       statusInactive: 'Disabled',
       roleMember: 'Member',
@@ -444,6 +419,8 @@ const { t } = useTranslations({
       colRole: 'Rôle',
       colOrganizations: 'Organisations',
       colGroups: 'Groupes',
+      colRegistered: 'Inscription',
+      moreActions: 'Autres actions pour {name}',
       statusActive: 'Actif',
       statusInactive: 'Désactivé',
       roleMember: 'Membre',
@@ -543,7 +520,8 @@ const deleteUserTarget = ref<AdminUserListing | null>(null)
 // In-flight role update, keyed so only the select being changed shows as disabled.
 const roleUpdateKey = ref<string | null>(null)
 
-const initialSort: SortState = { key: 'display_name', dir: 'asc' }
+// Newest accounts first: the usual question here is "who just signed up?".
+const initialSort: SortState = { key: 'created_at', dir: 'desc' }
 
 const columns = computed<TableColumn<AdminUserListing>[]>(() => [
   {
@@ -569,6 +547,13 @@ const columns = computed<TableColumn<AdminUserListing>[]>(() => [
     label: t('adminUsers.colRole'),
     sortable: true,
     sortValue: (u) => (u.is_admin ? 1 : 0)
+  },
+  {
+    key: 'created_at',
+    label: t('adminUsers.colRegistered'),
+    sortable: true,
+    // RFC 3339 strings carry offsets, so compare instants, not text.
+    sortValue: (u) => Date.parse(u.created_at) || 0
   },
   {
     key: 'organizations',
@@ -818,8 +803,6 @@ onMounted(async () => {
 
 <style scoped>
 .admin-users-page {
-  max-width: 1400px;
-  margin: 0 auto;
   padding: var(--spacing-xl);
 }
 
@@ -881,44 +864,6 @@ onMounted(async () => {
   color: var(--color-warning-text);
 }
 
-/* Status badge */
-.status-badge {
-  display: inline-block;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  padding: 2px var(--spacing-sm);
-  border-radius: var(--border-radius-full);
-  text-transform: capitalize;
-}
-
-.status-active {
-  background-color: var(--color-success-bg);
-  color: var(--color-success-text);
-  border: 1px solid var(--color-success-border);
-}
-
-.status-inactive {
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border-medium);
-}
-
-/* Role badge */
-.role-badge {
-  display: inline-block;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  padding: 2px var(--spacing-sm);
-  border-radius: var(--border-radius-full);
-  text-transform: capitalize;
-}
-
-.role-member {
-  background-color: var(--color-info-bg);
-  color: var(--color-info-text);
-  border: 1px solid var(--color-info-border);
-}
-
 /* Membership chips */
 .chip-list {
   display: flex;
@@ -970,100 +915,22 @@ onMounted(async () => {
   font-style: italic;
 }
 
-/* Row action buttons */
-.row-actions-group {
+/* Row actions */
+.row-actions {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: var(--spacing-xs);
 }
 
-.action-group {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--spacing-xs);
+.menu-divider {
+  margin: var(--spacing-xs) 0;
+  border: none;
+  border-top: var(--border-width-thin) solid var(--color-border-light);
 }
 
-/* Separates "acting as the user" / benign account help / access-changing
-   actions, so they don't read as one undifferentiated row of buttons. */
-.action-group-divider {
-  align-self: stretch;
-  width: 1px;
-  min-height: 1.5rem;
-  background: var(--color-border-light);
-}
-
-.action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: 1px solid var(--color-border-medium);
-  border-radius: var(--border-radius-md);
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
-}
-
-.action-btn:hover:not(:disabled) {
-  background: var(--color-bg-secondary);
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.action-btn-placeholder {
-  visibility: hidden;
-}
-
-.action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.action-btn-danger:hover:not(:disabled) {
-  border-color: var(--color-danger);
-  color: var(--color-danger);
-}
-
-.action-btn-delete {
-  border-color: var(--color-danger-border);
-  color: var(--color-danger-text);
-}
-
-.action-btn-delete:hover:not(:disabled) {
-  background: var(--color-danger-bg);
-  border-color: var(--color-danger);
-  color: var(--color-danger);
-}
-
-/* Impersonate button */
-.impersonate-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-md);
-  border: 1px solid var(--color-primary);
-  border-radius: var(--border-radius-md);
-  background: var(--color-bg-primary);
-  color: var(--color-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
-}
-
-.impersonate-btn:hover:not(:disabled) {
-  background: var(--color-primary);
-  color: var(--color-bg-primary);
-}
-
-.impersonate-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.date-cell {
+  white-space: nowrap;
+  color: var(--color-text-secondary);
 }
 
 /* Confirmation modal */

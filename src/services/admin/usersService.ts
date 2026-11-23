@@ -44,6 +44,8 @@ export interface AdminUserListing {
   is_active: boolean
   is_admin: boolean
   email_verified: boolean
+  /** Registration time from Casdoor (RFC 3339). */
+  created_at: string
   organizations: OrgMembership[]
   groups: GroupMembership[]
 }
