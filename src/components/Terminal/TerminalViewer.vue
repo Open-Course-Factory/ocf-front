@@ -63,6 +63,17 @@
       <RecordingIndicator :isRecording="isRecording" />
 
       <TerminalZoomControl />
+      <button
+        v-if="popMode"
+        type="button"
+        class="ocf-terminal-pop"
+        :title="popMode === 'out' ? t('terminal.popOut') : t('terminal.popIn')"
+        :aria-label="popMode === 'out' ? t('terminal.popOut') : t('terminal.popIn')"
+        data-testid="terminal-pop"
+        @click="emit('pop')"
+      >
+        <i :class="popMode === 'out' ? 'fas fa-up-right-from-square' : 'fas fa-down-left-and-up-right-to-center'"></i>
+      </button>
 
       <SessionCountdown
         v-if="sessionInfo?.expires_at"
@@ -174,6 +185,17 @@
           />
         <RecordingIndicator :isRecording="isRecording" />
         <TerminalZoomControl />
+        <button
+          v-if="popMode"
+          type="button"
+          class="ocf-terminal-pop"
+          :title="popMode === 'out' ? t('terminal.popOut') : t('terminal.popIn')"
+          :aria-label="popMode === 'out' ? t('terminal.popOut') : t('terminal.popIn')"
+          data-testid="terminal-pop"
+          @click="emit('pop')"
+        >
+          <i :class="popMode === 'out' ? 'fas fa-up-right-from-square' : 'fas fa-down-left-and-up-right-to-center'"></i>
+        </button>
         <SessionCountdown
           v-if="sessionInfo?.expires_at"
           :expires-at="sessionInfo.expires_at"
@@ -334,6 +356,9 @@ interface Props {
   // belongs (plain terminals, scenarios that allow it); the chip itself hides
   // when the backend says the feature is not for this session.
   exposedPortsEnabled?: boolean
+  // Header button moving the console to its own window ('out') or, in that
+  // window, back into the page ('in'). The parent does the moving.
+  popMode?: 'out' | 'in'
 }
 
 const emit = defineEmits<{
@@ -344,6 +369,7 @@ const emit = defineEmits<{
   // The platform stopped the session (close code 4300). The page owns what
   // comes next — the paused banner and its Resume.
   'session-stopped': []
+  pop: []
 }>()
 
 const props = withDefaults(defineProps<Props>(), {
@@ -408,6 +434,8 @@ const { t } = useTranslations({
       destroyTooltip: 'Destroy this session permanently (container and data will be lost).',
       networkOn: 'Internet access: on',
       networkOff: 'Internet access: off',
+      popOut: 'Open the terminal in its own window',
+      popIn: 'Put the terminal back in the page',
       supervisionWatched: 'A trainer is watching this session',
       supervisionControlled: 'A trainer is typing in your terminal',
     }
@@ -449,6 +477,8 @@ const { t } = useTranslations({
       destroyTooltip: 'Détruire définitivement cette session (le conteneur et ses données seront perdus).',
       networkOn: 'Accès internet : activé',
       networkOff: 'Accès internet : désactivé',
+      popOut: 'Ouvrir le terminal dans une fenêtre séparée',
+      popIn: 'Remettre le terminal dans la page',
       recording: 'REC',
       recordingTooltip: 'Les commandes sont enregistrées',
       supervisionWatched: 'Un formateur observe cette session',
@@ -1182,6 +1212,27 @@ defineExpose({
 
 .terminal-viewer.terminal-full-height {
   height: 100vh;
+}
+
+.ocf-terminal-pop {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-full);
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.ocf-terminal-pop:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .terminal-header {

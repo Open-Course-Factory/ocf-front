@@ -23,40 +23,41 @@
 
 <template>
   <div class="ocf-terminal-zoom" role="group" :aria-label="t('terminalZoom.label')" @click.stop>
-    <Button
-      variant="outline-secondary"
-      size="sm"
-      icon="fas fa-search-minus"
+    <button
+      type="button"
+      class="ocf-terminal-zoom__btn"
       :disabled="!canZoomOut"
       :title="t('terminalZoom.zoomOut')"
       :aria-label="t('terminalZoom.zoomOut')"
       data-testid="terminal-zoom-out"
       @click="zoomOut"
-    />
-    <Button
-      variant="outline-secondary"
-      size="sm"
+    >
+      <i class="fas fa-minus"></i>
+    </button>
+    <button
+      type="button"
+      class="ocf-terminal-zoom__btn ocf-terminal-zoom__level"
       :title="t('terminalZoom.reset')"
       data-testid="terminal-zoom-reset"
       @click="resetZoom"
     >
       {{ Math.round(zoom * 100) }}%
-    </Button>
-    <Button
-      variant="outline-secondary"
-      size="sm"
-      icon="fas fa-search-plus"
+    </button>
+    <button
+      type="button"
+      class="ocf-terminal-zoom__btn"
       :disabled="!canZoomIn"
       :title="t('terminalZoom.zoomIn')"
       :aria-label="t('terminalZoom.zoomIn')"
       data-testid="terminal-zoom-in"
       @click="zoomIn"
-    />
+    >
+      <i class="fas fa-plus"></i>
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from '../UI/Button.vue'
 import { useTerminalZoom } from '../../composables/useTerminalZoom'
 import { useTranslations } from '../../composables/useTranslations'
 
@@ -83,15 +84,50 @@ const { t } = useTranslations({
 </script>
 
 <style scoped>
+/* One small pill, so the three controls read as a single tool. */
 .ocf-terminal-zoom {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  height: 26px;
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-full);
+  background: var(--color-bg-primary);
+  overflow: hidden;
   font-family: var(--font-family-primary);
 }
 
-/* Presenting happens on a desktop or a projector; on a phone the header has no
-   room to spare and pinch-zoom covers the need. */
+.ocf-terminal-zoom__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-width: 24px;
+  padding: 0 var(--spacing-xs);
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.ocf-terminal-zoom__btn:hover:not(:disabled) {
+  color: var(--color-primary);
+  background: var(--color-bg-secondary);
+}
+
+.ocf-terminal-zoom__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Fixed width: going from 90% to 100% must not shift the buttons. */
+.ocf-terminal-zoom__level {
+  min-width: 40px;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-medium);
+}
+
 @media (max-width: 768px) {
   .ocf-terminal-zoom {
     display: none;

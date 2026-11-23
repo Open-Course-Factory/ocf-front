@@ -33,8 +33,10 @@
     </div>
     
     <TerminalViewer
-      v-else
+      v-else-if="!closing"
       :session-id="sessionId"
+      :pop-mode="isPopout ? 'in' : undefined"
+      @pop="closePopout"
       :show-header="showHeader"
       :show-footer="showFooter"
       :hide-controls="hideControls"
@@ -44,9 +46,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import TerminalViewer from '../Terminal/TerminalViewer.vue'
+import { POP_IN_MESSAGE, POPOUT_QUERY } from '../../composables/useTerminalPopout'
 
 const route = useRoute()
 
@@ -59,6 +62,25 @@ const showHeader = computed(() => route.query.header !== 'false')
 const showFooter = computed(() => route.query.footer === 'true')
 const hideControls = computed(() => route.query.controls === 'false')
 const autoConnect = computed(() => route.query.autoConnect !== 'false')
+
+// Opened by a page's pop-out button: this window can hand the console back.
+const isPopout = !!window.opener && route.query[POPOUT_QUERY] !== undefined
+const closing = ref(false)
+
+// Unmount the console first: it closes its connection cleanly and drops its
+// leave-page guard, which would otherwise ask before the window closes.
+async function closePopout() {
+  closing.value = true
+  await nextTick()
+  window.close()
+}
+
+function onMessage(event) {
+  if (event.origin === window.location.origin && event.data === POP_IN_MESSAGE) closePopout()
+}
+
+onMounted(() => window.addEventListener('message', onMessage))
+onBeforeUnmount(() => window.removeEventListener('message', onMessage))
 
 </script>
 

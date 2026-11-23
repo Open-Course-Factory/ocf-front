@@ -14,7 +14,18 @@
          covers the console alone and makes it inert; history and flags below
          stay usable. -->
     <div class="ocf-console-area">
+      <!-- Popped out: the console lives in its own window, so this one stays
+           unmounted rather than fighting it over the terminal size. -->
+      <div v-if="isPoppedOut" class="ocf-console-popped-out" data-testid="terminal-popped-out">
+        <i class="fas fa-up-right-from-square"></i>
+        <p>{{ t('terminalPanel.poppedOut') }}</p>
+        <button type="button" class="btn btn-primary btn-sm" data-testid="terminal-pop-in" @click="popIn">
+          <i class="fas fa-down-left-and-up-right-to-center"></i>
+          {{ t('terminalPanel.bringBack') }}
+        </button>
+      </div>
       <TerminalViewer
+        v-else
         ref="terminalRef"
         :inert="!!$slots['console-overlay']"
         :auto-connect="!holdConsole"
@@ -33,6 +44,8 @@
         :can-stop="canStop"
         :show-destroy-button="showDestroyButton"
         :is-destroying="isDestroying"
+        pop-mode="out"
+        @pop="popOutConsole"
         @stop="$emit('stop')"
         @destroy="$emit('destroy')"
         @session-warning="$emit('session-warning', $event)"
@@ -69,6 +82,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import TerminalViewer from './TerminalViewer.vue'
+import { useTerminalPopout } from '../../composables/useTerminalPopout'
+import { useTranslations } from '../../composables/useTranslations'
 import CommandHistory from './CommandHistory.vue'
 import ValidatedFlags from './ValidatedFlags.vue'
 
@@ -113,7 +128,7 @@ interface Props {
   holdConsole?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   isRecording: false,
   showStopButton: false,
   isStopping: false,
@@ -138,6 +153,27 @@ defineEmits<{
   'session-expired': []
   'session-stopped': []
 }>()
+
+const { t } = useTranslations({
+  en: {
+    terminalPanel: {
+      poppedOut: 'The terminal is open in its own window.',
+      bringBack: 'Bring it back here'
+    }
+  },
+  fr: {
+    terminalPanel: {
+      poppedOut: 'Le terminal est ouvert dans une fenêtre séparée.',
+      bringBack: 'Le remettre ici'
+    }
+  }
+})
+
+const { isPoppedOut, popOut, popIn } = useTerminalPopout()
+
+function popOutConsole() {
+  popOut(props.sessionInfo.session_id)
+}
 
 const terminalRef = ref<InstanceType<typeof TerminalViewer> | null>(null)
 const validatedFlagsRef = ref<InstanceType<typeof ValidatedFlags> | null>(null)
@@ -182,6 +218,29 @@ defineExpose({
   flex-direction: column;
   flex: 1;
   min-height: 0;
+}
+
+.ocf-console-popped-out {
+  flex: 1 1 0;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  border: var(--border-width-thin) dashed var(--color-border-medium);
+  border-radius: var(--border-radius-lg);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+}
+
+.ocf-console-popped-out > i {
+  font-size: var(--font-size-xl);
+  color: var(--color-text-muted);
+}
+
+.ocf-console-popped-out p {
+  margin: 0;
 }
 
 /* The console never moves.

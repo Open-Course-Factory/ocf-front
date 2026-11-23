@@ -622,6 +622,7 @@ import { useGroupMemberNames } from '../../composables/useGroupMemberNames'
 import { extractErrorMessage } from '../../utils/formatters'
 import { useResumeRejection } from '../../composables/useResumeRejection'
 import { getEffectiveSessionState, sessionHasNetwork, type EffectiveSessionState, type SessionLifecycleFields } from '../../utils/sessionState'
+import { terminalWindowUrl, TERMINAL_WINDOW_FEATURES } from '../../composables/useTerminalPopout'
 
 const { showConfirm, showError } = useNotification()
 const { handleResumeRejection } = useResumeRejection()
@@ -1313,15 +1314,12 @@ function formatDate(dateString: string) {
   return formatDateTimeTz(dateString)
 }
 
-// Fonctions pour les fonctionnalités iframe
 function getTerminalUrl(sessionId: string) {
-  const baseUrl = window.location.origin
-  return `${baseUrl}/terminal/${sessionId}?header=true&footer=false`
+  return terminalWindowUrl(sessionId)
 }
 
 function openTerminalInNewTab(sessionId: string) {
-  const url = getTerminalUrl(sessionId)
-  window.open(url, '_blank', 'width=1000,height=600,menubar=no,toolbar=no,location=no,status=no')
+  window.open(getTerminalUrl(sessionId), '_blank', TERMINAL_WINDOW_FEATURES)
 }
 
 async function copyUrlToClipboard(sessionId: string) {
