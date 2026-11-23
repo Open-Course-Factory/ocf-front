@@ -126,6 +126,21 @@
         </router-link>
       </div>
 
+      <!-- The step is passed but the teacher holds the class before the next
+           one. Same full-panel place as the transition, so nothing moves. -->
+      <div
+        v-else-if="panelState === 'waiting'"
+        class="panel-transitioning"
+        data-testid="scenario-waiting-at-gate"
+        role="status"
+        aria-live="polite"
+      >
+        <div class="transition-validated">
+          <i class="fas fa-check-circle validated-icon"></i>
+          <span class="validated-text">{{ t('scenarioPanel.waitingAtGate') }}</span>
+        </div>
+      </div>
+
       <!-- Step transition (full panel) -->
       <div v-else-if="panelState === 'transitioning'" class="panel-transitioning">
         <!-- Phase 1: Step validated. A survey is not validated, it is
@@ -452,7 +467,8 @@ const { t } = useTranslations({
       skipToStepTitle: 'Go to step {step} (trainer)',
       skipConfirmTitle: 'Go to step {step}',
       skipConfirm: 'Your run moves straight to step {step}: the steps in between are marked skipped and only the setup of step {step} runs.',
-      skipFailed: 'Could not move to that step.'
+      skipFailed: 'Could not move to that step.',
+      waitingAtGate: 'Well done, this step is finished. The next one will open soon.'
     }
   },
   fr: {
@@ -511,7 +527,8 @@ const { t } = useTranslations({
       skipToStepTitle: 'Aller à l\'étape {step} (formateur)',
       skipConfirmTitle: 'Aller à l\'étape {step}',
       skipConfirm: 'Votre session passe directement à l\'étape {step} : les étapes intermédiaires sont marquées comme sautées et seule la préparation de l\'étape {step} s\'exécute.',
-      skipFailed: 'Impossible de passer à cette étape.'
+      skipFailed: 'Impossible de passer à cette étape.',
+      waitingAtGate: 'Bravo, cette étape est terminée. La suite s\'ouvrira bientôt.'
     }
   }
 })
@@ -731,6 +748,72 @@ function enterStep(result: {
   }
 }
 
+// Shared outcome of a passed step (verify, flag, the gate's release): wait at
+// the teacher's gate, move to the next step, or finish the scenario.
+function proceedAfterPass(result: VerifyStepResponse | SubmitFlagResponse) {
+  if (result.waiting_at_gate) {
+    waitingAtGate.value = true
+  } else if (result.next_step !== undefined && result.next_step !== null) {
+    advanceAfterSuccess(result)
+  } else {
+    isSessionCompleted.value = true
+    emit('session-completed')
+  }
+}
+
+// ---- Waiting at the teacher's gate ----
+//
+// The run stays on a passed step until the teacher releases the class. The
+// panel asks POST /continue every 5 s, plus up to 3 s of jitter so a class
+// released at once does not hit the server in one burst, and only while the
+// page is on screen.
+const GATE_POLL_MS = 5_000
+const GATE_POLL_JITTER_MS = 3_000
+const waitingAtGate = ref(false)
+let gatePollTimer: ReturnType<typeof setTimeout> | null = null
+
+function stopGatePoll() {
+  if (gatePollTimer) {
+    clearTimeout(gatePollTimer)
+    gatePollTimer = null
+  }
+}
+
+function scheduleGatePoll() {
+  stopGatePoll()
+  gatePollTimer = setTimeout(pollGate, GATE_POLL_MS + Math.random() * GATE_POLL_JITTER_MS)
+}
+
+async function pollGate() {
+  gatePollTimer = null
+  if (document.hidden) {
+    scheduleGatePoll()
+    return
+  }
+  try {
+    const result = await scenarioSessionService.continueAfterGate(props.scenarioSessionId)
+    // Unmounted or reloaded meanwhile: this answer is for nobody.
+    if (!waitingAtGate.value) return
+    if (!result.waiting_at_gate) {
+      waitingAtGate.value = false
+      proceedAfterPass(result)
+      return
+    }
+  } catch (err: any) {
+    // 409: the step is not done after all — the run moved under us, so show
+    // where it really is rather than wait forever.
+    if (err?.response?.status === 409 && waitingAtGate.value) {
+      waitingAtGate.value = false
+      loadCurrentStep()
+      return
+    }
+    // Anything else is transient; the next poll retries.
+  }
+  if (waitingAtGate.value) scheduleGatePoll()
+}
+
+watch(waitingAtGate, (waiting) => (waiting ? scheduleGatePoll() : stopGatePoll()))
+
 // A trainer running the lab themselves may jump ahead, as they can from the
 // class view for a learner. Learners never see it: can_run is the backend's
 // verdict, and the backend refuses the skip on the same rule.
@@ -874,7 +957,7 @@ interface StepTypeMeta {
 // order. One expression, because the header has to agree with it: a step title
 // in the header while a preparation failure is showing would tell the learner
 // they are on a level they never reached.
-type PanelState = 'loading' | 'load-error' | 'provisioning-error' | 'completed' | 'transitioning' | 'step' | 'empty'
+type PanelState = 'loading' | 'load-error' | 'provisioning-error' | 'completed' | 'waiting' | 'transitioning' | 'step' | 'empty'
 
 const panelState = computed<PanelState>(() => {
   // ocf-core's "Setting up environment..." placeholder is not a step to show.
@@ -882,6 +965,7 @@ const panelState = computed<PanelState>(() => {
   if (loadError.value) return 'load-error'
   if (provisioningError.value) return 'provisioning-error'
   if (isSessionCompleted.value) return 'completed'
+  if (waitingAtGate.value) return 'waiting'
   if (isTransitioning.value) return 'transitioning'
   if (currentStep.value) return 'step'
   return 'empty'
@@ -986,6 +1070,7 @@ async function loadCurrentStep() {
   quizResult.value = null
   quizSubmitError.value = ''
   hintNudgeDismissed.value = false
+  waitingAtGate.value = false
   stopHintNudgeTimer()
   stopStepProvisioningPoll()
 
@@ -993,6 +1078,9 @@ async function loadCurrentStep() {
   const step = await session.loadStepData({ skipSpinner: isTransitioning.value })
   transitionState.value = 'idle'
   incomingStepType.value = undefined
+
+  // Reloaded while held at the gate: back to the waiting state.
+  waitingAtGate.value = !!step?.waiting_at_gate
 
   if (step) {
     const hints = await fetchRevealedHints(step)
@@ -1060,15 +1148,7 @@ async function handleVerify() {
     // takes the choice away and scores them as having asked. The hint button
     // still pulses after 90s of no progress — a nudge, not a reveal.
 
-    if (result.passed) {
-      if (result.next_step) {
-        advanceAfterSuccess(result)
-      } else {
-        // No next step means scenario is completed
-        isSessionCompleted.value = true
-        emit('session-completed')
-      }
-    }
+    if (result.passed) proceedAfterPass(result)
   } catch (err: any) {
     console.error('Verify step failed:', err)
     verifyResult.value = {
@@ -1092,13 +1172,7 @@ async function handleSubmitFlag() {
 
     if (result.correct) {
       emit('flag-validated')
-      if (result.next_step !== undefined && result.next_step !== null) {
-        advanceAfterSuccess(result)
-      } else {
-        // Last step completed — show completion screen
-        isSessionCompleted.value = true
-        emit('session-completed')
-      }
+      proceedAfterPass(result)
     }
   } catch (err: any) {
     console.error('Submit flag failed:', err)
@@ -1167,7 +1241,9 @@ async function handleSubmitQuiz(payload: Record<string, string>) {
       return
     }
 
-    if (result.next_step !== undefined && result.next_step !== null) {
+    if (result.waiting_at_gate) {
+      waitingAtGate.value = true
+    } else if (result.next_step !== undefined && result.next_step !== null) {
       advanceAfterSuccess(result)
     } else {
       // Last step submitted in exam mode — show completion after a brief
@@ -1199,6 +1275,10 @@ function onQuizRetry() {
 // Learning-mode quiz: student manually advances after reading the breakdown.
 function advanceFromQuiz() {
   if (!quizResult.value) return
+  if (quizResult.value.waiting_at_gate) {
+    waitingAtGate.value = true
+    return
+  }
   advanceAfterSuccess(quizResult.value, 600)
 }
 
@@ -1233,6 +1313,9 @@ onMounted(() => {
 onBeforeUnmount(() => {
   stopHintNudgeTimer()
   stopStepProvisioningPoll()
+  // Also tells a poll still in flight that nobody is waiting any more.
+  waitingAtGate.value = false
+  stopGatePoll()
 })
 
 // A quiz being answered takes the main area of the page; the console steps
