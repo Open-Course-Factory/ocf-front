@@ -764,9 +764,11 @@ function proceedAfterPass(result: VerifyStepResponse | SubmitFlagResponse) {
 // ---- Waiting at the teacher's gate ----
 //
 // The run stays on a passed step until the teacher releases the class. The
-// panel asks POST /continue every 5 s, plus up to 3 s of jitter so a class
+// panel reads the current step every 5 s, plus up to 3 s of jitter so a class
 // released at once does not hit the server in one burst, and only while the
-// page is on screen.
+// page is on screen. It reads GET current-step rather than POST /continue:
+// /continue shares the learner's rate limit with verify, quiz and flag, so it
+// is called once, when the gate has opened.
 const GATE_POLL_MS = 5_000
 const GATE_POLL_JITTER_MS = 3_000
 const waitingAtGate = ref(false)
@@ -791,13 +793,18 @@ async function pollGate() {
     return
   }
   try {
-    const result = await scenarioSessionService.continueAfterGate(props.scenarioSessionId)
+    const step = await scenarioSessionService.getCurrentStep(props.scenarioSessionId)
     // Unmounted or reloaded meanwhile: this answer is for nobody.
     if (!waitingAtGate.value) return
-    if (!result.waiting_at_gate) {
-      waitingAtGate.value = false
-      proceedAfterPass(result)
-      return
+    if (!step.waiting_at_gate) {
+      const result = await scenarioSessionService.continueAfterGate(props.scenarioSessionId)
+      if (!waitingAtGate.value) return
+      // Closed again between the two calls: keep waiting.
+      if (!result.waiting_at_gate) {
+        waitingAtGate.value = false
+        proceedAfterPass(result)
+        return
+      }
     }
   } catch (err: any) {
     // 409: the step is not done after all — the run moved under us, so show

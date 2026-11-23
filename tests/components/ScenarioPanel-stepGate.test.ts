@@ -1,9 +1,10 @@
 /**
  * A teacher can hold the class before a step. A learner who finishes the step
- * before it does not move on: the panel says the step is done and waits, asks
- * the backend every 5 s (plus up to 3 s of jitter, so a class release does not
- * arrive in one burst) whether the gate still holds, and moves on exactly as
- * after a passed check once it no longer does.
+ * before it does not move on: the panel says the step is done and waits, reads
+ * the current step every 5 s (plus up to 3 s of jitter, so a class release does
+ * not arrive in one burst), and once the gate has opened calls /continue ONCE —
+ * it shares the learner's rate limit with verify, quiz and flag — then moves on
+ * exactly as after a passed check.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
@@ -83,6 +84,9 @@ async function mountWaitingAfterVerify() {
   await flushPromises()
   await wrapper.find('.verify-btn').trigger('click')
   await flushPromises()
+  // From here on, the step the backend reports is still held.
+  mockGetCurrentStep.mockResolvedValue({ ...STEP, waiting_at_gate: true })
+  mockGetCurrentStep.mockClear()
   return wrapper
 }
 
@@ -91,19 +95,23 @@ describe('ScenarioPanel — waiting at the teacher\'s gate', () => {
     vi.clearAllMocks()
     vi.useFakeTimers()
     mockGetCurrentStep.mockResolvedValue(STEP)
-    mockContinue.mockResolvedValue({ passed: true, waiting_at_gate: true })
+    mockContinue.mockResolvedValue({ passed: true, next_step: 1, waiting_at_gate: false })
   })
 
   afterEach(() => {
     vi.useRealTimers()
   })
 
-  it('shows the waiting state instead of moving on after a passed check', async () => {
+  it('shows the waiting state, with no answer to give, after a passed check', async () => {
     const wrapper = await mountWaitingAfterVerify()
 
     expect(waiting(wrapper).exists()).toBe(true)
     expect(waiting(wrapper).text()).toContain('Well done, this step is finished. The next one will open soon.')
     expect(wrapper.find('[data-testid="scenario-step-title"]').exists()).toBe(false)
+    // The backend refuses verify, quiz and flag on a held step: none is offered.
+    expect(wrapper.find('.verify-btn').exists()).toBe(false)
+    expect(wrapper.find('input').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="scenario-info-ack"]').exists()).toBe(false)
   })
 
   it('shows the waiting state after a correct flag too', async () => {
@@ -127,40 +135,67 @@ describe('ScenarioPanel — waiting at the teacher\'s gate', () => {
     expect(waiting(wrapper).exists()).toBe(true)
   })
 
-  it('asks again every 5 to 8 seconds while the gate holds', async () => {
+  it('reads the current step every 5 to 8 seconds, without calling continue, while the gate holds', async () => {
     await mountWaitingAfterVerify()
 
     await vi.advanceTimersByTimeAsync(4999)
-    expect(mockContinue).not.toHaveBeenCalled()
+    expect(mockGetCurrentStep).not.toHaveBeenCalled()
 
     await vi.advanceTimersByTimeAsync(MAX_POLL_DELAY_MS - 4999)
-    expect(mockContinue).toHaveBeenCalledTimes(1)
-    expect(mockContinue).toHaveBeenCalledWith('scen-1')
+    expect(mockGetCurrentStep).toHaveBeenCalledTimes(1)
+    expect(mockGetCurrentStep).toHaveBeenCalledWith('scen-1')
 
     await vi.advanceTimersByTimeAsync(MAX_POLL_DELAY_MS)
-    expect(mockContinue).toHaveBeenCalledTimes(2)
+    expect(mockGetCurrentStep).toHaveBeenCalledTimes(2)
+    expect(mockContinue).not.toHaveBeenCalled()
   })
 
-  it('moves on to the next step once the teacher releases the class', async () => {
+  it('calls continue once the gate opens, then moves on to the next step', async () => {
     const wrapper = await mountWaitingAfterVerify()
-    const loadsBefore = mockGetCurrentStep.mock.calls.length
 
-    mockContinue.mockResolvedValue({ passed: true, next_step: 1, waiting_at_gate: false })
-    mockGetCurrentStep.mockResolvedValue({ ...STEP, step_order: 1, position: 2, title: 'Second' })
+    // The poll finds the gate open; the load after the move finds step two.
+    mockGetCurrentStep
+      .mockResolvedValueOnce(STEP)
+      .mockResolvedValue({ ...STEP, step_order: 1, position: 2, title: 'Second' })
     await vi.advanceTimersByTimeAsync(MAX_POLL_DELAY_MS)
 
+    expect(mockContinue).toHaveBeenCalledTimes(1)
+    expect(mockContinue).toHaveBeenCalledWith('scen-1')
     // Same path as a passed check: the validated hold, then the next step.
     expect(waiting(wrapper).exists()).toBe(false)
     await vi.advanceTimersByTimeAsync(2000)
     await flushPromises()
 
-    expect(mockGetCurrentStep.mock.calls.length).toBeGreaterThan(loadsBefore)
     expect(wrapper.find('[data-testid="scenario-step-title"]').text()).toBe('Second')
 
     // Released: no more polling.
-    const calls = mockContinue.mock.calls.length
+    const reads = mockGetCurrentStep.mock.calls.length
     await vi.advanceTimersByTimeAsync(MAX_POLL_DELAY_MS * 2)
-    expect(mockContinue).toHaveBeenCalledTimes(calls)
+    expect(mockGetCurrentStep).toHaveBeenCalledTimes(reads)
+    expect(mockContinue).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps waiting when the gate closes again before continue', async () => {
+    const wrapper = await mountWaitingAfterVerify()
+
+    mockGetCurrentStep.mockResolvedValue(STEP)
+    mockContinue.mockResolvedValue({ passed: true, waiting_at_gate: true })
+    await vi.advanceTimersByTimeAsync(MAX_POLL_DELAY_MS)
+
+    expect(mockContinue).toHaveBeenCalledTimes(1)
+    expect(waiting(wrapper).exists()).toBe(true)
+  })
+
+  it('shows where the run really is when continue answers 409', async () => {
+    const wrapper = await mountWaitingAfterVerify()
+
+    mockGetCurrentStep.mockResolvedValue(STEP)
+    mockContinue.mockRejectedValue({ response: { status: 409 } })
+    await vi.advanceTimersByTimeAsync(MAX_POLL_DELAY_MS)
+    await flushPromises()
+
+    expect(waiting(wrapper).exists()).toBe(false)
+    expect(wrapper.find('[data-testid="scenario-step-title"]').text()).toBe('First')
   })
 
   it('does not ask while the page is hidden', async () => {
@@ -168,11 +203,11 @@ describe('ScenarioPanel — waiting at the teacher\'s gate', () => {
     const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true)
 
     await vi.advanceTimersByTimeAsync(MAX_POLL_DELAY_MS * 2)
-    expect(mockContinue).not.toHaveBeenCalled()
+    expect(mockGetCurrentStep).not.toHaveBeenCalled()
 
     hidden.mockRestore()
     await vi.advanceTimersByTimeAsync(MAX_POLL_DELAY_MS)
-    expect(mockContinue).toHaveBeenCalledTimes(1)
+    expect(mockGetCurrentStep).toHaveBeenCalledTimes(1)
   })
 
   it('stops asking once the panel is gone', async () => {
@@ -181,6 +216,7 @@ describe('ScenarioPanel — waiting at the teacher\'s gate', () => {
     wrapper.unmount()
     await vi.advanceTimersByTimeAsync(MAX_POLL_DELAY_MS * 3)
 
+    expect(mockGetCurrentStep).not.toHaveBeenCalled()
     expect(mockContinue).not.toHaveBeenCalled()
   })
 })
