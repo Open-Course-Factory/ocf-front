@@ -42,10 +42,16 @@ export const TERMINAL_WINDOW_FEATURES = 'width=1000,height=600,menubar=no,toolba
 export function useTerminalPopout() {
   const popup = shallowRef<Window | null>(null)
   let watcher: ReturnType<typeof setInterval> | undefined
+  let popInRequested = false
 
   function bringBack() {
     clearInterval(watcher)
     popup.value = null
+    popInRequested = false
+  }
+
+  function requestPopIn() {
+    popup.value?.postMessage(POP_IN_MESSAGE, window.location.origin)
   }
 
   // Returns false when the browser blocked the window: the console stays here.
@@ -53,16 +59,21 @@ export function useTerminalPopout() {
     const win = window.open(terminalWindowUrl(sessionId, true), `ocf-terminal-${sessionId}`, TERMINAL_WINDOW_FEATURES)
     if (!win) return false
     popup.value = win
+    popInRequested = false
     clearInterval(watcher)
-    // No event fires on the opener when a popup closes, so poll for it.
+    // No event fires on the opener when a popup closes, so poll for it. A
+    // popup still loading has no listener yet and drops the message, so a
+    // pending pop-in is sent again until the window is gone.
     watcher = setInterval(() => {
       if (win.closed) bringBack()
+      else if (popInRequested) requestPopIn()
     }, 500)
     return true
   }
 
   function popIn() {
-    popup.value?.postMessage(POP_IN_MESSAGE, window.location.origin)
+    popInRequested = true
+    requestPopIn()
   }
 
   onBeforeUnmount(() => clearInterval(watcher))

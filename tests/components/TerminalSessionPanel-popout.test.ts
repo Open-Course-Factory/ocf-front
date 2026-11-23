@@ -75,6 +75,21 @@ describe('TerminalSessionPanel pop-out', () => {
     expect(wrapper.find('.viewer-stub').exists()).toBe(true)
   })
 
+  it('sends the pop-in request again while the popup is still open, since a loading popup drops it', async () => {
+    const wrapper = mountPanel()
+    await wrapper.find('.viewer-stub').trigger('click')
+    await wrapper.find('[data-testid="terminal-pop-in"]').trigger('click')
+
+    vi.advanceTimersByTime(1100)
+    expect(popup.postMessage.mock.calls.length).toBeGreaterThanOrEqual(3)
+
+    popup.closed = true
+    vi.advanceTimersByTime(600)
+    const sent = popup.postMessage.mock.calls.length
+    vi.advanceTimersByTime(2000)
+    expect(popup.postMessage.mock.calls.length).toBe(sent)
+  })
+
   it('brings the console back when the user closes the popup window', async () => {
     const wrapper = mountPanel()
     await wrapper.find('.viewer-stub').trigger('click')
