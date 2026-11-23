@@ -36,7 +36,7 @@ function assignment(overrides: Partial<LearnerAssignmentProgress> = {}): Learner
     scenario_id: 'sc-1',
     scenario_title: 'Docker — the basics',
     status: 'in_progress',
-    current_step: 3,
+    current_step_number: 3,
     total_steps: 6,
     hints_used: 0,
     current_step_elapsed_seconds: 360,
@@ -136,7 +136,7 @@ describe('ClassProgressionTable — presence, which is not progress', () => {
 
 describe('ClassProgressionTable — position in the scenario', () => {
   it('fills the track up to the step the learner is on', () => {
-    const wrapper = mountTable([row({ assignment: assignment({ current_step: 3 }) })])
+    const wrapper = mountTable([row({ assignment: assignment({ current_step_number: 3 }) })])
 
     const segments = wrapper.findAll('.ocf-prog-seg')
     expect(segments).toHaveLength(6)
@@ -167,7 +167,7 @@ describe('ClassProgressionTable — position in the scenario', () => {
 
   it('leaves the track empty for a learner who never opened the scenario', () => {
     const wrapper = mountTable([
-      row({ assignment: assignment({ status: 'not_started', current_step: 0, current_step_elapsed_seconds: undefined }) })
+      row({ assignment: assignment({ status: 'not_started', current_step_number: 0, current_step_elapsed_seconds: undefined }) })
     ])
 
     expect(wrapper.findAll('.ocf-seg-fill')).toHaveLength(0)
@@ -177,7 +177,7 @@ describe('ClassProgressionTable — position in the scenario', () => {
 
   it('draws no track for a scenario with no step, instead of an empty box', () => {
     const wrapper = mountTable(
-      [row({ assignment: assignment({ total_steps: 0, current_step: 0 }) })],
+      [row({ assignment: assignment({ total_steps: 0, current_step_number: 0 }) })],
       { totalSteps: 0 }
     )
 

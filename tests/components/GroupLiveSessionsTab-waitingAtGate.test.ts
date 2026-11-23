@@ -37,7 +37,7 @@ function progressRow(userId: string, waiting: boolean[]) {
       scenario_id: `sc-${i}`,
       scenario_title: 'Lab',
       status: 'in_progress',
-      current_step: 2,
+      current_step_number: 2,
       total_steps: 4,
       hints_used: 0,
       waiting_at_gate: w

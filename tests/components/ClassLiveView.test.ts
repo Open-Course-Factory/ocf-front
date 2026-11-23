@@ -63,7 +63,7 @@ function learnerRow() {
         scenario_id: 'sc-1',
         scenario_title: 'Docker — the basics',
         status: 'in_progress',
-        current_step: 3,
+        current_step_number: 3,
         total_steps: 6,
         hints_used: 0,
         current_step_elapsed_seconds: 120

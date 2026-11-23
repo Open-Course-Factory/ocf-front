@@ -28,9 +28,11 @@ function assignment(overrides: Partial<LearnerAssignmentProgress> = {}): Learner
     scenario_id: 'sc-1',
     scenario_title: 'Docker — the basics',
     status: 'in_progress',
-    current_step: 3,
+    current_step: 2,
+    current_step_number: 3,
     total_steps: 6,
     hints_used: 0,
+    waiting_at_gate: false,
     ...overrides
   }
 }
@@ -119,12 +121,27 @@ describe('useClassProgression — which assignment is watched', () => {
 })
 
 describe('useClassProgression — step distribution', () => {
+  it('places learners by step number, whatever base the step orders use', () => {
+    // Most scenarios number their step orders from 0: raw order 0 is the first
+    // step and raw order 1 the second. They must not share a column.
+    const learners = ref([
+      learner({ user_id: 'u-1', assignments: [assignment({ current_step: 0, current_step_number: 1 })] }),
+      learner({ user_id: 'u-2', assignments: [assignment({ current_step: 1, current_step_number: 2 })] })
+    ])
+
+    const { distribution } = useClassProgression(learners)
+
+    const count = (key: string) => distribution.value.find(b => b.key === key)?.count
+    expect(count('step-1')).toBe(1)
+    expect(count('step-2')).toBe(1)
+  })
+
   it('spreads the class over the steps, with finished in its own column', () => {
     const learners = ref([
-      learner({ user_id: 'u-1', assignments: [assignment({ current_step: 3 })] }),
-      learner({ user_id: 'u-2', assignments: [assignment({ current_step: 4 })] }),
-      learner({ user_id: 'u-3', assignments: [assignment({ current_step: 4 })] }),
-      learner({ user_id: 'u-4', assignments: [assignment({ status: 'completed', current_step: 6 })] })
+      learner({ user_id: 'u-1', assignments: [assignment({ current_step_number: 3 })] }),
+      learner({ user_id: 'u-2', assignments: [assignment({ current_step_number: 4 })] }),
+      learner({ user_id: 'u-3', assignments: [assignment({ current_step_number: 4 })] }),
+      learner({ user_id: 'u-4', assignments: [assignment({ status: 'completed', current_step_number: 6 })] })
     ])
 
     const { distribution } = useClassProgression(learners)
@@ -142,8 +159,8 @@ describe('useClassProgression — step distribution', () => {
 
   it('gives learners who never opened the scenario their own column', () => {
     const learners = ref([
-      learner({ user_id: 'u-1', assignments: [assignment({ status: 'not_started', current_step: 0 })] }),
-      learner({ user_id: 'u-2', assignments: [assignment({ current_step: 2 })] })
+      learner({ user_id: 'u-1', assignments: [assignment({ status: 'not_started', current_step_number: 0 })] }),
+      learner({ user_id: 'u-2', assignments: [assignment({ current_step_number: 2 })] })
     ])
 
     const { distribution } = useClassProgression(learners)
@@ -154,7 +171,7 @@ describe('useClassProgression — step distribution', () => {
   })
 
   it('omits the not-started column when everybody has started', () => {
-    const learners = ref([learner({ assignments: [assignment({ current_step: 2 })] })])
+    const learners = ref([learner({ assignments: [assignment({ current_step_number: 2 })] })])
 
     const { distribution } = useClassProgression(learners)
 
@@ -163,7 +180,7 @@ describe('useClassProgression — step distribution', () => {
 
   it('names a step column after the step the learners on it are doing', () => {
     const learners = ref([
-      learner({ assignments: [assignment({ current_step: 3, current_step_title: 'Containers' })] })
+      learner({ assignments: [assignment({ current_step_number: 3, current_step_title: 'Containers' })] })
     ])
 
     const { distribution } = useClassProgression(learners)
@@ -172,7 +189,7 @@ describe('useClassProgression — step distribution', () => {
   })
 
   it('draws no strip for a scenario that declares no step', () => {
-    const learners = ref([learner({ assignments: [assignment({ total_steps: 0, current_step: 0 })] })])
+    const learners = ref([learner({ assignments: [assignment({ total_steps: 0, current_step_number: 0 })] })])
 
     const { distribution, totalSteps } = useClassProgression(learners)
 
@@ -215,14 +232,14 @@ describe('useClassProgression — attention', () => {
 
 describe('useClassProgression — row order', () => {
   const learners = ref([
-    learner({ user_id: 'u-1', user_name: 'Karim', assignments: [assignment({ current_step: 4, hints_used: 1 })] }),
+    learner({ user_id: 'u-1', user_name: 'Karim', assignments: [assignment({ current_step_number: 4, hints_used: 1 })] }),
     learner({ user_id: 'u-2', user_name: 'Nadia', assignments: [assignment({ status: 'completed', hints_used: 0 })] }),
-    learner({ user_id: 'u-3', user_name: 'Léa', assignments: [assignment({ current_step: 2, hints_used: 3 })] }),
+    learner({ user_id: 'u-3', user_name: 'Léa', assignments: [assignment({ current_step_number: 2, hints_used: 3 })] }),
     learner({
       user_id: 'u-4',
       user_name: 'Jean',
       connected: false,
-      assignments: [assignment({ status: 'not_started', current_step: 0, hints_used: 0 })]
+      assignments: [assignment({ status: 'not_started', current_step_number: 0, hints_used: 0 })]
     })
   ])
 
@@ -249,8 +266,8 @@ describe('useClassProgression — row order', () => {
 
   it('brings the learners to look at to the top when sorting by inactivity', () => {
     const roster = ref([
-      learner({ user_id: 'u-1', user_name: 'Karim', assignments: [assignment({ current_step: 1 })] }),
-      learner({ user_id: 'u-2', user_name: 'Nadia', idle: true, assignments: [assignment({ current_step: 5 })] })
+      learner({ user_id: 'u-1', user_name: 'Karim', assignments: [assignment({ current_step_number: 1 })] }),
+      learner({ user_id: 'u-2', user_name: 'Nadia', idle: true, assignments: [assignment({ current_step_number: 5 })] })
     ])
     const { sortedRows, sort } = useClassProgression(roster)
     sort.value = 'attention'
@@ -260,8 +277,8 @@ describe('useClassProgression — row order', () => {
 
   it('keeps equal rows in a stable order, so a refresh does not reshuffle them', () => {
     const roster = ref([
-      learner({ user_id: 'u-1', user_name: 'Zoé', assignments: [assignment({ current_step: 2 })] }),
-      learner({ user_id: 'u-2', user_name: 'Adam', assignments: [assignment({ current_step: 2 })] })
+      learner({ user_id: 'u-1', user_name: 'Zoé', assignments: [assignment({ current_step_number: 2 })] }),
+      learner({ user_id: 'u-2', user_name: 'Adam', assignments: [assignment({ current_step_number: 2 })] })
     ])
     const { sortedRows } = useClassProgression(roster)
 

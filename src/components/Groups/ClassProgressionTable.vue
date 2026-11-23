@@ -121,8 +121,8 @@ const segments = computed(() => Array.from({ length: props.totalSteps }, (_, i) 
 function segmentClass(assignment: LearnerAssignmentProgress | null, segment: number): string {
   if (!assignment || assignment.status === 'not_started') return ''
   if (assignment.status === 'completed') return 'ocf-seg-fill'
-  if (segment < assignment.current_step) return 'ocf-seg-fill'
-  return segment === assignment.current_step ? 'ocf-seg-current' : ''
+  if (segment < assignment.current_step_number) return 'ocf-seg-fill'
+  return segment === assignment.current_step_number ? 'ocf-seg-current' : ''
 }
 
 function positionLabel(assignment: LearnerAssignmentProgress | null): string {
@@ -134,17 +134,17 @@ function positionLabel(assignment: LearnerAssignmentProgress | null): string {
   }
   return assignment.current_step_title
     ? t('classProgressionTable.stepTitled', {
-        step: assignment.current_step,
+        step: assignment.current_step_number,
         title: assignment.current_step_title
       })
-    : t('classProgressionTable.stepShort', { step: assignment.current_step })
+    : t('classProgressionTable.stepShort', { step: assignment.current_step_number })
 }
 
 function positionAriaLabel(assignment: LearnerAssignmentProgress | null): string {
   if (!assignment || assignment.status === 'not_started') return t('classProgressionTable.notStarted')
   if (assignment.status === 'completed') return t('classProgressionTable.finishedLabel')
   return t('classProgressionTable.stepPositionLabel', {
-    step: assignment.current_step,
+    step: assignment.current_step_number,
     total: props.totalSteps
   })
 }

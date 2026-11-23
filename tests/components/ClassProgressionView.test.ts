@@ -44,7 +44,7 @@ function assignment(overrides: Record<string, unknown> = {}) {
     scenario_id: 'sc-1',
     scenario_title: 'Docker — the basics',
     status: 'in_progress',
-    current_step: 3,
+    current_step_number: 3,
     total_steps: 6,
     hints_used: 0,
     current_step_elapsed_seconds: 120,
@@ -181,7 +181,7 @@ describe('ClassProgressionView — classes with nothing in them', () => {
   it('draws no distribution strip for a scenario without steps', async () => {
     getGroupLiveProgress.mockResolvedValue([
       learner('u-1', 'Léa Simon', {
-        assignments: [assignment({ total_steps: 0, current_step: 0 })]
+        assignments: [assignment({ total_steps: 0, current_step_number: 0 })]
       })
     ])
 
@@ -197,8 +197,8 @@ describe('ClassProgressionView — reading the class at a glance', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     getGroupLiveProgress.mockResolvedValue([
-      learner('u-1', 'Karim', { assignments: [assignment({ current_step: 4, hints_used: 0 })] }),
-      learner('u-2', 'Léa', { assignments: [assignment({ current_step: 3, hints_used: 2 })] }),
+      learner('u-1', 'Karim', { assignments: [assignment({ current_step_number: 4, hints_used: 0 })] }),
+      learner('u-2', 'Léa', { assignments: [assignment({ current_step_number: 3, hints_used: 2 })] }),
       learner('u-3', 'Nadia', {
         connected: false,
         terminal_session_id: undefined,
@@ -327,9 +327,9 @@ describe('ClassProgressionView — holding the class before a step', () => {
 
   it('shows the locked step and counts the learners waiting at it', async () => {
     getGroupLiveProgress.mockResolvedValue([
-      learner('u-1', 'Karim', { assignments: [assignment({ step_gate: 4, current_step: 3, waiting_at_gate: true })] }),
-      learner('u-2', 'Léa', { assignments: [assignment({ step_gate: 4, current_step: 3, waiting_at_gate: true })] }),
-      learner('u-3', 'Nadia', { assignments: [assignment({ step_gate: 4, current_step: 2, waiting_at_gate: false })] })
+      learner('u-1', 'Karim', { assignments: [assignment({ step_gate: 4, current_step_number: 3, waiting_at_gate: true })] }),
+      learner('u-2', 'Léa', { assignments: [assignment({ step_gate: 4, current_step_number: 3, waiting_at_gate: true })] }),
+      learner('u-3', 'Nadia', { assignments: [assignment({ step_gate: 4, current_step_number: 2, waiting_at_gate: false })] })
     ])
     const wrapper = mountView()
     await flushPromises()

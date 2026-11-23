@@ -271,7 +271,12 @@ export interface LearnerAssignmentProgress {
   // abandoned or setup_failed run is only visible here — render it as an
   // annotation rather than folding it into the three statuses.
   session_status?: string
+  // The raw step order: its base varies by authoring path (most scenarios
+  // start at 0), so never place a learner with it — use current_step_number.
   current_step: number
+  // 1-based position of the current step among the scenario's steps; 0 when
+  // not started. The column the learner sits in.
+  current_step_number: number
   current_step_title?: string
   total_steps: number
   // How long the learner has been on the step they are on now. Absent unless
@@ -283,8 +288,8 @@ export interface LearnerAssignmentProgress {
   grade?: number
   started_at?: string
   completed_at?: string
-  // Order of the first step the teacher holds the class before; absent when
-  // the assignment is open. Same value on every row of the assignment.
+  // 1-based number of the step the teacher holds the class before; absent
+  // when the assignment is open. Same value on every row of the assignment.
   step_gate?: number
   // The learner finished the step before the gate and waits for its release.
   waiting_at_gate: boolean
@@ -521,12 +526,13 @@ export const teacherService = {
     return response.data
   },
 
-  // Holds the class before the step with this order: learners who finish the
-  // step before it wait. null releases everyone. Returns the gate now in force.
-  async setStepGate(groupId: string, scenarioId: string, stepOrder: number | null): Promise<number | null> {
+  // Holds the class before step number stepNumber (1-based, as the progress
+  // columns count): learners who finish the step before it wait. null releases
+  // everyone. Returns the gate now in force, as a step number.
+  async setStepGate(groupId: string, scenarioId: string, stepNumber: number | null): Promise<number | null> {
     const response = await axios.put(
       `/teacher/groups/${groupId}/scenarios/${scenarioId}/step-gate`,
-      { step_order: stepOrder }
+      { step_number: stepNumber }
     )
     return response.data?.step_gate ?? null
   },

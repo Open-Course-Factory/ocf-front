@@ -210,12 +210,12 @@ const gateBusy = ref(false)
 
 // Moving the gate later releases the learners held at the old one; null
 // releases everyone. The backend owns who waits, so the page just reloads.
-async function setGate(stepOrder: number | null) {
+async function setGate(stepNumber: number | null) {
   const assignment = selectedAssignment.value
   if (!assignment || gateBusy.value) return
   gateBusy.value = true
   try {
-    await teacherService.setStepGate(props.groupId, assignment.scenarioId, stepOrder)
+    await teacherService.setStepGate(props.groupId, assignment.scenarioId, stepNumber)
     await loadProgress()
   } catch (err: any) {
     error.value = err?.response?.data?.error_message || t('classProgression.gateError')

@@ -6,6 +6,7 @@ vi.mock('axios', () => ({
     get: vi.fn(),
     post: vi.fn(),
     patch: vi.fn(),
+    put: vi.fn(),
     delete: vi.fn(),
     defaults: { baseURL: '', timeout: 30000, headers: { common: {} } },
     interceptors: {
@@ -393,5 +394,35 @@ describe('teacherService.setAssignmentActive', () => {
     await teacherService.setAssignmentActive('assign-1', true)
 
     expect(mockedAxios.patch).toHaveBeenCalledWith('/scenario-assignments/assign-1', { is_active: true })
+  })
+})
+
+describe('teacherService.setStepGate', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('PUTs the 1-based step number and returns the gate now in force', async () => {
+    mockedAxios.put.mockResolvedValue({ data: { step_gate: 3 } })
+
+    const gate = await teacherService.setStepGate('g-1', 'sc-1', 3)
+
+    expect(mockedAxios.put).toHaveBeenCalledWith(
+      '/teacher/groups/g-1/scenarios/sc-1/step-gate',
+      { step_number: 3 }
+    )
+    expect(gate).toBe(3)
+  })
+
+  it('sends null to release everyone', async () => {
+    mockedAxios.put.mockResolvedValue({ data: { step_gate: null } })
+
+    const gate = await teacherService.setStepGate('g-1', 'sc-1', null)
+
+    expect(mockedAxios.put).toHaveBeenCalledWith(
+      '/teacher/groups/g-1/scenarios/sc-1/step-gate',
+      { step_number: null }
+    )
+    expect(gate).toBeNull()
   })
 })

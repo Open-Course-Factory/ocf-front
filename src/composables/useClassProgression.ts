@@ -52,7 +52,7 @@ export interface ClassAssignmentOption {
   scenarioTitle: string
   deadline?: string
   totalSteps: number
-  /** Order of the step the teacher holds the class before; absent when open. */
+  /** Number (1-based) of the step the class is held before; absent when open. */
   stepGate?: number
 }
 
@@ -107,9 +107,10 @@ function assignmentOf(
 function progressRank(assignment: LearnerAssignmentProgress | null, totalSteps: number): number {
   if (!assignment || assignment.status === 'not_started') return -1
   if (assignment.status === 'completed') return totalSteps + 1
-  // An attempt that exists but has not reached step 1 yet still reads as "on
-  // the first step" rather than as never opened.
-  return Math.min(Math.max(assignment.current_step, 1), Math.max(totalSteps, 1))
+  // The step NUMBER, never the raw order (whose base varies by scenario). An
+  // attempt that has not reached step 1 yet still reads as "on the first step"
+  // rather than as never opened.
+  return Math.min(Math.max(assignment.current_step_number, 1), Math.max(totalSteps, 1))
 }
 
 export function useClassProgression(learners: Ref<LearnerLiveProgress[]>) {
