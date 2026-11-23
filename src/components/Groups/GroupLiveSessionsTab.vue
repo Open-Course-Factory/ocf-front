@@ -133,6 +133,15 @@
               <ParticipantStatusChips icon-only :participant="participantControls.participantFor(session.user_id)" />
             </template>
           </SupervisionViewer>
+          <!-- An overlay on the terminal's corner, so the header never shifts. -->
+          <span
+            v-if="waitingUserIds.has(session.user_id)"
+            class="badge ocf-wall-waiting"
+            :title="t('liveSessions.waitingHint')"
+          >
+            <i class="fas fa-lock" aria-hidden="true"></i>
+            {{ t('liveSessions.waiting') }}
+          </span>
           <!-- A sibling of the viewer, pinned to the right end of its header
                (reserved by --actions): a click on it never reaches the viewer's
                click-to-focus surface, and it never spills over the terminal. -->
@@ -158,6 +167,7 @@ import { ref, computed, onMounted, onUnmounted, watch, toRef } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { useVisiblePolling } from '../../composables/useVisiblePolling'
 import { supervisionService, type LiveSession } from '../../services/domain/terminal/supervisionService'
+import { teacherService } from '../../services/domain/scenario'
 import { useWallOrder } from '../../composables/useWallOrder'
 import { useActivityHighlight } from '../../composables/useActivityHighlight'
 import { useParticipantControls } from '../../composables/useParticipantControls'
@@ -188,6 +198,8 @@ const props = defineProps<{
 const { t } = useTranslations({
   en: {
     liveSessions: {
+      waiting: 'Waiting',
+      waitingHint: 'Waiting for you to open the next step',
       title: 'Live sessions',
       subtitle: 'Watch your learners’ terminals in real time. Click a tile to focus and, if needed, type in it alongside the learner.',
       loading: 'Loading live sessions…',
@@ -206,6 +218,8 @@ const { t } = useTranslations({
   },
   fr: {
     liveSessions: {
+      waiting: 'En attente',
+      waitingHint: 'Attend que vous ouvriez l’étape suivante',
       title: 'Sessions en direct',
       subtitle: 'Observez les terminaux de vos apprenants en temps réel. Cliquez sur une vignette pour l’agrandir et, si besoin, y écrire aux côtés de l’apprenant.',
       loading: 'Chargement des sessions en direct…',
@@ -280,12 +294,28 @@ const menuListeners = {
   'watch-screen': (sessionId: string) => { focusedSessionId.value = sessionId }
 }
 
+// Learners held at the teacher's step gate, by user id. The backend decides who
+// waits (waiting_at_gate); the wall only marks them, and stands without it.
+const waitingUserIds = ref(new Set<string>())
+
+async function loadWaitingLearners() {
+  try {
+    const learners = await teacherService.getGroupLiveProgress(props.groupId)
+    waitingUserIds.value = new Set(
+      learners.filter(l => l.assignments.some(a => a.waiting_at_gate)).map(l => l.user_id)
+    )
+  } catch {
+    waitingUserIds.value = new Set()
+  }
+}
+
 async function loadSessions() {
   if (!props.canSupervise) {
     error.value = t('liveSessions.permissionError')
     return
   }
   if (props.viewer) participantControls.load()
+  loadWaitingLearners()
   isLoading.value = true
   error.value = ''
   try {
@@ -425,6 +455,22 @@ onUnmounted(() => {
 .live-sessions-tile--actions :deep(.supervision-viewer-header) {
   min-height: var(--spacing-xl);
   padding-right: calc(var(--spacing-xl) + var(--spacing-sm));
+}
+
+/* Over the bottom-left corner of the terminal: out of the header's flow. */
+.ocf-wall-waiting {
+  position: absolute;
+  left: var(--spacing-xs);
+  bottom: var(--spacing-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-warning-amber);
+  background: var(--color-warning-amber-bg);
+  border: var(--border-width-thin) solid var(--color-warning-amber-border);
+  cursor: default;
 }
 
 /* Pinned to that reserved end of the header box, above its bottom border:
