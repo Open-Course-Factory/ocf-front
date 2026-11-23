@@ -130,12 +130,23 @@
                     v-if="canSkipTo(step)"
                     type="button"
                     class="ocf-skip-step-btn"
-                    :disabled="skipping"
+                    :disabled="movingStep"
                     :title="t('groupScenarios.skipToStepTitle')"
                     @click="skipTo(step)"
                   >
                     <i class="fas fa-forward"></i>
                     {{ t('groupScenarios.skipToStep') }}
+                  </button>
+                  <button
+                    v-if="canValidate(step)"
+                    type="button"
+                    class="ocf-validate-step-btn"
+                    :disabled="movingStep"
+                    :title="t('groupScenarios.validateStepTitle')"
+                    @click="validateCurrentStep"
+                  >
+                    <i class="fas fa-check"></i>
+                    {{ t('groupScenarios.validateStep') }}
                   </button>
                 </td>
               </tr>
@@ -443,6 +454,12 @@ const { t } = useTranslations({
       skipConfirmTitle: 'Skip to a step',
       skipDone: 'Session moved to step {n}',
       skipError: 'Could not skip to this step',
+      validateStep: 'Validate this step',
+      validateStepTitle: 'Count the learner\'s current step as passed',
+      validateConfirm: '{name}\'s step will count as passed.',
+      validateConfirmTitle: 'Validate this step',
+      validateDone: 'Step validated',
+      validateError: 'Could not validate this step',
       showQuestions: 'Show questions',
       hideQuestions: 'Hide questions',
       tabsLabel: 'Session detail tabs',
@@ -507,6 +524,12 @@ const { t } = useTranslations({
       skipConfirmTitle: 'Aller à une étape',
       skipDone: 'Session amenée à l\'étape {n}',
       skipError: 'Impossible d\'aller à cette étape',
+      validateStep: 'Valider cette étape',
+      validateStepTitle: 'Compter l\'étape en cours de l\'apprenant comme réussie',
+      validateConfirm: 'L\'étape de {name} comptera comme réussie.',
+      validateConfirmTitle: 'Valider cette étape',
+      validateDone: 'Étape validée',
+      validateError: 'Impossible de valider cette étape',
       showQuestions: 'Afficher les questions',
       hideQuestions: 'Masquer les questions',
       tabsLabel: 'Onglets du détail de session',
@@ -613,14 +636,20 @@ function translateStatus(status: string): string {
   return statusMap[status] || status
 }
 
+// Teacher actions on the run (skip, validate) need it still running.
+function isSessionRunning(): boolean {
+  const status = sessionDetail.value?.status
+  return status === 'active' || status === 'in_progress'
+}
+
 // Only forward, only on a running session: the backend refuses anything else,
 // and the button must not offer what it refuses.
 function canSkipTo(step: SessionStepDetail): boolean {
-  const status = sessionDetail.value?.status
-  return (status === 'active' || status === 'in_progress') && step.status === 'locked'
+  return isSessionRunning() && step.status === 'locked'
 }
 
-const skipping = ref(false)
+// One teacher action on the run at a time: skipping or validating.
+const movingStep = ref(false)
 
 async function skipTo(step: SessionStepDetail) {
   if (!detailResult.value || !sessionDetail.value) return
@@ -634,7 +663,7 @@ async function skipTo(step: SessionStepDetail) {
     t('groupScenarios.skipConfirmTitle')
   )
   if (!confirmed) return
-  skipping.value = true
+  movingStep.value = true
   try {
     await teacherService.skipToStep(props.groupId, detailResult.value.session_id, step.step_order)
     notifySuccess(t('groupScenarios.skipDone', { n }))
@@ -642,7 +671,32 @@ async function skipTo(step: SessionStepDetail) {
   } catch (err: any) {
     notifyError(err.response?.data?.error || t('groupScenarios.skipError'))
   } finally {
-    skipping.value = false
+    movingStep.value = false
+  }
+}
+
+// The learner's current step only, on a running session. Quiz and survey
+// answers are the learner's to give; the backend refuses quiz and exam steps.
+function canValidate(step: SessionStepDetail): boolean {
+  return isSessionRunning() && step.status === 'active' && !hasQuestions(step.step_type)
+}
+
+async function validateCurrentStep() {
+  if (!detailResult.value || !sessionDetail.value) return
+  const confirmed = await showConfirm(
+    t('groupScenarios.validateConfirm', { name: sessionDetail.value.user_name || sessionDetail.value.user_id }),
+    t('groupScenarios.validateConfirmTitle')
+  )
+  if (!confirmed) return
+  movingStep.value = true
+  try {
+    await teacherService.validateStep(props.groupId, detailResult.value.session_id)
+    notifySuccess(t('groupScenarios.validateDone'))
+    await loadDetail(detailResult.value)
+  } catch (err: any) {
+    notifyError(err.response?.data?.error_message || err.response?.data?.error || t('groupScenarios.validateError'))
+  } finally {
+    movingStep.value = false
   }
 }
 
@@ -940,7 +994,8 @@ async function exportCommandsCsv() {
 }
 
 .quiz-toggle-btn,
-.ocf-skip-step-btn {
+.ocf-skip-step-btn,
+.ocf-validate-step-btn {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
@@ -957,23 +1012,27 @@ async function exportCommandsCsv() {
 }
 
 .quiz-toggle-btn:hover,
-.ocf-skip-step-btn:hover:not(:disabled) {
+.ocf-skip-step-btn:hover:not(:disabled),
+.ocf-validate-step-btn:hover:not(:disabled) {
   background: var(--color-bg-tertiary);
   color: var(--color-text-primary);
 }
 
 .quiz-toggle-btn:focus-visible,
-.ocf-skip-step-btn:focus-visible {
+.ocf-skip-step-btn:focus-visible,
+.ocf-validate-step-btn:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
-.ocf-skip-step-btn {
+.ocf-skip-step-btn,
+.ocf-validate-step-btn {
   margin-left: 0;
   white-space: nowrap;
 }
 
-.ocf-skip-step-btn:disabled {
+.ocf-skip-step-btn:disabled,
+.ocf-validate-step-btn:disabled {
   opacity: 0.6;
   cursor: wait;
 }

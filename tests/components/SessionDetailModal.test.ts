@@ -23,6 +23,7 @@ import { createI18n } from 'vue-i18n'
 const mockGetSessionDetail = vi.fn()
 const mockGetSessionCommands = vi.fn()
 const mockSkipToStep = vi.fn()
+const mockValidateStep = vi.fn()
 const mockShowConfirm = vi.fn()
 
 vi.mock('../../src/services/domain/scenario', () => ({
@@ -30,6 +31,7 @@ vi.mock('../../src/services/domain/scenario', () => ({
     getSessionDetail: (...a: any[]) => mockGetSessionDetail(...a),
     getSessionCommands: (...a: any[]) => mockGetSessionCommands(...a),
     skipToStep: (...a: any[]) => mockSkipToStep(...a),
+    validateStep: (...a: any[]) => mockValidateStep(...a),
   },
 }))
 
@@ -218,6 +220,70 @@ describe('SessionDetailModal', () => {
       await flushPromises()
 
       expect(mockSkipToStep).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('validate the current step', () => {
+    function detailOnStep(stepType: string, sessionStatus = 'active') {
+      return {
+        ...makeDetail([
+          { ...terminalStep(0, 'First step'), status: 'completed' },
+          { ...terminalStep(1, 'Second step'), step_type: stepType, status: 'active' },
+          { ...terminalStep(2, 'Third step'), status: 'locked' },
+        ]),
+        status: sessionStatus,
+      }
+    }
+
+    it('offers the validation on the current step only', async () => {
+      mockGetSessionDetail.mockResolvedValue(detailOnStep('terminal'))
+      const wrapper = mountModal({ visible: true })
+      await flushPromises()
+
+      const rows = wrapper.findAll('.steps-table tbody tr')
+      expect(rows.map(r => r.find('.ocf-validate-step-btn').exists())).toEqual([false, true, false])
+    })
+
+    it.each(['quiz', 'survey'])('offers no validation on a %s step', async (stepType) => {
+      mockGetSessionDetail.mockResolvedValue(detailOnStep(stepType))
+      const wrapper = mountModal({ visible: true })
+      await flushPromises()
+
+      expect(wrapper.find('.ocf-validate-step-btn').exists()).toBe(false)
+    })
+
+    it('offers no validation on a finished session', async () => {
+      mockGetSessionDetail.mockResolvedValue(detailOnStep('terminal', 'completed'))
+      const wrapper = mountModal({ visible: true })
+      await flushPromises()
+
+      expect(wrapper.find('.ocf-validate-step-btn').exists()).toBe(false)
+    })
+
+    it('validates after confirmation and reloads the detail', async () => {
+      mockGetSessionDetail.mockResolvedValue(detailOnStep('flag'))
+      mockShowConfirm.mockResolvedValue(true)
+      mockValidateStep.mockResolvedValue({ passed: true, next_step: 2 })
+      const wrapper = mountModal({ visible: true })
+      await flushPromises()
+
+      await wrapper.find('.ocf-validate-step-btn').trigger('click')
+      await flushPromises()
+
+      expect(mockValidateStep).toHaveBeenCalledWith('g1', 'sess-1')
+      expect(mockGetSessionDetail).toHaveBeenCalledTimes(2)
+    })
+
+    it('does nothing when the confirmation is declined', async () => {
+      mockGetSessionDetail.mockResolvedValue(detailOnStep('terminal'))
+      mockShowConfirm.mockResolvedValue(false)
+      const wrapper = mountModal({ visible: true })
+      await flushPromises()
+
+      await wrapper.find('.ocf-validate-step-btn').trigger('click')
+      await flushPromises()
+
+      expect(mockValidateStep).not.toHaveBeenCalled()
     })
   })
 
