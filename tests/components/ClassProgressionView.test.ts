@@ -67,7 +67,7 @@ function learner(userId: string, userName: string, overrides: Record<string, unk
 function mountView() {
   return mount(ClassProgressionView, {
     props: { groupId: 'g-1' },
-    global: { plugins: [createTestI18n()] }
+    global: { plugins: [createTestI18n()], stubs: { ClassPortExposureToggle: true } }
   })
 }
 
@@ -380,5 +380,29 @@ describe('ClassProgressionView — holding the class before a step', () => {
     await flushPromises()
 
     expect(setStepGate).toHaveBeenCalledWith('g-1', 'sc-1', null)
+  })
+})
+
+describe('ClassProgressionView — public port exposure', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('offers the port exposure switch of the watched scenario', async () => {
+    getGroupLiveProgress.mockResolvedValue([learner('u-1', 'Léa Simon')])
+    const wrapper = mountView()
+    await flushPromises()
+
+    const toggle = wrapper.findComponent({ name: 'ClassPortExposureToggle' })
+    expect(toggle.exists()).toBe(true)
+    expect(toggle.props('scenarioId')).toBe('sc-1')
+  })
+
+  it('offers no switch when no scenario is assigned', async () => {
+    getGroupLiveProgress.mockResolvedValue([learner('u-1', 'Léa Simon', { assignments: [] })])
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect(wrapper.findComponent({ name: 'ClassPortExposureToggle' }).exists()).toBe(false)
   })
 })

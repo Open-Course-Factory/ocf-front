@@ -39,6 +39,7 @@ import { formatCompactDuration } from '../../utils/quotaFormatters'
 import { teacherService, type LearnerLiveProgress } from '../../services/domain/scenario'
 import ClassStepDistribution from './ClassStepDistribution.vue'
 import ClassProgressionTable from './ClassProgressionTable.vue'
+import ClassPortExposureToggle from './ClassPortExposureToggle.vue'
 
 const props = defineProps<{
   groupId: string
@@ -258,6 +259,12 @@ useVisiblePolling(loadProgress, 30000)
             </option>
           </select>
         </label>
+        <!-- Before Refresh: the actions sit right-aligned, so appearing here
+             moves nothing the teacher already aims at. -->
+        <ClassPortExposureToggle
+          v-if="selectedAssignment"
+          :scenario-id="selectedAssignment.scenarioId"
+        />
         <button
           type="button"
           class="ocf-btn ocf-btn-secondary ocf-btn-sm"
