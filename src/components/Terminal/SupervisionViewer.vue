@@ -23,9 +23,8 @@
 
 <template>
   <div
-    ref="rootRef"
     class="supervision-viewer"
-    :class="{ 'supervision-viewer-compact': compact }"
+    :class="{ 'supervision-viewer-compact': compact, 'supervision-viewer-maximized': isMaximized }"
     :role="compact ? 'button' : undefined"
     :tabindex="compact ? 0 : undefined"
     :aria-label="compact ? t('supervisionViewer.focusAria', { name: learnerName || sessionId }) : undefined"
@@ -77,11 +76,12 @@
           type="button"
           class="ocf-btn ocf-btn-sm ocf-btn-secondary"
           data-testid="supervision-fullscreen"
-          :title="isFullscreen ? t('supervisionViewer.exitFullscreen') : t('supervisionViewer.fullscreen')"
-          :aria-label="isFullscreen ? t('supervisionViewer.exitFullscreen') : t('supervisionViewer.fullscreen')"
-          @click.stop="toggleFullscreen"
+          :title="isMaximized ? t('supervisionViewer.restore') : t('supervisionViewer.maximize')"
+          :aria-label="isMaximized ? t('supervisionViewer.restore') : t('supervisionViewer.maximize')"
+          :aria-pressed="isMaximized"
+          @click.stop="isMaximized = !isMaximized"
         >
-          <i :class="isFullscreen ? 'fas fa-compress' : 'fas fa-expand'" aria-hidden="true"></i>
+          <i :class="isMaximized ? 'fas fa-compress' : 'fas fa-expand'" aria-hidden="true"></i>
         </button>
         <button
           v-if="!compact"
@@ -161,8 +161,8 @@ const { t } = useTranslations({
   en: {
     supervisionViewer: {
       takeHand: 'Type in the terminal',
-      fullscreen: 'Present full screen',
-      exitFullscreen: 'Leave full screen',
+      maximize: 'Fill the window (F11 for the whole screen)',
+      restore: 'Back to normal size',
       releaseHand: 'Stop typing',
       connecting: 'Connecting to session…',
       controlled: 'You are in control',
@@ -179,8 +179,8 @@ const { t } = useTranslations({
   fr: {
     supervisionViewer: {
       takeHand: 'Écrire dans le terminal',
-      fullscreen: 'Présenter en plein écran',
-      exitFullscreen: 'Quitter le plein écran',
+      maximize: 'Agrandir à toute la fenêtre (F11 pour tout l’écran)',
+      restore: 'Revenir à la taille normale',
       releaseHand: 'Arrêter d’écrire',
       connecting: 'Connexion à la session…',
       controlled: 'Vous avez le contrôle',
@@ -355,22 +355,11 @@ watch(() => [controlState.value.cols, controlState.value.rows], applyLearnerSize
 // size is theirs again.
 watch(drivesLearnerSize, (driving) => (driving ? refit() : applyLearnerSize()))
 
-// Full screen makes the tile the whole screen, so the learner's grid gets the
-// biggest font that fits it; the resize observer refits on the way in and out.
-const rootRef = ref<HTMLElement | null>(null)
-const isFullscreen = ref(false)
-
-function toggleFullscreen() {
-  if (document.fullscreenElement) {
-    document.exitFullscreen().catch(() => {})
-  } else {
-    rootRef.value?.requestFullscreen().catch(() => {})
-  }
-}
-
-function onFullscreenChange() {
-  isFullscreen.value = document.fullscreenElement === rootRef.value
-}
+// Filling the window gives the learner's grid the biggest font that fits; the
+// resize observer refits on the way in and out. Not the browser's full screen:
+// browsers keep Esc to leave it, so vim's Esc threw the trainer out (F11 still
+// gives the whole screen, and Esc does not leave that one).
+const isMaximized = ref(false)
 
 function connect() {
   const url = buildSuperviseWsUrl(props.sessionId)
@@ -445,13 +434,11 @@ watch(() => props.sessionId, async () => {
 })
 
 onMounted(async () => {
-  document.addEventListener('fullscreenchange', onFullscreenChange)
   await initTerminal()
   if (props.autoConnect) connect()
 })
 
 onBeforeUnmount(() => {
-  document.removeEventListener('fullscreenchange', onFullscreenChange)
   cleanup()
 })
 </script>
@@ -466,7 +453,10 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-.supervision-viewer:fullscreen {
+.supervision-viewer-maximized {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-index-fixed);
   border: none;
   border-radius: 0;
 }
