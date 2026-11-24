@@ -94,12 +94,16 @@ describe('ScenarioPanel — waiting at the teacher\'s gate', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.useFakeTimers()
+    // Pin the jitter: every poll waits exactly 6.5 s, so call counts after a
+    // timer advance do not depend on a random draw.
+    vi.spyOn(Math, 'random').mockReturnValue(0.5)
     mockGetCurrentStep.mockResolvedValue(STEP)
     mockContinue.mockResolvedValue({ passed: true, next_step: 1, waiting_at_gate: false })
   })
 
   afterEach(() => {
     vi.useRealTimers()
+    vi.restoreAllMocks()
   })
 
   it('shows the waiting state, with no answer to give, after a passed check', async () => {
