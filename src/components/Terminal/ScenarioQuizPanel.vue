@@ -304,7 +304,7 @@
           {{ t('scenarioPanel.tryQuizAgain') }}
         </button>
         <button
-          v-if="result.next_step !== undefined && result.next_step !== null"
+          v-if="result.waiting_at_gate || (result.next_step !== undefined && result.next_step !== null)"
           class="verify-btn"
           data-testid="quiz-advance"
           @click="$emit('advance')"

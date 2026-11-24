@@ -363,6 +363,26 @@ describe('ScenarioQuizPanel', () => {
     expect(wrapper.emitted('finish')).toBeFalsy()
   })
 
+  it('results actions: Next step → advance when held at the teacher\'s gate, never Finish', async () => {
+    const step = makeStep([mcQuestion('q1', 0, ['Alpha', 'Beta'])], {
+      show_immediate_feedback: true,
+    })
+    // Held: the backend sends no next_step, which alone would read as the end.
+    const result: SubmitQuizResponse = {
+      score: 1,
+      correct_count: 1,
+      total: 1,
+      waiting_at_gate: true,
+      per_question_results: [{ question_id: 'q1', correct: true }],
+    }
+    const wrapper = mountQuiz({ step, result })
+
+    expect(wrapper.find('[data-testid="quiz-finish"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="quiz-advance"]').trigger('click')
+    expect(wrapper.emitted('advance')!.length).toBe(1)
+    expect(wrapper.emitted('finish')).toBeFalsy()
+  })
+
   it('results actions: Finish → finish when next_step is null', async () => {
     const step = makeStep([mcQuestion('q1', 0, ['Alpha', 'Beta'])], {
       show_immediate_feedback: true,
