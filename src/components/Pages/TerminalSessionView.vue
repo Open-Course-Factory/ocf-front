@@ -388,9 +388,11 @@ const router = useRouter()
 const returnTo = computed(() => inAppPath(route.query.returnTo))
 // Supervisor mode: a class manager opened a learner's terminal from the class.
 const supervisorGroup = typeof route.query.group === 'string' && route.query.group ? route.query.group : null
+// A named page wins: the class progress eye names its own view, the wall does not.
 const backTarget = computed(() => {
+  if (returnTo.value) return returnTo.value
   if (supervisorGroup) return `/classes/${supervisorGroup}/live?view=wall`
-  return returnTo.value ?? { name: 'TerminalSessions' }
+  return { name: 'TerminalSessions' }
 })
 const backLabel = computed(() => {
   if (supervisorGroup) return t('sessionView.backToClass')

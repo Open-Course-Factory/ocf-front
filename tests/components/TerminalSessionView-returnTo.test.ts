@@ -100,6 +100,15 @@ describe('TerminalSessionView — back link', () => {
     expect(link.text()).not.toContain('My Sessions')
   })
 
+  // The class progress eye opens the page as the class supervisor and names
+  // its own view: back returns there rather than to the wall.
+  it('goes back to the class view named by returnTo in supervisor mode', async () => {
+    const wrapper = await mountWithQuery({ group: 'g-1', returnTo: '/class-groups/g-1?tab=live&view=progress' })
+    const links = wrapper.findAllComponents(RouterLinkStub).map(l => l.props('to'))
+    expect(links).toContain('/class-groups/g-1?tab=live&view=progress')
+    expect(links).not.toContain('/classes/g-1/live?view=wall')
+  })
+
   it.each([
     'https://evil.example/phish',
     '//example.com',
