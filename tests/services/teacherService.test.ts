@@ -426,3 +426,18 @@ describe('teacherService.setStepGate', () => {
     expect(gate).toBeNull()
   })
 })
+
+describe('teacherService.setPortExposure', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('PATCHes only the flag and returns it, though the API answers 204 with no body', async () => {
+    mockedAxios.patch.mockResolvedValueOnce({ status: 204, data: '' })
+
+    const allowed = await teacherService.setPortExposure('sc-1', true)
+
+    expect(mockedAxios.patch).toHaveBeenCalledWith('/scenarios/sc-1', { port_exposure_allowed: true })
+    expect(allowed).toBe(true)
+  })
+})

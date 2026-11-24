@@ -539,10 +539,11 @@ export const teacherService = {
 
   // Lets learners of every run of the scenario publish a port, or not. Only the
   // one field is sent: the scenario PATCH keeps whatever it is not given.
-  // Returns the setting now stored.
+  // Returns the setting now stored: the PATCH answers 204 with no body, so a
+  // success means the value sent.
   async setPortExposure(scenarioId: string, allowed: boolean): Promise<boolean> {
-    const response = await axios.patch(`/scenarios/${scenarioId}`, { port_exposure_allowed: allowed })
-    return !!response.data?.port_exposure_allowed
+    await axios.patch(`/scenarios/${scenarioId}`, { port_exposure_allowed: allowed })
+    return allowed
   },
 
   // Counts the learner's current step as passed; the run then advances as
