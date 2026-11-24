@@ -43,7 +43,7 @@ const { t } = useTranslations({
       on: 'Public ports: on',
       off: 'Public ports: off',
       changeError: 'Could not change public port exposure',
-      hint: 'Applies to every class running this scenario. Learners reload their page to see the Ports button.'
+      hint: 'Applies to every class running this scenario. Learners must reload their page to see the Ports button.'
     }
   },
   fr: {
@@ -51,7 +51,7 @@ const { t } = useTranslations({
       on: 'Ports publics : activés',
       off: 'Ports publics : désactivés',
       changeError: 'Impossible de changer l’exposition publique des ports',
-      hint: 'S’applique à toutes les classes qui suivent ce scénario. Les apprenants rechargent leur page pour voir le bouton Ports.'
+      hint: 'S’applique à toutes les classes qui suivent ce scénario. Les apprenants doivent recharger leur page pour voir le bouton Ports.'
     }
   }
 })
@@ -102,3 +102,13 @@ async function toggle() {
     {{ allowed ? t('classPortExposure.on') : t('classPortExposure.off') }}
   </button>
 </template>
+
+<style scoped>
+/* "On" reads at a glance, as the active filter chips beside it do. */
+.ocf-btn[aria-pressed='true'] {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+</style>
