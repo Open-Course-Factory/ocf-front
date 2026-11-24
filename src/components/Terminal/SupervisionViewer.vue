@@ -453,10 +453,15 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-.supervision-viewer-maximized {
+/* Two classes: the hosts give the viewer a height (70vh), which would otherwise
+   win over inset and leave it short of the window. Above the app bar
+   (--z-index-modal), which hid the viewer's own toolbar and so the way back;
+   still under toasts and Element Plus overlays. */
+.supervision-viewer.supervision-viewer-maximized {
   position: fixed;
   inset: 0;
-  z-index: var(--z-index-fixed);
+  height: auto;
+  z-index: var(--z-index-popover);
   border: none;
   border-radius: 0;
 }
