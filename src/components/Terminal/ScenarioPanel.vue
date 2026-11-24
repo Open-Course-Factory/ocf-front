@@ -1086,8 +1086,11 @@ async function loadCurrentStep() {
   transitionState.value = 'idle'
   incomingStepType.value = undefined
 
-  // Reloaded while held at the gate: back to the waiting state.
-  waitingAtGate.value = !!step?.waiting_at_gate
+  // Reloaded while held at the gate: back to the waiting state. A finished
+  // step on a run still going is held too, or was until the gate opened while
+  // the page was closed: the backend refuses its answer, so wait, and the gate
+  // poll calls /continue on its next read if the gate is already open.
+  waitingAtGate.value = !!step?.waiting_at_gate || (step?.status === 'completed' && !isReviewMode.value)
 
   if (step) {
     const hints = await fetchRevealedHints(step)

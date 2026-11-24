@@ -62,9 +62,9 @@ const STEP = {
 // Upper bound of one poll delay: 5 s plus the full 3 s of jitter.
 const MAX_POLL_DELAY_MS = 8000
 
-function mountPanel() {
+function mountPanel(sessionStatus = 'active') {
   return mount(ScenarioPanel, {
-    props: { scenarioSessionId: 'scen-1', isActive: true, sessionStatus: 'active' },
+    props: { scenarioSessionId: 'scen-1', isActive: true, sessionStatus },
     global: {
       plugins: [createI18n({
         legacy: false, locale: 'en', fallbackLocale: 'en',
@@ -137,6 +137,37 @@ describe('ScenarioPanel — waiting at the teacher\'s gate', () => {
     await flushPromises()
 
     expect(waiting(wrapper).exists()).toBe(true)
+  })
+
+  it('moves on when the page loads on a finished step whose gate has opened since', async () => {
+    // The learner was held, the teacher opened the gate while the page was
+    // closed: the step is done and nothing holds it any more.
+    mockGetCurrentStep
+      .mockResolvedValueOnce({ ...STEP, status: 'completed', waiting_at_gate: false })
+      .mockResolvedValueOnce({ ...STEP, status: 'completed', waiting_at_gate: false })
+      .mockResolvedValue({ ...STEP, step_order: 1, position: 2, title: 'Second' })
+    const wrapper = mountPanel()
+    await flushPromises()
+
+    // The finished step is not offered again: the backend refuses its answer.
+    expect(wrapper.find('.verify-btn').exists()).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(MAX_POLL_DELAY_MS)
+    expect(mockContinue).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(2000)
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="scenario-step-title"]').text()).toBe('Second')
+  })
+
+  it('does not wait on the finished last step of a run that is over', async () => {
+    mockGetCurrentStep.mockResolvedValue({ ...STEP, status: 'completed', waiting_at_gate: false })
+    const wrapper = mountPanel('completed')
+    await flushPromises()
+
+    expect(waiting(wrapper).exists()).toBe(false)
+    await vi.advanceTimersByTimeAsync(MAX_POLL_DELAY_MS * 2)
+    expect(mockContinue).not.toHaveBeenCalled()
   })
 
   it('reads the current step every 5 to 8 seconds, without calling continue, while the gate holds', async () => {
