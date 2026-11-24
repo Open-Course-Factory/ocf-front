@@ -107,13 +107,13 @@ function showView(view: ClassLiveViewMode) {
   activeView.value = view
 }
 
-// The eye opens that learner's own terminal page (watch, take the hand, full
-// screen) and its back link returns to this class.
+// The eye opens that learner's terminal page as the class supervisor (watch,
+// take the hand, enlarge); returnTo names this view for its back link.
 function watchLearnerTerminal(sessionId: string) {
   router.push({
     name: 'TerminalSessionView',
     params: { sessionId },
-    query: { returnTo: route.fullPath }
+    query: { group: props.groupId, returnTo: route.fullPath }
   })
 }
 

@@ -166,6 +166,18 @@ describe('ClassLiveView — from a row to that learner’s terminal', () => {
     expect(router.currentRoute.value.params.sessionId).toBe('sess-42')
     expect(router.currentRoute.value.query.returnTo).toBe('/class-groups/g-1?tab=live')
   })
+
+  // The terminal page reads a learner's session only in supervisor mode, which
+  // `group` turns on; without it the teacher got "Session not found".
+  it('opens that terminal as the class supervisor', async () => {
+    const router = createTestRouter()
+    const wrapper = await mountLiveView(router)
+
+    await wrapper.find('.ocf-prog-icon-btn').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.query.group).toBe('g-1')
+  })
 })
 
 describe('ClassLiveView — landing on the right view', () => {
