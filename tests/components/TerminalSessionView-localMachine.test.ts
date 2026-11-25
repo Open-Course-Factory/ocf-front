@@ -32,10 +32,11 @@ vi.mock('axios', () => ({
 }))
 
 const mockRouterPush = vi.fn()
+const mockRouterReplace = vi.fn()
 const route = vi.hoisted(() => ({ sessionId: 'local-abc' }))
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { sessionId: route.sessionId }, query: {} }),
-  useRouter: () => ({ push: mockRouterPush }),
+  useRouter: () => ({ push: mockRouterPush, replace: mockRouterReplace }),
   createRouter: vi.fn(),
   createWebHistory: vi.fn()
 }))
@@ -56,7 +57,8 @@ vi.mock('../../src/composables/useNotification', () => ({
 vi.mock('../../src/services/domain/scenario', () => ({
   scenarioSessionService: {
     getSessionByTerminal: vi.fn().mockResolvedValue({ id: 'run-1', status: 'active', terminal_session_id: 'local-abc' }),
-    abandonSession: vi.fn().mockResolvedValue(undefined)
+    abandonSession: vi.fn().mockResolvedValue(undefined),
+    resumeSession: vi.fn().mockResolvedValue({ terminal_session_id: 'local-rebuilt' })
   }
 }))
 
@@ -91,7 +93,7 @@ import TerminalSessionView from '../../src/components/Pages/TerminalSessionView.
 const PanelStub = {
   name: 'TerminalSessionPanel',
   props: ['sessionInfo', 'machine', 'showExposedPorts'],
-  template: '<div class="tsp-stub" :data-machine="machine" :data-exposed="String(showExposedPorts)"></div>'
+  template: '<div class="tsp-stub" :data-machine="machine" :data-exposed="String(showExposedPorts)"><slot name="console-overlay" /></div>'
 }
 
 function mountView() {
@@ -118,12 +120,12 @@ describe('TerminalSessionView on a local machine', () => {
     const wrapper = mountView()
     await flushPromises()
 
-    expect(agent.start).toHaveBeenCalledWith('run-1', 'tok')
+    expect(agent.start).toHaveBeenCalledWith('run-1', 'local-abc', 'tok', expect.any(Function))
     const panel = wrapper.find('.tsp-stub')
     expect(panel.attributes('data-machine')).toBe('local')
     expect(panel.attributes('data-exposed')).toBe('false')
     // tt-backend records commands; a machine in the browser has nobody recording them.
-    expect(wrapper.find('.recording-info-notice').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('recorded')
 
     wrapper.unmount()
     expect(agent.stop).toHaveBeenCalled()
@@ -136,6 +138,60 @@ describe('TerminalSessionView on a local machine', () => {
 
     expect(agent.start).not.toHaveBeenCalled()
     expect(wrapper.find('.tsp-stub').attributes('data-machine')).toBe('incus')
-    expect(wrapper.find('.recording-info-notice').exists()).toBe(true)
+    expect(wrapper.text()).toContain('recorded')
+    expect(wrapper.find('.local-machine-notice').exists()).toBe(false)
+  })
+
+  // The agent's end, as startLocalAgent reports it.
+  async function agentEnds(why: string) {
+    const onEnd = agent.start.mock.calls[0][3] as (why: string) => void
+    onEnd(why)
+    await flushPromises()
+  }
+
+  it('rebuilds the run on a new machine when the tab booted a new one (a reload)', async () => {
+    route.sessionId = 'local-abc'
+    mountView()
+    await flushPromises()
+
+    await agentEnds('lost')
+    const { scenarioSessionService } = await import('../../src/services/domain/scenario')
+    expect(scenarioSessionService.resumeSession).toHaveBeenCalledWith('run-1')
+    expect(mockRouterReplace).toHaveBeenCalledWith({ name: 'TerminalSessionView', params: { sessionId: 'local-rebuilt' } })
+  })
+
+  it('says the run is open in another tab when it is', async () => {
+    route.sessionId = 'local-abc'
+    const wrapper = mountView()
+    await flushPromises()
+
+    await agentEnds('other_tab')
+    expect(wrapper.find('.session-end-banner').text()).toContain('another tab')
+  })
+
+  it('reads the session again when the run ended on the server', async () => {
+    route.sessionId = 'local-abc'
+    mountView()
+    await flushPromises()
+    mockAxiosGet.mockClear()
+
+    await agentEnds('ended')
+    expect(mockAxiosGet).toHaveBeenCalledWith('/terminals/user-sessions')
+  })
+
+  it('warns that a reload restarts the machine, and asks before leaving the page', async () => {
+    route.sessionId = 'local-abc'
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect(wrapper.find('.local-machine-notice').text()).toContain('reload')
+    const leaving = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(leaving)
+    expect(leaving.defaultPrevented).toBe(true)
+
+    wrapper.unmount()
+    const after = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(after)
+    expect(after.defaultPrevented).toBe(false)
   })
 })

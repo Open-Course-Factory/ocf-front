@@ -43,6 +43,7 @@ export interface AgentMachine {
 
 interface Machine extends AgentMachine {
   spawn(file?: string, args?: readonly string[], opts?: { cols?: number; rows?: number }): Promise<ConsolePty>
+  stop(): Promise<unknown>
 }
 
 // In a worker, the kernel leaves the page's thread alone: on the page's own
@@ -55,8 +56,15 @@ function defaultOptions(): LocalMachineOptions {
   }
 }
 
-// One machine per page: a reconnect opens a new shell on it.
-let machine: Promise<Machine> | null = null
+// The machine of one run's terminal, for the page's life: leaving the run's
+// page and coming back finds it as it was. A reconnect opens a new shell on it.
+// `boot` names it to ocf-core, which tells a reload from a reconnect by it.
+interface HeldMachine {
+  terminal: string
+  boot: string
+  machine: Promise<Machine>
+}
+let held: HeldMachine | null = null
 
 async function boot(opts: LocalMachineOptions): Promise<Machine> {
   const { checkSupport, createKernel } = await import('unkernel')
@@ -65,13 +73,23 @@ async function boot(opts: LocalMachineOptions): Promise<Machine> {
   return createKernel({ distro: opts.distroUrl, worker: opts.worker, net: opts.net })
 }
 
-function getMachine(opts: LocalMachineOptions): Promise<Machine> {
-  if (!machine) {
-    machine = boot(opts)
-    // A failed boot is retried by the next console, not cached.
-    machine.catch(() => { machine = null })
-  }
-  return machine
+// The terminal's machine, booted if needed. Another terminal's is stopped
+// first: a machine is never handed from one run to another.
+function machineOf(terminal: string, opts: LocalMachineOptions): HeldMachine {
+  if (held?.terminal === terminal) return held
+  stopMachineOf(held?.terminal)
+  const booting: HeldMachine = { terminal, boot: crypto.randomUUID(), machine: boot(opts) }
+  // A failed boot is retried by the next console, not cached.
+  booting.machine.catch(() => { if (held === booting) held = null })
+  held = booting
+  return booting
+}
+
+function stopMachineOf(terminal: string | undefined) {
+  if (!held || held.terminal !== terminal) return
+  held.machine.then(m => m.stop()).catch(() => {})
+  held = null
+  consolePty = null
 }
 
 /**
@@ -81,13 +99,14 @@ function getMachine(opts: LocalMachineOptions): Promise<Machine> {
  *   screen instead of queueing output that Ctrl-C can no longer stop.
  */
 export function openLocalConsole(
+  terminal: string,
   cols: number,
   rows: number,
   outputDrained?: () => Promise<void>,
   opts: LocalMachineOptions = defaultOptions()
 ): LocalConsoleSocket {
   return new LocalConsoleSocket(async () => {
-    const pty = await (await getMachine(opts)).spawn(undefined, undefined, { cols, rows })
+    const pty = await (await machineOf(terminal, opts).machine).spawn(undefined, undefined, { cols, rows })
     consolePty = pty
     reportConsoleOpened()
     const forget = () => { if (consolePty === pty) consolePty = null }
@@ -165,28 +184,57 @@ export async function answerAgentRequest(
 
 const AGENT_RETRY_MS = 3000
 
+/** Close codes ocf-core ends an agent with (src/scenarios/services/localAgents.go). */
+export const AGENT_CLOSE = {
+  /** The run's terminal has ended. */
+  ended: 4000,
+  /** The run's machine is open in another tab. */
+  otherTab: 4409,
+  /** This tab booted another machine than the run's (a reload): the run is to be rebuilt. */
+  machineLost: 4410
+} as const
+
+/** Why ocf-core let the agent go for good. */
+export type AgentEnd = 'ended' | 'other_tab' | 'lost'
+
+const AGENT_ENDS: Record<number, AgentEnd> = {
+  [AGENT_CLOSE.ended]: 'ended',
+  [AGENT_CLOSE.otherTab]: 'other_tab',
+  [AGENT_CLOSE.machineLost]: 'lost'
+}
+
 /**
  * Connects this tab as the agent of the run's machine, booting the machine if
- * needed, and reconnects until stop(). ocf-core runs the run's setup and checks
- * through it, so it must be up before the console is opened: the run is built
- * while the learner waits. A machine that cannot boot is not retried: the
- * console says why, and ocf-core fails the build instead of waiting forever.
+ * needed, and reconnects until stop() or until ocf-core lets it go for good:
+ * then the machine is stopped and onEnd says why. ocf-core runs the run's
+ * setup and checks through it, so it must be up before the console is opened:
+ * the run is built while the learner waits. A machine that cannot boot is not
+ * retried: the console says why, and ocf-core fails the build instead of
+ * waiting forever.
  */
-export function startLocalAgent(runId: string, token: string | null | undefined, opts: LocalMachineOptions = defaultOptions()): { stop(): void } {
+export function startLocalAgent(
+  runId: string,
+  terminal: string,
+  token: string | null | undefined,
+  onEnd: (why: AgentEnd) => void,
+  opts: LocalMachineOptions = defaultOptions()
+): { stop(): void } {
   let stopped = false
   let socket: WebSocket | null = null
   let retry: ReturnType<typeof setTimeout> | null = null
 
   const connect = async () => {
+    const { boot, machine } = machineOf(terminal, opts)
     let vm: Machine
     try {
-      vm = await getMachine(opts)
+      vm = await machine
     } catch (err) {
       console.error('local machine failed to boot:', err)
       return
     }
     if (stopped) return
-    const opened = new WebSocket(apiWebSocketUrl(`/scenario-sessions/${runId}/agent`), webSocketAuthProtocols(token))
+    const url = apiWebSocketUrl(`/scenario-sessions/${runId}/agent?boot=${encodeURIComponent(boot)}`)
+    const opened = new WebSocket(url, webSocketAuthProtocols(token))
     socket = opened
     opened.onopen = () => {
       agentSocket = opened
@@ -202,10 +250,18 @@ export function startLocalAgent(runId: string, token: string | null | undefined,
       const reply = await answerAgentRequest(vm, consolePty, req)
       if (opened.readyState === WebSocket.OPEN) opened.send(JSON.stringify(reply))
     }
-    opened.onclose = () => {
+    opened.onclose = (event) => {
       if (agentSocket === opened) agentSocket = null
       socket = null
-      if (!stopped) retry = setTimeout(connect, AGENT_RETRY_MS)
+      if (stopped) return
+      const end = AGENT_ENDS[event.code]
+      if (!end) {
+        retry = setTimeout(connect, AGENT_RETRY_MS)
+        return
+      }
+      stopped = true
+      stopMachineOf(terminal)
+      onEnd(end)
     }
   }
   connect()

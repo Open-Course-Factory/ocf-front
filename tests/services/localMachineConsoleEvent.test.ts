@@ -15,7 +15,7 @@ const newPty = () => ({
 })
 vi.mock('unkernel', () => ({
   checkSupport: async () => ({ ok: true, problems: [] }),
-  createKernel: async () => ({ spawn: async () => newPty(), exec: vi.fn() })
+  createKernel: async () => ({ spawn: async () => newPty(), exec: vi.fn(), stop: vi.fn().mockResolvedValue(undefined) })
 }))
 
 class FakeWebSocket {
@@ -44,21 +44,21 @@ describe('the console opening, reported to the agent', () => {
   })
 
   it('is sent when the shell opens while the agent is connected', async () => {
-    const agent = startLocalAgent('run-1', 'tok', opts)
+    const agent = startLocalAgent('run-1', 'local-1', 'tok', () => {}, opts)
     await settle()
     const socket = FakeWebSocket.instances[0]
     socket.open()
 
-    openLocalConsole(80, 24, undefined, opts)
+    openLocalConsole('local-1', 80, 24, undefined, opts)
     await settle()
     expect(socket.sent).toContain(JSON.stringify({ event: 'console_attached' }))
     agent.stop()
   })
 
   it('is sent when the agent connects to a shell already open', async () => {
-    openLocalConsole(80, 24, undefined, opts)
+    openLocalConsole('local-2', 80, 24, undefined, opts)
     await settle()
-    const agent = startLocalAgent('run-2', 'tok', opts)
+    const agent = startLocalAgent('run-2', 'local-2', 'tok', () => {}, opts)
     await settle()
     const socket = FakeWebSocket.instances[0]
     socket.open()

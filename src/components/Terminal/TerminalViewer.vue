@@ -876,7 +876,7 @@ async function connectToTerminal() {
     // Create WebSocket connection. A local machine's console behaves as one
     // (LocalConsoleSocket), so nothing below this line knows the difference.
     socket.value = props.machine === 'local'
-      ? openLocalConsole(terminal.value.cols, terminal.value.rows, xtermDrained) as unknown as WebSocket
+      ? openLocalConsole(String(displaySessionId.value), terminal.value.cols, terminal.value.rows, xtermDrained) as unknown as WebSocket
       : new WebSocket(wsUrl, webSocketAuthProtocols(token))
 
     socket.value.onopen = () => {

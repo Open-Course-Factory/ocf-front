@@ -217,7 +217,7 @@ describe('TerminalViewer — local machine', () => {
       global: { plugins: [createTestI18n()], stubs: { Button: true, RecordingIndicator: true, SessionCountdown: true } }
     })
     await vi.waitFor(() => expect(openLocalConsole).toHaveBeenCalled(), { timeout: 5000 })
-    const [cols, rows, outputDrained] = openLocalConsole.mock.calls[0]
+    const [, cols, rows, outputDrained] = openLocalConsole.mock.calls[0]
     expect([cols, rows]).toEqual([80, 24])
     // Output backpressure follows xterm: the next chunk waits for its write callback.
     await expect(outputDrained()).resolves.toBeUndefined()

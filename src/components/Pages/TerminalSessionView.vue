@@ -112,6 +112,15 @@
       </div>
 
 
+      <!-- A machine in the browser lives as long as its tab: said before it
+           happens, and asked again on leaving the page. -->
+      <div v-if="isSessionActive && machine === 'local'" class="recording-info-notice local-machine-notice">
+        <div class="recording-notice-content">
+          <i class="fas fa-laptop"></i>
+          <span>{{ t('sessionView.localMachineNotice') }}</span>
+        </div>
+      </div>
+
       <!-- Scenario briefing: a modal read once at the start of a run, then out
            of the way. The Briefing button in the nav row reopens it. -->
       <Teleport to="body">
@@ -234,6 +243,18 @@
                  until it is over. -->
             <template v-else-if="showsBuild" #console-overlay>
               <ScenarioProvisioningOverlay :phase="scenarioProvisioningPhase" />
+            </template>
+            <!-- The run's machine is open in another tab, which keeps it. -->
+            <template v-else-if="elsewhereBanner" #console-overlay>
+              <div class="session-end-banner end-banner--info" role="status">
+                <div class="end-banner-left">
+                  <i :class="elsewhereBanner.icon" class="end-banner-icon" aria-hidden="true"></i>
+                  <div class="end-banner-text">
+                    <strong class="end-banner-title">{{ elsewhereBanner.title }}</strong>
+                    <span class="end-banner-body">{{ elsewhereBanner.body }}</span>
+                  </div>
+                </div>
+              </div>
             </template>
           </TerminalSessionPanel>
         </div>
@@ -372,7 +393,7 @@ import { useResumeRejection } from '../../composables/useResumeRejection'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import SessionPausedBanner from '../Terminal/SessionPausedBanner.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
-import { isLocalSessionId, startLocalAgent } from '../../services/domain/terminal/localMachine'
+import { isLocalSessionId, startLocalAgent, type AgentEnd } from '../../services/domain/terminal/localMachine'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
@@ -445,6 +466,7 @@ const { t } = useTranslations({
       collapseScenario: 'Collapse instructions',
       expandScenario: 'Expand instructions',
       recordingNotice: 'Your terminal commands are recorded for security and learning purposes.',
+      localMachineNotice: 'This machine runs in your browser. If you reload or close this tab, it is rebuilt at your current step, and what you did in this step is lost.',
       learnMore: 'Learn more',
       gotIt: 'Got it',
       dismissNotice: 'Dismiss recording notice',
@@ -503,6 +525,7 @@ const { t } = useTranslations({
       collapseScenario: 'Réduire les instructions',
       expandScenario: 'Afficher les instructions',
       recordingNotice: 'Vos commandes terminal sont enregistrées à des fins de sécurité et d\'apprentissage.',
+      localMachineNotice: 'Cette machine tourne dans votre navigateur. Si vous rechargez ou fermez cet onglet, elle est reconstruite à l\'étape en cours, et ce que vous avez fait dans cette étape est perdu.',
       learnMore: 'En savoir plus',
       gotIt: 'Compris',
       dismissNotice: 'Fermer la notification d\'enregistrement',
@@ -564,6 +587,9 @@ const sessionId = route.params.sessionId as string
 // through it while the console is held.
 const machine = isLocalSessionId(sessionId) ? 'local' : 'incus'
 let localAgent: { stop(): void } | null = null
+// ocf-core serves a run's machine to one tab: another one has it.
+const localMachineElsewhere = ref(false)
+const elsewhereBanner = computed(() => localMachineElsewhere.value ? getEndStateConfig('open_elsewhere') : null)
 
 // Supervisor mode reads the class, never the learner's own session list.
 const {
@@ -1344,13 +1370,29 @@ onMounted(() => {
   else loadSession()
 })
 
+// What ocf-core let the agent go for: a reload booted an empty machine (the
+// run is rebuilt at its step, the learner was warned), another tab has the
+// run, or the run ended on the server (the page reads what became of it).
+function onLocalAgentEnd(why: AgentEnd) {
+  if (why === 'lost') rebuildRun()
+  else if (why === 'other_tab') localMachineElsewhere.value = true
+  else loadSession()
+}
+
 watch(scenarioSessionId, (runId) => {
   if (machine === 'local' && runId && !localAgent) {
-    localAgent = startLocalAgent(runId, useCurrentUserStore().secretToken)
+    localAgent = startLocalAgent(runId, sessionId, useCurrentUserStore().secretToken, onLocalAgentEnd)
   }
 }, { immediate: true })
 
+// The browser asks before a reload or a close takes the machine away.
+function askBeforeLeaving(event: BeforeUnloadEvent) {
+  if (isSessionActive.value && !localMachineElsewhere.value) event.preventDefault()
+}
+if (machine === 'local') window.addEventListener('beforeunload', askBeforeLeaving)
+
 onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', askBeforeLeaving)
   localAgent?.stop()
   stopExpirationTimer()
   cancelExpiryRefreshTimeouts()

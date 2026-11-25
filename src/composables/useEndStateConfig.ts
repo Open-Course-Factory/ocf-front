@@ -53,6 +53,10 @@ const endStateTranslations = {
         body: 'A fatal mistake ended this run — that is part of the challenge, not a bug. This machine is closed and its progress is gone. Relaunch the scenario for a fresh attempt with new flags.',
         primary: 'Relaunch the scenario'
       },
+      open_elsewhere: {
+        title: 'Open in another tab',
+        body: 'This scenario\'s machine is open in another tab of your browser. Continue in that tab.'
+      },
       backToSessions: 'Back to Sessions',
       backToScenarios: 'Back to Scenarios',
       expiredScenario: 'Your terminal session has reached its time limit. You can relaunch the scenario from the scenario list.',
@@ -103,6 +107,10 @@ const endStateTranslations = {
         body: "Une erreur fatale a mis fin à cette partie — cela fait partie du défi, ce n'est pas un bug. Cette machine est fermée et sa progression est perdue. Relancez le scénario pour une nouvelle tentative avec de nouveaux flags.",
         primary: 'Relancer le scénario'
       },
+      open_elsewhere: {
+        title: 'Ouvert dans un autre onglet',
+        body: 'La machine de ce scénario est ouverte dans un autre onglet de votre navigateur. Continuez dans cet onglet.'
+      },
       backToSessions: 'Retour aux sessions',
       backToScenarios: 'Retour aux scénarios',
       expiredScenario: 'Votre session terminal a atteint sa limite de temps. Vous pouvez relancer le scénario depuis la liste des scénarios.',
@@ -111,7 +119,7 @@ const endStateTranslations = {
   }
 }
 
-export type EndStateReason = 'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed' | 'disconnected' | 'run_over'
+export type EndStateReason = 'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed' | 'disconnected' | 'run_over' | 'open_elsewhere'
 
 // Action buttons trigger an in-place handler (emitted by the overlay) instead of
 // navigating. The consumer wires the concrete handler for each key.
@@ -232,6 +240,14 @@ export function useEndStateConfig() {
       body: t('endState.run_over.body'),
       primary: { kind: 'route', label: t('endState.run_over.primary'), route: { name: 'ScenarioLauncher' } },
       secondary: { kind: 'route', label: t('endState.backToSessions'), route: { name: 'TerminalSessions' } }
+    }),
+    // A run's machine in the browser serves one tab: this one stands aside.
+    open_elsewhere: () => ({
+      icon: 'fas fa-clone',
+      tone: 'info',
+      title: t('endState.open_elsewhere.title'),
+      body: t('endState.open_elsewhere.body'),
+      primary: { kind: 'route', label: t('endState.backToScenarios'), route: { name: 'ScenarioLauncher' } }
     })
   }
 
