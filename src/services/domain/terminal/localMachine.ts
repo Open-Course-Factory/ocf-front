@@ -68,10 +68,13 @@ let held: HeldMachine | null = null
 
 // The images give their default user, `user`, sudo without a password: a
 // learner who is not root could read every root-only file of a lab, or skip
-// its permission missions with `sudo chmod`. Taken away before anything runs;
-// a lab's own setup may still give sudo back, as in a container.
+// its permission missions with `sudo chmod`. Taken away before anything runs:
+// sudo loses its setuid bit, so it refuses at once (a refused sudo otherwise
+// hangs for good in this kernel, out of the learner's reach), and the
+// password-less rules go. A lab that teaches sudo sets the bit back in its
+// setup, with its own rules.
 const LOCK_DOWN_SUDO = [
-  'gpasswd -d user sudo >/dev/null 2>&1',
+  'chmod u-s /usr/bin/sudo 2>/dev/null',
   "sed -i '/NOPASSWD/d' /etc/sudoers",
   'for f in /etc/sudoers.d/*; do grep -qs NOPASSWD "$f" && rm -f "$f"; done',
   'true'

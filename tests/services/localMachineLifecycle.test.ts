@@ -119,6 +119,7 @@ describe('the machine of a local run', () => {
     const [file, args, execOpts] = kernels.at(-1)!.exec.mock.calls[0]
     expect(file).toBe('sh')
     expect(args.join(' ')).toContain('NOPASSWD')
+    expect(args.join(' ')).toContain('chmod u-s /usr/bin/sudo')
     expect(execOpts).toMatchObject({ user: 'root' })
     agent.stop()
   })
