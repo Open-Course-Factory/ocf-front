@@ -43,6 +43,8 @@ export interface SubscriptionPlan extends BaseEntity {
   port_exposure_enabled?: boolean
   /** Lifetime of one exposed URL in minutes (default 60) */
   port_exposure_ttl_minutes?: number
+  /** Machines in the learner's browser: off, allowed for Local scenarios, or also the default for By account ones. */
+  local_machines?: LocalMachinesSetting
   group_management_enabled?: boolean
   allowed_backends: string[]
   default_backend: string
@@ -252,3 +254,6 @@ export interface CheckoutSessionResponse {
   url: string
   session_id: string
 }
+
+/** What a plan allows of machines in the learner's browser (ocf-core models.LocalMachines*). */
+export type LocalMachinesSetting = 'off' | 'allowed' | 'by_account_default'

@@ -224,6 +224,21 @@
           </div>
 
           <div class="form-group form-group-wide">
+            <label for="plan-local-machines">{{ t('planConfig.localMachines') }}</label>
+            <select
+              id="plan-local-machines"
+              v-model="formData.local_machines"
+              data-test="plan-local-machines"
+              class="form-control"
+            >
+              <option value="off">{{ t('planConfig.localMachinesOff') }}</option>
+              <option value="allowed">{{ t('planConfig.localMachinesAllowed') }}</option>
+              <option value="by_account_default">{{ t('planConfig.localMachinesByAccountDefault') }}</option>
+            </select>
+            <p class="field-hint">{{ t('planConfig.localMachinesHint') }}</p>
+          </div>
+
+          <div class="form-group form-group-wide">
             <div class="checkbox-wrapper">
               <input
                 id="plan-group-management"
@@ -513,6 +528,7 @@ import { CANONICAL_SIZE_CATALOG, computeMaxFromRows, type SizeQuotaRow } from '.
 import { formatMcpuAsVcpu } from '../../utils/formatters'
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import { useSubscriptionPlansStore } from '../../stores/subscriptionPlans'
+import type { LocalMachinesSetting } from '../../types/subscription'
 import type { Backend } from '../../types/terminal'
 
 const plansStore = useSubscriptionPlansStore()
@@ -529,6 +545,11 @@ const { t } = useTranslations({
       portExposureEnabled: 'Public port exposure',
       portExposureHint: 'Lets learners publish a port of their session at a public URL.',
       portExposureTtl: 'Lifetime of an exposed URL (minutes) — to check one’s own work, not to share links',
+      localMachines: 'Machines in the learner\'s browser',
+      localMachinesOff: 'Off: every scenario runs in a container',
+      localMachinesAllowed: 'Allowed for scenarios set to run in the browser',
+      localMachinesByAccountDefault: 'Also for scenarios whose machine depends on the plan',
+      localMachinesHint: 'A scenario can run on a machine inside the learner\'s browser tab instead of a container. The platform switch "Local machines" must be on too.',
       groupManagementEnabled: 'Group management',
       groupManagementHint: 'Lets plan holders create and manage learner groups.',
       networkAccessEnabled: 'Network access',
@@ -614,6 +635,11 @@ const { t } = useTranslations({
       portExposureEnabled: 'Exposition publique de ports',
       portExposureHint: 'Permet aux apprenants de publier un port de leur session sur une URL publique.',
       portExposureTtl: 'Durée de vie d’une URL exposée (minutes) — pour vérifier son travail, pas pour partager des liens',
+      localMachines: 'Machines dans le navigateur de l\'apprenant',
+      localMachinesOff: 'Désactivé : chaque scénario s\'exécute dans un conteneur',
+      localMachinesAllowed: 'Autorisé pour les scénarios réglés pour le navigateur',
+      localMachinesByAccountDefault: 'Aussi pour les scénarios dont la machine dépend de l\'abonnement',
+      localMachinesHint: 'Un scénario peut s\'exécuter sur une machine dans l\'onglet du navigateur de l\'apprenant au lieu d\'un conteneur. L\'interrupteur de la plateforme "Machines locales" doit aussi être activé.',
       groupManagementEnabled: 'Gestion des groupes',
       groupManagementHint: 'Permet aux titulaires du forfait de créer et gérer des groupes d\'apprenants.',
       networkAccessEnabled: 'Accès réseau',
@@ -715,6 +741,7 @@ const formData = reactive({
   session_supervision_enabled: false,
   port_exposure_enabled: false,
   port_exposure_ttl_minutes: 60,
+  local_machines: 'off' as LocalMachinesSetting,
   group_management_enabled: false,
   network_access_enabled: false,
   data_persistence_enabled: false,
@@ -950,6 +977,7 @@ function populateFromPlan(plan: any) {
   formData.data_persistence_enabled = plan.data_persistence_enabled === true
   formData.port_exposure_enabled = plan.port_exposure_enabled === true
   formData.port_exposure_ttl_minutes = plan.port_exposure_ttl_minutes || 60
+  formData.local_machines = plan.local_machines || 'off'
   formData.bulk_purchasable = plan.bulk_purchasable === true
 
   // Seat pricing ladder.
@@ -997,6 +1025,7 @@ function resetForm() {
   formData.session_supervision_enabled = false
   formData.port_exposure_enabled = false
   formData.port_exposure_ttl_minutes = 60
+  formData.local_machines = 'off'
   formData.group_management_enabled = false
   formData.network_access_enabled = false
   formData.data_persistence_enabled = false
