@@ -7,8 +7,8 @@
 
 <template>
   <div class="card">
-    <div class="card-header">
-      <h2><i v-if="icon" :class="icon"></i> {{ title }}</h2>
+    <div class="card-header" :class="{ 'ocf-single-line-title': singleLineTitle }">
+      <h2 :title="singleLineTitle ? title : undefined"><i v-if="icon" :class="icon"></i> {{ title }}</h2>
       <div v-if="$slots.headerActions" class="header-actions">
         <slot name="headerActions"></slot>
       </div>
@@ -23,8 +23,12 @@
 withDefaults(defineProps<{
   title: string
   icon?: string
+  /** For titles of any length: one line, cut with an ellipsis, full text on hover.
+   *  In a narrow card the header actions move below the title. */
+  singleLineTitle?: boolean
 }>(), {
-  icon: undefined
+  icon: undefined,
+  singleLineTitle: false
 })
 </script>
 
@@ -38,6 +42,34 @@ withDefaults(defineProps<{
 .header-actions {
   display: flex;
   gap: var(--spacing-md);
+}
+
+/* A container query, not @media: the card can be narrow in a wide window
+   (the session page splits the screen between the terminal and the scenario). */
+.ocf-single-line-title {
+  container-type: inline-size;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+}
+
+.ocf-single-line-title h2 {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ocf-single-line-title .header-actions {
+  align-items: center;
+  flex-wrap: wrap;
+  row-gap: var(--spacing-xs);
+}
+
+@container (max-width: 720px) {
+  .ocf-single-line-title h2 {
+    flex-basis: 100%;
+  }
 }
 
 /* Deep selectors for content inside the card body */

@@ -23,7 +23,7 @@
 
 <template>
   <!-- SettingsCard wrapper mode -->
-  <SettingsCard v-if="useSettingsCard" :title="title" :icon="icon">
+  <SettingsCard v-if="useSettingsCard" :title="title" :icon="icon" single-line-title>
     <template #headerActions>
       <Button
         variant="warning"
