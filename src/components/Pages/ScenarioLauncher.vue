@@ -777,8 +777,10 @@ async function handleLaunchScenario(scenario: any) {
 
     if (abortController.signal.aborted) return
 
-    // Wait for scenario to be ready if still provisioning
-    if (result.status === 'provisioning') {
+    // Wait for scenario to be ready if still provisioning. Not a run on a
+    // machine in the browser: it is built through the run page, which shows
+    // its own provisioning overlay, so that page must open first.
+    if (result.status === 'provisioning' && result.machine !== 'local') {
       await pollProvisioningStatus(result.scenario_session_id, (phase) => {
         provisioningPhase.value = phase
       }, abortController.signal, { deadlineSeconds: result.provisioning_timeout_seconds })

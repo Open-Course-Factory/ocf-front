@@ -305,6 +305,9 @@ export interface LaunchScenarioResponse {
   status: string
   provisioning_phase?: string
   provisioning_timeout_seconds?: number
+  // Where the run runs: "local" for a machine in the learner's browser,
+  // which the run page boots and builds the run through.
+  machine?: 'incus' | 'local'
 }
 
 export const scenarioSessionService = {
