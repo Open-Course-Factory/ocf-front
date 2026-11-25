@@ -42,7 +42,7 @@ export interface AgentMachine {
 }
 
 interface Machine extends AgentMachine {
-  spawn(file?: string, args?: readonly string[], opts?: { cols?: number; rows?: number }): Promise<ConsolePty>
+  spawn(file?: string, args?: readonly string[], opts?: { cols?: number; rows?: number; user?: string | number }): Promise<ConsolePty>
   stop(): Promise<unknown>
 }
 
@@ -66,11 +66,48 @@ interface HeldMachine {
 }
 let held: HeldMachine | null = null
 
+// The images give their default user, `user`, sudo without a password: a
+// learner who is not root could read every root-only file of a lab, or skip
+// its permission missions with `sudo chmod`. Taken away before anything runs;
+// a lab's own setup may still give sudo back, as in a container.
+const LOCK_DOWN_SUDO = [
+  'gpasswd -d user sudo >/dev/null 2>&1',
+  "sed -i '/NOPASSWD/d' /etc/sudoers",
+  'for f in /etc/sudoers.d/*; do grep -qs NOPASSWD "$f" && rm -f "$f"; done',
+  'true'
+].join('; ')
+
 async function boot(opts: LocalMachineOptions): Promise<Machine> {
   const { checkSupport, createKernel } = await import('unkernel')
   const support = await checkSupport()
   if (!support.ok) throw new Error(support.problems.join('; '))
-  return createKernel({ distro: opts.distroUrl, worker: opts.worker, net: opts.net })
+  const machine: Machine = await createKernel({ distro: opts.distroUrl, worker: opts.worker, net: opts.net })
+  await machine.exec('sh', ['-c', LOCK_DOWN_SUDO], {
+    user: 'root',
+    signal: AbortSignal.timeout(DEFAULT_EXEC_TIMEOUT_SECONDS * 1000),
+    maxBuffer: EXEC_MAX_BUFFER
+  })
+  return machine
+}
+
+// The uid each terminal's console runs as, once the page has read it from the
+// run: the console waits for it rather than open as the wrong user.
+const consoleUsers = new Map<string, { user: Promise<string | number>; resolve(user: string | number): void }>()
+
+function consoleUserEntry(terminal: string) {
+  let entry = consoleUsers.get(terminal)
+  if (!entry) {
+    let resolve!: (user: string | number) => void
+    const user = new Promise<string | number>(r => { resolve = r })
+    entry = { user, resolve }
+    consoleUsers.set(terminal, entry)
+  }
+  return entry
+}
+
+/** The uid the run's console runs as, as ocf-core says (session_user); root without one. */
+export function setConsoleUser(terminal: string, uid: number | undefined) {
+  consoleUserEntry(terminal).resolve(uid ?? 'root')
 }
 
 // The terminal's machine, booted if needed. Another terminal's is stopped
@@ -106,7 +143,9 @@ export function openLocalConsole(
   opts: LocalMachineOptions = defaultOptions()
 ): LocalConsoleSocket {
   return new LocalConsoleSocket(async () => {
-    const pty = await (await machineOf(terminal, opts).machine).spawn(undefined, undefined, { cols, rows })
+    const { machine } = machineOf(terminal, opts) // boots while the page reads the run
+    const user = await consoleUserEntry(terminal).user
+    const pty = await (await machine).spawn(undefined, undefined, { cols, rows, user })
     consolePty = pty
     reportConsoleOpened()
     const forget = () => { if (consolePty === pty) consolePty = null }

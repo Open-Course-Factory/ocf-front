@@ -56,7 +56,7 @@ vi.mock('../../src/composables/useNotification', () => ({
 
 vi.mock('../../src/services/domain/scenario', () => ({
   scenarioSessionService: {
-    getSessionByTerminal: vi.fn().mockResolvedValue({ id: 'run-1', status: 'active', terminal_session_id: 'local-abc' }),
+    getSessionByTerminal: vi.fn().mockResolvedValue({ id: 'run-1', status: 'active', terminal_session_id: 'local-abc', session_user: 1000 }),
     abandonSession: vi.fn().mockResolvedValue(undefined),
     resumeSession: vi.fn().mockResolvedValue({ terminal_session_id: 'local-rebuilt' })
   }
@@ -82,10 +82,11 @@ vi.mock('../../src/stores/currentUser', () => ({
   })
 }))
 
-const agent = vi.hoisted(() => ({ stop: vi.fn(), start: vi.fn() }))
+const agent = vi.hoisted(() => ({ stop: vi.fn(), start: vi.fn(), consoleUser: vi.fn() }))
 vi.mock('../../src/services/domain/terminal/localMachine', () => ({
   isLocalSessionId: (id: string) => id.startsWith('local-'),
-  startLocalAgent: (...args: unknown[]) => { agent.start(...args); return { stop: agent.stop } }
+  startLocalAgent: (...args: unknown[]) => { agent.start(...args); return { stop: agent.stop } },
+  setConsoleUser: (...args: unknown[]) => agent.consoleUser(...args)
 }))
 
 import TerminalSessionView from '../../src/components/Pages/TerminalSessionView.vue'
@@ -121,6 +122,7 @@ describe('TerminalSessionView on a local machine', () => {
     await flushPromises()
 
     expect(agent.start).toHaveBeenCalledWith('run-1', 'local-abc', 'tok', expect.any(Function))
+    expect(agent.consoleUser).toHaveBeenCalledWith('local-abc', 1000)
     const panel = wrapper.find('.tsp-stub')
     expect(panel.attributes('data-machine')).toBe('local')
     expect(panel.attributes('data-exposed')).toBe('false')

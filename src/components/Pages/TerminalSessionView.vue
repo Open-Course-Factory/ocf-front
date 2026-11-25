@@ -393,7 +393,7 @@ import { useResumeRejection } from '../../composables/useResumeRejection'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import SessionPausedBanner from '../Terminal/SessionPausedBanner.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
-import { isLocalSessionId, startLocalAgent, type AgentEnd } from '../../services/domain/terminal/localMachine'
+import { isLocalSessionId, setConsoleUser, startLocalAgent, type AgentEnd } from '../../services/domain/terminal/localMachine'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
@@ -1042,6 +1042,10 @@ async function detectScenarioSession() {
       scenarioResumeMode.value = scenarioSession.resume_mode
       scenarioIsPreview.value = !!scenarioSession.is_preview
       terminalHadScenario.value = true
+      // A machine in this tab opens its console itself, as the run's user.
+      if (machine === 'local' && scenarioSession.terminal_session_id === sessionId) {
+        setConsoleUser(sessionId, scenarioSession.session_user)
+      }
     }
     if (replayFailed) await refreshSessionInfo()
   } catch {

@@ -194,6 +194,8 @@ export interface ScenarioSessionInfo {
   resume_mode?: 'live' | 'paused' | 'rebuild'
   // An author's preview run: never rebuilt, so losing its terminal ends it.
   is_preview?: boolean
+  // The uid the learner's console runs as; absent, root.
+  session_user?: number
   /**
    * The scenario's prose in the language this session is being played in.
    *

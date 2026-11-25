@@ -15,7 +15,7 @@ const newPty = () => ({
 })
 vi.mock('unkernel', () => ({
   checkSupport: async () => ({ ok: true, problems: [] }),
-  createKernel: async () => ({ spawn: async () => newPty(), exec: vi.fn(), stop: vi.fn().mockResolvedValue(undefined) })
+  createKernel: async () => ({ spawn: async () => newPty(), exec: vi.fn().mockResolvedValue({ exitCode: 0 }), stop: vi.fn().mockResolvedValue(undefined) })
 }))
 
 class FakeWebSocket {
@@ -32,7 +32,7 @@ class FakeWebSocket {
   open() { this.readyState = 1; this.onopen?.() }
 }
 
-import { openLocalConsole, startLocalAgent } from '../../src/services/domain/terminal/localMachine'
+import { openLocalConsole, setConsoleUser, startLocalAgent } from '../../src/services/domain/terminal/localMachine'
 
 const opts = { distroUrl: '/x.erofs', worker: false }
 const settle = () => new Promise(r => setTimeout(r, 0))
@@ -49,6 +49,7 @@ describe('the console opening, reported to the agent', () => {
     const socket = FakeWebSocket.instances[0]
     socket.open()
 
+    setConsoleUser('local-1', 1000)
     openLocalConsole('local-1', 80, 24, undefined, opts)
     await settle()
     expect(socket.sent).toContain(JSON.stringify({ event: 'console_attached' }))
@@ -56,6 +57,7 @@ describe('the console opening, reported to the agent', () => {
   })
 
   it('is sent when the agent connects to a shell already open', async () => {
+    setConsoleUser('local-2', 1000)
     openLocalConsole('local-2', 80, 24, undefined, opts)
     await settle()
     const agent = startLocalAgent('run-2', 'local-2', 'tok', () => {}, opts)

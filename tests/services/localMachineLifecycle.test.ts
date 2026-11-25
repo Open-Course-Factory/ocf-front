@@ -6,19 +6,19 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-const kernels: { stop: ReturnType<typeof vi.fn> }[] = []
+const kernels: { stop: ReturnType<typeof vi.fn>; spawn: ReturnType<typeof vi.fn>; exec: ReturnType<typeof vi.fn> }[] = []
 vi.mock('unkernel', () => ({
   checkSupport: async () => ({ ok: true, problems: [] }),
   createKernel: async () => {
     const kernel = {
-      spawn: async () => ({
+      spawn: vi.fn(async () => ({
         output: new ReadableStream<Uint8Array>(),
         write: vi.fn().mockResolvedValue(undefined),
         resize: vi.fn(),
         close: vi.fn().mockResolvedValue(undefined),
         ended: new Promise(() => {})
-      }),
-      exec: vi.fn(),
+      })),
+      exec: vi.fn().mockResolvedValue({ stdout: '', stderr: '', exitCode: 0, signal: null }),
       stop: vi.fn().mockResolvedValue(undefined)
     }
     kernels.push(kernel)
@@ -41,7 +41,7 @@ class FakeWebSocket {
   closeWith(code: number) { this.readyState = 3; this.onclose?.({ code }) }
 }
 
-import { openLocalConsole, startLocalAgent, AGENT_CLOSE } from '../../src/services/domain/terminal/localMachine'
+import { openLocalConsole, setConsoleUser, startLocalAgent, AGENT_CLOSE } from '../../src/services/domain/terminal/localMachine'
 
 const opts = { distroUrl: '/x.erofs', worker: false }
 const settle = () => vi.advanceTimersByTimeAsync(0)
@@ -59,7 +59,8 @@ describe('the machine of a local run', () => {
   })
 
   it('is one machine for the console and the agent of a terminal, named to ocf-core', async () => {
-    openLocalConsole('local-a', 80, 24, undefined, opts)
+    setConsoleUser('local-a', undefined)
+    openLocalConsole('local-a', 80, 24, undefined, opts).onopen = () => {}
     const agent = startLocalAgent('run-a', 'local-a', 'tok', () => {}, opts)
     await settle()
     expect(kernels).toHaveLength(1)
@@ -108,4 +109,31 @@ describe('the machine of a local run', () => {
       expect(FakeWebSocket.instances).toHaveLength(1)
     })
   }
+
+  // The image's default user has sudo without a password: a learner who is
+  // not root could read every root-only file of the lab, or skip its
+  // permission missions. Taken away before any console opens.
+  it('takes away the passwordless sudo of the image before anything runs', async () => {
+    const agent = startLocalAgent('run-e', 'local-e', 'tok', () => {}, opts)
+    await settle()
+    const [file, args, execOpts] = kernels.at(-1)!.exec.mock.calls[0]
+    expect(file).toBe('sh')
+    expect(args.join(' ')).toContain('NOPASSWD')
+    expect(execOpts).toMatchObject({ user: 'root' })
+    agent.stop()
+  })
+
+  it('opens the console as the run\'s user once the page knows it, as root without one', async () => {
+    openLocalConsole('local-f', 80, 24, undefined, opts).onopen = () => {}
+    await settle()
+    expect(kernels.at(-1)!.spawn).not.toHaveBeenCalled()
+    setConsoleUser('local-f', 1000)
+    await settle()
+    expect(kernels.at(-1)!.spawn.mock.calls[0][2]).toMatchObject({ user: 1000 })
+
+    setConsoleUser('local-g', undefined)
+    openLocalConsole('local-g', 80, 24, undefined, opts).onopen = () => {}
+    await settle()
+    expect(kernels.at(-1)!.spawn.mock.calls[0][2]).toMatchObject({ user: 'root' })
+  })
 })
