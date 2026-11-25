@@ -55,6 +55,7 @@ const { t } = useTranslations({
       assignScenario: 'Assign Scenario',
       noAssignments: 'No scenarios assigned to this group yet.',
       bulkStartResult: 'Started {started} sessions, skipped {skipped}',
+      bulkStartLocal: '{n} learners start this lab themselves: it runs in their browser, which must be open.',
       loadError: 'Failed to load scenario assignments',
       publishResultsTitle: 'Publish the results?',
       publishResultsBody: 'Learners will see their grade.',
@@ -107,6 +108,7 @@ const { t } = useTranslations({
       assignScenario: 'Assigner un scénario',
       noAssignments: 'Aucun scénario assigné à ce groupe.',
       bulkStartResult: '{started} sessions démarrées, {skipped} ignorées',
+      bulkStartLocal: '{n} apprenants lancent ce lab eux-mêmes : il s\'exécute dans leur navigateur, qui doit être ouvert.',
       loadError: 'Échec du chargement des assignations',
       publishResultsTitle: 'Publier les résultats ?',
       publishResultsBody: 'Les apprenants verront leur note.',
@@ -288,6 +290,9 @@ async function confirmBulkStart() {
     const started = data?.created || data?.started || 0
     const skipped = data?.skipped || 0
     resultMessage.value = t('groupScenarios.bulkStartResult', { started, skipped })
+    // ocf-core's LocalMachineReason: nothing can be built ahead in a browser.
+    const local = (data?.skipped_users || []).filter((u: { reason: string }) => u.reason === 'local_machine').length
+    if (local > 0) resultMessage.value += ' ' + t('groupScenarios.bulkStartLocal', { n: local })
     resultNoKeyUsers.value = data?.no_key_users || []
     resultErrors.value = data?.errors || []
     showResultModal.value = true
