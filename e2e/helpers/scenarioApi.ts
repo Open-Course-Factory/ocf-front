@@ -72,6 +72,8 @@ export interface SeedScenario {
   is_public?: boolean;
   flags_enabled?: boolean;
   crash_traps?: boolean;
+  /** Where its runs run: a container (default), the learner's browser, or as the plan says. */
+  machine?: 'incus' | 'local' | 'by_account';
   setup_script?: string;
   intro_text?: string;
   finish_text?: string;
