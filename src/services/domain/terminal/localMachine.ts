@@ -1,10 +1,19 @@
 /**
  * The machine that runs in the learner's browser (unkernel: Linux compiled to
- * WebAssembly). The only module that knows unkernel; it is loaded on the first
- * local console, so a page that never opens one downloads none of it.
+ * WebAssembly), and its agent. The only module that knows unkernel; it is
+ * loaded when a local run first needs its machine, so a page that never opens
+ * one downloads none of it.
  */
 import type { NetSpec } from 'unkernel'
 import { LocalConsoleSocket, type ConsolePty } from './localConsoleSocket'
+import { apiWebSocketUrl, webSocketAuthProtocols } from '../../../utils/webSocketAuth'
+
+/** A terminal session whose machine runs in the browser, as ocf-core names it. */
+export const LOCAL_SESSION_PREFIX = 'local-'
+
+export function isLocalSessionId(sessionId: string | null | undefined): boolean {
+  return !!sessionId && sessionId.startsWith(LOCAL_SESSION_PREFIX)
+}
 
 export interface LocalMachineOptions {
   /** The distro image (erofs), served with Range support. */
@@ -15,7 +24,24 @@ export interface LocalMachineOptions {
   net?: NetSpec
 }
 
-interface Machine {
+interface ExecResult {
+  stdout: string
+  stderr: string
+  exitCode: number | null
+  signal: number | null
+}
+
+/** What the agent needs of the machine. */
+export interface AgentMachine {
+  exec(file: string, args: readonly string[], opts: {
+    user: string
+    env?: Record<string, string>
+    signal: AbortSignal
+    maxBuffer: number
+  }): Promise<ExecResult>
+}
+
+interface Machine extends AgentMachine {
   spawn(file?: string, args?: readonly string[], opts?: { cols?: number; rows?: number }): Promise<ConsolePty>
 }
 
@@ -60,8 +86,116 @@ export function openLocalConsole(
   outputDrained?: () => Promise<void>,
   opts: LocalMachineOptions = defaultOptions()
 ): LocalConsoleSocket {
-  return new LocalConsoleSocket(
-    async () => (await getMachine(opts)).spawn(undefined, undefined, { cols, rows }),
-    outputDrained
-  )
+  return new LocalConsoleSocket(async () => {
+    const pty = await (await getMachine(opts)).spawn(undefined, undefined, { cols, rows })
+    consolePty = pty
+    const forget = () => { if (consolePty === pty) consolePty = null }
+    pty.ended.then(forget, forget)
+    return pty
+  }, outputDrained)
+}
+
+// The learner's open shell, where a foreground script is typed.
+let consolePty: Pick<ConsolePty, 'write'> | null = null
+
+/** A request of ocf-core's engine, as src/scenarios/services/localAgents.go sends it. */
+export interface AgentRequest {
+  id: number
+  op: string
+  command?: string[]
+  env?: Record<string, string>
+  timeout?: number
+  data?: string
+}
+
+// tt-backend's exec bounds a command too; the server keeps 64 KiB of each stream.
+const DEFAULT_EXEC_TIMEOUT_SECONDS = 60
+const EXEC_MAX_BUFFER = 1 << 20
+
+/**
+ * The answer to one request: run a command as root in the machine (setup and
+ * check scripts), or type a line into the learner's shell (a foreground script).
+ */
+export async function answerAgentRequest(
+  machine: AgentMachine,
+  shell: Pick<ConsolePty, 'write'> | null,
+  req: AgentRequest
+): Promise<Record<string, unknown>> {
+  switch (req.op) {
+    case 'exec': {
+      const [file, ...args] = req.command ?? []
+      if (!file) return { id: req.id, error: 'exec needs a command' }
+      try {
+        const result = await machine.exec(file, args, {
+          user: 'root',
+          env: req.env,
+          signal: AbortSignal.timeout((req.timeout || DEFAULT_EXEC_TIMEOUT_SECONDS) * 1000),
+          maxBuffer: EXEC_MAX_BUFFER
+        })
+        const exitCode = result.exitCode ?? 128 + (result.signal ?? 0)
+        return { id: req.id, exit_code: exitCode, stdout: result.stdout, stderr: result.stderr }
+      } catch (err) {
+        return { id: req.id, error: err instanceof Error ? err.message : String(err) }
+      }
+    }
+    case 'console':
+      if (!shell) return { id: req.id, error: 'no_console' }
+      try {
+        await shell.write(req.data ?? '')
+      } catch (err) {
+        return { id: req.id, error: err instanceof Error ? err.message : String(err) }
+      }
+      return { id: req.id }
+  }
+  return { id: req.id, error: `unknown request ${req.op}` }
+}
+
+const AGENT_RETRY_MS = 3000
+
+/**
+ * Connects this tab as the agent of the run's machine, booting the machine if
+ * needed, and reconnects until stop(). ocf-core runs the run's setup and checks
+ * through it, so it must be up before the console is opened: the run is built
+ * while the learner waits. A machine that cannot boot is not retried: the
+ * console says why, and ocf-core fails the build instead of waiting forever.
+ */
+export function startLocalAgent(runId: string, token: string | null | undefined, opts: LocalMachineOptions = defaultOptions()): { stop(): void } {
+  let stopped = false
+  let socket: WebSocket | null = null
+  let retry: ReturnType<typeof setTimeout> | null = null
+
+  const connect = async () => {
+    let vm: Machine
+    try {
+      vm = await getMachine(opts)
+    } catch (err) {
+      console.error('local machine failed to boot:', err)
+      return
+    }
+    if (stopped) return
+    socket = new WebSocket(apiWebSocketUrl(`/scenario-sessions/${runId}/agent`), webSocketAuthProtocols(token))
+    socket.onmessage = async (event) => {
+      let req: AgentRequest
+      try {
+        req = JSON.parse(String(event.data))
+      } catch {
+        return
+      }
+      const reply = await answerAgentRequest(vm, consolePty, req)
+      if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(reply))
+    }
+    socket.onclose = () => {
+      socket = null
+      if (!stopped) retry = setTimeout(connect, AGENT_RETRY_MS)
+    }
+  }
+  connect()
+
+  return {
+    stop() {
+      stopped = true
+      if (retry) clearTimeout(retry)
+      socket?.close()
+    }
+  }
 }

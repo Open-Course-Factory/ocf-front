@@ -7,3 +7,12 @@
 export function webSocketAuthProtocols(token: string | null | undefined): string[] {
   return token ? ['ocf.bearer', token] : []
 }
+
+/**
+ * The ws:// or wss:// URL of an ocf-core API path ("/scenario-sessions/x/agent"),
+ * on the host the HTTP API is served from.
+ */
+export function apiWebSocketUrl(path: string): string {
+  const protocol = import.meta.env.VITE_PROTOCOL === 'https' ? 'wss' : 'ws'
+  return `${protocol}://${import.meta.env.VITE_API_URL}/api/v1${path}`
+}
