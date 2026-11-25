@@ -10,7 +10,7 @@ import {
   type ApiSession,
 } from './helpers/scenarioApi';
 import { adminSession } from './helpers/freshUsers';
-import { typeInTerminal, waitForLiveTerminal } from './helpers/xterm';
+import { readTerminalText, typeInTerminal, waitForLiveTerminal } from './helpers/xterm';
 
 /**
  * A lab set to run in the learner's browser, played by a learner from the real
@@ -66,7 +66,10 @@ async function launch(page: Page, title: string): Promise<string> {
 async function playTheLab(page: Page): Promise<void> {
   const stepTitle = page.getByTestId('scenario-step-title');
   await expect(stepTitle).toHaveText('Créer le fichier', { timeout: 120_000 });
-  await waitForLiveTerminal(page, 120_000);
+  // The step's foreground script is typed as the shell opens: waited for before
+  // anything else is typed, or the two lines interleave.
+  await expect.poll(() => readTerminalText(page), { timeout: 120_000 }).toContain('PRET-42');
+  await waitForLiveTerminal(page, 60_000);
 
   await page.getByTestId('scenario-verify-btn').click();
   const result = page.getByTestId('scenario-verify-result');
@@ -104,6 +107,9 @@ test.beforeAll(async () => {
         step_type: 'terminal',
         text_content: 'Écrivez `bonjour` dans le fichier `/tmp/bonjour.txt`, puis cliquez sur « Vérifier ».',
         verify_script: 'grep -qx bonjour /tmp/bonjour.txt || { echo "/tmp/bonjour.txt ne contient pas bonjour"; exit 1; }',
+        // Staged by the launch build while the console is held, typed when the
+        // learner's shell opens.
+        foreground_script: 'echo PRET-$((40+2))',
       },
       {
         title: 'Lire le fichier',

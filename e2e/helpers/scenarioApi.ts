@@ -54,6 +54,7 @@ export interface SeedStep {
   text_content?: string;
   hint_content?: string;
   verify_script?: string; // empty/absent = auto-pass
+  foreground_script?: string; // typed into the learner's shell when the step starts
   has_flag?: boolean;
   // Where ocf-core writes the step's flag. Without one it writes nothing: the
   // scenario's own script is expected to place it from OCF_FLAG_CURRENT.
