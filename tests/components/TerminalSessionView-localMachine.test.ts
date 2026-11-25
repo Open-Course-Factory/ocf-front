@@ -122,6 +122,8 @@ describe('TerminalSessionView on a local machine', () => {
     const panel = wrapper.find('.tsp-stub')
     expect(panel.attributes('data-machine')).toBe('local')
     expect(panel.attributes('data-exposed')).toBe('false')
+    // tt-backend records commands; a machine in the browser has nobody recording them.
+    expect(wrapper.find('.recording-info-notice').exists()).toBe(false)
 
     wrapper.unmount()
     expect(agent.stop).toHaveBeenCalled()
@@ -134,5 +136,6 @@ describe('TerminalSessionView on a local machine', () => {
 
     expect(agent.start).not.toHaveBeenCalled()
     expect(wrapper.find('.tsp-stub').attributes('data-machine')).toBe('incus')
+    expect(wrapper.find('.recording-info-notice').exists()).toBe(true)
   })
 })

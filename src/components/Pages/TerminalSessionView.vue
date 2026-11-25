@@ -99,7 +99,8 @@
       </div>
 
       <!-- Recording info notice -->
-      <div v-if="isSessionActive && !recordingNoticeDismissed" class="recording-info-notice">
+      <!-- tt-backend records a container's commands; nothing records a machine in the browser. -->
+      <div v-if="isSessionActive && machine !== 'local' && !recordingNoticeDismissed" class="recording-info-notice">
         <div class="recording-notice-content">
           <i class="fas fa-video"></i>
           <span>{{ t('sessionView.recordingNotice') }}</span>
