@@ -74,8 +74,10 @@ vi.mock('@xterm/xterm', () => ({
 vi.mock('@xterm/addon-fit', () => ({ FitAddon: class { fit() {} dispose() {} } }))
 
 const openLocalConsole = vi.fn()
+const openRelayedConsole = vi.fn()
 vi.mock('../../src/services/domain/terminal/localMachine', () => ({
-  openLocalConsole: (...args: unknown[]) => openLocalConsole(...args)
+  openLocalConsole: (...args: unknown[]) => openLocalConsole(...args),
+  openRelayedConsole: (...args: unknown[]) => openRelayedConsole(...args)
 }))
 
 import TerminalViewer from '../../src/components/Terminal/TerminalViewer.vue'
@@ -226,6 +228,30 @@ describe('TerminalViewer — local machine', () => {
     local.onopen?.()
     await flushPromises()
     expect(wrapper.text()).not.toContain('terminal.websocketError')
+  })
+
+  // A popped-out window shows the machine of the run page's tab, and says
+  // so plainly when no tab of this browser runs it.
+  it('reaches the run page\'s machine when relayed, and says when it is not open', async () => {
+    const relayed = new FakeWebSocket('relayed')
+    FakeWebSocket.instances = []
+    openRelayedConsole.mockReturnValue(relayed)
+    setActivePinia(createPinia())
+    const wrapper = mount(TerminalViewer, {
+      props: {
+        machine: 'local',
+        relayed: true,
+        sessionInfo: { session_id: 'local-pop', state: 'running', expires_at: new Date(Date.now() + 3_600_000).toISOString() }
+      },
+      global: { plugins: [createTestI18n()], stubs: { Button: true, RecordingIndicator: true, SessionCountdown: true } }
+    })
+    await vi.waitFor(() => expect(openRelayedConsole).toHaveBeenCalled(), { timeout: 5000 })
+    expect(openRelayedConsole.mock.calls[0][0]).toBe('local-pop')
+    expect(openLocalConsole).not.toHaveBeenCalled()
+
+    relayed.onclose?.({ code: 1006, reason: 'no_machine_in_this_browser', target: relayed })
+    await flushPromises()
+    expect(wrapper.text()).toContain('Open that page, then reconnect')
   })
 
   it('keeps the Incus console by default', async () => {

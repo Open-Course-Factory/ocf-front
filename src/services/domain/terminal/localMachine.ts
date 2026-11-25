@@ -6,6 +6,7 @@
  */
 import type { NetSpec } from 'unkernel'
 import { LocalConsoleSocket, type ConsolePty } from './localConsoleSocket'
+import { relayedPty, serveRelay } from './localConsoleRelay'
 import { apiWebSocketUrl, webSocketAuthProtocols } from '../../../utils/webSocketAuth'
 
 /** A terminal session whose machine runs in the browser, as ocf-core names it. */
@@ -145,16 +146,44 @@ export function openLocalConsole(
   outputDrained?: () => Promise<void>,
   opts: LocalMachineOptions = defaultOptions()
 ): LocalConsoleSocket {
-  return new LocalConsoleSocket(async () => {
-    const { machine } = machineOf(terminal, opts) // boots while the page reads the run
-    const user = await consoleUserEntry(terminal).user
-    const pty = await (await machine).spawn(undefined, undefined, { cols, rows, user })
-    consolePty = pty
-    reportConsoleOpened()
-    const forget = () => { if (consolePty === pty) consolePty = null }
-    pty.ended.then(forget, forget)
-    return pty
-  }, outputDrained)
+  return new LocalConsoleSocket(() => openShell(terminal, cols, rows, opts), outputDrained)
+}
+
+/**
+ * A console, in a popped-out window, on the machine of the run page's tab
+ * (localConsoleRelay): the window boots no machine of its own.
+ */
+export function openRelayedConsole(
+  terminal: string,
+  cols: number,
+  rows: number,
+  outputDrained?: () => Promise<void>
+): LocalConsoleSocket {
+  return new LocalConsoleSocket(() => relayedPty(terminal, cols, rows), outputDrained)
+}
+
+/**
+ * Serves shells of terminal's machine to the run's popped-out window, while
+ * this tab runs it: holds its machine, with the agent connected. Returns stop.
+ */
+export function serveConsoleRelay(terminal: string, opts: LocalMachineOptions = defaultOptions()): () => void {
+  return serveRelay(terminal, (cols, rows) =>
+    held?.terminal === terminal && agentSocket?.readyState === WebSocket.OPEN
+      ? openShell(terminal, cols, rows, opts)
+      : null)
+}
+
+// The learner's shell on terminal's machine, as the run's user. The latest
+// one opened, here or in a popped-out window, is where foreground scripts go.
+async function openShell(terminal: string, cols: number, rows: number, opts: LocalMachineOptions): Promise<ConsolePty> {
+  const { machine } = machineOf(terminal, opts) // boots while the page reads the run
+  const user = await consoleUserEntry(terminal).user
+  const pty = await (await machine).spawn(undefined, undefined, { cols, rows, user })
+  consolePty = pty
+  reportConsoleOpened()
+  const forget = () => { if (consolePty === pty) consolePty = null }
+  pty.ended.then(forget, forget)
+  return pty
 }
 
 // The learner's open shell, where a foreground script is typed.

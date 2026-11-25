@@ -36,6 +36,8 @@
       v-else-if="!closing"
       :session-id="sessionId"
       :pop-mode="isPopout ? 'in' : undefined"
+      :machine="local ? 'local' : 'incus'"
+      :relayed="local"
       @pop="closePopout"
       :show-header="showHeader"
       :show-footer="showFooter"
@@ -50,6 +52,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import TerminalViewer from '../Terminal/TerminalViewer.vue'
 import { POP_IN_MESSAGE, POPOUT_QUERY } from '../../composables/useTerminalPopout'
+import { isLocalSessionId } from '../../services/domain/terminal/localMachine'
 
 const route = useRoute()
 
@@ -57,6 +60,10 @@ const route = useRoute()
 const sessionId = computed(() => {
   return route.params.sessionId || route.query.sessionId
 })
+
+// A machine in the learner's browser lives in its run page's tab: this page
+// shows it through that tab, and never boots one of its own.
+const local = computed(() => isLocalSessionId(String(sessionId.value || '')))
 
 const showHeader = computed(() => route.query.header !== 'false')
 const showFooter = computed(() => route.query.footer === 'true')

@@ -1,7 +1,7 @@
 /**
  * A run on a machine in the learner's browser has no container behind it, so
- * the panel shows what only the browser machine has: no command history (it is
- * recorded by tt-backend) and no pop-out window (the machine lives in this tab).
+ * the panel shows no command history (it is recorded by tt-backend). It pops
+ * out like a container's: the window reaches the machine through this tab.
  */
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -23,11 +23,11 @@ function mountPanel(props: Record<string, unknown>) {
 }
 
 describe('TerminalSessionPanel on a local machine', () => {
-  it('opens the console on the local machine, without pop-out nor command history', () => {
+  it('opens the console on the local machine, with pop-out and without command history', () => {
     const wrapper = mountPanel({ machine: 'local' })
     const viewer = wrapper.find('.viewer-stub')
     expect(viewer.attributes('data-machine')).toBe('local')
-    expect(viewer.attributes('data-pop-mode')).toBe('undefined')
+    expect(viewer.attributes('data-pop-mode')).toBe('out')
     expect(wrapper.findComponent({ name: 'CommandHistory' }).exists()).toBe(false)
   })
 

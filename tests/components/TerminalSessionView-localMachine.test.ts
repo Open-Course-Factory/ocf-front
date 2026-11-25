@@ -82,11 +82,12 @@ vi.mock('../../src/stores/currentUser', () => ({
   })
 }))
 
-const agent = vi.hoisted(() => ({ stop: vi.fn(), start: vi.fn(), consoleUser: vi.fn() }))
+const agent = vi.hoisted(() => ({ stop: vi.fn(), start: vi.fn(), consoleUser: vi.fn(), relay: vi.fn(), stopRelay: vi.fn() }))
 vi.mock('../../src/services/domain/terminal/localMachine', () => ({
   isLocalSessionId: (id: string) => id.startsWith('local-'),
   startLocalAgent: (...args: unknown[]) => { agent.start(...args); return { stop: agent.stop } },
-  setConsoleUser: (...args: unknown[]) => agent.consoleUser(...args)
+  setConsoleUser: (...args: unknown[]) => agent.consoleUser(...args),
+  serveConsoleRelay: (...args: unknown[]) => { agent.relay(...args); return agent.stopRelay }
 }))
 
 import TerminalSessionView from '../../src/components/Pages/TerminalSessionView.vue'
@@ -123,6 +124,8 @@ describe('TerminalSessionView on a local machine', () => {
 
     expect(agent.start).toHaveBeenCalledWith('run-1', 'local-abc', 'tok', expect.any(Function))
     expect(agent.consoleUser).toHaveBeenCalledWith('local-abc', 1000)
+    // A popped-out terminal reaches this tab's machine through the page.
+    expect(agent.relay).toHaveBeenCalledWith('local-abc')
     const panel = wrapper.find('.tsp-stub')
     expect(panel.attributes('data-machine')).toBe('local')
     expect(panel.attributes('data-exposed')).toBe('false')
@@ -131,6 +134,7 @@ describe('TerminalSessionView on a local machine', () => {
 
     wrapper.unmount()
     expect(agent.stop).toHaveBeenCalled()
+    expect(agent.stopRelay).toHaveBeenCalled()
   })
 
   it('starts no agent for a container', async () => {

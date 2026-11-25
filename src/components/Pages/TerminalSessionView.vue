@@ -393,7 +393,7 @@ import { useResumeRejection } from '../../composables/useResumeRejection'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import SessionPausedBanner from '../Terminal/SessionPausedBanner.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
-import { isLocalSessionId, setConsoleUser, startLocalAgent, type AgentEnd } from '../../services/domain/terminal/localMachine'
+import { isLocalSessionId, serveConsoleRelay, setConsoleUser, startLocalAgent, type AgentEnd } from '../../services/domain/terminal/localMachine'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
@@ -1389,6 +1389,9 @@ watch(scenarioSessionId, (runId) => {
   }
 }, { immediate: true })
 
+// A popped-out terminal reaches this tab's machine through this page.
+const stopConsoleRelay = machine === 'local' ? serveConsoleRelay(sessionId) : null
+
 // The browser asks before a reload or a close takes the machine away.
 function askBeforeLeaving(event: BeforeUnloadEvent) {
   if (isSessionActive.value && !localMachineElsewhere.value) event.preventDefault()
@@ -1397,6 +1400,7 @@ if (machine === 'local') window.addEventListener('beforeunload', askBeforeLeavin
 
 onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', askBeforeLeaving)
+  stopConsoleRelay?.()
   localAgent?.stop()
   stopExpirationTimer()
   cancelExpiryRefreshTimeouts()

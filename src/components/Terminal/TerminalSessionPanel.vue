@@ -45,7 +45,7 @@
         :can-stop="canStop"
         :show-destroy-button="showDestroyButton"
         :is-destroying="isDestroying"
-        :pop-mode="machine === 'local' ? undefined : 'out'"
+        pop-mode="out"
         @pop="popOutConsole"
         @stop="$emit('stop')"
         @destroy="$emit('destroy')"
@@ -128,7 +128,8 @@ interface Props {
   // environment the setup builds.
   holdConsole?: boolean
   // Where the shell runs. A machine in the learner's browser has no command
-  // history (tt-backend records it) and cannot pop out (it lives in this tab).
+  // history (tt-backend records it); popped out, its window reaches it through
+  // this tab.
   machine?: 'incus' | 'local'
 }
 

@@ -288,7 +288,8 @@ import { terminalKeyHandler } from '../../utils/terminalShortcuts'
 import { webSocketAuthProtocols } from '../../utils/webSocketAuth'
 import { canConnectToTerminal, isSessionActive, preConnectError, sessionHasNetwork } from '../../utils/sessionState'
 import { terminalService } from '../../services/domain/terminal/terminalService'
-import { openLocalConsole } from '../../services/domain/terminal/localMachine'
+import { openLocalConsole, openRelayedConsole } from '../../services/domain/terminal/localMachine'
+import { RELAY_NO_MACHINE } from '../../services/domain/terminal/localConsoleRelay'
 import {
   createSupervisionMessageHandler,
   initialSupervisionState,
@@ -363,6 +364,9 @@ interface Props {
   // Where the shell runs: an Incus container through ocf-core, or a machine
   // in this browser tab (unkernel).
   machine?: 'incus' | 'local'
+  // A local machine runs in another tab (the run page): this window's console
+  // reaches it through that tab (a popped-out terminal).
+  relayed?: boolean
 }
 
 const emit = defineEmits<{
@@ -424,6 +428,7 @@ const { t } = useTranslations({
       connectionClosed: 'Connection closed ({code}): {reason}',
       connectionClosedNoReason: 'Connection closed ({code}): Unknown reason',
       localMachineUnavailable: 'This scenario runs on a machine in your browser, and your browser could not start it ({reason}). Use a recent version of Chrome, Edge or Firefox.',
+      localMachineNotHere: 'This terminal shows the machine of a scenario that runs in your browser, in the scenario\'s page. Open that page, then reconnect.',
       websocketError: 'Connection error. Check your authentication.',
       connectionFailed: 'Unable to connect: {message}',
       sessionExpired: 'This session has expired. Please start a new terminal session.',
@@ -468,6 +473,7 @@ const { t } = useTranslations({
       connectionClosed: 'Connexion fermée ({code}): {reason}',
       connectionClosedNoReason: 'Connexion fermée ({code}): Raison inconnue',
       localMachineUnavailable: 'Ce scénario s\'exécute sur une machine dans votre navigateur, et votre navigateur n\'a pas pu la démarrer ({reason}). Utilisez une version récente de Chrome, Edge ou Firefox.',
+      localMachineNotHere: 'Ce terminal affiche la machine d\'un scénario qui tourne dans votre navigateur, dans la page du scénario. Ouvrez cette page, puis reconnectez-vous.',
       websocketError: 'Erreur de connexion. Vérifiez votre authentification.',
       connectionFailed: 'Impossible de se connecter: {message}',
       sessionExpired: 'Cette session a expiré. Veuillez démarrer une nouvelle session de terminal.',
@@ -875,8 +881,9 @@ async function connectToTerminal() {
 
     // Create WebSocket connection. A local machine's console behaves as one
     // (LocalConsoleSocket), so nothing below this line knows the difference.
+    const openConsole = props.relayed ? openRelayedConsole : openLocalConsole
     socket.value = props.machine === 'local'
-      ? openLocalConsole(String(displaySessionId.value), terminal.value.cols, terminal.value.rows, xtermDrained) as unknown as WebSocket
+      ? openConsole(String(displaySessionId.value), terminal.value.cols, terminal.value.rows, xtermDrained) as unknown as WebSocket
       : new WebSocket(wsUrl, webSocketAuthProtocols(token))
 
     socket.value.onopen = () => {
@@ -961,6 +968,10 @@ async function connectToTerminal() {
             t('terminal.connectionError')
           )
         }
+      } else if (props.machine === 'local' && event.reason === RELAY_NO_MACHINE) {
+        // A popped-out terminal whose run page is not open in this browser.
+        error.value = t('terminal.localMachineNotHere')
+        showReconnectButton.value = true
       } else if (props.machine === 'local' && !wasConnected) {
         // The browser could not start the machine (no JSPI, not enough
         // memory, the image unreachable): retrying behind the learner's back
