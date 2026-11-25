@@ -1260,15 +1260,17 @@ if (savedPanelWidth !== null) {
   }
 }
 
-const scenarioPanelStyle = computed(() => ({
-  width: `${scenarioPanelWidth.value}px`,
-  minWidth: `${scenarioPanelWidth.value}px`
-}))
+// The terminal keeps at least half of the screen, whatever width was saved.
+const scenarioPanelStyle = computed(() => {
+  const width = `clamp(${MIN_PANEL_WIDTH}px, 50%, ${scenarioPanelWidth.value}px)`
+  return { width, minWidth: width }
+})
 
 function startPanelResize(event: MouseEvent) {
   isPanelResizing.value = true
   const startX = event.clientX
-  const startWidth = scenarioPanelWidth.value
+  // The width on screen, which the cap can make smaller than the saved one.
+  const startWidth = scenarioPanelRef.value?.$el.offsetWidth ?? scenarioPanelWidth.value
 
   function onMouseMove(e: MouseEvent) {
     const deltaX = startX - e.clientX
@@ -2127,7 +2129,7 @@ onBeforeUnmount(() => {
 }
 
 /* Responsive: stack layout on mobile (scenario panel becomes full overlay) */
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .terminal-session-layout {
     position: relative;
   }

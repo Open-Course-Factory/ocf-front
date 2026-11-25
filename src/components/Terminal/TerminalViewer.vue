@@ -30,17 +30,18 @@
         size="sm"
         icon="fas fa-sync"
         v-show="showReconnectButton"
+        :title="t('terminal.reconnect')"
         @click="reconnect"
       >
         {{ t('terminal.reconnect') }}
       </Button>
 
       <div class="connection-status">
-        <span v-if="isConnected" class="status-connected">
-          <i class="fas fa-circle"></i> {{ t('terminal.connected') }}
+        <span v-if="isConnected" class="status-connected" :title="t('terminal.connected')">
+          <i class="fas fa-circle"></i> <span class="connection-label">{{ t('terminal.connected') }}</span>
         </span>
-        <span v-else-if="showDisconnectedIndicator" class="status-disconnected">
-          <i class="fas fa-circle"></i> {{ t('terminal.disconnected') }}
+        <span v-else-if="showDisconnectedIndicator" class="status-disconnected" :title="t('terminal.disconnected')">
+          <i class="fas fa-circle"></i> <span class="connection-label">{{ t('terminal.disconnected') }}</span>
         </span>
       </div>
 
@@ -141,11 +142,13 @@
 
     <div class="terminal-footer" v-if="sessionInfo">
       <div class="terminal-info">
-        <small class="text-muted">
-          Session: {{ sessionInfo.session_id }} |
-          {{ t('terminal.status') }}: {{ sessionInfo.state }} |
-          <span v-if="isConnected" class="text-success">{{ t('terminal.websocketConnected') }}</span>
-          <span v-else class="text-danger">{{ t('terminal.websocketDisconnected') }}</span>
+        <small class="text-muted session-line">
+          <span class="session-line-id" :title="sessionInfo.session_id">Session: {{ sessionInfo.session_id }}</span>
+          <span>
+            | {{ t('terminal.status') }}: {{ sessionInfo.state }} |
+            <span v-if="isConnected" class="text-success">{{ t('terminal.websocketConnected') }}</span>
+            <span v-else class="text-danger">{{ t('terminal.websocketDisconnected') }}</span>
+          </span>
         </small>
       </div>
     </div>
@@ -1380,6 +1383,56 @@ defineExpose({
 .terminal-info {
   font-family: var(--font-family-monospace);
   font-size: var(--font-size-sm);
+}
+
+/* One line whatever the width: the session id gives way, the state never does. */
+.session-line {
+  display: flex;
+  gap: 1ch;
+  white-space: nowrap;
+}
+
+.session-line-id {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The header controls stay on one line too. SettingsCard's header is the query
+   container; as it narrows, labels leave the screen (not the accessibility tree)
+   and their icon stays, with its tooltip. */
+@container (max-width: 600px) {
+  .connection-label,
+  :deep(.recording-label) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+
+@container (max-width: 460px) {
+  :deep(.header-actions .ports-chip-label),
+  :deep(.header-actions .btn-text) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+
+@container (max-width: 380px) {
+  :deep(.header-actions .ocf-terminal-zoom) {
+    display: none;
+  }
+}
+
+@container (max-width: 320px) {
+  :deep(.header-actions) {
+    gap: var(--spacing-xs);
+  }
 }
 
 /* ========================================

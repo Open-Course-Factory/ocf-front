@@ -86,6 +86,43 @@ test.describe('Scenario player (mocked backend)', () => {
     expect(mock.grade).toBe(100);
   });
 
+  test('small screens leave the room to the terminal', async ({ page }) => {
+    const mock = new ScenarioMock(standardSteps());
+    await mock.install(page);
+    await page.routeWebSocket(/\/console/, () => {}); // an open console shows every control
+    await login(page, E2E_USER, E2E_PASS);
+    await launchIntoPlayer(page, mock);
+    const terminalPanel = page.locator('.terminal-session-panel');
+    await expect(terminalPanel.locator('.status-connected')).toBeVisible();
+
+    for (const width of [1280, 1024, 768]) {
+      await page.setViewportSize({ width, height: 800 });
+
+      // The panel width is animated, so wait for it to settle.
+      await expect
+        .poll(() =>
+          terminalPanel.evaluate((el) => el.clientWidth / el.closest('.terminal-session-layout')!.clientWidth)
+        )
+        .toBeGreaterThan(0.45);
+
+      const layout = await terminalPanel.evaluate((el) => {
+        const header = el.querySelector('.card-header')!.getBoundingClientRect();
+        const controls = [...el.querySelector('.header-actions')!.children]
+          .map((child) => child.getBoundingClientRect())
+          .filter((box) => box.width > 0);
+        const middles = controls.map((box) => box.top + box.height / 2);
+        return {
+          rowSpread: Math.max(...middles) - Math.min(...middles),
+          overflow: Math.max(...controls.map((box) => box.right)) - header.right,
+          statusLine: el.querySelector('.terminal-info small')!.getBoundingClientRect().height,
+        };
+      });
+      expect(layout.rowSpread, `controls on one row at ${width}`).toBeLessThan(8);
+      expect(layout.overflow, `controls inside the header at ${width}`).toBeLessThanOrEqual(0);
+      expect(layout.statusLine, `status on one line at ${width}`).toBeLessThan(24);
+    }
+  });
+
   test('failed verify shows output and does not advance; fixing passes', async ({ page }) => {
     const steps: MockStep[] = [
       {

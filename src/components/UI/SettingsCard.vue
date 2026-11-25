@@ -62,13 +62,17 @@ withDefaults(defineProps<{
 
 .ocf-single-line-title .header-actions {
   align-items: center;
-  flex-wrap: wrap;
-  row-gap: var(--spacing-xs);
+  min-width: 0;
+  white-space: nowrap;
 }
 
 @container (max-width: 720px) {
   .ocf-single-line-title h2 {
     flex-basis: 100%;
+  }
+
+  .ocf-single-line-title .header-actions {
+    gap: var(--spacing-sm);
   }
 }
 
