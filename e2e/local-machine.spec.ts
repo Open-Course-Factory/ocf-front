@@ -203,8 +203,10 @@ test('a reload rebuilds the run at its step on a new machine, and a second tab s
   await second.close();
 
   // The rebuilt machine's console is the run's user, who has no sudo.
-  await typeInTerminal(page, 'echo UID-$(id -u); sudo -n true 2>/dev/null && echo SUDO-OUI || echo SUDO-NON');
-  await expect.poll(() => readTerminalText(page), { timeout: 30_000 }).toContain('SUDO-NON');
+  // (Computed markers: the typed line itself must not match.)
+  await typeInTerminal(page, 'echo UID-$(id -u); sudo -n true 2>/dev/null && echo SUDO-$((1))-OUI || echo SUDO-$((0))-NON');
+  await expect.poll(() => readTerminalText(page), { timeout: 30_000 }).toMatch(/SUDO-[01]-(OUI|NON)/);
+  expect(await readTerminalText(page)).toContain('SUDO-0-NON');
   expect(await readTerminalText(page)).toContain('UID-1000');
 
   // The world was rebuilt, the learner's file is gone.
