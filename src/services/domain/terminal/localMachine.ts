@@ -89,6 +89,7 @@ export function openLocalConsole(
   return new LocalConsoleSocket(async () => {
     const pty = await (await getMachine(opts)).spawn(undefined, undefined, { cols, rows })
     consolePty = pty
+    reportConsoleOpened()
     const forget = () => { if (consolePty === pty) consolePty = null }
     pty.ended.then(forget, forget)
     return pty
@@ -97,6 +98,18 @@ export function openLocalConsole(
 
 // The learner's open shell, where a foreground script is typed.
 let consolePty: Pick<ConsolePty, 'write'> | null = null
+
+// The connected agent socket, to which the shell's opening is reported.
+let agentSocket: WebSocket | null = null
+
+// A foreground script the build staged while the console was held is typed
+// once the shell opens: ocf-core learns it from this, as it learns it from
+// tt-backend for a container.
+function reportConsoleOpened() {
+  if (consolePty && agentSocket?.readyState === WebSocket.OPEN) {
+    agentSocket.send(JSON.stringify({ event: 'console_attached' }))
+  }
+}
 
 /** A request of ocf-core's engine, as src/scenarios/services/localAgents.go sends it. */
 export interface AgentRequest {
@@ -173,8 +186,13 @@ export function startLocalAgent(runId: string, token: string | null | undefined,
       return
     }
     if (stopped) return
-    socket = new WebSocket(apiWebSocketUrl(`/scenario-sessions/${runId}/agent`), webSocketAuthProtocols(token))
-    socket.onmessage = async (event) => {
+    const opened = new WebSocket(apiWebSocketUrl(`/scenario-sessions/${runId}/agent`), webSocketAuthProtocols(token))
+    socket = opened
+    opened.onopen = () => {
+      agentSocket = opened
+      reportConsoleOpened()
+    }
+    opened.onmessage = async (event) => {
       let req: AgentRequest
       try {
         req = JSON.parse(String(event.data))
@@ -182,9 +200,10 @@ export function startLocalAgent(runId: string, token: string | null | undefined,
         return
       }
       const reply = await answerAgentRequest(vm, consolePty, req)
-      if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(reply))
+      if (opened.readyState === WebSocket.OPEN) opened.send(JSON.stringify(reply))
     }
-    socket.onclose = () => {
+    opened.onclose = () => {
+      if (agentSocket === opened) agentSocket = null
       socket = null
       if (!stopped) retry = setTimeout(connect, AGENT_RETRY_MS)
     }
