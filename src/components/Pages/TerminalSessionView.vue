@@ -189,7 +189,8 @@
             :scenario-session-id="scenarioSessionId"
             :scenario-flags-enabled="showsValidatedFlags(scenarioBriefing)"
             :scenario-crash-traps="scenarioBriefing?.crash_traps ?? false"
-            :show-exposed-ports="scenarioBriefing?.port_exposure_allowed ?? false"
+            :show-exposed-ports="machine !== 'local' && (scenarioBriefing?.port_exposure_allowed ?? false)"
+            :machine="machine"
             :show-stop-button="true"
             :is-stopping="isStopping"
             :can-stop="!isScenarioProvisioning"
@@ -370,6 +371,8 @@ import { useResumeRejection } from '../../composables/useResumeRejection'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import SessionPausedBanner from '../Terminal/SessionPausedBanner.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
+import { isLocalSessionId, startLocalAgent } from '../../services/domain/terminal/localMachine'
+import { useCurrentUserStore } from '../../stores/currentUser'
 import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
 import SupervisionViewer from '../Terminal/SupervisionViewer.vue'
@@ -554,6 +557,12 @@ function dismissRecordingNotice() {
 
 // Get session ID from route
 const sessionId = route.params.sessionId as string
+
+// A run whose machine runs in this browser tab. Its agent connects as soon as
+// the run is known, not when the console opens: the run's setup is built
+// through it while the console is held.
+const machine = isLocalSessionId(sessionId) ? 'local' : 'incus'
+let localAgent: { stop(): void } | null = null
 
 // Supervisor mode reads the class, never the learner's own session list.
 const {
@@ -1334,7 +1343,14 @@ onMounted(() => {
   else loadSession()
 })
 
+watch(scenarioSessionId, (runId) => {
+  if (machine === 'local' && runId && !localAgent) {
+    localAgent = startLocalAgent(runId, useCurrentUserStore().secretToken)
+  }
+}, { immediate: true })
+
 onBeforeUnmount(() => {
+  localAgent?.stop()
   stopExpirationTimer()
   cancelExpiryRefreshTimeouts()
   optimisticExpired = false

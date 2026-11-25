@@ -47,9 +47,10 @@ vi.mock('../../src/composables/useNotification', () => ({
 }))
 
 const mockStopSession = vi.fn().mockResolvedValue({})
+const mockSyncSession = vi.fn().mockResolvedValue({})
 vi.mock('../../src/services/domain/terminal/terminalService', () => ({
   terminalService: {
-    syncSession: vi.fn().mockResolvedValue({}),
+    syncSession: (...args: any[]) => mockSyncSession(...args),
     stopSession: (...args: any[]) => mockStopSession(...args)
   }
 }))
@@ -231,5 +232,53 @@ describe('TerminalViewer — local machine', () => {
     const { socket } = await openConsole()
     expect(socket.url).toContain('/terminals/sess-test/console')
     expect(openLocalConsole).not.toHaveBeenCalled()
+  })
+
+  it('says plainly when the browser cannot start the machine, and does not retry behind the learner', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const local = new FakeWebSocket('local')
+    FakeWebSocket.instances = []
+    openLocalConsole.mockReturnValue(local)
+    setActivePinia(createPinia())
+    const wrapper = mount(TerminalViewer, {
+      props: {
+        machine: 'local',
+        sessionInfo: { session_id: 'local-1', state: 'running', expires_at: new Date(Date.now() + 3_600_000).toISOString() }
+      },
+      global: { plugins: [createTestI18n()], stubs: { Button: true, RecordingIndicator: true, SessionCountdown: true } }
+    })
+    await vi.waitFor(() => expect(openLocalConsole).toHaveBeenCalled(), { timeout: 5000 })
+
+    local.onclose?.({ code: 1006, reason: 'JSPI is not available', target: local })
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(wrapper.text()).toContain('JSPI is not available')
+    expect(openLocalConsole).toHaveBeenCalledTimes(1)
+    expect(mockSyncSession).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
+  it('does not ask ocf-core to sync a local session after its console closes', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const local = new FakeWebSocket('local')
+    FakeWebSocket.instances = []
+    openLocalConsole.mockReturnValue(local)
+    setActivePinia(createPinia())
+    mount(TerminalViewer, {
+      props: {
+        machine: 'local',
+        sessionInfo: { session_id: 'local-1', state: 'running', expires_at: new Date(Date.now() + 3_600_000).toISOString() }
+      },
+      global: { plugins: [createTestI18n()], stubs: { Button: true, RecordingIndicator: true, SessionCountdown: true } }
+    })
+    await vi.waitFor(() => expect(openLocalConsole).toHaveBeenCalled(), { timeout: 5000 })
+    local.onopen?.()
+    await flushPromises()
+
+    local.onclose?.({ code: 1000, reason: '', target: local })
+    await vi.advanceTimersByTimeAsync(5_000)
+    expect(mockSyncSession).not.toHaveBeenCalled()
+    vi.useRealTimers()
   })
 })

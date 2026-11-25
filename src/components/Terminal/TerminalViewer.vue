@@ -423,6 +423,7 @@ const { t } = useTranslations({
       authenticationFailed: 'Authentication failed. Please log in again.',
       connectionClosed: 'Connection closed ({code}): {reason}',
       connectionClosedNoReason: 'Connection closed ({code}): Unknown reason',
+      localMachineUnavailable: 'This scenario runs on a machine in your browser, and your browser could not start it ({reason}). Use a recent version of Chrome, Edge or Firefox.',
       websocketError: 'Connection error. Check your authentication.',
       connectionFailed: 'Unable to connect: {message}',
       sessionExpired: 'This session has expired. Please start a new terminal session.',
@@ -466,6 +467,7 @@ const { t } = useTranslations({
       authenticationFailed: 'Authentification échouée. Veuillez vous reconnecter.',
       connectionClosed: 'Connexion fermée ({code}): {reason}',
       connectionClosedNoReason: 'Connexion fermée ({code}): Raison inconnue',
+      localMachineUnavailable: 'Ce scénario s\'exécute sur une machine dans votre navigateur, et votre navigateur n\'a pas pu la démarrer ({reason}). Utilisez une version récente de Chrome, Edge ou Firefox.',
       websocketError: 'Erreur de connexion. Vérifiez votre authentification.',
       connectionFailed: 'Impossible de se connecter: {message}',
       sessionExpired: 'Cette session a expiré. Veuillez démarrer une nouvelle session de terminal.',
@@ -959,6 +961,12 @@ async function connectToTerminal() {
             t('terminal.connectionError')
           )
         }
+      } else if (props.machine === 'local' && !wasConnected) {
+        // The browser could not start the machine (no JSPI, not enough
+        // memory, the image unreachable): retrying behind the learner's back
+        // would only fail again. Said plainly, with the browser's reason.
+        error.value = t('terminal.localMachineUnavailable', { reason: event.reason || String(event.code) })
+        showReconnectButton.value = true
       } else if (wasConnected) {
         // WebSocket closed while session was active = shell exited or connection
         // lost. The environment is usually still running, so surface the
@@ -986,9 +994,10 @@ async function connectToTerminal() {
         showReconnectButton.value = true
       }
 
-      // Sync session status with backend after WebSocket closes
+      // Sync session status with backend after WebSocket closes. tt-backend
+      // knows nothing of a machine in the browser: nothing to sync.
       const sessionId = displaySessionId.value
-      if (sessionId) {
+      if (sessionId && props.machine !== 'local') {
         setTimeout(async () => {
           try {
             await terminalService.syncSession(sessionId)

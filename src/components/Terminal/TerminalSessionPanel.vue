@@ -35,6 +35,7 @@
         :has-scenario="hasScenario"
         :scenario-crash-traps="scenarioCrashTraps"
         :exposed-ports-enabled="showExposedPorts"
+        :machine="machine"
         use-settings-card
         :title="sessionInfo?.name || ('Terminal ' + (sessionInfo?.session_id?.substring(0, 8) || ''))"
         icon="fas fa-terminal"
@@ -44,7 +45,7 @@
         :can-stop="canStop"
         :show-destroy-button="showDestroyButton"
         :is-destroying="isDestroying"
-        pop-mode="out"
+        :pop-mode="machine === 'local' ? undefined : 'out'"
         @pop="popOutConsole"
         @stop="$emit('stop')"
         @destroy="$emit('destroy')"
@@ -59,7 +60,7 @@
 
     <!-- Sub-panels: Command History + Validated Flags side by side -->
     <div class="sub-panels" :class="{ 'has-flags': scenarioSessionId && scenarioFlagsEnabled }">
-      <div v-if="showHistory" class="command-history-panel">
+      <div v-if="showHistory && machine !== 'local'" class="command-history-panel">
         <CommandHistory
           :session-id="sessionInfo?.session_id"
           :is-active="isActive"
@@ -126,6 +127,9 @@ interface Props {
   // connection, and a shell started during a scenario's setup misses the
   // environment the setup builds.
   holdConsole?: boolean
+  // Where the shell runs. A machine in the learner's browser has no command
+  // history (tt-backend records it) and cannot pop out (it lives in this tab).
+  machine?: 'incus' | 'local'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -142,7 +146,8 @@ const props = withDefaults(defineProps<Props>(), {
   scenarioCrashTraps: false,
   endReason: '',
   hasScenario: false,
-  holdConsole: false
+  holdConsole: false,
+  machine: 'incus'
 })
 
 defineEmits<{
