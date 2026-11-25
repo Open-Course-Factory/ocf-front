@@ -288,6 +288,7 @@ import { terminalKeyHandler } from '../../utils/terminalShortcuts'
 import { webSocketAuthProtocols } from '../../utils/webSocketAuth'
 import { canConnectToTerminal, isSessionActive, preConnectError, sessionHasNetwork } from '../../utils/sessionState'
 import { terminalService } from '../../services/domain/terminal/terminalService'
+import { openLocalConsole } from '../../services/domain/terminal/localMachine'
 import {
   createSupervisionMessageHandler,
   initialSupervisionState,
@@ -359,6 +360,9 @@ interface Props {
   // Header button moving the console to its own window ('out') or, in that
   // window, back into the page ('in'). The parent does the moving.
   popMode?: 'out' | 'in'
+  // Where the shell runs: an Incus container through ocf-core, or a machine
+  // in this browser tab (unkernel).
+  machine?: 'incus' | 'local'
 }
 
 const emit = defineEmits<{
@@ -392,7 +396,8 @@ const props = withDefaults(defineProps<Props>(), {
   endReason: '',
   hasScenario: false,
   scenarioCrashTraps: false,
-  exposedPortsEnabled: false
+  exposedPortsEnabled: false,
+  machine: 'incus'
 })
 
 // Translations
@@ -826,6 +831,11 @@ function attachSocket() {
   })
 }
 
+// Resolves once xterm has parsed everything written so far.
+function xtermDrained(): Promise<void> {
+  return new Promise(resolve => terminal.value ? terminal.value.write('', resolve) : resolve())
+}
+
 // Connect to terminal via WebSocket
 async function connectToTerminal() {
   if (!displaySessionId.value || !terminal.value) {
@@ -861,8 +871,11 @@ async function connectToTerminal() {
       console.warn('No authentication token available for WebSocket connection')
     }
 
-    // Create WebSocket connection
-    socket.value = new WebSocket(wsUrl, webSocketAuthProtocols(token))
+    // Create WebSocket connection. A local machine's console behaves as one
+    // (LocalConsoleSocket), so nothing below this line knows the difference.
+    socket.value = props.machine === 'local'
+      ? openLocalConsole(terminal.value.cols, terminal.value.rows, xtermDrained) as unknown as WebSocket
+      : new WebSocket(wsUrl, webSocketAuthProtocols(token))
 
     socket.value.onopen = () => {
       isWsOpen.value = true
