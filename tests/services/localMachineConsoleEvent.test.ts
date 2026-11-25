@@ -5,16 +5,17 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const pty = {
+// A fresh pty per shell, as the machine gives: a stream is read by one console.
+const newPty = () => ({
   output: new ReadableStream<Uint8Array>(),
   write: vi.fn().mockResolvedValue(undefined),
   resize: vi.fn(),
   close: vi.fn().mockResolvedValue(undefined),
   ended: new Promise(() => {})
-}
+})
 vi.mock('unkernel', () => ({
   checkSupport: async () => ({ ok: true, problems: [] }),
-  createKernel: async () => ({ spawn: async () => pty, exec: vi.fn() })
+  createKernel: async () => ({ spawn: async () => newPty(), exec: vi.fn() })
 }))
 
 class FakeWebSocket {
