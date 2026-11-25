@@ -475,6 +475,16 @@
         <span class="form-hint">{{ t('scenarioEditor.crashTrapsHint') }}</span>
       </div>
 
+      <div class="form-group">
+        <label for="scenario-machine">{{ t('scenarioEditor.machine') }}</label>
+        <select id="scenario-machine" v-model="model.machine" class="form-control">
+          <option value="incus">{{ t('scenarioEditor.machineIncus') }}</option>
+          <option value="local">{{ t('scenarioEditor.machineLocal') }}</option>
+          <option value="by_account">{{ t('scenarioEditor.machineByAccount') }}</option>
+        </select>
+        <span class="form-hint">{{ t('scenarioEditor.machineHint') }}</span>
+      </div>
+
       <div class="form-group checkbox-group">
         <label class="checkbox-label" for="scenario-port-exposure">
           <input id="scenario-port-exposure" type="checkbox" v-model="model.port_exposure_allowed" />

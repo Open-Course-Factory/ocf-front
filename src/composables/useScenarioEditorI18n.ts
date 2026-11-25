@@ -207,6 +207,11 @@ export function useScenarioEditorI18n() {
       crashTrapsHint: 'All flags deployed at start. Container crash resets progress.',
       portExposureAllowed: 'Allow public port exposure',
       portExposureAllowedHint: 'Learners on a plan with the feature may publish a port of the lab at a public URL.',
+      machine: 'Where the lab runs',
+      machineIncus: 'In a container',
+      machineLocal: 'In the learner\'s browser',
+      machineByAccount: 'Depends on the learner\'s plan',
+      machineHint: 'A lab in the browser needs no server, but the learner owns the machine: they can read every file in it and fake its checks. An exam, a lab with flags or with crash traps always runs in a container.',
       isPublic: 'Public (available to all users)',
       // Export
       exportNeedsScenario: 'Select a scenario to export it',
@@ -430,6 +435,11 @@ export function useScenarioEditorI18n() {
       crashTrapsHint: 'Tous les drapeaux déployés au démarrage. Un crash du conteneur réinitialise la progression.',
       portExposureAllowed: 'Autoriser l’exposition publique de ports',
       portExposureAllowedHint: 'Les apprenants dont le forfait le permet peuvent publier un port du lab sur une URL publique.',
+      machine: 'Où le lab s\'exécute',
+      machineIncus: 'Dans un conteneur',
+      machineLocal: 'Dans le navigateur de l\'apprenant',
+      machineByAccount: 'Selon l\'abonnement de l\'apprenant',
+      machineHint: 'Un lab dans le navigateur n\'a besoin d\'aucun serveur, mais l\'apprenant a la machine en main : il peut lire tous ses fichiers et fausser ses vérifications. Un examen, un lab à drapeaux ou à pièges de crash s\'exécute toujours dans un conteneur.',
       isPublic: 'Public (disponible pour tous les utilisateurs)',
       // Export
       exportNeedsScenario: 'Sélectionnez un scénario pour l\'exporter',

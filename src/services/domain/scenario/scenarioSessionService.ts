@@ -285,6 +285,9 @@ export interface ScenarioInfo {
   // Mirrors Scenario.PortExposureAllowed: whether the exposed-ports panel is
   // mounted for this run. Serialized without omitempty like crash_traps.
   port_exposure_allowed?: boolean
+  // Mirrors Scenario.Machine: where its runs run ("incus", "local",
+  // "by_account"). Each run's own machine is decided at launch.
+  machine?: string
   // Mirrors Scenario.HasFlagSteps: whether any step is a flag step. Sent even
   // to learners, whose copy has no steps. Absent from an older ocf-core.
   has_flag_steps?: boolean

@@ -117,6 +117,7 @@ Scenario fields:
 - "flags_enabled" (boolean): true when the scenario has flag steps.
 - "crash_traps" (boolean): leave false.
 - "port_exposure_allowed" (boolean): true only if the learner must publish a web port.
+- "machine" (string): leave out — the lab runs in a container. "local" runs it in the learner's browser, with no network and only the packages of the image.
 - "session_user" (integer uid): leave out — the learner is then root. Set it (e.g. 1000) only when the lesson is about permissions, and create that user in setup_script.
 - "intro_text" (markdown): shown before step 1.
 - "finish_text" (markdown): shown after the last step.
@@ -255,6 +256,7 @@ Champs du scénario :
 - "flags_enabled" (booléen) : true si le scénario comporte des étapes à drapeau.
 - "crash_traps" (booléen) : laissez false.
 - "port_exposure_allowed" (booléen) : true uniquement si l'apprenant doit publier un port web.
+- "machine" (chaîne) : à omettre — le lab s'exécute alors dans un conteneur. "local" l'exécute dans le navigateur de l'apprenant, sans réseau et avec les seuls paquets de l'image.
 - "session_user" (uid entier) : à omettre — l'apprenant est alors root. Ne le renseignez (par exemple 1000) que si la leçon porte sur les permissions, et créez cet utilisateur dans setup_script.
 - "intro_text" (markdown) : affiché avant l'étape 1.
 - "finish_text" (markdown) : affiché après la dernière étape.

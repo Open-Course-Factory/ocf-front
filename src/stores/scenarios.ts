@@ -57,6 +57,10 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 crash_traps: 'Crash Traps',
                 portExposureAllowed: 'Public Port Exposure',
                 port_exposure_allowed: 'Public Port Exposure',
+                machine: 'Where the Lab Runs',
+                machineIncus: 'In a container',
+                machineLocal: 'In the learner\'s browser',
+                machineByAccount: 'Depends on the learner\'s plan',
                 introText: 'Introduction Text',
                 intro_text: 'Introduction Text',
                 finishText: 'Finish Text',
@@ -115,6 +119,10 @@ export const useScenariosStore = defineStore('scenarios', () => {
                 crash_traps: 'Pièges de crash',
                 portExposureAllowed: 'Exposition publique de ports',
                 port_exposure_allowed: 'Exposition publique de ports',
+                machine: 'Où le lab s\'exécute',
+                machineIncus: 'Dans un conteneur',
+                machineLocal: 'Dans le navigateur de l\'apprenant',
+                machineByAccount: 'Selon l\'abonnement de l\'apprenant',
                 introText: 'Texte d\'introduction',
                 intro_text: 'Texte d\'introduction',
                 finishText: 'Texte de fin',
@@ -217,6 +225,11 @@ export const useScenariosStore = defineStore('scenarios', () => {
         field('flags_enabled', t('scenarios.flagsEnabled')).checkbox().visible().creatable().updatable(),
         field('crash_traps', t('scenarios.crashTraps')).checkbox().visible().creatable().updatable(),
         field('port_exposure_allowed', t('scenarios.portExposureAllowed')).checkbox().visible().creatable().updatable(),
+        field('machine', t('scenarios.machine')).select().visible().creatable().updatable().withOptions([
+            { value: 'incus', text: t('scenarios.machineIncus') },
+            { value: 'local', text: t('scenarios.machineLocal') },
+            { value: 'by_account', text: t('scenarios.machineByAccount') }
+        ]),
         field('allowed_flag_paths', t('scenarios.allowed_flag_paths')).input().visible().creatable().updatable()
             .hint(t('scenarios.allowedFlagPathsHelp')),
         field('intro_text', t('scenarios.introText')).textarea().hidden(),

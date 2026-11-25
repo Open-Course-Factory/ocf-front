@@ -839,7 +839,7 @@ const scopeHint = computed(() => {
 const SCENARIO_FIELDS = [
   'name', 'title', 'difficulty', 'estimated_time_minutes', 'description', 'intro_text', 'finish_text',
   'objectives', 'prerequisites', 'setup_script', 'instance_type', 'hostname', 'os_type', 'source_type',
-  'flags_enabled', 'crash_traps', 'port_exposure_allowed', 'is_public', 'default_locale', 'locales'
+  'flags_enabled', 'crash_traps', 'port_exposure_allowed', 'machine', 'is_public', 'default_locale', 'locales'
 ] as const
 
 const handleCreateNew = async () => {
@@ -862,6 +862,7 @@ const handleCreateNew = async () => {
     flags_enabled: false,
     crash_traps: false,
     port_exposure_allowed: false,
+    machine: 'incus',
     is_public: false,
     default_locale: '',
     locales: '',
@@ -884,6 +885,7 @@ async function openScenarioSettings() {
     flags_enabled: !!scenario.flags_enabled,
     crash_traps: !!scenario.crash_traps,
     port_exposure_allowed: !!scenario.port_exposure_allowed,
+    machine: scenario.machine || 'incus',
     is_public: !!scenario.is_public,
     entityId: scenario.id,
     organization_id: scenario.organization_id || null,
