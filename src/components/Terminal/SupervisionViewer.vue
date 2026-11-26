@@ -100,7 +100,12 @@
     <!-- Terminal -->
     <div class="supervision-viewer-wrapper">
       <div ref="terminalRef" class="supervision-viewer-terminal"></div>
-      <div v-if="error" class="supervision-viewer-overlay supervision-viewer-error">
+      <!-- No console on any server to watch: the machine is in the learner's tab. -->
+      <div v-if="inLearnersBrowser" class="supervision-viewer-overlay" data-testid="supervision-in-browser">
+        <i class="fas fa-laptop"></i>
+        <p>{{ t('supervisionViewer.inLearnersBrowser') }}</p>
+      </div>
+      <div v-else-if="error" class="supervision-viewer-overlay supervision-viewer-error">
         <i class="fas fa-exclamation-triangle"></i>
         <p>{{ error }}</p>
       </div>
@@ -125,6 +130,7 @@ import { useTranslations } from '../../composables/useTranslations'
 import { getTerminalTheme } from '../../utils/terminalTheme'
 import { terminalKeyHandler } from '../../utils/terminalShortcuts'
 import { buildSuperviseWsUrl } from '../../services/domain/terminal/supervisionService'
+import { isLocalSessionId } from '../../services/domain/terminal/localMachine'
 import { webSocketAuthProtocols } from '../../utils/webSocketAuth'
 import {
   createSupervisionMessageHandler,
@@ -160,6 +166,7 @@ const emit = defineEmits<{
 const { t } = useTranslations({
   en: {
     supervisionViewer: {
+      inLearnersBrowser: 'This machine runs in the learner\'s browser: there is no live view of it.',
       takeHand: 'Type in the terminal',
       maximize: 'Fill the window (F11 for the whole screen)',
       restore: 'Back to normal size',
@@ -178,6 +185,7 @@ const { t } = useTranslations({
   },
   fr: {
     supervisionViewer: {
+      inLearnersBrowser: 'Cette machine tourne dans le navigateur de l\'apprenant : il n\'y a pas de vue en direct.',
       takeHand: 'Écrire dans le terminal',
       maximize: 'Agrandir à toute la fenêtre (F11 pour tout l’écran)',
       restore: 'Revenir à la taille normale',
@@ -361,7 +369,12 @@ watch(drivesLearnerSize, (driving) => (driving ? refit() : applyLearnerSize()))
 // gives the whole screen, and Esc does not leave that one).
 const isMaximized = ref(false)
 
+// A machine in the learner's browser has no console on a server (ocf-core
+// refuses to supervise it): nothing to connect to.
+const inLearnersBrowser = isLocalSessionId(props.sessionId)
+
 function connect() {
+  if (inLearnersBrowser) return
   const url = buildSuperviseWsUrl(props.sessionId)
 
   controlState.value = initialSupervisionState()
