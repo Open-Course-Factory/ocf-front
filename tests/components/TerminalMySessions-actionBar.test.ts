@@ -164,6 +164,24 @@ describe('TerminalMySessions — 3-button action bar', () => {
     })
   })
 
+  // A machine in the learner's browser lives in its run page: no standalone
+  // terminal tab to open, no link or embed code to share, nothing to sync.
+  it('local machine → opens in its run page only, with no tab, link, embed or sync', async () => {
+    const wrapper = mountPage([
+      { id: 'l', session_id: 'local-abc', state: 'running', expires_at: new Date(Date.now() + 3_600_000).toISOString() },
+      { id: 'i', session_id: 'sess-incus', state: 'running', expires_at: new Date(Date.now() + 3_600_000).toISOString() }
+    ])
+    await flushPromises()
+
+    const local = wrapper.find('[data-testid="btn-trash-local-abc"]').element.closest('.card-actions-compact')!
+    const incus = wrapper.find('[data-testid="btn-trash-sess-incus"]').element.closest('.card-actions-compact')!
+    expect(local.querySelector('.fa-external-link-alt')).toBeNull()
+    expect(local.querySelector('.dropdown-container')).toBeNull()
+    expect(local.querySelector('.btn-view')).not.toBeNull()
+    expect(incus.querySelector('.fa-external-link-alt')).not.toBeNull()
+    expect(incus.querySelector('.dropdown-container')).not.toBeNull()
+  })
+
   describe('missing state field (post MR !239: legacy `status` parallel field was removed)', () => {
     it('row with no `state` defaults to deleted — no action buttons rendered', async () => {
       const wrapper = mountPage([

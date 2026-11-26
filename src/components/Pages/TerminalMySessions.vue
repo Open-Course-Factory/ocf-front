@@ -253,9 +253,10 @@
                   >
                     <i class="fas fa-desktop"></i>
                   </router-link>
-                  <!-- Open-in-tab: only when running (a stopped session can't be attached to) -->
+                  <!-- Open-in-tab: only when running (a stopped session can't be attached to).
+                       A machine in the learner's browser lives in its run page: no tab of its own. -->
                   <button
-                    v-if="getEffectiveSessionState(session) === 'running'"
+                    v-if="getEffectiveSessionState(session) === 'running' && !isLocalSessionId(session.session_id)"
                     class="btn-icon btn-primary"
                     @click="openTerminalInNewTab(session.session_id)"
                     :title="t('terminalMySessions.buttonOpen')"
@@ -304,9 +305,11 @@
                     <i class="fas fa-trash"></i>
                   </button>
 
-                  <!-- Dropdown menu for additional actions: only when running -->
+                  <!-- Dropdown menu for additional actions: only when running. A machine
+                       in the learner's browser has no link or embed to share, and
+                       nothing to sync with tt-backend. -->
                   <div
-                    v-if="getEffectiveSessionState(session) === 'running'"
+                    v-if="getEffectiveSessionState(session) === 'running' && !isLocalSessionId(session.session_id)"
                     class="dropdown-container"
                     :ref="(el) => dropdownRefs.set(session.id || session.session_id, el as HTMLElement)"
                   >
@@ -623,6 +626,7 @@ import { extractErrorMessage } from '../../utils/formatters'
 import { useResumeRejection } from '../../composables/useResumeRejection'
 import { getEffectiveSessionState, sessionHasNetwork, type EffectiveSessionState, type SessionLifecycleFields } from '../../utils/sessionState'
 import { terminalWindowUrl, TERMINAL_WINDOW_FEATURES } from '../../composables/useTerminalPopout'
+import { isLocalSessionId } from '../../services/domain/terminal/localMachine'
 
 const { showConfirm, showError } = useNotification()
 const { handleResumeRejection } = useResumeRejection()
