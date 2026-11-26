@@ -98,7 +98,30 @@ describe('the machine of a local run', () => {
     agent.stop()
   })
 
-  for (const [code, reason] of [[AGENT_CLOSE.machineLost, 'lost'], [AGENT_CLOSE.otherTab, 'other_tab'], [AGENT_CLOSE.ended, 'ended']] as const) {
+  // A reloaded tab may reach ocf-core before it has seen the old tab's
+  // connection close: "open in another tab" is believed when it is said again.
+  it('tries again when told the run is open in another tab, and believes it the third time', async () => {
+    const onEnd = vi.fn()
+    startLocalAgent('run-o', 'local-o', 'tok', onEnd, opts)
+    await settle()
+    FakeWebSocket.instances[0].closeWith(AGENT_CLOSE.otherTab)
+    await vi.advanceTimersByTimeAsync(3000)
+    FakeWebSocket.instances[1].open()
+    FakeWebSocket.instances[1].closeWith(1006)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(onEnd).not.toHaveBeenCalled()
+
+    FakeWebSocket.instances[2].closeWith(AGENT_CLOSE.otherTab)
+    await vi.advanceTimersByTimeAsync(3000)
+    FakeWebSocket.instances[3].closeWith(AGENT_CLOSE.otherTab)
+    await vi.advanceTimersByTimeAsync(3000)
+    FakeWebSocket.instances[4].closeWith(AGENT_CLOSE.otherTab)
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(onEnd).toHaveBeenCalledWith('other_tab')
+    expect(FakeWebSocket.instances).toHaveLength(5)
+  })
+
+  for (const [code, reason] of [[AGENT_CLOSE.machineLost, 'lost'], [AGENT_CLOSE.ended, 'ended']] as const) {
     it(`stops its machine and stops trying on close ${code} (${reason})`, async () => {
       const onEnd = vi.fn()
       startLocalAgent('run-d', `local-d-${code}`, 'tok', onEnd, opts)

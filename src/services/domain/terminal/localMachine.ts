@@ -283,6 +283,7 @@ export async function answerAgentRequest(
 }
 
 const AGENT_RETRY_MS = 3000
+const OTHER_TAB_BELIEVED_AFTER = 3
 
 /** Close codes ocf-core ends an agent with (src/scenarios/services/localAgents.go). */
 export const AGENT_CLOSE = {
@@ -322,6 +323,10 @@ export function startLocalAgent(
   let stopped = false
   let socket: WebSocket | null = null
   let retry: ReturnType<typeof setTimeout> | null = null
+  // A reloaded tab may reach ocf-core before it has seen the old tab's
+  // connection close, and be told the run is open in another tab: believed
+  // when said that many times in a row.
+  let otherTabAnswers = 0
 
   const connect = async () => {
     const { boot, machine } = machineOf(terminal, opts)
@@ -337,6 +342,7 @@ export function startLocalAgent(
     const opened = new WebSocket(url, webSocketAuthProtocols(token))
     socket = opened
     opened.onopen = () => {
+      otherTabAnswers = 0
       agentSocket = opened
       reportConsoleOpened()
     }
@@ -355,7 +361,8 @@ export function startLocalAgent(
       socket = null
       if (stopped) return
       const end = AGENT_ENDS[event.code]
-      if (!end) {
+      const believed = end !== 'other_tab' || ++otherTabAnswers >= OTHER_TAB_BELIEVED_AFTER
+      if (!end || !believed) {
         retry = setTimeout(connect, AGENT_RETRY_MS)
         return
       }
