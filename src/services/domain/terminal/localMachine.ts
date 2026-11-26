@@ -115,7 +115,7 @@ export function onDesktopFrames(listener: () => void): () => void {
   return () => desktopFrameListeners.delete(listener)
 }
 
-/** The desktop page's terminals (its KW.windows): 0 is the page's own boot console, the learner's are 1 and up. */
+/** The desktop page's terminals (its KW.windows): 0 is its console, which shows the boot and then the learner's shell. */
 export interface DesktopTerminals {
   list(): { n: number }[]
   open(opts?: { select?: boolean }): Promise<{ n: number }>
@@ -126,9 +126,10 @@ export interface DesktopTerminals {
 type DesktopWindow = Window & { KW?: { ready?: () => Promise<Machine>, windows?: DesktopTerminals, term?: { focus(): void } } }
 
 // The learner's terminal on the desktop, where a foreground script is typed
-// and a command pasted: the first one, or a new one if they closed them all.
+// and a command pasted: the first one (the console, while it is open), or a
+// new one if they closed them all.
 async function learnerTerminal(terminals: DesktopTerminals): Promise<number> {
-  const first = terminals.list().map(t => t.n).filter(n => n > 0).sort((a, b) => a - b)[0]
+  const first = terminals.list().map(t => t.n).sort((a, b) => a - b)[0]
   return first ?? (await terminals.open({ select: false })).n
 }
 

@@ -33,7 +33,7 @@ describe('the desktop\'s learner terminal', () => {
     return {
       sent,
       api: {
-        list: () => [0, ...open].map(n => ({ n })),
+        list: () => open.map(n => ({ n })),
         open: vi.fn(async () => { open.push(7); return { n: 7 } }),
         select: vi.fn(() => true),
         send: (n: number, data: string) => { sent.push([n, data]) }
@@ -41,10 +41,10 @@ describe('the desktop\'s learner terminal', () => {
     }
   }
 
-  it('gets the foreground script in the first terminal, never the page\'s boot console', async () => {
-    const t = terminals([3, 1])
+  it('gets the foreground script in the first terminal: the console, where the learner\'s shell runs', async () => {
+    const t = terminals([3, 0, 1])
     await desktopShell(t.api).write('echo PRET\n')
-    expect(t.sent).toEqual([[1, 'echo PRET\n']])
+    expect(t.sent).toEqual([[0, 'echo PRET\n']])
     expect(t.api.open).not.toHaveBeenCalled()
   })
 
