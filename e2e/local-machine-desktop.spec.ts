@@ -48,6 +48,8 @@ let learner: ApiSession;
 const scenarioIds: string[] = [];
 let planId = '';
 let planSettingBefore = 'off';
+let flagId = '';
+let flagBefore = false;
 
 test.beforeAll(async () => {
   admin = await adminSession();
@@ -57,6 +59,8 @@ test.beforeAll(async () => {
 
   const flags = await admin.api.get(`${API}/features?key=local_machines`, { headers: asAdmin });
   const flag = (await flags.json()).data.find((f: { key: string }) => f.key === 'local_machines');
+  flagId = flag.id;
+  flagBefore = flag.enabled;
   expect((await admin.api.patch(`${API}/features/${flag.id}`, { headers: asAdmin, data: { enabled: true } })).ok()).toBeTruthy();
 
   const current = await learner.api.get(`${API}/user-subscriptions/current`, { headers: { Authorization: `Bearer ${learner.token}` } });
@@ -104,17 +108,25 @@ test.afterAll(async () => {
     if (scenarioIds.includes(s.scenario_id)) await cleanupScenarioSession(learner, s.id);
   }
   for (const id of scenarioIds) await deleteScenarioById(admin, id);
-  await admin.api.patch(`${API}/subscription-plans/${planId}`, {
-    headers: { Authorization: `Bearer ${admin.token}` }, data: { local_machines: planSettingBefore },
-  });
+  const asAdmin = { Authorization: `Bearer ${admin.token}` };
+  await admin.api.patch(`${API}/subscription-plans/${planId}`, { headers: asAdmin, data: { local_machines: planSettingBefore } });
+  await admin.api.patch(`${API}/features/${flagId}`, { headers: asAdmin, data: { enabled: flagBefore } });
 });
 
 test('a lab that offers apps shows the desktop, with only those apps to install', async ({ page }, info) => {
   test.skip(!admin, 'needs the platform admin to set up the lab');
   test.setTimeout(10 * 60 * 1000);
   const shot = (name: string) => page.screenshot({ path: info.outputPath(`${name}.png`) });
+  // Every request of the desktop page goes to the front or the API: none to
+  // an outside site. (The front's own page is another matter.)
+  const ours = new Set([new URL(API).host, new URL(info.project.use.baseURL!).host]);
   const outside: string[] = [];
-  page.on('request', r => { if (/picsum\.photos|unkernel\.dev/.test(r.url())) outside.push(r.url()); });
+  page.on('request', r => {
+    let fromDesktop = true; // a worker's request has no frame: the desktop's kernel
+    try { fromDesktop = r.frame().url().includes('/unkernel-desktop/'); } catch { /* worker */ }
+    const url = new URL(r.url());
+    if (fromDesktop && /^(https?|wss?):$/.test(url.protocol) && !ours.has(url.host)) outside.push(r.url());
+  });
 
   await login(page, LEARNER_EMAIL, PASSWORD);
   await dismissVerificationBanner(page);
