@@ -18,11 +18,13 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { desktopFailures, desktopFrames, onDesktopFrames } from '../../services/domain/terminal/localMachine'
+import { onBeforeUnmount, onMounted, ref, watchEffect } from 'vue'
+import { desktopFailures, desktopFrames, desktopLearnerTerminal, onDesktopFrames } from '../../services/domain/terminal/localMachine'
 import { useTranslations } from '../../composables/useTranslations'
 
-const props = defineProps<{ terminal: string; covered: boolean }>()
+// hold: the run is being built; the learner's terminal opens after, as the
+// console's shell does (TerminalSessionPanel holdConsole).
+const props = defineProps<{ terminal: string; covered: boolean; hold: boolean }>()
 
 const { t } = useTranslations({
   en: { desktopSlot: {
@@ -63,6 +65,12 @@ function follow() {
   place()
   raf = requestAnimationFrame(follow)
 }
+
+watchEffect(() => {
+  // A failure leaves the desktop without it: Verify still runs, and a click on
+  // a command opens it again.
+  if (frame.value && !props.hold) desktopLearnerTerminal(props.terminal).catch(() => {})
+})
 
 const stopListening = onDesktopFrames(read)
 onMounted(() => {

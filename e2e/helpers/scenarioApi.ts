@@ -76,6 +76,7 @@ export interface SeedScenario {
   crash_traps?: boolean;
   /** Where its runs run: a container (default), the learner's browser, or as the plan says. */
   machine?: 'incus' | 'local' | 'by_account';
+  machine_display?: 'terminal' | 'desktop';
   machine_apps?: string[];
   session_user?: number; // the uid the learner's console runs as; absent, root
   setup_script?: string;

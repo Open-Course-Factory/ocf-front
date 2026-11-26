@@ -85,31 +85,33 @@ const LOCK_DOWN_SUDO = [
   'true'
 ].join('; ')
 
-// A scenario that offers apps (its machine_apps) shows unkernel's desktop page
-// instead of the console: an iframe of this origin laid over the console's
-// place (DesktopSlot.vue), whose window.KW.ready() hands out the machine, which
-// the agent drives as it drives a console one. setMachineApps() tells which;
-// the machine boots once it is told, and keeps the kind it booted as.
-const machineApps = new Map<string, { apps: Promise<string[]>; resolve(apps: string[]): void }>()
+// A scenario set to a desktop (its machine_display) shows unkernel's desktop
+// page instead of the console: an iframe of this origin laid over the
+// console's place (DesktopSlot.vue), whose window.KW.ready() hands out the
+// machine, which the agent drives as it drives a console one. Its launcher
+// offers the scenario's apps. setMachineDesktop() tells which; the machine
+// boots once it is told, and keeps the kind it booted as.
+type DesktopApps = string[] | null
+const machineDesktops = new Map<string, { apps: Promise<DesktopApps>; resolve(apps: DesktopApps): void }>()
 
-function machineAppsEntry(terminal: string) {
-  let entry = machineApps.get(terminal)
+function machineDesktopEntry(terminal: string) {
+  let entry = machineDesktops.get(terminal)
   if (!entry) {
-    let resolve!: (apps: string[]) => void
-    const apps = new Promise<string[]>(r => { resolve = r })
+    let resolve!: (apps: DesktopApps) => void
+    const apps = new Promise<DesktopApps>(r => { resolve = r })
     entry = { apps, resolve }
-    machineApps.set(terminal, entry)
+    machineDesktops.set(terminal, entry)
   }
   return entry
 }
 
 /**
- * The apps terminal's run offers: with any, its machine is the desktop.
- * Resolves to the apps its machine was booted with, which a later call does
- * not change: the page shows a desktop when those have any.
+ * Whether terminal's run is a desktop, with the apps its launcher offers
+ * (null: a console). Resolves to what its machine was booted as, which a
+ * later call does not change: the page shows a desktop when that is one.
  */
-export function setMachineApps(terminal: string, apps: string[]): Promise<string[]> {
-  const entry = machineAppsEntry(terminal)
+export function setMachineDesktop(terminal: string, apps: DesktopApps): Promise<DesktopApps> {
+  const entry = machineDesktopEntry(terminal)
   entry.resolve(apps)
   return entry.apps
 }
@@ -126,31 +128,74 @@ export function onDesktopFrames(listener: () => void): () => void {
 
 /** The desktop page's terminals (its KW.windows). */
 export interface DesktopTerminals {
+  list(): { n: number, state: string, window?: string }[]
+  open(opts: { select?: boolean, name?: string, file?: string, args?: string[] }): Promise<{ n: number }>
   select(n: number): boolean
   send(n: number, data: string): void
 }
 
-type DesktopWindow = Window & { KW?: { ready?: () => Promise<Machine>, windows?: DesktopTerminals, term?: { focus(): void, paste(text: string): void } } }
+type DesktopKW = {
+  ready?: () => Promise<Machine>
+  windows?: DesktopTerminals
+  term?: { focus(): void, paste(text: string): void }
+  wm?: { focus(id: string): void }
+}
+type DesktopWindow = Window & { KW?: DesktopKW }
 
-// The learner's terminal on the desktop, where a foreground script is typed
-// and a command pasted: its console, which shows the boot and then the
-// learner's shell, and which the page never lets close.
-const LEARNER_TERMINAL = 0
+const desktopKW = (terminal: string): DesktopKW | undefined =>
+  (desktopFrames.get(terminal)?.contentWindow as DesktopWindow | null)?.KW
 
-/** The desktop's learner terminal as the shell a foreground script is typed into. */
-export function desktopShell(terminals: DesktopTerminals): Pick<ConsolePty, 'write'> {
-  return { write: async (data: string) => terminals.send(LEARNER_TERMINAL, data) }
+// The learner's terminal on each desktop, once the run is built.
+const learnerTerminals = new Map<string, Promise<number>>()
+
+/**
+ * The learner's terminal on terminal's desktop, opened once the run is built,
+ * as the console's shell is: a login shell of the run's user (sudo -i, the
+ * desktop's user has sudo), so it starts in the world the setup built. Opened
+ * again if the learner closed it. The desktop's own console stays as the boot
+ * log.
+ */
+export function desktopLearnerTerminal(terminal: string): Promise<number> {
+  // Once the machine runs: the page's terminals exist from then on.
+  const machine = held?.terminal === terminal ? held.machine : null
+  const known = learnerTerminals.get(terminal)
+  const n = (async () => {
+    await machine
+    const windows = desktopKW(terminal)?.windows
+    if (!windows) throw new Error('no desktop')
+    const was = await known?.catch(() => null)
+    if (windows.list().some(t => t.n === was && t.state !== 'ended')) return was!
+    const user = await consoleUserEntry(terminal).user
+    const opened = (await windows.open({ name: 'lab', select: true, file: '/usr/bin/sudo', args: ['-i', '-u', typeof user === 'number' ? `#${user}` : user] })).n
+    consolePty = desktopShell(windows, opened)
+    reportConsoleOpened()
+    return opened
+  })()
+  learnerTerminals.set(terminal, n)
+  n.catch(() => { if (learnerTerminals.get(terminal) === n) learnerTerminals.delete(terminal) })
+  return n
+}
+
+/** The desktop's learner terminal n as the shell a foreground script is typed into. */
+export function desktopShell(terminals: Pick<DesktopTerminals, 'send'>, n: number): Pick<ConsolePty, 'write'> {
+  return { write: async (data: string) => terminals.send(n, data) }
 }
 
 /** Put a command in the learner's terminal on terminal's desktop, without running it, and give it the focus. */
-export function pasteOnDesktop(terminal: string, command: string): void {
+export async function pasteOnDesktop(terminal: string, command: string): Promise<void> {
   const frame = desktopFrames.get(terminal)
-  const kw = (frame?.contentWindow as DesktopWindow | null)?.KW
+  const kw = desktopKW(terminal)
   if (!frame || !kw?.windows || !kw.term) return
-  kw.windows.select(LEARNER_TERMINAL)
+  const n = await desktopLearnerTerminal(terminal)
+  // Its window in front: an app's window (Neovim, Python) may cover it.
+  const window = kw.windows.list().find(t => t.n === n)?.window
+  if (window) kw.wm?.focus(window)
+  kw.windows.select(n)
   // A paste, as the console's: a command of several lines waits for Enter
   // instead of running line by line.
   kw.term.paste(command)
+  // After the desktop has drawn the window in front, which moves the focus.
+  await new Promise(resolve => requestAnimationFrame(resolve))
   frame.focus()
   kw.term.focus()
 }
@@ -189,7 +234,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, what: string): Promise<
 }
 
 // The page, once its KW is there, and the machine it hands out.
-async function startDesktop(frame: HTMLIFrameElement): Promise<{ page: DesktopWindow, vm: Machine }> {
+async function startDesktop(frame: HTMLIFrameElement): Promise<{ vm: Machine }> {
   const page = await new Promise<DesktopWindow>(resolve => {
     const poll = () => {
       const w = frame.contentWindow as DesktopWindow | null
@@ -198,7 +243,7 @@ async function startDesktop(frame: HTMLIFrameElement): Promise<{ page: DesktopWi
     }
     poll()
   })
-  return { page, vm: await page.KW!.ready!() }
+  return { vm: await page.KW!.ready!() }
 }
 
 function forgetDesktop(terminal: string, frame: HTMLIFrameElement) {
@@ -217,7 +262,7 @@ async function bootDesktop(terminal: string, apps: string[], opts: LocalMachineO
   desktopFailures.delete(terminal)
   desktopFrames.set(terminal, frame)
   desktopFrameListeners.forEach(l => l())
-  let started: { page: DesktopWindow, vm: Machine }
+  let started: { vm: Machine }
   try {
     // One deadline for the page and its machine: the page's own fallbacks
     // (a worker that fails reloads it) must not keep the run waiting for good.
@@ -227,17 +272,15 @@ async function bootDesktop(terminal: string, apps: string[], opts: LocalMachineO
     forgetDesktop(terminal, frame)
     throw err
   }
-  const { page, vm } = started
-  // The desktop has no console of ours: its learner terminal is where the
-  // run's foreground scripts are typed, as soon as the machine runs.
-  const shell = desktopShell(page.KW!.windows!)
-  consolePty = shell
-  reportConsoleOpened()
+  // The learner's terminal, where foreground scripts go, opens once the
+  // run is built (desktopLearnerTerminal), as a console does.
+  const { vm } = started
   const stop = vm.stop.bind(vm)
   return Object.assign(vm, {
     async stop() {
       try { await stop() } finally {
-        if (consolePty === shell) consolePty = null
+        consolePty = null
+        learnerTerminals.delete(terminal)
         forgetDesktop(terminal, frame)
       }
     }
@@ -245,8 +288,14 @@ async function bootDesktop(terminal: string, apps: string[], opts: LocalMachineO
 }
 
 async function boot(terminal: string, opts: LocalMachineOptions): Promise<Machine> {
-  const apps = await machineAppsEntry(terminal).apps
-  const machine = apps.length ? await bootDesktop(terminal, apps, opts) : await bootConsole(opts)
+  const apps = await machineDesktopEntry(terminal).apps
+  if (apps) {
+    // On a desktop the user keeps its sudo: the launcher installs and starts
+    // the offered apps with it, and the learner's shell is opened with it.
+    // A lab that must keep the learner from root uses the console.
+    return await bootDesktop(terminal, apps, opts)
+  }
+  const machine = await bootConsole(opts)
   await machine.exec('sh', ['-c', LOCK_DOWN_SUDO], {
     user: 'root',
     signal: AbortSignal.timeout(DEFAULT_EXEC_TIMEOUT_SECONDS * 1000),
@@ -569,7 +618,7 @@ export function hostLocalRun(runId: string, terminal: string, token: string | nu
   if (!hosted) {
     // Nobody sees this machine: a console one, whatever apps the run offers.
     // (A run page open in this tab has already said; its word stays.)
-    void setMachineApps(terminal, [])
+    void setMachineDesktop(terminal, null)
     const agent = startLocalAgent(runId, terminal, token, () => hostedRuns.delete(runId))
     hosted = { agent, holders: 0 }
     hostedRuns.set(runId, hosted)

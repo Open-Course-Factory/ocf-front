@@ -485,9 +485,18 @@
         <span class="form-hint">{{ t('scenarioEditor.machineHint') }}</span>
       </div>
 
-      <!-- What the machine in the browser offers to install, from the
-           platform's list: a work machine shows only what the lab needs. -->
-      <div v-if="model.machine !== 'incus'" class="form-group ocf-languages">
+      <div v-if="model.machine !== 'incus'" class="form-group">
+        <label for="scenario-machine-display">{{ t('scenarioEditor.machineDisplay') }}</label>
+        <select id="scenario-machine-display" v-model="machineDisplay" class="form-control" data-testid="scenario-machine-display">
+          <option value="terminal">{{ t('scenarioEditor.machineDisplayTerminal') }}</option>
+          <option value="desktop">{{ t('scenarioEditor.machineDisplayDesktop') }}</option>
+        </select>
+        <span class="form-hint">{{ t('scenarioEditor.machineDisplayHint') }}</span>
+      </div>
+
+      <!-- What the desktop offers to install, from the platform's list: a
+           work machine shows only what the lab needs. -->
+      <div v-if="model.machine !== 'incus' && machineDisplay === 'desktop'" class="form-group ocf-languages">
         <label>{{ t('scenarioEditor.machineApps') }}</label>
         <p class="ocf-languages-hint">{{ t('scenarioEditor.machineAppsHint') }}</p>
         <div class="ocf-language-options">
@@ -683,6 +692,12 @@ const offeredLocales = computed<string[]>(() => {
   } catch {
     return []
   }
+})
+
+// Terminal or desktop, for a machine in the browser. Empty is the terminal.
+const machineDisplay = computed<'terminal' | 'desktop'>({
+  get: () => (model.value.machine_display === 'desktop' ? 'desktop' : 'terminal'),
+  set: v => { model.value.machine_display = v }
 })
 
 /** The stored machine_apps JSON array, as a list. Unparseable reads as none. */

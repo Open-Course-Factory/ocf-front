@@ -39,9 +39,24 @@ describe('ScenarioEditModal — machine', () => {
   })
 })
 
-describe('ScenarioEditModal — apps the machine offers', () => {
-  it('lists the platform\'s apps for a lab in the browser, and ticks the scenario\'s', async () => {
-    const { wrapper } = mountModal({ machine: 'local', machine_apps: '["python"]' })
+describe('ScenarioEditModal — terminal or desktop', () => {
+  it('shows a terminal by default, and edits the choice', async () => {
+    const { wrapper, editingScenario } = mountModal({ machine: 'local' })
+    const select = wrapper.get('[data-testid="scenario-machine-display"]')
+    expect((select.element as HTMLSelectElement).value).toBe('terminal')
+    await select.setValue('desktop')
+    expect(editingScenario.machine_display).toBe('desktop')
+  })
+
+  it('asks nothing for a lab in a container', () => {
+    const { wrapper } = mountModal({ machine: 'incus' })
+    expect(wrapper.find('[data-testid="scenario-machine-display"]').exists()).toBe(false)
+  })
+})
+
+describe('ScenarioEditModal — apps the desktop offers', () => {
+  it('lists the platform\'s apps for a desktop, and ticks the scenario\'s', async () => {
+    const { wrapper } = mountModal({ machine: 'local', machine_display: 'desktop', machine_apps: '["python"]' })
     await flushPromises()
     expect(get).toHaveBeenCalledWith('/scenarios/local-machine-apps')
     const box = (app: string) => wrapper.get(`[data-testid="scenario-machine-app-${app}"]`).element as HTMLInputElement
@@ -50,7 +65,7 @@ describe('ScenarioEditModal — apps the machine offers', () => {
   })
 
   it('stores the ticked apps in the platform\'s order, and none as empty', async () => {
-    const { wrapper, editingScenario } = mountModal({ machine: 'by_account', machine_apps: '["python"]' })
+    const { wrapper, editingScenario } = mountModal({ machine: 'by_account', machine_display: 'desktop', machine_apps: '["python"]' })
     await flushPromises()
     await wrapper.get('[data-testid="scenario-machine-app-nvim"]').setValue(true)
     expect(editingScenario.machine_apps).toBe('["nvim","python"]')
@@ -59,8 +74,11 @@ describe('ScenarioEditModal — apps the machine offers', () => {
     expect(editingScenario.machine_apps).toBe('')
   })
 
-  it('offers nothing to choose for a lab in a container', () => {
-    const { wrapper } = mountModal({ machine: 'incus' })
-    expect(wrapper.find('[data-testid^="scenario-machine-app-"]').exists()).toBe(false)
+  it('offers nothing to choose for a terminal or a lab in a container', async () => {
+    for (const scenario of [{ machine: 'incus' }, { machine: 'local', machine_apps: '["python"]' }]) {
+      const { wrapper } = mountModal(scenario)
+      await flushPromises()
+      expect(wrapper.find('[data-testid^="scenario-machine-app-"]').exists()).toBe(false)
+    }
   })
 })

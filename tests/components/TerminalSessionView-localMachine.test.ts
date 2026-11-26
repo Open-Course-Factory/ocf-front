@@ -84,14 +84,14 @@ vi.mock('../../src/stores/currentUser', () => ({
 
 const agent = vi.hoisted(() => ({
   stop: vi.fn(), start: vi.fn(), consoleUser: vi.fn(), relay: vi.fn(), stopRelay: vi.fn(),
-  // The apps the machine booted with, when it booted before this read of the run.
-  bootedApps: null as string[] | null
+  // What the machine booted as (null: a console), when it booted before this read of the run.
+  booted: undefined as string[] | null | undefined
 }))
 vi.mock('../../src/services/domain/terminal/localMachine', () => ({
   isLocalSessionId: (id: string) => id.startsWith('local-'),
   startLocalAgent: (...args: unknown[]) => { agent.start(...args); return { stop: agent.stop } },
   setConsoleUser: (...args: unknown[]) => agent.consoleUser(...args),
-  setMachineApps: async (_terminal: string, apps: string[]) => agent.bootedApps ?? apps,
+  setMachineDesktop: async (_terminal: string, apps: string[] | null) => agent.booted === undefined ? apps : agent.booted,
   pasteOnDesktop: vi.fn(),
   serveConsoleRelay: (...args: unknown[]) => { agent.relay(...args); return agent.stopRelay }
 }))
@@ -119,7 +119,7 @@ function mountView() {
 describe('TerminalSessionView on a local machine', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    agent.bootedApps = null
+    agent.booted = undefined
     mockAxiosGet.mockImplementation(async (url: string) => url === '/terminals/user-sessions'
       ? { data: [{ session_id: route.sessionId, state: 'running', expires_at: new Date(Date.now() + 3_600_000).toISOString() }] }
       : { data: {} })
@@ -137,7 +137,7 @@ describe('TerminalSessionView on a local machine', () => {
     const panel = wrapper.find('.tsp-stub')
     expect(panel.attributes('data-machine')).toBe('local')
     expect(panel.attributes('data-exposed')).toBe('false')
-    // A run that offers no apps keeps the console.
+    // A run set to nothing keeps the console, apps or not.
     expect(panel.attributes('data-desktop')).toBe('false')
     // tt-backend records commands; a machine in the browser has nobody recording them.
     expect(wrapper.text()).not.toContain('recorded')
@@ -147,20 +147,20 @@ describe('TerminalSessionView on a local machine', () => {
     expect(agent.stopRelay).toHaveBeenCalled()
   })
 
-  it('shows the desktop for a run that offers apps', async () => {
+  it('shows the desktop for a run set to one', async () => {
     route.sessionId = 'local-abc'
     vi.mocked(scenarioSessionService.getSessionByTerminal).mockResolvedValueOnce(
-      { id: 'run-1', status: 'active', terminal_session_id: 'local-abc', machine_apps: ['python'] } as never)
+      { id: 'run-1', status: 'active', terminal_session_id: 'local-abc', machine_display: 'desktop' } as never)
     const wrapper = mountView()
     await flushPromises()
     expect(wrapper.find('.tsp-stub').attributes('data-desktop')).toBe('true')
   })
 
-  it('shows what the machine booted as, not the apps the scenario offers since', async () => {
+  it('shows what the machine booted as, not what the scenario says since', async () => {
     route.sessionId = 'local-abc'
-    agent.bootedApps = []
+    agent.booted = null
     vi.mocked(scenarioSessionService.getSessionByTerminal).mockResolvedValueOnce(
-      { id: 'run-1', status: 'active', terminal_session_id: 'local-abc', machine_apps: ['python'] } as never)
+      { id: 'run-1', status: 'active', terminal_session_id: 'local-abc', machine_display: 'desktop', machine_apps: ['python'] } as never)
     const wrapper = mountView()
     await flushPromises()
     expect(wrapper.find('.tsp-stub').attributes('data-desktop')).toBe('false')

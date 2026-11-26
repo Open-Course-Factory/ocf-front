@@ -29,6 +29,7 @@
         v-else-if="desktop && sessionInfo?.session_id"
         :terminal="sessionInfo.session_id"
         :covered="!!$slots['console-overlay']"
+        :hold="holdConsole"
       />
       <TerminalViewer
         v-else
@@ -138,7 +139,7 @@ interface Props {
   // history (tt-backend records it); popped out, its window reaches it through
   // this tab.
   machine?: 'incus' | 'local'
-  // The run's machine is unkernel's desktop (localMachine.ts setMachineApps).
+  // The run's machine is unkernel's desktop (localMachine.ts setMachineDesktop).
   desktop?: boolean
 }
 

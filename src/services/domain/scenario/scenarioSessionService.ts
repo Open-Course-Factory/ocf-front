@@ -196,7 +196,9 @@ export interface ScenarioSessionInfo {
   is_preview?: boolean
   // The uid the learner's console runs as; absent, root.
   session_user?: number
-  /** The apps a machine in the learner's browser offers; with any, it shows the desktop. */
+  /** What a machine in the learner's browser shows: a terminal (the default) or a desktop. */
+  machine_display?: 'terminal' | 'desktop'
+  /** The apps the desktop's launcher offers. */
   machine_apps?: string[]
   /**
    * The scenario's prose in the language this session is being played in.

@@ -394,7 +394,7 @@ import { useResumeRejection } from '../../composables/useResumeRejection'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import SessionPausedBanner from '../Terminal/SessionPausedBanner.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
-import { isLocalSessionId, pasteOnDesktop, serveConsoleRelay, setConsoleUser, setMachineApps, startLocalAgent, type AgentEnd } from '../../services/domain/terminal/localMachine'
+import { isLocalSessionId, pasteOnDesktop, serveConsoleRelay, setConsoleUser, setMachineDesktop, startLocalAgent, type AgentEnd } from '../../services/domain/terminal/localMachine'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
@@ -680,7 +680,7 @@ watch(scenarioSessionId, (id) => {
 })
 
 function handlePasteCommand(command: string) {
-  if (desktopRun.value) pasteOnDesktop(sessionId, command)
+  if (desktopRun.value) void pasteOnDesktop(sessionId, command)
   else scenarioTerminalRef.value?.pasteText(command)
 }
 
@@ -1051,8 +1051,8 @@ async function detectScenarioSession() {
         setConsoleUser(sessionId, scenarioSession.session_user)
         // What the machine was booted with decides, not this read: a scenario
         // edited since keeps its machine until the run is rebuilt.
-        const booted = await setMachineApps(sessionId, scenarioSession.machine_apps ?? [])
-        desktopRun.value = booted.length > 0
+        const desktop = scenarioSession.machine_display === 'desktop' ? scenarioSession.machine_apps ?? [] : null
+        desktopRun.value = (await setMachineDesktop(sessionId, desktop)) !== null
       }
     }
     if (replayFailed) await refreshSessionInfo()
