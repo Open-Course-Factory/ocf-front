@@ -60,6 +60,19 @@ export function registerScenariosHelp(store: ReturnType<typeof useHelpRegistrySt
           fr: 'Pour les formateurs : l\'Éditeur de scénarios, les quatre types d\'étape et leurs scripts, les traductions, l\'aperçu, l\'import KillerCoda et JSON, l\'archivage.'
         },
         icon: 'fas fa-plus-circle'
+      },
+      {
+        route: 'scenarios/browser-machines',
+        component: () => import('../components/Pages/Help/ScenarioBrowserMachines.vue'),
+        title: {
+          en: 'Machines in your browser',
+          fr: 'Les machines dans votre navigateur'
+        },
+        description: {
+          en: 'Scenarios whose machine starts in your browser tab: reload, second tab, pop-out window, and what trainers should know.',
+          fr: 'Les scénarios dont la machine démarre dans l\'onglet de votre navigateur : rechargement, second onglet, fenêtre séparée, et ce que les formateurs doivent savoir.'
+        },
+        icon: 'fas fa-laptop'
       }
     ]
   })
