@@ -6,20 +6,43 @@
 -->
 <template>
   <div ref="slotEl" class="ocf-desktop-slot" data-testid="desktop-slot">
-    <div v-if="!frame" class="ocf-desktop-waiting">
+    <div v-if="failed" class="ocf-desktop-waiting ocf-desktop-failed" role="alert" data-testid="desktop-failed">
+      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+      <p>{{ t('desktopSlot.failed') }}</p>
+    </div>
+    <div v-else-if="!frame" class="ocf-desktop-waiting" role="status">
       <i class="fas fa-desktop" aria-hidden="true"></i>
+      <span class="visually-hidden">{{ t('desktopSlot.starting') }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { desktopFrames, onDesktopFrames } from '../../services/domain/terminal/localMachine'
+import { desktopFailures, desktopFrames, onDesktopFrames } from '../../services/domain/terminal/localMachine'
+import { useTranslations } from '../../composables/useTranslations'
 
 const props = defineProps<{ terminal: string; covered: boolean }>()
 
+const { t } = useTranslations({
+  en: { desktopSlot: {
+    starting: 'The desktop is starting.',
+    failed: 'The desktop did not start. Reload the page to try again.'
+  } },
+  fr: { desktopSlot: {
+    starting: 'Le bureau démarre.',
+    failed: "Le bureau n'a pas démarré. Rechargez la page pour réessayer."
+  } }
+})
+
 const slotEl = ref<HTMLElement | null>(null)
 const frame = ref<HTMLIFrameElement | null>(null)
+const failed = ref(false)
+
+function read() {
+  frame.value = desktopFrames.get(props.terminal) ?? null
+  failed.value = desktopFailures.has(props.terminal)
+}
 
 function place() {
   const f = frame.value
@@ -41,9 +64,9 @@ function follow() {
   raf = requestAnimationFrame(follow)
 }
 
-const stopListening = onDesktopFrames(() => { frame.value = desktopFrames.get(props.terminal) ?? null })
+const stopListening = onDesktopFrames(read)
 onMounted(() => {
-  frame.value = desktopFrames.get(props.terminal) ?? null
+  read()
   follow()
 })
 onBeforeUnmount(() => {
@@ -59,15 +82,23 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   min-height: 480px;
-  background: var(--color-gray-900, #000);
-  border-radius: var(--border-radius-md, 6px);
+  background: var(--terminal-bg);
+  border-radius: var(--border-radius-md);
 }
 .ocf-desktop-waiting {
   position: absolute;
   inset: 0;
   display: grid;
-  place-items: center;
+  place-content: center;
+  justify-items: center;
+  gap: 0.75rem;
   color: var(--color-text-muted);
   font-size: 2rem;
+}
+.ocf-desktop-failed p {
+  margin: 0;
+  font-size: 1rem;
+  max-width: 28rem;
+  text-align: center;
 }
 </style>

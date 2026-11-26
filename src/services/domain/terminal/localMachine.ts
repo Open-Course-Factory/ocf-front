@@ -88,7 +88,8 @@ const LOCK_DOWN_SUDO = [
 // A scenario that offers apps (its machine_apps) shows unkernel's desktop page
 // instead of the console: an iframe of this origin laid over the console's
 // place (DesktopSlot.vue), whose window.KW.ready() hands out the machine, which
-// the agent drives as it drives a console one. setMachineApps() tells which.
+// the agent drives as it drives a console one. setMachineApps() tells which;
+// the machine boots once it is told, and keeps the kind it booted as.
 const machineApps = new Map<string, { apps: Promise<string[]>; resolve(apps: string[]): void }>()
 
 function machineAppsEntry(terminal: string) {
@@ -102,72 +103,108 @@ function machineAppsEntry(terminal: string) {
   return entry
 }
 
-/** The apps terminal's run offers: with any, its machine is the desktop. */
-export function setMachineApps(terminal: string, apps: string[]) {
-  machineAppsEntry(terminal).resolve(apps)
+/**
+ * The apps terminal's run offers: with any, its machine is the desktop.
+ * Resolves to the apps its machine was booted with, which a later call does
+ * not change: the page shows a desktop when those have any.
+ */
+export function setMachineApps(terminal: string, apps: string[]): Promise<string[]> {
+  const entry = machineAppsEntry(terminal)
+  entry.resolve(apps)
+  return entry.apps
 }
 
 /** The desktop's iframe of terminal's run, once it boots one. */
 export const desktopFrames = new Map<string, HTMLIFrameElement>()
+/** The runs whose desktop did not start: their slot says so. */
+export const desktopFailures = new Set<string>()
 const desktopFrameListeners = new Set<() => void>()
 export function onDesktopFrames(listener: () => void): () => void {
   desktopFrameListeners.add(listener)
   return () => desktopFrameListeners.delete(listener)
 }
 
-/** The desktop page's terminals (its KW.windows): 0 is its console, which shows the boot and then the learner's shell. */
+/** The desktop page's terminals (its KW.windows). */
 export interface DesktopTerminals {
-  list(): { n: number }[]
-  open(opts?: { select?: boolean }): Promise<{ n: number }>
   select(n: number): boolean
   send(n: number, data: string): void
 }
 
-type DesktopWindow = Window & { KW?: { ready?: () => Promise<Machine>, windows?: DesktopTerminals, term?: { focus(): void } } }
+type DesktopWindow = Window & { KW?: { ready?: () => Promise<Machine>, windows?: DesktopTerminals, term?: { focus(): void, paste(text: string): void } } }
 
 // The learner's terminal on the desktop, where a foreground script is typed
-// and a command pasted: the first one (the console, while it is open), or a
-// new one if they closed them all.
-async function learnerTerminal(terminals: DesktopTerminals): Promise<number> {
-  const first = terminals.list().map(t => t.n).sort((a, b) => a - b)[0]
-  return first ?? (await terminals.open({ select: false })).n
-}
+// and a command pasted: its console, which shows the boot and then the
+// learner's shell, and which the page never lets close.
+const LEARNER_TERMINAL = 0
 
 /** The desktop's learner terminal as the shell a foreground script is typed into. */
 export function desktopShell(terminals: DesktopTerminals): Pick<ConsolePty, 'write'> {
-  return { write: async (data: string) => terminals.send(await learnerTerminal(terminals), data) }
+  return { write: async (data: string) => terminals.send(LEARNER_TERMINAL, data) }
 }
 
 /** Put a command in the learner's terminal on terminal's desktop, without running it, and give it the focus. */
-export async function pasteOnDesktop(terminal: string, command: string): Promise<void> {
+export function pasteOnDesktop(terminal: string, command: string): void {
   const frame = desktopFrames.get(terminal)
   const kw = (frame?.contentWindow as DesktopWindow | null)?.KW
-  if (!frame || !kw?.windows) return
-  const n = await learnerTerminal(kw.windows)
-  kw.windows.select(n)
-  kw.windows.send(n, command)
-  // As the console's paste does: the learner presses Enter next.
+  if (!frame || !kw?.windows || !kw.term) return
+  kw.windows.select(LEARNER_TERMINAL)
+  // A paste, as the console's: a command of several lines waits for Enter
+  // instead of running line by line.
+  kw.term.paste(command)
   frame.focus()
-  kw.term?.focus()
+  kw.term.focus()
 }
 
 // The desktop page's URL (ocf-desktop.patch in local-machine-image says what
 // each setting does): the run's apps, the platform's image and Debian mirror,
 // and the same Wisp server that answers nothing, so the machine reaches no
-// other host. No saved disk or session: the run's machine is new on each boot,
-// as a console one. No prompt of its own on leaving: the run page asks.
+// other host; no network at all without that server. Its kernel runs in a
+// worker when the console's would. The learner's terminal stays open (no
+// autohide). No prompt of its own on leaving: the run page asks.
 export function desktopPageUrl(apps: string[], opts: LocalMachineOptions): string {
   const backend = opts.net?.backend as { servers?: string, routes?: Record<string, string> } | undefined
   const query = new URLSearchParams({
-    data: '0', askleave: '0', autosuspend: '0',
+    data: '0', askleave: '0', autosuspend: '0', autohide: '0',
+    worker: opts.worker ? '1' : '0',
     apps: apps.join(','),
     image: new URL(opts.distroUrl, window.location.origin).href
   })
-  if (backend?.servers) query.set('wisp', backend.servers)
   const mirror = backend?.routes?.['deb.debian.org']
-  if (mirror) query.set('debmirror', mirror)
-  else query.set('net', '0')
+  if (backend?.servers) {
+    query.set('wisp', backend.servers)
+    if (mirror) query.set('debmirror', mirror)
+  } else {
+    query.set('net', '0')
+  }
   return `/unkernel-desktop/index.html?${query}`
+}
+
+const DESKTOP_START_TIMEOUT_MS = 120_000
+
+function withTimeout<T>(promise: Promise<T>, ms: number, what: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`${what} did not start`)), ms))
+  ])
+}
+
+// The page, once its KW is there, and the machine it hands out.
+async function startDesktop(frame: HTMLIFrameElement): Promise<{ page: DesktopWindow, vm: Machine }> {
+  const page = await new Promise<DesktopWindow>(resolve => {
+    const poll = () => {
+      const w = frame.contentWindow as DesktopWindow | null
+      if (w?.KW?.ready) resolve(w)
+      else if (frame.isConnected) setTimeout(poll, 200)
+    }
+    poll()
+  })
+  return { page, vm: await page.KW!.ready!() }
+}
+
+function forgetDesktop(terminal: string, frame: HTMLIFrameElement) {
+  frame.remove()
+  if (desktopFrames.get(terminal) === frame) desktopFrames.delete(terminal)
+  desktopFrameListeners.forEach(l => l())
 }
 
 async function bootDesktop(terminal: string, apps: string[], opts: LocalMachineOptions): Promise<Machine> {
@@ -177,19 +214,20 @@ async function bootDesktop(terminal: string, apps: string[], opts: LocalMachineO
   frame.className = 'ocf-desktop-frame'
   frame.style.cssText = 'position:fixed;border:0;visibility:hidden;left:0;top:0;width:800px;height:600px;'
   document.body.appendChild(frame)
+  desktopFailures.delete(terminal)
   desktopFrames.set(terminal, frame)
   desktopFrameListeners.forEach(l => l())
-  const page = await new Promise<DesktopWindow>((resolve, reject) => {
-    const started = Date.now()
-    const poll = () => {
-      const w = frame.contentWindow as DesktopWindow | null
-      if (w?.KW?.ready) resolve(w)
-      else if (Date.now() - started > 60_000) reject(new Error('the desktop page did not start'))
-      else setTimeout(poll, 200)
-    }
-    poll()
-  })
-  const vm = await page.KW!.ready!()
+  let started: { page: DesktopWindow, vm: Machine }
+  try {
+    // One deadline for the page and its machine: the page's own fallbacks
+    // (a worker that fails reloads it) must not keep the run waiting for good.
+    started = await withTimeout(startDesktop(frame), DESKTOP_START_TIMEOUT_MS, 'the desktop')
+  } catch (err) {
+    desktopFailures.add(terminal)
+    forgetDesktop(terminal, frame)
+    throw err
+  }
+  const { page, vm } = started
   // The desktop has no console of ours: its learner terminal is where the
   // run's foreground scripts are typed, as soon as the machine runs.
   const shell = desktopShell(page.KW!.windows!)
@@ -200,9 +238,7 @@ async function bootDesktop(terminal: string, apps: string[], opts: LocalMachineO
     async stop() {
       try { await stop() } finally {
         if (consolePty === shell) consolePty = null
-        frame.remove()
-        if (desktopFrames.get(terminal) === frame) desktopFrames.delete(terminal)
-        desktopFrameListeners.forEach(l => l())
+        forgetDesktop(terminal, frame)
       }
     }
   })
@@ -531,6 +567,9 @@ const hostedRuns = new Map<string, { agent: { stop(): void }; holders: number }>
 export function hostLocalRun(runId: string, terminal: string, token: string | null | undefined): () => void {
   let hosted = hostedRuns.get(runId)
   if (!hosted) {
+    // Nobody sees this machine: a console one, whatever apps the run offers.
+    // (A run page open in this tab has already said; its word stays.)
+    void setMachineApps(terminal, [])
     const agent = startLocalAgent(runId, terminal, token, () => hostedRuns.delete(runId))
     hosted = { agent, holders: 0 }
     hostedRuns.set(runId, hosted)

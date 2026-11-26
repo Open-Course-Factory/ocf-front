@@ -28,7 +28,7 @@ class FakeWebSocket {
   open() { this.readyState = 1; this.onopen?.() }
 }
 
-import { startLocalAgent, setMachineApps } from '../../src/services/domain/terminal/localMachine'
+import { startLocalAgent, setMachineApps, hostLocalRun } from '../../src/services/domain/terminal/localMachine'
 
 // These runs offer no apps: their machines are console ones.
 for (const terminal of ['local-k1', 'local-k2', 'local-k3']) setMachineApps(terminal, [])
@@ -69,5 +69,14 @@ describe("the Debian mirror's key", () => {
 
     expect(announcedKey(FakeWebSocket.instances[0])).not.toBe(announcedKey(FakeWebSocket.instances[1]))
     second.stop()
+  })
+
+  // The scenario editor testing a check on a preview: nobody there reads the
+  // run's apps, and its machine must boot all the same.
+  it('boots a hosted run\'s machine without being told its apps', async () => {
+    const release = hostLocalRun('run-h', 'local-h', 'tok')
+    await vi.waitFor(() => expect(FakeWebSocket.instances).toHaveLength(1))
+    expect(booted).toHaveLength(1)
+    release()
   })
 })

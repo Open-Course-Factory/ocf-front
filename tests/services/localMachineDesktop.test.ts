@@ -3,7 +3,7 @@
  * the run's apps, the platform's image and Debian mirror, and nothing that
  * would let the machine reach another host.
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { debianMirrorNet, desktopPageUrl, desktopShell } from '../../src/services/domain/terminal/localMachine'
 
 const query = (url: string) => new URL(url, window.location.origin).searchParams
@@ -18,6 +18,19 @@ describe('the desktop page URL', () => {
     expect(q.get('wisp')).toMatch(/\/local-machine\/no-wisp\/$/)
     expect(q.get('data')).toBe('0')
     expect(q.get('autosuspend')).toBe('0')
+    // The learner's terminal never hides itself, and the kernel leaves the
+    // page's thread alone, as a console machine's does.
+    expect(q.get('autohide')).toBe('0')
+    expect(q.get('worker')).toBe('1')
+  })
+
+  it('switches the page\'s network off without our Wisp server, mirror or not', () => {
+    const net = { kind: 'net', backend: { kind: 'wisp', routes: { 'deb.debian.org': '/m' } } } as never
+    const q = query(desktopPageUrl(['python'], { distroUrl: '/d.erofs', worker: false, net }))
+    expect(q.get('net')).toBe('0')
+    expect(q.get('wisp')).toBeNull()
+    expect(q.get('debmirror')).toBeNull()
+    expect(q.get('worker')).toBe('0')
   })
 
   it('switches the page\'s network off when the machine has none', () => {
@@ -28,30 +41,9 @@ describe('the desktop page URL', () => {
 })
 
 describe('the desktop\'s learner terminal', () => {
-  function terminals(open: number[]) {
+  it('gets the foreground script in its console, where the learner\'s shell runs', async () => {
     const sent: [number, string][] = []
-    return {
-      sent,
-      api: {
-        list: () => open.map(n => ({ n })),
-        open: vi.fn(async () => { open.push(7); return { n: 7 } }),
-        select: vi.fn(() => true),
-        send: (n: number, data: string) => { sent.push([n, data]) }
-      }
-    }
-  }
-
-  it('gets the foreground script in the first terminal: the console, where the learner\'s shell runs', async () => {
-    const t = terminals([3, 0, 1])
-    await desktopShell(t.api).write('echo PRET\n')
-    expect(t.sent).toEqual([[0, 'echo PRET\n']])
-    expect(t.api.open).not.toHaveBeenCalled()
-  })
-
-  it('is opened again when the learner closed every terminal', async () => {
-    const t = terminals([])
-    await desktopShell(t.api).write('echo PRET\n')
-    expect(t.api.open).toHaveBeenCalledWith({ select: false })
-    expect(t.sent).toEqual([[7, 'echo PRET\n']])
+    await desktopShell({ select: () => true, send: (n, data) => { sent.push([n, data]) } }).write('echo PRET\n')
+    expect(sent).toEqual([[0, 'echo PRET\n']])
   })
 })

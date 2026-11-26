@@ -680,7 +680,7 @@ watch(scenarioSessionId, (id) => {
 })
 
 function handlePasteCommand(command: string) {
-  if (desktopRun.value) void pasteOnDesktop(sessionId, command)
+  if (desktopRun.value) pasteOnDesktop(sessionId, command)
   else scenarioTerminalRef.value?.pasteText(command)
 }
 
@@ -1049,9 +1049,10 @@ async function detectScenarioSession() {
       // A machine in this tab opens its console itself, as the run's user.
       if (machine === 'local' && scenarioSession.terminal_session_id === sessionId) {
         setConsoleUser(sessionId, scenarioSession.session_user)
-        const apps = scenarioSession.machine_apps ?? []
-        desktopRun.value = apps.length > 0
-        setMachineApps(sessionId, apps)
+        // What the machine was booted with decides, not this read: a scenario
+        // edited since keeps its machine until the run is rebuilt.
+        const booted = await setMachineApps(sessionId, scenarioSession.machine_apps ?? [])
+        desktopRun.value = booted.length > 0
       }
     }
     if (replayFailed) await refreshSessionInfo()
