@@ -115,7 +115,40 @@ export function onDesktopFrames(listener: () => void): () => void {
   return () => desktopFrameListeners.delete(listener)
 }
 
-type DesktopWindow = Window & { KW?: { ready?: () => Promise<Machine> } }
+/** The desktop page's terminals (its KW.windows): 0 is the page's own boot console, the learner's are 1 and up. */
+export interface DesktopTerminals {
+  list(): { n: number }[]
+  open(opts?: { select?: boolean }): Promise<{ n: number }>
+  select(n: number): boolean
+  send(n: number, data: string): void
+}
+
+type DesktopWindow = Window & { KW?: { ready?: () => Promise<Machine>, windows?: DesktopTerminals, term?: { focus(): void } } }
+
+// The learner's terminal on the desktop, where a foreground script is typed
+// and a command pasted: the first one, or a new one if they closed them all.
+async function learnerTerminal(terminals: DesktopTerminals): Promise<number> {
+  const first = terminals.list().map(t => t.n).filter(n => n > 0).sort((a, b) => a - b)[0]
+  return first ?? (await terminals.open({ select: false })).n
+}
+
+/** The desktop's learner terminal as the shell a foreground script is typed into. */
+export function desktopShell(terminals: DesktopTerminals): Pick<ConsolePty, 'write'> {
+  return { write: async (data: string) => terminals.send(await learnerTerminal(terminals), data) }
+}
+
+/** Put a command in the learner's terminal on terminal's desktop, without running it, and give it the focus. */
+export async function pasteOnDesktop(terminal: string, command: string): Promise<void> {
+  const frame = desktopFrames.get(terminal)
+  const kw = (frame?.contentWindow as DesktopWindow | null)?.KW
+  if (!frame || !kw?.windows) return
+  const n = await learnerTerminal(kw.windows)
+  kw.windows.select(n)
+  kw.windows.send(n, command)
+  // As the console's paste does: the learner presses Enter next.
+  frame.focus()
+  kw.term?.focus()
+}
 
 // The desktop page's URL (ocf-desktop.patch in local-machine-image says what
 // each setting does): the run's apps, the platform's image and Debian mirror,
@@ -156,10 +189,16 @@ async function bootDesktop(terminal: string, apps: string[], opts: LocalMachineO
     poll()
   })
   const vm = await page.KW!.ready!()
+  // The desktop has no console of ours: its learner terminal is where the
+  // run's foreground scripts are typed, as soon as the machine runs.
+  const shell = desktopShell(page.KW!.windows!)
+  consolePty = shell
+  reportConsoleOpened()
   const stop = vm.stop.bind(vm)
   return Object.assign(vm, {
     async stop() {
       try { await stop() } finally {
+        if (consolePty === shell) consolePty = null
         frame.remove()
         if (desktopFrames.get(terminal) === frame) desktopFrames.delete(terminal)
         desktopFrameListeners.forEach(l => l())

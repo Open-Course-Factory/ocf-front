@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { login } from './helpers/auth';
 import { dismissVerificationBanner, navigateViaMenuCategory } from './helpers/ui';
 import { apiLogin, importScenario, deleteScenarioById, cleanupScenarioSession, getMyScenarioSessions, type ApiSession } from './helpers/scenarioApi';
@@ -8,7 +8,8 @@ import { adminSession } from './helpers/freshUsers';
  * A lab in the learner's browser that offers apps shows unkernel's desktop in
  * the console's place. Its launcher lists the apps the scenario offers and
  * nothing else (no games), the page asks no outside site for its wallpaper,
- * and « Vérifier » checks what the learner did in the desktop's terminal.
+ * the step's foreground script and a pasted command land in the desktop's
+ * terminal, and « Vérifier » checks what the learner did there.
  *
  * Needs the desktop page under public/unkernel-desktop/ (local-machine-image,
  * desktop/build.sh).
@@ -20,6 +21,15 @@ const PASSWORD = process.env.E2E_PASS || 'OcfTest2026!';
 const TITLE = `E2E local desktop ${Date.now().toString(36)}`;
 
 let admin: ApiSession | null = null;
+
+// What the desktop's first learner terminal shows (the page's KW.windows).
+function desktopText(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const frame = document.querySelector('iframe.ocf-desktop-frame') as HTMLIFrameElement | null;
+    const kw = (frame?.contentWindow as unknown as { KW?: { windows?: { text(n: number): string } } } | null)?.KW;
+    return kw?.windows?.text(1) ?? '';
+  });
+}
 let learner: ApiSession;
 let scenarioId = '';
 let planId = '';
@@ -50,7 +60,8 @@ test.beforeAll(async () => {
     steps: [{
       title: 'Écrire depuis le bureau',
       step_type: 'terminal',
-      text_content: 'Dans le terminal du bureau, écrivez `bureau` dans `/tmp/bureau.txt`.',
+      text_content: 'Dans le terminal du bureau, lancez `echo bureau > /tmp/bureau.txt`{{exec}}.',
+      foreground_script: 'echo PRET-42',
       verify_script: 'grep -qx bureau /tmp/bureau.txt || { echo "/tmp/bureau.txt manque"; exit 1; }',
     }],
   })).id;
@@ -86,6 +97,8 @@ test('a lab that offers apps shows the desktop, with only those apps to install'
   await expect(verify).toBeEnabled({ timeout: 300_000 });
   const desktop = page.frameLocator('iframe.ocf-desktop-frame');
   await expect(desktop.locator('#win-terminal-1')).toBeVisible({ timeout: 120_000 });
+  // The step's foreground script is typed into the desktop's terminal.
+  await expect.poll(() => desktopText(page), { timeout: 60_000 }).toContain('PRET-42');
   await shot('1-desktop');
 
   await desktop.locator('#win-terminal-1 .wm-body').click();
@@ -115,8 +128,10 @@ test('a lab that offers apps shows the desktop, with only those apps to install'
   const result = page.getByTestId('scenario-verify-result');
   await expect(result).toHaveClass(/failed/, { timeout: 60_000 });
 
-  await desktop.locator('#win-terminal-1 .wm-body').click();
-  await page.keyboard.type('echo bureau > /tmp/bureau.txt\n', { delay: 30 });
+  // Clicking the step's command puts it in the desktop's terminal, not run.
+  await page.locator('.exec-command').filter({ hasText: 'echo bureau' }).click();
+  await expect.poll(() => desktopText(page)).toContain('echo bureau > /tmp/bureau.txt');
+  await page.keyboard.press('Enter');
   await page.waitForTimeout(8_000); // the check limiter
   await verify.click();
   await expect(page.getByTestId('scenario-completed')).toBeVisible({ timeout: 60_000 });
