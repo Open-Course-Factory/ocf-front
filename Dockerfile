@@ -8,6 +8,11 @@ ARG VITE_PROTOCOL="https"
 ARG VITE_FEATURE_COURSES_ENABLED="true"
 ARG VITE_FEATURE_LABS_ENABLED="true"
 ARG VITE_FEATURE_TERMINALS_ENABLED="true"
+# Where the machines that run in learners' browsers get their disk image (an
+# erofs file, served with Range support). Empty means
+# /local-machine/debian.erofs on the front's own origin, which this image
+# does not hold.
+ARG VITE_LOCAL_MACHINE_DISTRO_URL=""
 
 WORKDIR /app
 COPY package.json package-lock.json ./
