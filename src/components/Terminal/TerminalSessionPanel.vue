@@ -24,6 +24,12 @@
           {{ t('terminalPanel.bringBack') }}
         </button>
       </div>
+      <!-- unkernel's desktop in the console's place, for a scenario that offers apps. -->
+      <DesktopSlot
+        v-else-if="desktop && sessionInfo?.session_id"
+        :terminal="sessionInfo.session_id"
+        :covered="!!$slots['console-overlay']"
+      />
       <TerminalViewer
         v-else
         ref="terminalRef"
@@ -83,6 +89,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import TerminalViewer from './TerminalViewer.vue'
+import DesktopSlot from './DesktopSlot.vue'
 import { useTerminalPopout } from '../../composables/useTerminalPopout'
 import { useTranslations } from '../../composables/useTranslations'
 import CommandHistory from './CommandHistory.vue'
@@ -131,6 +138,8 @@ interface Props {
   // history (tt-backend records it); popped out, its window reaches it through
   // this tab.
   machine?: 'incus' | 'local'
+  // The run's machine is unkernel's desktop (localMachine.ts setMachineApps).
+  desktop?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -148,7 +157,8 @@ const props = withDefaults(defineProps<Props>(), {
   endReason: '',
   hasScenario: false,
   holdConsole: false,
-  machine: 'incus'
+  machine: 'incus',
+  desktop: false
 })
 
 defineEmits<{

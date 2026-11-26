@@ -28,7 +28,10 @@ class FakeWebSocket {
   open() { this.readyState = 1; this.onopen?.() }
 }
 
-import { startLocalAgent } from '../../src/services/domain/terminal/localMachine'
+import { startLocalAgent, setMachineApps } from '../../src/services/domain/terminal/localMachine'
+
+// These runs offer no apps: their machines are console ones.
+for (const terminal of ['local-k1', 'local-k2', 'local-k3']) setMachineApps(terminal, [])
 
 const opts = { distroUrl: '/x.erofs', worker: false }
 const settle = () => new Promise(r => setTimeout(r, 0))

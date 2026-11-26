@@ -43,7 +43,10 @@ class FakeWebSocket {
   closeWith(code: number) { this.readyState = 3; this.onclose?.({ code }) }
 }
 
-import { openLocalConsole, setConsoleUser, startLocalAgent, AGENT_CLOSE } from '../../src/services/domain/terminal/localMachine'
+import { openLocalConsole, setConsoleUser, startLocalAgent, AGENT_CLOSE, setMachineApps } from '../../src/services/domain/terminal/localMachine'
+
+// These runs offer no apps: their machines are console ones.
+for (const terminal of ['local-a', 'local-b1', 'local-b2', 'local-c', 'local-e', 'local-f', 'local-g', 'local-m', 'local-o']) setMachineApps(terminal, [])
 
 const opts = { distroUrl: '/x.erofs', worker: false }
 const settle = () => vi.advanceTimersByTimeAsync(0)
@@ -126,6 +129,7 @@ describe('the machine of a local run', () => {
   for (const [code, reason] of [[AGENT_CLOSE.machineLost, 'lost'], [AGENT_CLOSE.ended, 'ended']] as const) {
     it(`stops its machine and stops trying on close ${code} (${reason})`, async () => {
       const onEnd = vi.fn()
+      setMachineApps(`local-d-${code}`, [])
       startLocalAgent('run-d', `local-d-${code}`, 'tok', onEnd, opts)
       await settle()
       FakeWebSocket.instances[0].closeWith(code)

@@ -201,6 +201,7 @@
             :scenario-crash-traps="scenarioBriefing?.crash_traps ?? false"
             :show-exposed-ports="machine !== 'local' && (scenarioBriefing?.port_exposure_allowed ?? false)"
             :machine="machine"
+            :desktop="desktopRun"
             :show-stop-button="true"
             :is-stopping="isStopping"
             :can-stop="!isScenarioProvisioning"
@@ -393,7 +394,7 @@ import { useResumeRejection } from '../../composables/useResumeRejection'
 import TerminalSessionPanel from '../Terminal/TerminalSessionPanel.vue'
 import SessionPausedBanner from '../Terminal/SessionPausedBanner.vue'
 import ScenarioProvisioningOverlay from '../Terminal/ScenarioProvisioningOverlay.vue'
-import { isLocalSessionId, serveConsoleRelay, setConsoleUser, startLocalAgent, type AgentEnd } from '../../services/domain/terminal/localMachine'
+import { isLocalSessionId, serveConsoleRelay, setConsoleUser, setMachineApps, startLocalAgent, type AgentEnd } from '../../services/domain/terminal/localMachine'
 import { useCurrentUserStore } from '../../stores/currentUser'
 import ScenarioPanel from '../Terminal/ScenarioPanel.vue'
 import CommandHistory from '../Terminal/CommandHistory.vue'
@@ -586,6 +587,8 @@ const sessionId = route.params.sessionId as string
 // the run is known, not when the console opens: the run's setup is built
 // through it while the console is held.
 const machine = isLocalSessionId(sessionId) ? 'local' : 'incus'
+// A run whose scenario offers apps shows unkernel's desktop, not the console.
+const desktopRun = ref(false)
 let localAgent: { stop(): void } | null = null
 // ocf-core serves a run's machine to one tab: another one has it.
 const localMachineElsewhere = ref(false)
@@ -1045,6 +1048,9 @@ async function detectScenarioSession() {
       // A machine in this tab opens its console itself, as the run's user.
       if (machine === 'local' && scenarioSession.terminal_session_id === sessionId) {
         setConsoleUser(sessionId, scenarioSession.session_user)
+        const apps = scenarioSession.machine_apps ?? []
+        desktopRun.value = apps.length > 0
+        setMachineApps(sessionId, apps)
       }
     }
     if (replayFailed) await refreshSessionInfo()

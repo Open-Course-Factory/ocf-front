@@ -85,17 +85,105 @@ const LOCK_DOWN_SUDO = [
   'true'
 ].join('; ')
 
-async function boot(opts: LocalMachineOptions): Promise<Machine> {
-  const { checkSupport, createKernel } = await import('unkernel')
-  const support = await checkSupport()
-  if (!support.ok) throw new Error(support.problems.join('; '))
-  const machine: Machine = await createKernel({ distro: opts.distroUrl, worker: opts.worker, net: opts.net })
+// A scenario that offers apps (its machine_apps) shows unkernel's desktop page
+// instead of the console: an iframe of this origin laid over the console's
+// place (DesktopSlot.vue), whose window.KW.ready() hands out the machine, which
+// the agent drives as it drives a console one. setMachineApps() tells which.
+const machineApps = new Map<string, { apps: Promise<string[]>; resolve(apps: string[]): void }>()
+
+function machineAppsEntry(terminal: string) {
+  let entry = machineApps.get(terminal)
+  if (!entry) {
+    let resolve!: (apps: string[]) => void
+    const apps = new Promise<string[]>(r => { resolve = r })
+    entry = { apps, resolve }
+    machineApps.set(terminal, entry)
+  }
+  return entry
+}
+
+/** The apps terminal's run offers: with any, its machine is the desktop. */
+export function setMachineApps(terminal: string, apps: string[]) {
+  machineAppsEntry(terminal).resolve(apps)
+}
+
+/** The desktop's iframe of terminal's run, once it boots one. */
+export const desktopFrames = new Map<string, HTMLIFrameElement>()
+const desktopFrameListeners = new Set<() => void>()
+export function onDesktopFrames(listener: () => void): () => void {
+  desktopFrameListeners.add(listener)
+  return () => desktopFrameListeners.delete(listener)
+}
+
+type DesktopWindow = Window & { KW?: { ready?: () => Promise<Machine> } }
+
+// The desktop page's URL (ocf-desktop.patch in local-machine-image says what
+// each setting does): the run's apps, the platform's image and Debian mirror,
+// and the same Wisp server that answers nothing, so the machine reaches no
+// other host. No saved disk or session: the run's machine is new on each boot,
+// as a console one. No prompt of its own on leaving: the run page asks.
+export function desktopPageUrl(apps: string[], opts: LocalMachineOptions): string {
+  const backend = opts.net?.backend as { servers?: string, routes?: Record<string, string> } | undefined
+  const query = new URLSearchParams({
+    data: '0', askleave: '0', autosuspend: '0',
+    apps: apps.join(','),
+    image: new URL(opts.distroUrl, window.location.origin).href
+  })
+  if (backend?.servers) query.set('wisp', backend.servers)
+  const mirror = backend?.routes?.['deb.debian.org']
+  if (mirror) query.set('debmirror', mirror)
+  else query.set('net', '0')
+  return `/unkernel-desktop/index.html?${query}`
+}
+
+async function bootDesktop(terminal: string, apps: string[], opts: LocalMachineOptions): Promise<Machine> {
+  const frame = document.createElement('iframe')
+  frame.src = desktopPageUrl(apps, opts)
+  frame.title = 'Linux'
+  frame.className = 'ocf-desktop-frame'
+  frame.style.cssText = 'position:fixed;border:0;visibility:hidden;left:0;top:0;width:800px;height:600px;'
+  document.body.appendChild(frame)
+  desktopFrames.set(terminal, frame)
+  desktopFrameListeners.forEach(l => l())
+  const page = await new Promise<DesktopWindow>((resolve, reject) => {
+    const started = Date.now()
+    const poll = () => {
+      const w = frame.contentWindow as DesktopWindow | null
+      if (w?.KW?.ready) resolve(w)
+      else if (Date.now() - started > 60_000) reject(new Error('the desktop page did not start'))
+      else setTimeout(poll, 200)
+    }
+    poll()
+  })
+  const vm = await page.KW!.ready!()
+  const stop = vm.stop.bind(vm)
+  return Object.assign(vm, {
+    async stop() {
+      try { await stop() } finally {
+        frame.remove()
+        if (desktopFrames.get(terminal) === frame) desktopFrames.delete(terminal)
+        desktopFrameListeners.forEach(l => l())
+      }
+    }
+  })
+}
+
+async function boot(terminal: string, opts: LocalMachineOptions): Promise<Machine> {
+  const apps = await machineAppsEntry(terminal).apps
+  const machine = apps.length ? await bootDesktop(terminal, apps, opts) : await bootConsole(opts)
   await machine.exec('sh', ['-c', LOCK_DOWN_SUDO], {
     user: 'root',
     signal: AbortSignal.timeout(DEFAULT_EXEC_TIMEOUT_SECONDS * 1000),
     maxBuffer: EXEC_MAX_BUFFER
   })
   return machine
+}
+
+async function bootConsole(opts: LocalMachineOptions): Promise<Machine> {
+  const { checkSupport, createKernel } = await import('unkernel')
+  const support = await checkSupport()
+  if (!support.ok) throw new Error(support.problems.join('; '))
+  return await createKernel({ distro: opts.distroUrl, worker: opts.worker, net: opts.net })
 }
 
 // The uid each terminal's console runs as, once the page has read it from the
@@ -143,7 +231,7 @@ function machineOf(terminal: string, opts: LocalMachineOptions): HeldMachine {
   if (held?.terminal === terminal) return held
   stopMachineOf(held?.terminal)
   const mirrorKey = crypto.randomUUID()
-  const machine = boot({ ...opts, net: opts.net ?? debianMirrorNet(terminal, mirrorKey) })
+  const machine = boot(terminal, { ...opts, net: opts.net ?? debianMirrorNet(terminal, mirrorKey) })
   const booting: HeldMachine = {
     terminal,
     boot: crypto.randomUUID(),
