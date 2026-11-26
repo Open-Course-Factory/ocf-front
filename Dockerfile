@@ -29,5 +29,7 @@ COPY nginx.conf /etc/nginx/templates/default.conf.template
 
 EXPOSE 80
 
-# Scope envsubst to ONLY our variable — otherwise it corrupts nginx builtins ($uri, $host, etc.)
-CMD ["/bin/sh", "-c", "envsubst '${INCUS_PROXY_TARGET}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+# Scope envsubst to ONLY our variables — otherwise it corrupts nginx builtins ($uri, $host, etc.)
+# NGINX_LOCAL_RESOLVERS: the pod's DNS servers, for names nginx resolves per
+# request (IPv6 servers go in brackets).
+CMD ["/bin/sh", "-c", "export NGINX_LOCAL_RESOLVERS=$(awk '$1 == \"nameserver\" { printf \"%s \", ($2 ~ /:/) ? \"[\" $2 \"]\" : $2 }' /etc/resolv.conf) && envsubst '${INCUS_PROXY_TARGET} ${NGINX_LOCAL_RESOLVERS}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
