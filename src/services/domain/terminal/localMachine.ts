@@ -342,7 +342,6 @@ export function startLocalAgent(
     const opened = new WebSocket(url, webSocketAuthProtocols(token))
     socket = opened
     opened.onopen = () => {
-      otherTabAnswers = 0
       agentSocket = opened
       reportConsoleOpened()
     }
@@ -361,7 +360,10 @@ export function startLocalAgent(
       socket = null
       if (stopped) return
       const end = AGENT_ENDS[event.code]
-      const believed = end !== 'other_tab' || ++otherTabAnswers >= OTHER_TAB_BELIEVED_AFTER
+      // ocf-core refuses after the upgrade, so a refused connection opens
+      // too: only a connection that ends otherwise has served.
+      otherTabAnswers = end === 'other_tab' ? otherTabAnswers + 1 : 0
+      const believed = end !== 'other_tab' || otherTabAnswers >= OTHER_TAB_BELIEVED_AFTER
       if (!end || !believed) {
         retry = setTimeout(connect, AGENT_RETRY_MS)
         return

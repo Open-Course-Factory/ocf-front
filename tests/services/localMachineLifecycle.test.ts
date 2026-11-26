@@ -104,6 +104,7 @@ describe('the machine of a local run', () => {
     const onEnd = vi.fn()
     startLocalAgent('run-o', 'local-o', 'tok', onEnd, opts)
     await settle()
+    FakeWebSocket.instances[0].open()
     FakeWebSocket.instances[0].closeWith(AGENT_CLOSE.otherTab)
     await vi.advanceTimersByTimeAsync(3000)
     FakeWebSocket.instances[1].open()
@@ -111,11 +112,12 @@ describe('the machine of a local run', () => {
     await vi.advanceTimersByTimeAsync(3000)
     expect(onEnd).not.toHaveBeenCalled()
 
-    FakeWebSocket.instances[2].closeWith(AGENT_CLOSE.otherTab)
-    await vi.advanceTimersByTimeAsync(3000)
-    FakeWebSocket.instances[3].closeWith(AGENT_CLOSE.otherTab)
-    await vi.advanceTimersByTimeAsync(3000)
-    FakeWebSocket.instances[4].closeWith(AGENT_CLOSE.otherTab)
+    // ocf-core refuses after the upgrade: each refused connection opens first.
+    for (const i of [2, 3, 4]) {
+      FakeWebSocket.instances[i].open()
+      FakeWebSocket.instances[i].closeWith(AGENT_CLOSE.otherTab)
+      if (i < 4) await vi.advanceTimersByTimeAsync(3000)
+    }
     await vi.advanceTimersByTimeAsync(10_000)
     expect(onEnd).toHaveBeenCalledWith('other_tab')
     expect(FakeWebSocket.instances).toHaveLength(5)
