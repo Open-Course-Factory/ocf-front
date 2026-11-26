@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const booted: { net?: { backend: { routes: Record<string, string> } } }[] = []
+const booted: { net?: { backend: { routes: Record<string, string> } }, memoryMiB?: number }[] = []
 vi.mock('unkernel', () => ({
   checkSupport: async () => ({ ok: true, problems: [] }),
   createKernel: async (spec: (typeof booted)[number]) => {
@@ -28,10 +28,10 @@ class FakeWebSocket {
   open() { this.readyState = 1; this.onopen?.() }
 }
 
-import { startLocalAgent, setMachineDesktop, hostLocalRun } from '../../src/services/domain/terminal/localMachine'
+import { startLocalAgent, setMachineRun, hostLocalRun } from '../../src/services/domain/terminal/localMachine'
 
 // These runs are console ones.
-for (const terminal of ['local-k1', 'local-k2', 'local-k3']) setMachineDesktop(terminal, null)
+for (const terminal of ['local-k1', 'local-k2', 'local-k3']) setMachineRun(terminal, { apps: null })
 
 const opts = { distroUrl: '/x.erofs', worker: false }
 const settle = () => new Promise(r => setTimeout(r, 0))
@@ -78,5 +78,13 @@ describe("the Debian mirror's key", () => {
     await vi.waitFor(() => expect(FakeWebSocket.instances).toHaveLength(1))
     expect(booted).toHaveLength(1)
     release()
+  })
+
+  it('boots a console machine with the memory ocf-core gives the run', async () => {
+    setMachineRun('local-k5', { apps: null, memoryMiB: 1024 })
+    const agent = startLocalAgent('run-k5', 'local-k5', 'tok', () => {}, opts)
+    await vi.waitFor(() => expect(booted).toHaveLength(1))
+    expect(booted[0].memoryMiB).toBe(1024)
+    agent.stop()
   })
 })

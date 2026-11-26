@@ -89,31 +89,36 @@ const LOCK_DOWN_SUDO = [
 // page instead of the console: an iframe of this origin laid over the
 // console's place (DesktopSlot.vue), whose window.KW.ready() hands out the
 // machine, which the agent drives as it drives a console one. Its launcher
-// offers the scenario's apps. setMachineDesktop() tells which; the machine
-// boots once it is told, and keeps the kind it booted as.
-type DesktopApps = string[] | null
-const machineDesktops = new Map<string, { apps: Promise<DesktopApps>; resolve(apps: DesktopApps): void }>()
+// offers the scenario's apps. setMachineRun() tells which, and the machine's
+// memory; the machine boots once it is told, and keeps what it booted as.
+export interface MachineRun {
+  /** A desktop's apps; null: a console. */
+  apps: string[] | null
+  /** The machine's memory (ocf-core: the scenario's size); absent, unkernel's default. */
+  memoryMiB?: number
+}
+const machineRuns = new Map<string, { run: Promise<MachineRun>; resolve(run: MachineRun): void }>()
 
-function machineDesktopEntry(terminal: string) {
-  let entry = machineDesktops.get(terminal)
+function machineRunEntry(terminal: string) {
+  let entry = machineRuns.get(terminal)
   if (!entry) {
-    let resolve!: (apps: DesktopApps) => void
-    const apps = new Promise<DesktopApps>(r => { resolve = r })
-    entry = { apps, resolve }
-    machineDesktops.set(terminal, entry)
+    let resolve!: (run: MachineRun) => void
+    const run = new Promise<MachineRun>(r => { resolve = r })
+    entry = { run, resolve }
+    machineRuns.set(terminal, entry)
   }
   return entry
 }
 
 /**
- * Whether terminal's run is a desktop, with the apps its launcher offers
- * (null: a console). Resolves to what its machine was booted as, which a
- * later call does not change: the page shows a desktop when that is one.
+ * What terminal's machine is: a desktop or a console, and its memory.
+ * Resolves to what the machine was booted as, which a later call does not
+ * change: the page shows a desktop when that is one.
  */
-export function setMachineDesktop(terminal: string, apps: DesktopApps): Promise<DesktopApps> {
-  const entry = machineDesktopEntry(terminal)
-  entry.resolve(apps)
-  return entry.apps
+export function setMachineRun(terminal: string, run: MachineRun): Promise<MachineRun> {
+  const entry = machineRunEntry(terminal)
+  entry.resolve(run)
+  return entry.run
 }
 
 /** The desktop's iframe of terminal's run, once it boots one. */
@@ -206,7 +211,7 @@ export async function pasteOnDesktop(terminal: string, command: string): Promise
 // other host; no network at all without that server. Its kernel runs in a
 // worker when the console's would. The learner's terminal stays open (no
 // autohide). No prompt of its own on leaving: the run page asks.
-export function desktopPageUrl(apps: string[], opts: LocalMachineOptions): string {
+export function desktopPageUrl(apps: string[], opts: LocalMachineOptions, memoryMiB?: number): string {
   const backend = opts.net?.backend as { servers?: string, routes?: Record<string, string> } | undefined
   const query = new URLSearchParams({
     data: '0', askleave: '0', autosuspend: '0', autohide: '0',
@@ -214,6 +219,7 @@ export function desktopPageUrl(apps: string[], opts: LocalMachineOptions): strin
     apps: apps.join(','),
     image: new URL(opts.distroUrl, window.location.origin).href
   })
+  if (memoryMiB) query.set('mem', String(memoryMiB))
   const mirror = backend?.routes?.['deb.debian.org']
   if (backend?.servers) {
     query.set('wisp', backend.servers)
@@ -252,9 +258,9 @@ function forgetDesktop(terminal: string, frame: HTMLIFrameElement) {
   desktopFrameListeners.forEach(l => l())
 }
 
-async function bootDesktop(terminal: string, apps: string[], opts: LocalMachineOptions): Promise<Machine> {
+async function bootDesktop(terminal: string, apps: string[], opts: LocalMachineOptions, memoryMiB?: number): Promise<Machine> {
   const frame = document.createElement('iframe')
-  frame.src = desktopPageUrl(apps, opts)
+  frame.src = desktopPageUrl(apps, opts, memoryMiB)
   frame.title = 'Linux'
   frame.className = 'ocf-desktop-frame'
   frame.style.cssText = 'position:fixed;border:0;visibility:hidden;left:0;top:0;width:800px;height:600px;'
@@ -288,14 +294,14 @@ async function bootDesktop(terminal: string, apps: string[], opts: LocalMachineO
 }
 
 async function boot(terminal: string, opts: LocalMachineOptions): Promise<Machine> {
-  const apps = await machineDesktopEntry(terminal).apps
+  const { apps, memoryMiB } = await machineRunEntry(terminal).run
   if (apps) {
     // On a desktop the user keeps its sudo: the launcher installs and starts
     // the offered apps with it, and the learner's shell is opened with it.
     // A lab that must keep the learner from root uses the console.
-    return await bootDesktop(terminal, apps, opts)
+    return await bootDesktop(terminal, apps, opts, memoryMiB)
   }
-  const machine = await bootConsole(opts)
+  const machine = await bootConsole(opts, memoryMiB)
   await machine.exec('sh', ['-c', LOCK_DOWN_SUDO], {
     user: 'root',
     signal: AbortSignal.timeout(DEFAULT_EXEC_TIMEOUT_SECONDS * 1000),
@@ -304,11 +310,11 @@ async function boot(terminal: string, opts: LocalMachineOptions): Promise<Machin
   return machine
 }
 
-async function bootConsole(opts: LocalMachineOptions): Promise<Machine> {
+async function bootConsole(opts: LocalMachineOptions, memoryMiB?: number): Promise<Machine> {
   const { checkSupport, createKernel } = await import('unkernel')
   const support = await checkSupport()
   if (!support.ok) throw new Error(support.problems.join('; '))
-  return await createKernel({ distro: opts.distroUrl, worker: opts.worker, net: opts.net })
+  return await createKernel({ distro: opts.distroUrl, worker: opts.worker, net: opts.net, memoryMiB })
 }
 
 // The uid each terminal's console runs as, once the page has read it from the
@@ -618,7 +624,7 @@ export function hostLocalRun(runId: string, terminal: string, token: string | nu
   if (!hosted) {
     // Nobody sees this machine: a console one, whatever apps the run offers.
     // (A run page open in this tab has already said; its word stays.)
-    void setMachineDesktop(terminal, null)
+    void setMachineRun(terminal, { apps: null })
     const agent = startLocalAgent(runId, terminal, token, () => hostedRuns.delete(runId))
     hosted = { agent, holders: 0 }
     hostedRuns.set(runId, hosted)

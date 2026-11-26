@@ -83,7 +83,7 @@ vi.mock('../../src/stores/currentUser', () => ({
 }))
 
 const agent = vi.hoisted(() => ({
-  stop: vi.fn(), start: vi.fn(), consoleUser: vi.fn(), relay: vi.fn(), stopRelay: vi.fn(),
+  stop: vi.fn(), start: vi.fn(), consoleUser: vi.fn(), relay: vi.fn(), stopRelay: vi.fn(), run: vi.fn(),
   // What the machine booted as (null: a console), when it booted before this read of the run.
   booted: undefined as string[] | null | undefined
 }))
@@ -91,7 +91,7 @@ vi.mock('../../src/services/domain/terminal/localMachine', () => ({
   isLocalSessionId: (id: string) => id.startsWith('local-'),
   startLocalAgent: (...args: unknown[]) => { agent.start(...args); return { stop: agent.stop } },
   setConsoleUser: (...args: unknown[]) => agent.consoleUser(...args),
-  setMachineDesktop: async (_terminal: string, apps: string[] | null) => agent.booted === undefined ? apps : agent.booted,
+  setMachineRun: async (terminal: string, run: { apps: string[] | null }) => { agent.run(terminal, run); return agent.booted === undefined ? run : { apps: agent.booted } },
   pasteOnDesktop: vi.fn(),
   serveConsoleRelay: (...args: unknown[]) => { agent.relay(...args); return agent.stopRelay }
 }))
@@ -150,10 +150,12 @@ describe('TerminalSessionView on a local machine', () => {
   it('shows the desktop for a run set to one', async () => {
     route.sessionId = 'local-abc'
     vi.mocked(scenarioSessionService.getSessionByTerminal).mockResolvedValueOnce(
-      { id: 'run-1', status: 'active', terminal_session_id: 'local-abc', machine_display: 'desktop' } as never)
+      { id: 'run-1', status: 'active', terminal_session_id: 'local-abc', machine_display: 'desktop', machine_memory_mib: 1024 } as never)
     const wrapper = mountView()
     await flushPromises()
     expect(wrapper.find('.tsp-stub').attributes('data-desktop')).toBe('true')
+    // The machine gets the memory ocf-core gives the run.
+    expect(agent.run).toHaveBeenCalledWith('local-abc', { apps: [], memoryMiB: 1024 })
   })
 
   it('shows what the machine booted as, not what the scenario says since', async () => {

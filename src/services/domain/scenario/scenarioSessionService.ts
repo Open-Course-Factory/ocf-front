@@ -200,6 +200,8 @@ export interface ScenarioSessionInfo {
   machine_display?: 'terminal' | 'desktop'
   /** The apps the desktop's launcher offers. */
   machine_apps?: string[]
+  /** The memory of a machine in the learner's browser, from the scenario's size. */
+  machine_memory_mib?: number
   /**
    * The scenario's prose in the language this session is being played in.
    *

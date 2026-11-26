@@ -162,6 +162,11 @@ test('a lab that offers apps shows the desktop, with only those apps to install'
   await expect.poll(() => desktopText(page), { timeout: 60_000 }).toContain('PRET-42');
   await expect.poll(() => desktopText(page)).toMatch(/^root\s*$/m);
   await expect.poll(() => desktopText(page)).toMatch(/^built\s*$/m);
+  // The scenario asks for size xs (the seed's default): the machine gets at
+  // least 1 GiB, as ocf-core says.
+  const pageSearch = await page.evaluate(() => (document.querySelector('iframe.ocf-desktop-frame') as HTMLIFrameElement)
+    .contentWindow!.location.search);
+  expect(new URLSearchParams(pageSearch).get('mem')).toBe('1024');
   await shot('1-desktop');
 
   await desktop.locator('#win-terminal-1 .wm-body').click();

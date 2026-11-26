@@ -22,6 +22,13 @@ describe('the desktop page URL', () => {
     // page's thread alone, as a console machine's does.
     expect(q.get('autohide')).toBe('0')
     expect(q.get('worker')).toBe('1')
+    // unkernel's own memory without one from the run.
+    expect(q.get('mem')).toBeNull()
+  })
+
+  it('gives the page the run\'s memory', () => {
+    const q = query(desktopPageUrl([], { distroUrl: '/d.erofs', worker: true }, 1024))
+    expect(q.get('mem')).toBe('1024')
   })
 
   it('switches the page\'s network off without our Wisp server, mirror or not', () => {

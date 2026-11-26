@@ -139,7 +139,7 @@ interface Props {
   // history (tt-backend records it); popped out, its window reaches it through
   // this tab.
   machine?: 'incus' | 'local'
-  // The run's machine is unkernel's desktop (localMachine.ts setMachineDesktop).
+  // The run's machine is unkernel's desktop (localMachine.ts setMachineRun).
   desktop?: boolean
 }
 
