@@ -7,6 +7,7 @@
 import type { NetSpec } from 'unkernel'
 import { LocalConsoleSocket, type ConsolePty } from './localConsoleSocket'
 import { relayedPty, serveRelay } from './localConsoleRelay'
+import { SharedShell } from './sharedShell'
 import { apiWebSocketUrl, webSocketAuthProtocols } from '../../../utils/webSocketAuth'
 
 /** A terminal session whose machine runs in the browser, as ocf-core names it. */
@@ -58,12 +59,13 @@ function defaultOptions(): LocalMachineOptions {
 }
 
 // The machine of one run's terminal, for the page's life: leaving the run's
-// page and coming back finds it as it was. A reconnect opens a new shell on it.
+// page and coming back finds it as it was, its learner's shell included.
 // `boot` names it to ocf-core, which tells a reload from a reconnect by it.
 interface HeldMachine {
   terminal: string
   boot: string
   machine: Promise<Machine>
+  shell: SharedShell
 }
 let held: HeldMachine | null = null
 
@@ -119,7 +121,13 @@ export function setConsoleUser(terminal: string, uid: number | undefined) {
 function machineOf(terminal: string, opts: LocalMachineOptions): HeldMachine {
   if (held?.terminal === terminal) return held
   stopMachineOf(held?.terminal)
-  const booting: HeldMachine = { terminal, boot: crypto.randomUUID(), machine: boot(opts) }
+  const machine = boot(opts)
+  const booting: HeldMachine = {
+    terminal,
+    boot: crypto.randomUUID(),
+    machine,
+    shell: new SharedShell((cols, rows) => spawnShell(terminal, machine, cols, rows))
+  }
   // A failed boot is retried by the next console, not cached.
   booting.machine.catch(() => { if (held === booting) held = null })
   held = booting
@@ -173,10 +181,14 @@ export function serveConsoleRelay(terminal: string, opts: LocalMachineOptions = 
       : null)
 }
 
-// The learner's shell on terminal's machine, as the run's user. The latest
-// one opened, here or in a popped-out window, is where foreground scripts go.
-async function openShell(terminal: string, cols: number, rows: number, opts: LocalMachineOptions): Promise<ConsolePty> {
-  const { machine } = machineOf(terminal, opts) // boots while the page reads the run
+// A console on the learner's shell of terminal's machine, here or in a
+// popped-out window: the same shell for both (SharedShell).
+function openShell(terminal: string, cols: number, rows: number, opts: LocalMachineOptions): Promise<ConsolePty> {
+  return machineOf(terminal, opts).shell.attach(cols, rows) // boots while the page reads the run
+}
+
+// The learner's shell, as the run's user: where foreground scripts are typed.
+async function spawnShell(terminal: string, machine: Promise<Machine>, cols: number, rows: number): Promise<ConsolePty> {
   const user = await consoleUserEntry(terminal).user
   const pty = await (await machine).spawn(undefined, undefined, { cols, rows, user })
   consolePty = pty

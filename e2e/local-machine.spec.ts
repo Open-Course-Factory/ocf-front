@@ -250,8 +250,12 @@ test('a popped-out terminal works on the machine of the run page, whose instruct
   await expect(stepTitle).toHaveText('Écrire depuis la fenêtre', { timeout: 120_000 });
   await waitForLiveTerminal(page, 60_000);
 
+  // What the learner did in the page's shell is still there in the window.
+  await typeInTerminal(page, 'cd /tmp; MARQUE=abc');
   const [popup] = await Promise.all([page.waitForEvent('popup'), page.getByTestId('terminal-pop').first().click()]);
   await waitForLiveTerminal(popup, 60_000);
+  await typeInTerminal(popup, 'echo $PWD-$MARQUE-$((1+1))');
+  await expect.poll(() => readTerminalText(popup), { timeout: 30_000 }).toContain('/tmp-abc-2');
   // The window's shell is on the page's machine: it sees the step's world.
   await typeInTerminal(popup, 'cat /tmp/monde.txt; echo popup > /tmp/popup.txt; echo FAIT-$((1+1))');
   await expect.poll(() => readTerminalText(popup), { timeout: 30_000 }).toContain('FAIT-2');
