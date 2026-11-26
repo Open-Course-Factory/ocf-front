@@ -18,11 +18,7 @@ export async function login(
   const query = options.redirect ? `?redirect=${encodeURIComponent(options.redirect)}` : '';
   await page.goto(`/login${query}`, { waitUntil: 'networkidle' });
 
-  // A scenario run opens on its briefing modal. Whenever it stands in the way
-  // of a step, close it the way a learner would.
-  await page.addLocatorHandler(page.getByTestId('briefing-modal'), async () => {
-    await page.getByTestId('briefing-close').click();
-  });
+  await closeBriefingWhenInTheWay(page);
 
   // Wait for the login form to be rendered
   const emailInput = page.locator('#email');
@@ -167,4 +163,15 @@ export async function getAvailableOrgNames(page: Page): Promise<string[]> {
   const names = await page.locator('.org-switcher-item .org-name').allInnerTexts();
   await closeUserMenu(page);
   return names;
+}
+
+/**
+ * A scenario run opens on its briefing modal. Whenever it stands in the way of
+ * a step, close it the way a learner would. A spec that reads the briefing
+ * lifts this with page.removeLocatorHandler, then calls it again.
+ */
+export async function closeBriefingWhenInTheWay(page: Page): Promise<void> {
+  await page.addLocatorHandler(page.getByTestId('briefing-modal'), async () => {
+    await page.getByTestId('briefing-close').click();
+  });
 }

@@ -1,5 +1,5 @@
 import { test, expect, type Page, type Locator } from '@playwright/test';
-import { loginFresh } from './helpers/auth';
+import { closeBriefingWhenInTheWay, loginFresh } from './helpers/auth';
 import { dismissVerificationBanner, navigateViaMenuCategory } from './helpers/ui';
 import { typeInTerminal, readTerminalText, waitForLiveTerminal } from './helpers/xterm';
 import { appendFileSync, existsSync, readFileSync } from 'fs';
@@ -174,6 +174,17 @@ const FOREIGN_INTRO = foreignIntro();
 async function expectBriefingInTheChosenLanguage(page: Page): Promise<void> {
   if (!FOREIGN_INTRO.length) return;
 
+  // The login's handler closes the briefing as soon as it shows: lifted while
+  // it is read, and put back after.
+  await page.removeLocatorHandler(page.getByTestId('briefing-modal'));
+  try {
+    await readBriefing(page);
+  } finally {
+    await closeBriefingWhenInTheWay(page);
+  }
+}
+
+async function readBriefing(page: Page): Promise<void> {
   const briefing = page.getByTestId('scenario-briefing');
   // The modal may already have been closed to reach the console: reopen it.
   if (!(await briefing.isVisible().catch(() => false))) {
@@ -359,7 +370,9 @@ async function sh(page: Page, cmd: string, settleMs = 900): Promise<void> {
  */
 async function expectRefused(page: Page, cmd: string): Promise<void> {
   const said = await readRaw(page, cmd);
-  if (!/permission denied/i.test(said)) {
+  // The terminal wraps long lines, so "Permission deni" may end one row and
+  // "ed" begin the next: compared without the whitespace.
+  if (!/permissiondenied/i.test(said.replace(/\s+/g, ''))) {
     throw new Error(
       `expected "${cmd}" to be refused, but nothing was denied — ` +
         `is the console running as root? tail: ${said.slice(-200)}`
@@ -540,7 +553,13 @@ async function expectVerifyPasses(page: Page, currentTitle: string): Promise<voi
       const cls = (await result.getAttribute('class', { timeout: READ_MS }).catch(() => null)) || '';
       if (cls.includes('failed')) {
         const said = (await result.innerText().catch(() => '')).trim();
-        if (isRateLimited(said)) break; // wait out the window, then press again
+        if (isRateLimited(said)) {
+          // The limiter answered, not the check: a press made now would be
+          // refused the same way. Wait for its window, as a refusal does.
+          trail('    the limiter answered — waiting for its window');
+          await page.waitForTimeout(20_000);
+          break;
+        }
         throw new Error(`the check refused "${currentTitle}": ${said}`);
       }
       await page.waitForTimeout(250);
