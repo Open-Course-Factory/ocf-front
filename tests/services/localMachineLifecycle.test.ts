@@ -173,7 +173,7 @@ describe('the machine of a local run', () => {
     expect(bootOptions.at(-1)).toMatchObject({
       net: {
         kind: 'net',
-        backend: { kind: 'wisp', routes: { 'deb.debian.org': `${window.location.origin}/local-machine/apt/local-m` } }
+        backend: { kind: 'wisp', routes: { 'deb.debian.org': expect.stringMatching(new RegExp(`^${window.location.origin}/local-machine/apt/local-m/[0-9a-f-]{36}$`)) } }
       }
     })
     agent.stop()

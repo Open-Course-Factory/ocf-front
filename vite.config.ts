@@ -28,16 +28,16 @@ export default defineConfig({
       },
       // Debian packages for a machine in the learner's browser, as nginx.conf
       // serves them in production: ocf-core says first whether that machine
-      // may (its run open, its tab connected, the switch on). No cache here.
+      // may (its run open, its tab connected with that key, the switch on). No cache here.
       '/local-machine/apt': {
         target: 'http://deb.debian.org',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/local-machine\/apt\/[^/]+/, ''),
+        rewrite: (path) => path.replace(/^\/local-machine\/apt\/[^/]+\/[^/]+/, ''),
         bypass: async (req, res) => {
-          const machine = /^\/local-machine\/apt\/(local-[0-9a-f-]+)\/debian(-security)?\//.exec(req.url || '')?.[1]
+          const [, machine, key] = /^\/local-machine\/apt\/(local-[0-9a-f-]+)\/([0-9a-f-]{36})\/debian(-security)?\//.exec(req.url || '') ?? []
           const core = process.env.VITE_E2E_PROXY_TARGET || 'http://localhost:8080'
           const access = machine
-            ? await fetch(`${core}/api/v1/local-machines/mirror-access`, { headers: { 'X-Local-Machine': machine } }).catch(() => null)
+            ? await fetch(`${core}/api/v1/local-machines/mirror-access`, { headers: { 'X-Local-Machine': machine, 'X-Local-Machine-Key': key } }).catch(() => null)
             : null
           if (access?.status === 204) return undefined
           res!.statusCode = 403

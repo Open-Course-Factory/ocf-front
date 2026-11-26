@@ -61,9 +61,11 @@ function defaultOptions(): LocalMachineOptions {
 // The machine of one run's terminal, for the page's life: leaving the run's
 // page and coming back finds it as it was, its learner's shell included.
 // `boot` names it to ocf-core, which tells a reload from a reconnect by it.
+// `mirrorKey` is what it asks the Debian mirror with (debianMirrorNet).
 interface HeldMachine {
   terminal: string
   boot: string
+  mirrorKey: string
   machine: Promise<Machine>
   shell: SharedShell
 }
@@ -118,17 +120,19 @@ export function setConsoleUser(terminal: string, uid: number | undefined) {
 
 // The machine's only network: plain HTTP to deb.debian.org, answered by the
 // platform's Debian mirror through this tab (unkernel's fetch routes; nginx.conf
-// /local-machine/apt), which ocf-core opens to this terminal's machine only.
-// A worker takes routes on a Wisp backend alone, so it names one that answers
-// nothing: the machine reaches no other host.
-export function debianMirrorNet(terminal: string): NetSpec {
+// /local-machine/apt), which ocf-core opens to this terminal's machine only,
+// asked with `key`: the terminal id is no secret, the key only this tab and
+// ocf-core know (the agent announces it). A worker takes routes on a Wisp
+// backend alone, so it names one that answers nothing: the machine reaches no
+// other host.
+export function debianMirrorNet(terminal: string, key: string): NetSpec {
   const origin = window.location.origin
   return {
     kind: 'net',
     backend: {
       kind: 'wisp',
       servers: `${origin.replace(/^http/, 'ws')}/local-machine/no-wisp/`,
-      routes: { 'deb.debian.org': `${origin}/local-machine/apt/${terminal}` }
+      routes: { 'deb.debian.org': `${origin}/local-machine/apt/${terminal}/${key}` }
     }
   }
 }
@@ -138,10 +142,12 @@ export function debianMirrorNet(terminal: string): NetSpec {
 function machineOf(terminal: string, opts: LocalMachineOptions): HeldMachine {
   if (held?.terminal === terminal) return held
   stopMachineOf(held?.terminal)
-  const machine = boot({ ...opts, net: opts.net ?? debianMirrorNet(terminal) })
+  const mirrorKey = crypto.randomUUID()
+  const machine = boot({ ...opts, net: opts.net ?? debianMirrorNet(terminal, mirrorKey) })
   const booting: HeldMachine = {
     terminal,
     boot: crypto.randomUUID(),
+    mirrorKey,
     machine,
     shell: new SharedShell((cols, rows) => spawnShell(terminal, machine, cols, rows))
   }
@@ -329,7 +335,7 @@ export function startLocalAgent(
   let otherTabAnswers = 0
 
   const connect = async () => {
-    const { boot, machine } = machineOf(terminal, opts)
+    const { boot, machine, mirrorKey } = machineOf(terminal, opts)
     let vm: Machine
     try {
       vm = await machine
@@ -342,6 +348,7 @@ export function startLocalAgent(
     const opened = new WebSocket(url, webSocketAuthProtocols(token))
     socket = opened
     opened.onopen = () => {
+      opened.send(JSON.stringify({ event: 'mirror_key', key: mirrorKey }))
       agentSocket = opened
       reportConsoleOpened()
     }
