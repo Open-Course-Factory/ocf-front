@@ -142,14 +142,19 @@ test('a lab that offers apps shows the desktop, with only those apps to install'
   for (const absent of ['Games', 'Browsers', 'Agents', 'Media', 'Servers']) {
     await expect(tile(absent)).toHaveCount(0);
   }
-  // Its search finds an offered app, and nothing for a game.
+  await shot('2-launcher');
+  // Its search finds an offered app, and nothing for a game. Escape clears
+  // the search and keeps the launcher open.
+  const search = desktop.getByPlaceholder('Search');
   await page.keyboard.type('python');
   await expect(tile('Python')).toBeVisible();
-  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Escape');
+  await expect(search).toHaveValue('');
   await page.keyboard.type('doom');
+  await expect(search).toHaveValue('doom');
   await expect(tile('Doom')).toHaveCount(0);
-  await expect(tile('Python')).toHaveCount(0);
-  await shot('2-launcher');
+  await expect(desktop.getByText('Nothing matches')).toBeVisible();
+  await shot('3-no-doom');
   // The first Escape clears the search, the second closes the launcher.
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
@@ -166,7 +171,7 @@ test('a lab that offers apps shows the desktop, with only those apps to install'
   await page.waitForTimeout(8_000); // the check limiter
   await verify.click();
   await expect(page.getByTestId('scenario-completed')).toBeVisible({ timeout: 60_000 });
-  await shot('3-completed');
+  await shot('4-completed');
 
   expect(outside, 'the desktop asks no outside site').toEqual([]);
 });
