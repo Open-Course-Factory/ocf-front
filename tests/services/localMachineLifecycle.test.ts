@@ -6,10 +6,12 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
+const bootOptions: unknown[] = []
 const kernels: { stop: ReturnType<typeof vi.fn>; spawn: ReturnType<typeof vi.fn>; exec: ReturnType<typeof vi.fn> }[] = []
 vi.mock('unkernel', () => ({
   checkSupport: async () => ({ ok: true, problems: [] }),
-  createKernel: async () => {
+  createKernel: async (opts: unknown) => {
+    bootOptions.push(opts)
     const kernel = {
       spawn: vi.fn(async () => ({
         output: new ReadableStream<Uint8Array>(),
@@ -136,5 +138,19 @@ describe('the machine of a local run', () => {
     openLocalConsole('local-g', 80, 24, undefined, opts).onopen = () => {}
     await settle()
     expect(kernels.at(-1)!.spawn.mock.calls[0][2]).toMatchObject({ user: 'root' })
+  })
+
+  // Plan rule 11: the machine reaches Debian's packages through the
+  // platform's mirror, opened to its own terminal, and nothing else.
+  it('boots with the platform\'s Debian mirror as its only network', async () => {
+    const agent = startLocalAgent('run-m', 'local-m', 'tok', () => {}, opts)
+    await settle()
+    expect(bootOptions.at(-1)).toMatchObject({
+      net: {
+        kind: 'net',
+        backend: { kind: 'wisp', routes: { 'deb.debian.org': `${window.location.origin}/local-machine/apt/local-m` } }
+      }
+    })
+    agent.stop()
   })
 })

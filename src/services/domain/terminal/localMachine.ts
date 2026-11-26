@@ -116,12 +116,29 @@ export function setConsoleUser(terminal: string, uid: number | undefined) {
   consoleUserEntry(terminal).resolve(uid ?? 'root')
 }
 
+// The machine's only network: plain HTTP to deb.debian.org, answered by the
+// platform's Debian mirror through this tab (unkernel's fetch routes; nginx.conf
+// /local-machine/apt), which ocf-core opens to this terminal's machine only.
+// A worker takes routes on a Wisp backend alone, so it names one that answers
+// nothing: the machine reaches no other host.
+export function debianMirrorNet(terminal: string): NetSpec {
+  const origin = window.location.origin
+  return {
+    kind: 'net',
+    backend: {
+      kind: 'wisp',
+      servers: `${origin.replace(/^http/, 'ws')}/local-machine/no-wisp/`,
+      routes: { 'deb.debian.org': `${origin}/local-machine/apt/${terminal}` }
+    }
+  }
+}
+
 // The terminal's machine, booted if needed. Another terminal's is stopped
 // first: a machine is never handed from one run to another.
 function machineOf(terminal: string, opts: LocalMachineOptions): HeldMachine {
   if (held?.terminal === terminal) return held
   stopMachineOf(held?.terminal)
-  const machine = boot(opts)
+  const machine = boot({ ...opts, net: opts.net ?? debianMirrorNet(terminal) })
   const booting: HeldMachine = {
     terminal,
     boot: crypto.randomUUID(),

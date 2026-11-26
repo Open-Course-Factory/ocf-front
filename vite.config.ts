@@ -26,6 +26,25 @@ export default defineConfig({
         changeOrigin: true,
         ws: true
       },
+      // Debian packages for a machine in the learner's browser, as nginx.conf
+      // serves them in production: ocf-core says first whether that machine
+      // may (its run open, its tab connected, the switch on). No cache here.
+      '/local-machine/apt': {
+        target: 'http://deb.debian.org',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/local-machine\/apt\/[^/]+/, ''),
+        bypass: async (req, res) => {
+          const machine = /^\/local-machine\/apt\/(local-[0-9a-f-]+)\/debian(-security)?\//.exec(req.url || '')?.[1]
+          const core = process.env.VITE_E2E_PROXY_TARGET || 'http://localhost:8080'
+          const access = machine
+            ? await fetch(`${core}/api/v1/local-machines/mirror-access`, { headers: { 'X-Local-Machine': machine } }).catch(() => null)
+            : null
+          if (access?.status === 204) return undefined
+          res!.statusCode = 403
+          res!.end()
+          return false
+        }
+      },
       // General API proxy so the dev server can serve the app same-origin
       // (VITE_API_URL pointing at the dev server itself). Unused in the
       // default setup, where the app calls ocf-core's absolute URL directly;
