@@ -402,12 +402,29 @@ include:
       disable_changelog: true
 
 # The component's dind service is unused with buildkit_endpoint: builds run on the runner's buildkitd.
-# needs: [] starts the build alongside the tests instead of after them; the
+# needs only desktop-page: the build starts alongside the tests, not after them; the
 # version tag still waits for every test, since check-version sits in the
 # release stage with no needs of its own.
 build-docker:
   services: []
+  needs: [desktop-page]
+
+# The desktop page that labs show (local-machine-image's generic package, at
+# this front's unkernel pin), into public/ so the image build ships it. Runs
+# in every pipeline: an unkernel bump without its page fails here first.
+# Needs local-machine-image to allow this project's CI job token.
+desktop-page:
+  stage: build
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/node:${NODE_VERSION}
   needs: []
+  script:
+    - version=$(node -p 'require("./package.json").dependencies.unkernel')
+    - 'curl -fsS -o desktop.tar.gz -H "JOB-TOKEN: $CI_JOB_TOKEN" "$CI_API_V4_URL/projects/open-course-factory%2Flocal-machine-image/packages/generic/unkernel-desktop/$version/unkernel-desktop.tar.gz"'
+    # nginx serves the .gz copies (gzip_static), not the Brotli or zstd ones.
+    - mkdir -p public/unkernel-desktop && tar -xzf desktop.tar.gz -C public/unkernel-desktop --exclude='*.br' --exclude='*.zst'
+  artifacts:
+    paths: [public/unkernel-desktop/]
+    expire_in: 1 day
 
 # Cuts a release from a main pipeline whose tests passed: commits the version
 # bump straight to main, and that commit's pipeline (tests skipped as

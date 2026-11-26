@@ -39,3 +39,6 @@ playwright-report/
 .e2e-core/
 .playwright-browsers/
 test-results-video/
+
+# The desktop page, fetched by CI (desktop-page job) or copied by hand for dev
+public/unkernel-desktop/

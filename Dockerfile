@@ -21,6 +21,9 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 COPY . .
 
 RUN npm run build
+# nginx.conf's CSP for the desktop page: the hashes of its inline code and
+# the image's origin.
+RUN node scripts/desktop-csp.mjs > desktop-csp.conf
 
 # === Runtime stage ===
 FROM nginx:1.31-alpine
@@ -31,6 +34,7 @@ ENV INCUS_PROXY_TARGET="http://ocf:8080"
 
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY --from=build /app/desktop-csp.conf /etc/nginx/desktop-csp.conf
 
 EXPOSE 80
 
