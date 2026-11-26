@@ -357,3 +357,32 @@ export function startLocalAgent(
     }
   }
 }
+
+// Runs hosted by this tab outside their run page, with how many hold each.
+const hostedRuns = new Map<string, { agent: { stop(): void }; holders: number }>()
+
+/**
+ * Runs the machine of a local run in this tab, for a page other than its run
+ * page: the scenario editor testing a check on a preview. One agent per run
+ * whoever holds it; it stops when the last holder lets go, or when ocf-core
+ * ends it. Returns the release.
+ */
+export function hostLocalRun(runId: string, terminal: string, token: string | null | undefined): () => void {
+  let hosted = hostedRuns.get(runId)
+  if (!hosted) {
+    const agent = startLocalAgent(runId, terminal, token, () => hostedRuns.delete(runId))
+    hosted = { agent, holders: 0 }
+    hostedRuns.set(runId, hosted)
+  }
+  hosted.holders++
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    const current = hostedRuns.get(runId)
+    if (current && --current.holders === 0) {
+      current.agent.stop()
+      hostedRuns.delete(runId)
+    }
+  }
+}

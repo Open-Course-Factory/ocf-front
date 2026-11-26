@@ -22,6 +22,13 @@ vi.mock('axios', () => ({
   }
 }))
 
+const host = vi.hoisted(() => ({ run: vi.fn(), release: vi.fn() }))
+vi.mock('../../src/services/domain/terminal/localMachine', () => ({
+  isLocalSessionId: (id?: string) => !!id && id.startsWith('local-'),
+  hostLocalRun: (...args: unknown[]) => { host.run(...args); return host.release }
+}))
+vi.mock('../../src/stores/currentUser', () => ({ useCurrentUserStore: () => ({ secretToken: 'tok' }) }))
+
 import VerifyScriptTester from '../../src/components/ScenarioEditor/VerifyScriptTester.vue'
 
 const SCENARIO = 'sc-1'
@@ -42,6 +49,8 @@ function refusal(status: number) {
 beforeEach(() => {
   getMock.mockReset()
   postMock.mockReset()
+  host.run.mockReset()
+  host.release.mockReset()
 })
 
 describe('VerifyScriptTester', () => {
@@ -117,6 +126,42 @@ describe('VerifyScriptTester', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="verify-test-start-preview"]').exists()).toBe(true)
+  })
+
+  // A preview on a machine in the author's browser has no run page open: this
+  // tab runs its machine, so its build and the check have somewhere to run.
+  it('runs the machine of a local preview in this tab, and lets it go on leaving', async () => {
+    getMock.mockResolvedValue({ data: [{ ...preview, terminal_session_id: 'local-p' }] })
+    postMock.mockResolvedValue({ data: { passed: true, exit_code: 0, output: '', duration_ms: 7 } })
+    const wrapper = mountTester()
+
+    await wrapper.get('[data-testid="verify-test-run"]').trigger('click')
+    await flushPromises()
+    expect(host.run).toHaveBeenCalledWith('ss-preview', 'local-p', 'tok')
+    expect(postMock).toHaveBeenCalled()
+    expect(host.run.mock.invocationCallOrder[0]).toBeLessThan(postMock.mock.invocationCallOrder[0])
+
+    wrapper.unmount()
+    expect(host.release).toHaveBeenCalled()
+  })
+
+  it('runs the machine of the local preview the page started, before waiting for its build', async () => {
+    getMock.mockResolvedValue({ data: { id: 'ss-new', status: 'active', terminal_session_id: 'local-n' } })
+    postMock.mockResolvedValue({ data: { passed: true, exit_code: 0, output: '', duration_ms: 7 } })
+    const wrapper = mountTester()
+
+    await wrapper.setProps({ startedPreviewId: 'ss-new' })
+    await flushPromises()
+    expect(host.run).toHaveBeenCalledWith('ss-new', 'local-n', 'tok')
+  })
+
+  it('runs no machine for a preview in a container', async () => {
+    getMock.mockResolvedValue({ data: [{ ...preview, terminal_session_id: 'sess-incus' }] })
+    postMock.mockResolvedValue({ data: { passed: true, exit_code: 0, output: '', duration_ms: 7 } })
+    const wrapper = mountTester()
+    await wrapper.get('[data-testid="verify-test-run"]').trigger('click')
+    await flushPromises()
+    expect(host.run).not.toHaveBeenCalled()
   })
 
   it('cannot run on a read-only scenario, and says why', () => {

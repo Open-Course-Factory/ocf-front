@@ -55,6 +55,8 @@ import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { scenarioSessionService, pollProvisioningStatus, type TestVerifyResponse } from '../../services/domain/scenario/scenarioSessionService'
 import { testVerifyRefusalKey } from '../../utils/scenarioPreview'
+import { hostLocalRun, isLocalSessionId } from '../../services/domain/terminal/localMachine'
+import { useCurrentUserStore } from '../../stores/currentUser'
 
 const { t } = useTranslations({
   en: {
@@ -122,7 +124,21 @@ const result = ref<TestVerifyResponse | null>(null)
 const errorKey = ref('')
 const busy = computed(() => state.value === 'running' || state.value === 'provisioning')
 const abort = new AbortController()
-onBeforeUnmount(() => abort.abort())
+
+// A preview on a machine in this browser has no run page open to run its
+// machine: this tab does, while the author tests, so its build and the check
+// have somewhere to run.
+const releases: (() => void)[] = []
+function hostIfLocal(runId: string, terminalId: string | undefined) {
+  if (terminalId && isLocalSessionId(terminalId)) {
+    releases.push(hostLocalRun(runId, terminalId, useCurrentUserStore().secretToken))
+  }
+}
+
+onBeforeUnmount(() => {
+  abort.abort()
+  releases.forEach(release => release())
+})
 
 /**
  * The author's open preview of this scenario. A user holds one open run per
@@ -159,6 +175,7 @@ async function runTest() {
   let preview
   try {
     preview = await findPreview()
+    if (preview) hostIfLocal(preview.id, preview.terminal_session_id)
     if (preview?.status === 'provisioning') await waitUntilReady(preview.id)
   } catch {
     errorKey.value = 'errorFailed'
@@ -172,6 +189,8 @@ async function runTest() {
 watch(() => props.startedPreviewId, async id => {
   if (!id) return
   try {
+    state.value = 'provisioning'
+    hostIfLocal(id, (await scenarioSessionService.getSessionInfo(id)).terminal_session_id)
     await waitUntilReady(id)
   } catch {
     errorKey.value = 'errorPreviewFailed'
