@@ -419,7 +419,7 @@ desktop-page:
   needs: []
   script:
     - version=$(node -p 'require("./package.json").dependencies.unkernel')
-    - 'curl -fsS -o desktop.tar.gz -H "JOB-TOKEN: $CI_JOB_TOKEN" "$CI_API_V4_URL/projects/open-course-factory%2Flocal-machine-image/packages/generic/unkernel-desktop/$version/unkernel-desktop.tar.gz"'
+    - 'curl -fsSL -o desktop.tar.gz -H "JOB-TOKEN: $CI_JOB_TOKEN" "$CI_API_V4_URL/projects/open-course-factory%2Flocal-machine-image/packages/generic/unkernel-desktop/$version/unkernel-desktop.tar.gz"'
     # nginx serves the .gz copies (gzip_static), not the Brotli or zstd ones.
     - mkdir -p public/unkernel-desktop && tar -xzf desktop.tar.gz -C public/unkernel-desktop --exclude='*.br' --exclude='*.zst'
   artifacts:
