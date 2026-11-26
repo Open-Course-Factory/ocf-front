@@ -212,6 +212,8 @@ export function useScenarioEditorI18n() {
       machineLocal: 'In the learner\'s browser',
       machineByAccount: 'Depends on the learner\'s plan',
       machineHint: 'A lab in the browser needs no server, but the learner owns the machine: they can read every file in it and fake its checks. An exam or a lab with crash traps always runs in a container.',
+      machineApps: 'Apps the learner can install',
+      machineAppsHint: 'Only these appear in the desktop\'s launcher. Leave everything unticked to offer none.',
       isPublic: 'Public (available to all users)',
       // Export
       exportNeedsScenario: 'Select a scenario to export it',
@@ -440,6 +442,8 @@ export function useScenarioEditorI18n() {
       machineLocal: 'Dans le navigateur de l\'apprenant',
       machineByAccount: 'Selon l\'abonnement de l\'apprenant',
       machineHint: 'Un lab dans le navigateur n\'a besoin d\'aucun serveur, mais l\'apprenant a la machine en main : il peut lire tous ses fichiers et fausser ses vérifications. Un examen ou un lab à pièges de crash s\'exécute toujours dans un conteneur.',
+      machineApps: 'Applications que l\'apprenant peut installer',
+      machineAppsHint: 'Seules celles-ci apparaissent dans le lanceur du bureau. Ne cochez rien pour n\'en proposer aucune.',
       isPublic: 'Public (disponible pour tous les utilisateurs)',
       // Export
       exportNeedsScenario: 'Sélectionnez un scénario pour l\'exporter',

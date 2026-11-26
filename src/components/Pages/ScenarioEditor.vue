@@ -839,7 +839,7 @@ const scopeHint = computed(() => {
 const SCENARIO_FIELDS = [
   'name', 'title', 'difficulty', 'estimated_time_minutes', 'description', 'intro_text', 'finish_text',
   'objectives', 'prerequisites', 'setup_script', 'instance_type', 'hostname', 'os_type', 'source_type',
-  'flags_enabled', 'crash_traps', 'port_exposure_allowed', 'machine', 'is_public', 'default_locale', 'locales'
+  'flags_enabled', 'crash_traps', 'port_exposure_allowed', 'machine', 'machine_apps', 'is_public', 'default_locale', 'locales'
 ] as const
 
 const handleCreateNew = async () => {
@@ -863,6 +863,7 @@ const handleCreateNew = async () => {
     crash_traps: false,
     port_exposure_allowed: false,
     machine: 'incus',
+    machine_apps: '',
     is_public: false,
     default_locale: '',
     locales: '',

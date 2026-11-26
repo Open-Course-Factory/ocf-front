@@ -485,6 +485,24 @@
         <span class="form-hint">{{ t('scenarioEditor.machineHint') }}</span>
       </div>
 
+      <!-- What the machine in the browser offers to install, from the
+           platform's list: a work machine shows only what the lab needs. -->
+      <div v-if="model.machine !== 'incus'" class="form-group ocf-languages">
+        <label>{{ t('scenarioEditor.machineApps') }}</label>
+        <p class="ocf-languages-hint">{{ t('scenarioEditor.machineAppsHint') }}</p>
+        <div class="ocf-language-options">
+          <label v-for="app in allowedMachineApps" :key="app" class="ocf-language-option">
+            <input
+              type="checkbox"
+              :checked="offeredMachineApps.includes(app)"
+              :data-testid="`scenario-machine-app-${app}`"
+              @change="toggleMachineApp(app, ($event.target as HTMLInputElement).checked)"
+            />
+            <span>{{ app }}</span>
+          </label>
+        </div>
+      </div>
+
       <div class="form-group checkbox-group">
         <label class="checkbox-label" for="scenario-port-exposure">
           <input id="scenario-port-exposure" type="checkbox" v-model="model.port_exposure_allowed" />
@@ -522,6 +540,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, computed, watch } from 'vue'
+import axios from 'axios'
 import BaseModal from '../Modals/BaseModal.vue'
 import TabStrip from '../Common/TabStrip.vue'
 import TranslationPane from './TranslationPane.vue'
@@ -665,6 +684,37 @@ const offeredLocales = computed<string[]>(() => {
     return []
   }
 })
+
+/** The stored machine_apps JSON array, as a list. Unparseable reads as none. */
+const offeredMachineApps = computed<string[]>(() => {
+  try {
+    const parsed = JSON.parse(model.value.machine_apps || '[]')
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+})
+
+// The platform's list (GET /scenarios/local-machine-apps): ocf-core owns it and
+// refuses any other id on save, so the editor never keeps a copy.
+const allowedMachineApps = ref<string[]>([])
+watch(
+  () => model.value.machine,
+  async machine => {
+    if (machine === 'incus' || allowedMachineApps.value.length) return
+    // Unreachable list: no boxes, and the scenario keeps the apps it has.
+    const { data } = await axios.get<{ apps: string[] }>('/scenarios/local-machine-apps').catch(() => ({ data: { apps: [] } }))
+    allowedMachineApps.value = data.apps
+  },
+  { immediate: true }
+)
+
+function toggleMachineApp(app: string, checked: boolean) {
+  const next = checked
+    ? allowedMachineApps.value.filter(a => offeredMachineApps.value.includes(a) || a === app)
+    : offeredMachineApps.value.filter(a => a !== app)
+  model.value.machine_apps = next.length ? JSON.stringify(next) : ''
+}
 
 /** The languages the vocabulary has a box for; the scenario's own if it offers none. */
 const lexiconLocales = computed<string[]>(() =>

@@ -2,8 +2,11 @@
  * Where a scenario's runs run: a container (Incus, the default), a machine in
  * the learner's browser, or whichever the learner's plan prefers.
  */
-import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, it, expect, vi } from 'vitest'
+import { mount, flushPromises } from '@vue/test-utils'
+
+const get = vi.fn().mockResolvedValue({ data: { apps: ['nvim', 'python', 'postgres'] } })
+vi.mock('axios', () => ({ default: { get: (...args: unknown[]) => get(...args) } }))
 import { createTestI18n } from '../helpers/entityModalHelper'
 
 import ScenarioEditModal from '../../src/components/ScenarioEditor/ScenarioEditModal.vue'
@@ -33,5 +36,31 @@ describe('ScenarioEditModal — machine', () => {
     const { wrapper, editingScenario } = mountModal({ machine: 'incus' })
     await wrapper.get('#scenario-machine').setValue('by_account')
     expect(editingScenario.machine).toBe('by_account')
+  })
+})
+
+describe('ScenarioEditModal — apps the machine offers', () => {
+  it('lists the platform\'s apps for a lab in the browser, and ticks the scenario\'s', async () => {
+    const { wrapper } = mountModal({ machine: 'local', machine_apps: '["python"]' })
+    await flushPromises()
+    expect(get).toHaveBeenCalledWith('/scenarios/local-machine-apps')
+    const box = (app: string) => wrapper.get(`[data-testid="scenario-machine-app-${app}"]`).element as HTMLInputElement
+    expect(box('python').checked).toBe(true)
+    expect(box('nvim').checked).toBe(false)
+  })
+
+  it('stores the ticked apps in the platform\'s order, and none as empty', async () => {
+    const { wrapper, editingScenario } = mountModal({ machine: 'by_account', machine_apps: '["python"]' })
+    await flushPromises()
+    await wrapper.get('[data-testid="scenario-machine-app-nvim"]').setValue(true)
+    expect(editingScenario.machine_apps).toBe('["nvim","python"]')
+    await wrapper.get('[data-testid="scenario-machine-app-nvim"]').setValue(false)
+    await wrapper.get('[data-testid="scenario-machine-app-python"]').setValue(false)
+    expect(editingScenario.machine_apps).toBe('')
+  })
+
+  it('offers nothing to choose for a lab in a container', () => {
+    const { wrapper } = mountModal({ machine: 'incus' })
+    expect(wrapper.find('[data-testid^="scenario-machine-app-"]').exists()).toBe(false)
   })
 })
