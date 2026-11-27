@@ -73,6 +73,7 @@ const { t } = useTranslations({
       },
       items: {
         distributionCatalog: 'Terminal Distributions',
+        unkernel: 'unkernel integration',
         platformSettings: 'Platform Settings',
         branding: 'Platform identity',
         subscriptionPlans: 'Subscription Plans',
@@ -111,6 +112,7 @@ const { t } = useTranslations({
       },
       items: {
         distributionCatalog: 'Distributions des terminaux',
+        unkernel: 'Intégration unkernel',
         platformSettings: 'Paramètres de la plateforme',
         branding: 'Identité de la plateforme',
         subscriptionPlans: 'Plans d\'Abonnement',
@@ -206,6 +208,11 @@ const adminCategories = computed<MenuCategory[]>(() => [
         route: '/admin/distribution-catalog',
         label: t('admin.items.distributionCatalog'),
         icon: 'fas fa-layer-group'
+      },
+      {
+        route: '/admin/unkernel',
+        label: t('admin.items.unkernel'),
+        icon: 'fas fa-microchip'
       },
       {
         route: '/admin/branding',
