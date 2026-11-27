@@ -104,6 +104,17 @@
             ></i>
             {{ scenario.resolved_size }}
           </span>
+          <!-- A machine in the browser above 2 GiB: say how much RAM the
+               computer needs, before the learner starts. -->
+          <span
+            v-if="(scenario.local_machine_memory_mib ?? 0) > LOCAL_MACHINE_PLAIN_MIB"
+            class="os-badge os-badge--warning"
+            data-testid="scenario-ram-badge"
+            :title="t('launcher.ramTitle')"
+          >
+            <i class="fas fa-memory os-badge-icon" aria-hidden="true"></i>
+            {{ t('launcher.ramNeeded', { gb: computerGiBNeeded(scenario.local_machine_memory_mib) }) }}
+          </span>
           <!-- Degraded mode: the backend could not resolve a launch (or predates
                resolved_*). Show what the scenario asked for, with no verdict on
                it — the unavailability notice below carries the explanation. -->
@@ -298,6 +309,7 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { scenarioSessionService, pollProvisioningStatus } from '../../services/domain/scenario'
 import type { AvailableScenario } from '../../services/domain/scenario'
+import { computerGiBNeeded, computerTooSmall, LOCAL_MACHINE_PLAIN_MIB } from '../../services/domain/terminal/localMachineFit'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
@@ -361,6 +373,10 @@ const { t } = useTranslations({
       unavailableNoDistributionHint: 'Contact your administrator to configure compatible machines.',
       unavailableServerNotAllowed: 'The server chosen for this scenario is not available to you.',
       unavailableServerNotAllowedHint: 'Ask your trainer to choose another server, or Automatic.',
+      unavailableComputer: 'This lab runs in your browser and needs a computer with at least {gb} GB of RAM. Your computer has less.',
+      unavailableComputerHint: 'Use a computer with more memory.',
+      ramNeeded: '{gb} GB of RAM',
+      ramTitle: 'This lab runs in your browser: your computer needs at least this much memory.',
       unavailableBudget: 'Your resource budget is fully used by your current sessions.',
       unavailableBudgetHint: 'Stop a running session to free capacity, or upgrade your plan.',
       unavailableSize: 'This scenario needs a machine larger than your plan allows.',
@@ -410,6 +426,10 @@ const { t } = useTranslations({
       unavailableNoDistributionHint: 'Contactez votre administrateur pour configurer des machines compatibles.',
       unavailableServerNotAllowed: 'Le serveur choisi pour ce scénario ne vous est pas accessible.',
       unavailableServerNotAllowedHint: 'Demandez à votre formateur de choisir un autre serveur, ou le mode Automatique.',
+      unavailableComputer: 'Ce lab tourne dans votre navigateur et demande un ordinateur avec au moins {gb} Go de mémoire vive. Votre ordinateur en a moins.',
+      unavailableComputerHint: 'Utilisez un ordinateur qui a plus de mémoire.',
+      ramNeeded: '{gb} Go de mémoire vive',
+      ramTitle: 'Ce lab tourne dans votre navigateur : votre ordinateur doit avoir au moins cette mémoire.',
       unavailableBudget: 'Votre budget de ressources est entièrement utilisé par vos sessions en cours.',
       unavailableBudgetHint: 'Arrêtez une session en cours pour libérer de la capacité, ou mettez à niveau votre plan.',
       unavailableSize: 'Ce scénario demande une machine plus grande que ce que permet votre offre.',
@@ -667,6 +687,8 @@ function getBlockReasonIcon(scenario: any): string {
       return 'fas fa-battery-quarter'
     case 'size_over_plan':
       return 'fas fa-lock'
+    case 'computer_too_small':
+      return 'fas fa-memory'
     case 'plan':
       return 'fas fa-lock'
     case 'no_distribution':
@@ -699,6 +721,8 @@ function getUnavailableReason(scenario: any): string {
       return t('launcher.unavailableNoDistribution')
     case 'server_not_allowed':
       return t('launcher.unavailableServerNotAllowed')
+    case 'computer_too_small':
+      return t('launcher.unavailableComputer', { gb: computerGiBNeeded(scenario.local_machine_memory_mib) })
     case 'offline':
     default:
       return t('launcher.unavailableOffline')
@@ -724,6 +748,8 @@ function getUnavailableHint(scenario: any): string {
       return t('launcher.unavailableNoDistributionHint')
     case 'server_not_allowed':
       return t('launcher.unavailableServerNotAllowedHint')
+    case 'computer_too_small':
+      return t('launcher.unavailableComputerHint')
     case 'offline':
     default:
       return t('launcher.unavailableOfflineHint')
@@ -748,7 +774,11 @@ async function loadScenarios() {
         .catch(() => {})
     ])
     if (gen !== loadGeneration) return
-    scenarios.value = scenarioData
+    // A lab whose machine this computer cannot hold is unavailable here, for
+    // the browser says so: the card says why, as for any other reason.
+    scenarios.value = scenarioData.map(s => s.launchable && computerTooSmall(s.local_machine_memory_mib)
+      ? { ...s, launchable: false, block_reason: 'computer_too_small' }
+      : s)
   } catch (err: any) {
     if (gen !== loadGeneration) return
     error.value = err.response?.data?.error_message || t('launcher.loading')

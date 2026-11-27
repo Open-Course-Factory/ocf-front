@@ -273,6 +273,9 @@ export interface AvailableScenario extends ScenarioInfo {
   // launching, relaunching or starting over is refused with 409
   // reason 'exam_already_submitted'.
   exam_locked?: boolean
+  // The memory of the machine a run would get in the learner's browser;
+  // absent when it would run in a container.
+  local_machine_memory_mib?: number
   [key: string]: any
 }
 
