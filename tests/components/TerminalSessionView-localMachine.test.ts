@@ -116,6 +116,8 @@ function mountView() {
   })
 }
 
+const BOOT = { jit: true, verbose: false, display: true, sound: true, append: '', console_hidden: false }
+
 describe('TerminalSessionView on a local machine', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -150,12 +152,12 @@ describe('TerminalSessionView on a local machine', () => {
   it('shows the desktop for a run set to one', async () => {
     route.sessionId = 'local-abc'
     vi.mocked(scenarioSessionService.getSessionByTerminal).mockResolvedValueOnce(
-      { id: 'run-1', status: 'active', terminal_session_id: 'local-abc', machine_display: 'desktop', machine_memory_mib: 1024 } as never)
+      { id: 'run-1', status: 'active', terminal_session_id: 'local-abc', machine_display: 'desktop', machine_memory_mib: 1024, machine_cpus: 2, machine_boot: BOOT } as never)
     const wrapper = mountView()
     await flushPromises()
     expect(wrapper.find('.tsp-stub').attributes('data-desktop')).toBe('true')
-    // The machine gets the memory ocf-core gives the run.
-    expect(agent.run).toHaveBeenCalledWith('local-abc', { apps: [], memoryMiB: 1024 })
+    // The machine gets the memory, CPUs and boot settings ocf-core gives the run.
+    expect(agent.run).toHaveBeenCalledWith('local-abc', { apps: [], memoryMiB: 1024, cpus: 2, boot: BOOT })
   })
 
   it('shows what the machine booted as, not what the scenario says since', async () => {

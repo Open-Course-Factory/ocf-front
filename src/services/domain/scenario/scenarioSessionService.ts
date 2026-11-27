@@ -177,6 +177,21 @@ export interface ValidatedFlag {
   submitted_at: string
 }
 
+/**
+ * How unkernel boots a machine in the browser (ocf-core: the platform's
+ * defaults, GET /local-machines/boot-defaults, with a scenario's overrides).
+ */
+export interface MachineBoot {
+  jit: boolean
+  verbose: boolean
+  display: boolean
+  sound: boolean
+  /** The kernel command line; empty: the kernel's own. */
+  append: string
+  /** A desktop's console minimizes itself once the machine has booted. */
+  console_hidden: boolean
+}
+
 export interface ScenarioSessionInfo {
   id: string
   scenario_id: string
@@ -202,6 +217,10 @@ export interface ScenarioSessionInfo {
   machine_apps?: string[]
   /** The memory of a machine in the learner's browser, from the scenario's size. */
   machine_memory_mib?: number
+  /** Its CPUs, from the scenario's size. */
+  machine_cpus?: number
+  /** How it boots: the platform's defaults with the scenario's overrides. */
+  machine_boot?: MachineBoot
   /**
    * The scenario's prose in the language this session is being played in.
    *

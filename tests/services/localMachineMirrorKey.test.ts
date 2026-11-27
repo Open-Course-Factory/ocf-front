@@ -87,4 +87,13 @@ describe("the Debian mirror's key", () => {
     expect(booted[0].memoryMiB).toBe(1024)
     agent.stop()
   })
+
+  it('boots a console machine with the run\'s CPUs and boot settings', async () => {
+    const boot = { jit: false, verbose: true, display: true, sound: true, append: 'console=hvc0', console_hidden: true }
+    setMachineRun('local-k6', { apps: null, cpus: 1, boot })
+    const agent = startLocalAgent('run-k6', 'local-k6', 'tok', () => {}, opts)
+    await vi.waitFor(() => expect(booted).toHaveLength(1))
+    expect(booted[0]).toMatchObject({ cpus: 1, jit: false, cmdline: 'console=hvc0' })
+    agent.stop()
+  })
 })

@@ -1053,7 +1053,9 @@ async function detectScenarioSession() {
         // edited since keeps its machine until the run is rebuilt.
         const booted = await setMachineRun(sessionId, {
           apps: scenarioSession.machine_display === 'desktop' ? scenarioSession.machine_apps ?? [] : null,
-          memoryMiB: scenarioSession.machine_memory_mib
+          memoryMiB: scenarioSession.machine_memory_mib,
+          cpus: scenarioSession.machine_cpus,
+          boot: scenarioSession.machine_boot
         })
         desktopRun.value = booted.apps !== null
       }

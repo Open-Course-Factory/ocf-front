@@ -4,7 +4,7 @@
  * would let the machine reach another host.
  */
 import { describe, it, expect, vi } from 'vitest'
-import { debianMirrorNet, desktopFrames, desktopLearnerTerminal, desktopPageUrl, desktopShell, setConsoleUser } from '../../src/services/domain/terminal/localMachine'
+import { consoleKernelOptions, debianMirrorNet, desktopFrames, desktopLearnerTerminal, desktopPageUrl, desktopShell, setConsoleUser } from '../../src/services/domain/terminal/localMachine'
 
 const query = (url: string) => new URL(url, window.location.origin).searchParams
 
@@ -27,8 +27,34 @@ describe('the desktop page URL', () => {
   })
 
   it('gives the page the run\'s memory', () => {
-    const q = query(desktopPageUrl([], { distroUrl: '/d.erofs', worker: true }, 1024))
+    const q = query(desktopPageUrl([], { distroUrl: '/d.erofs', worker: true }, { memoryMiB: 1024 }))
     expect(q.get('mem')).toBe('1024')
+  })
+
+  it('gives the page the run\'s CPUs and boot settings', () => {
+    const boot = { jit: false, verbose: true, display: true, sound: false, append: 'console=hvc0 quiet', console_hidden: true }
+    const q = query(desktopPageUrl([], { distroUrl: '/d.erofs', worker: true }, { cpus: 2, boot }))
+    expect(q.get('cpus')).toBe('2')
+    expect(q.get('jit')).toBe('0')
+    expect(q.get('verbose')).toBe('1')
+    expect(q.get('display')).toBe('1')
+    expect(q.get('sound')).toBe('0')
+    expect(q.get('autohide')).toBe('1')
+    expect(q.get('append')).toBe('console=hvc0 quiet')
+  })
+
+  it('leaves the kernel\'s own command line when the settings give none', () => {
+    const boot = { jit: true, verbose: false, display: true, sound: true, append: '', console_hidden: false }
+    const q = query(desktopPageUrl([], { distroUrl: '/d.erofs', worker: true }, { boot }))
+    expect(q.has('append')).toBe(false)
+    expect(q.get('autohide')).toBe('0')
+    expect(q.get('jit')).toBe('1')
+  })
+
+  it('boots as before for a run without CPUs or boot settings (an older ocf-core)', () => {
+    const q = query(desktopPageUrl([], { distroUrl: '/d.erofs', worker: true }))
+    for (const name of ['cpus', 'jit', 'verbose', 'display', 'sound', 'append']) expect(q.has(name)).toBe(false)
+    expect(q.get('autohide')).toBe('0')
   })
 
   it('switches the page\'s network off without our Wisp server, mirror or not', () => {
@@ -44,6 +70,20 @@ describe('the desktop page URL', () => {
     const q = query(desktopPageUrl(['python'], { distroUrl: 'https://cdn.example.org/debian.erofs', worker: true }))
     expect(q.get('net')).toBe('0')
     expect(q.get('image')).toBe('https://cdn.example.org/debian.erofs')
+  })
+})
+
+describe('a console machine\'s boot options', () => {
+  it('boots as before for a run without CPUs or boot settings (an older ocf-core)', () => {
+    expect(consoleKernelOptions({ memoryMiB: 1024 })).toEqual({ memoryMiB: 1024 })
+  })
+
+  it('takes the JIT and the command line, and no more CPUs than the host has', () => {
+    vi.spyOn(navigator, 'hardwareConcurrency', 'get').mockReturnValue(4)
+    const boot = { jit: false, verbose: true, display: true, sound: true, append: 'console=hvc0', console_hidden: true }
+    expect(consoleKernelOptions({ cpus: 8, boot })).toEqual({ cpus: 4, jit: false, cmdline: 'console=hvc0' })
+    expect(consoleKernelOptions({ cpus: 2, boot: { ...boot, append: '' } })).toEqual({ cpus: 2, jit: false })
+    vi.restoreAllMocks()
   })
 })
 

@@ -5,6 +5,7 @@
  * one downloads none of it.
  */
 import type { NetSpec } from 'unkernel'
+import type { MachineBoot } from '../scenario/scenarioSessionService'
 import { LocalConsoleSocket, type ConsolePty } from './localConsoleSocket'
 import { relayedPty, serveRelay } from './localConsoleRelay'
 import { SharedShell } from './sharedShell'
@@ -90,12 +91,17 @@ const LOCK_DOWN_SUDO = [
 // console's place (DesktopSlot.vue), whose window.KW.ready() hands out the
 // machine, which the agent drives as it drives a console one. Its launcher
 // offers the scenario's apps. setMachineRun() tells which, and the machine's
-// memory; the machine boots once it is told, and keeps what it booted as.
+// memory, CPUs and boot settings; the machine boots once it is told, and
+// keeps what it booted as.
 export interface MachineRun {
   /** A desktop's apps; null: a console. */
   apps: string[] | null
   /** The machine's memory (ocf-core: the scenario's size); absent, unkernel's default. */
   memoryMiB?: number
+  /** Its CPUs (the scenario's size); absent, unkernel's default. */
+  cpus?: number
+  /** How it boots (the platform's defaults, the scenario's overrides); absent, unkernel's defaults. */
+  boot?: MachineBoot
 }
 const machineRuns = new Map<string, { run: Promise<MachineRun>; resolve(run: MachineRun): void }>()
 
@@ -210,8 +216,11 @@ export async function pasteOnDesktop(terminal: string, command: string): Promise
 // and the same Wisp server that answers nothing, so the machine reaches no
 // other host; no network at all without that server. Its kernel runs in a
 // worker when the console's would. The learner's terminal stays open (no
-// autohide). No prompt of its own on leaving: the run page asks.
-export function desktopPageUrl(apps: string[], opts: LocalMachineOptions, memoryMiB?: number): string {
+// autohide unless the boot settings say so). No prompt of its own on leaving:
+// the run page asks. The boot settings are passed whole, as the page would
+// otherwise take what its own Settings saved in this browser.
+export function desktopPageUrl(apps: string[], opts: LocalMachineOptions, run: Omit<MachineRun, 'apps'> = {}): string {
+  const { memoryMiB, cpus, boot } = run
   const backend = opts.net?.backend as { servers?: string, routes?: Record<string, string> } | undefined
   const query = new URLSearchParams({
     data: '0', askleave: '0', autosuspend: '0', autohide: '0',
@@ -220,6 +229,17 @@ export function desktopPageUrl(apps: string[], opts: LocalMachineOptions, memory
     image: new URL(opts.distroUrl, window.location.origin).href
   })
   if (memoryMiB) query.set('mem', String(memoryMiB))
+  // The page caps CPUs at the host's threads, and boots one where it is not isolated.
+  if (cpus) query.set('cpus', String(cpus))
+  if (boot) {
+    const flag = (on: boolean) => (on ? '1' : '0')
+    query.set('jit', flag(boot.jit))
+    query.set('verbose', flag(boot.verbose))
+    query.set('display', flag(boot.display))
+    query.set('sound', flag(boot.sound))
+    query.set('autohide', flag(boot.console_hidden))
+    if (boot.append) query.set('append', boot.append)
+  }
   const mirror = backend?.routes?.['deb.debian.org']
   if (backend?.servers) {
     query.set('wisp', backend.servers)
@@ -258,9 +278,9 @@ function forgetDesktop(terminal: string, frame: HTMLIFrameElement) {
   desktopFrameListeners.forEach(l => l())
 }
 
-async function bootDesktop(terminal: string, apps: string[], opts: LocalMachineOptions, memoryMiB?: number): Promise<Machine> {
+async function bootDesktop(terminal: string, run: MachineRun & { apps: string[] }, opts: LocalMachineOptions): Promise<Machine> {
   const frame = document.createElement('iframe')
-  frame.src = desktopPageUrl(apps, opts, memoryMiB)
+  frame.src = desktopPageUrl(run.apps, opts, run)
   frame.title = 'Linux'
   frame.className = 'ocf-desktop-frame'
   // Its own full-screen control, and the slot's, need the iframe to allow it;
@@ -297,14 +317,15 @@ async function bootDesktop(terminal: string, apps: string[], opts: LocalMachineO
 }
 
 async function boot(terminal: string, opts: LocalMachineOptions): Promise<Machine> {
-  const { apps, memoryMiB } = await machineRunEntry(terminal).run
+  const run = await machineRunEntry(terminal).run
+  const { apps } = run
   if (apps) {
     // On a desktop the user keeps its sudo: the launcher installs and starts
     // the offered apps with it, and the learner's shell is opened with it.
     // A lab that must keep the learner from root uses the console.
-    return await bootDesktop(terminal, apps, opts, memoryMiB)
+    return await bootDesktop(terminal, { ...run, apps }, opts)
   }
-  const machine = await bootConsole(opts, memoryMiB)
+  const machine = await bootConsole(opts, run)
   await machine.exec('sh', ['-c', LOCK_DOWN_SUDO], {
     user: 'root',
     signal: AbortSignal.timeout(DEFAULT_EXEC_TIMEOUT_SECONDS * 1000),
@@ -313,11 +334,29 @@ async function boot(terminal: string, opts: LocalMachineOptions): Promise<Machin
   return machine
 }
 
-async function bootConsole(opts: LocalMachineOptions, memoryMiB?: number): Promise<Machine> {
+async function bootConsole(opts: LocalMachineOptions, run: MachineRun): Promise<Machine> {
   const { checkSupport, createKernel } = await import('unkernel')
   const support = await checkSupport()
   if (!support.ok) throw new Error(support.problems.join('; '))
-  return await createKernel({ distro: opts.distroUrl, worker: opts.worker, net: opts.net, memoryMiB })
+  return await createKernel({ distro: opts.distroUrl, worker: opts.worker, net: opts.net, ...consoleKernelOptions(run) })
+}
+
+/**
+ * The SDK's boot options for a console machine. The SDK has no verbose boot
+ * (a console shows no kernel messages), and a console has no screen or
+ * speaker to give the guest a display or a sound card for, nor a console to
+ * hide: those settings are the desktop page's. `append` replaces the kernel's
+ * command line, as the desktop page's ?append= does.
+ */
+export function consoleKernelOptions(run: Omit<MachineRun, 'apps'>): { memoryMiB?: number, cpus?: number, jit?: boolean, cmdline?: string } {
+  const { memoryMiB, cpus, boot } = run
+  return {
+    memoryMiB,
+    // The SDK starts as many CPU threads as asked: no more than the host has.
+    cpus: cpus ? Math.min(cpus, navigator.hardwareConcurrency || 1) : undefined,
+    jit: boot?.jit,
+    cmdline: boot?.append || undefined
+  }
 }
 
 // The uid each terminal's console runs as, once the page has read it from the
