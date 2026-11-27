@@ -15,6 +15,12 @@ export default defineConfig({
   },
   server: {
     allowedHosts: true,
+    // As nginx.conf: a cross-origin isolated page, so a machine in the
+    // learner's browser can run on several CPUs (shared memory).
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'credentialless'
+    },
     proxy: {
       // Proxy Incus UI iframe requests to ocf-core so cookies and iframe
       // requests stay same-origin. VITE_INCUS_PROXY_TARGET allows using

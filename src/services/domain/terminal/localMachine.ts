@@ -50,7 +50,7 @@ interface Machine extends AgentMachine {
 
 // In a worker, the kernel leaves the page's thread alone: on the page's own
 // thread a busy guest made every click wait about 250 ms. Worker mode needs no
-// cross-origin isolation; isolation would only add CPUs (SMP).
+// cross-origin isolation; isolation (the front's COOP/COEP headers) adds CPUs (SMP).
 function defaultOptions(): LocalMachineOptions {
   return {
     distroUrl: import.meta.env.VITE_LOCAL_MACHINE_DISTRO_URL || '/local-machine/debian.erofs',
@@ -263,8 +263,9 @@ async function bootDesktop(terminal: string, apps: string[], opts: LocalMachineO
   frame.src = desktopPageUrl(apps, opts, memoryMiB)
   frame.title = 'Linux'
   frame.className = 'ocf-desktop-frame'
-  // Its own full-screen control, and the slot's, need the iframe to allow it.
-  frame.allow = 'fullscreen'
+  // Its own full-screen control, and the slot's, need the iframe to allow it;
+  // several CPUs need it isolated, as the front is (COOP/COEP headers).
+  frame.allow = 'fullscreen; cross-origin-isolated'
   frame.style.cssText = 'position:fixed;border:0;visibility:hidden;left:0;top:0;width:800px;height:600px;'
   document.body.appendChild(frame)
   desktopFailures.delete(terminal)
