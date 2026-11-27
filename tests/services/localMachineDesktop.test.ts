@@ -43,18 +43,25 @@ describe('the desktop page URL', () => {
     expect(q.get('append')).toBe('console=hvc0 quiet')
   })
 
-  it('leaves the kernel\'s own command line when the settings give none', () => {
+  it('gives an empty command line, so the page keeps the kernel\'s own over any it saved', () => {
     const boot = { jit: true, verbose: false, display: true, sound: true, append: '', console_hidden: false }
     const q = query(desktopPageUrl([], { distroUrl: '/d.erofs', worker: true }, { boot }))
-    expect(q.has('append')).toBe(false)
+    expect(q.has('append')).toBe(true)
+    expect(q.get('append')).toBe('')
     expect(q.get('autohide')).toBe('0')
     expect(q.get('jit')).toBe('1')
   })
 
-  it('boots as before for a run without CPUs or boot settings (an older ocf-core)', () => {
+  it('gives unkernel\'s defaults for a run without CPUs or boot settings (an older ocf-core)', () => {
     const q = query(desktopPageUrl([], { distroUrl: '/d.erofs', worker: true }))
-    for (const name of ['cpus', 'jit', 'verbose', 'display', 'sound', 'append']) expect(q.has(name)).toBe(false)
-    expect(q.get('autohide')).toBe('0')
+    expect(Object.fromEntries(['cpus', 'jit', 'verbose', 'display', 'sound', 'autohide', 'append'].map(n => [n, q.get(n)])))
+      .toEqual({ cpus: '1', jit: '1', verbose: '0', display: '1', sound: '1', autohide: '0', append: '' })
+  })
+
+  it('asks for no guest GL or Vulkan, which our page cannot render', () => {
+    const q = query(desktopPageUrl([], { distroUrl: '/d.erofs', worker: true }))
+    expect(q.get('gl')).toBe('0')
+    expect(q.get('vk')).toBe('0')
   })
 
   it('switches the page\'s network off without our Wisp server, mirror or not', () => {

@@ -127,6 +127,14 @@ export function setMachineRun(terminal: string, run: MachineRun): Promise<Machin
   return entry.run
 }
 
+/**
+ * unkernel's own defaults, for a run whose ocf-core sends no boot settings
+ * (older than them). ocf-core's platform defaults start from the same values.
+ */
+const DEFAULT_MACHINE_BOOT: MachineBoot = {
+  jit: true, verbose: false, display: true, sound: true, append: '', console_hidden: false
+}
+
 /** The desktop's iframe of terminal's run, once it boots one. */
 export const desktopFrames = new Map<string, HTMLIFrameElement>()
 /** The runs whose desktop did not start: their slot says so. */
@@ -215,31 +223,30 @@ export async function pasteOnDesktop(terminal: string, command: string): Promise
 // each setting does): the run's apps, the platform's image and Debian mirror,
 // and the same Wisp server that answers nothing, so the machine reaches no
 // other host; no network at all without that server. Its kernel runs in a
-// worker when the console's would. The learner's terminal stays open (no
-// autohide unless the boot settings say so). No prompt of its own on leaving:
-// the run page asks. The boot settings are passed whole, as the page would
-// otherwise take what its own Settings saved in this browser.
+// worker when the console's would. No prompt of its own on leaving: the run
+// page asks. Every boot setting is given, even a default one: the page takes
+// a setting the URL leaves out from what its Settings saved in this browser.
+// No guest GL or Vulkan: our build of the page has neither renderer.
 export function desktopPageUrl(apps: string[], opts: LocalMachineOptions, run: Omit<MachineRun, 'apps'> = {}): string {
-  const { memoryMiB, cpus, boot } = run
+  const { memoryMiB, cpus = 1, boot = DEFAULT_MACHINE_BOOT } = run
   const backend = opts.net?.backend as { servers?: string, routes?: Record<string, string> } | undefined
+  const flag = (on: boolean) => (on ? '1' : '0')
   const query = new URLSearchParams({
-    data: '0', askleave: '0', autosuspend: '0', autohide: '0',
-    worker: opts.worker ? '1' : '0',
+    data: '0', askleave: '0', autosuspend: '0', gl: '0', vk: '0',
+    worker: flag(opts.worker),
     apps: apps.join(','),
-    image: new URL(opts.distroUrl, window.location.origin).href
+    image: new URL(opts.distroUrl, window.location.origin).href,
+    // The page caps CPUs at the host's threads, and boots one where it is not isolated.
+    cpus: String(cpus),
+    jit: flag(boot.jit),
+    verbose: flag(boot.verbose),
+    display: flag(boot.display),
+    sound: flag(boot.sound),
+    autohide: flag(boot.console_hidden),
+    // Empty: the kernel's own command line, over any the page saved.
+    append: boot.append
   })
   if (memoryMiB) query.set('mem', String(memoryMiB))
-  // The page caps CPUs at the host's threads, and boots one where it is not isolated.
-  if (cpus) query.set('cpus', String(cpus))
-  if (boot) {
-    const flag = (on: boolean) => (on ? '1' : '0')
-    query.set('jit', flag(boot.jit))
-    query.set('verbose', flag(boot.verbose))
-    query.set('display', flag(boot.display))
-    query.set('sound', flag(boot.sound))
-    query.set('autohide', flag(boot.console_hidden))
-    if (boot.append) query.set('append', boot.append)
-  }
   const mirror = backend?.routes?.['deb.debian.org']
   if (backend?.servers) {
     query.set('wisp', backend.servers)
