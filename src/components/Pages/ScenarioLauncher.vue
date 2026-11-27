@@ -104,6 +104,13 @@
             ></i>
             {{ scenario.resolved_size }}
           </span>
+          <!-- Degraded mode: the backend could not resolve a launch (or predates
+               resolved_*). Show what the scenario asked for, with no verdict on
+               it — the unavailability notice below carries the explanation. -->
+          <span v-else-if="scenario.instance_type" :class="['os-badge', { 'os-badge--muted': isBlocked(scenario) }]">
+            <i class="fas fa-microchip os-badge-icon" aria-hidden="true"></i>
+            {{ scenario.instance_type }}
+          </span>
           <!-- A machine in the browser above 2 GiB: say how much RAM the
                computer needs, before the learner starts. -->
           <span
@@ -115,12 +122,16 @@
             <i class="fas fa-memory os-badge-icon" aria-hidden="true"></i>
             {{ t('launcher.ramNeeded', { gb: computerGiBNeeded(scenario.local_machine_memory_mib) }) }}
           </span>
-          <!-- Degraded mode: the backend could not resolve a launch (or predates
-               resolved_*). Show what the scenario asked for, with no verdict on
-               it — the unavailability notice below carries the explanation. -->
-          <span v-else-if="scenario.instance_type" :class="['os-badge', { 'os-badge--muted': isBlocked(scenario) }]">
-            <i class="fas fa-microchip os-badge-icon" aria-hidden="true"></i>
-            {{ scenario.instance_type }}
+          <!-- A machine in a browser that cannot isolate the page (Safari)
+               runs on one CPU: point to Firefox. -->
+          <span
+            v-if="scenario.local_machine_memory_mib && oneCpuOnly()"
+            class="os-badge os-badge--warning"
+            data-testid="scenario-one-cpu-badge"
+            :title="t('launcher.oneCpuTitle')"
+          >
+            <i class="fab fa-firefox-browser os-badge-icon" aria-hidden="true"></i>
+            {{ t('launcher.oneCpu') }}
           </span>
         </div>
 
@@ -327,6 +338,11 @@ import { isAssignedSubscription } from '../../utils/subscriptionHelpers'
 import { getSavedLocale } from '../../services/core/storage'
 import { formatMinutes } from '../../utils/formatters'
 
+// A machine in the browser runs on several CPUs only in an isolated page
+// (nginx.conf: COOP/COEP); Safari cannot isolate it.
+const oneCpuOnly = () => !globalThis.crossOriginIsolated
+
+
 const router = useRouter()
 const route = useRoute()
 const runLabel = useScenarioRunLabel()
@@ -377,6 +393,8 @@ const { t } = useTranslations({
       unavailableComputerHint: 'Use a computer with more memory.',
       ramNeeded: '{gb} GB of RAM',
       ramTitle: 'This lab runs in your browser: your computer needs at least this much memory.',
+      oneCpu: 'Faster in Firefox',
+      oneCpuTitle: 'This lab runs in your browser. Here it gets only one processor; in Firefox, Chrome or Edge it gets several and runs faster.',
       unavailableBudget: 'Your resource budget is fully used by your current sessions.',
       unavailableBudgetHint: 'Stop a running session to free capacity, or upgrade your plan.',
       unavailableSize: 'This scenario needs a machine larger than your plan allows.',
@@ -429,6 +447,8 @@ const { t } = useTranslations({
       unavailableComputer: 'Ce lab tourne dans votre navigateur et demande un ordinateur avec au moins {gb} Go de mémoire vive. Votre ordinateur en a moins.',
       unavailableComputerHint: 'Utilisez un ordinateur qui a plus de mémoire.',
       ramNeeded: '{gb} Go de mémoire vive',
+      oneCpu: 'Plus rapide dans Firefox',
+      oneCpuTitle: 'Ce lab tourne dans votre navigateur. Ici, il n\'a qu\'un processeur ; dans Firefox, Chrome ou Edge, il en a plusieurs et va plus vite.',
       ramTitle: 'Ce lab tourne dans votre navigateur : votre ordinateur doit avoir au moins cette mémoire.',
       unavailableBudget: 'Votre budget de ressources est entièrement utilisé par vos sessions en cours.',
       unavailableBudgetHint: 'Arrêtez une session en cours pour libérer de la capacité, ou mettez à niveau votre plan.',

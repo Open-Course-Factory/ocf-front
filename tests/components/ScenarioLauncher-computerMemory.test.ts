@@ -135,3 +135,38 @@ describe('ScenarioLauncher — the computer\'s memory', () => {
     expect(wrapper.find('[data-testid="scenario-launch-btn"]').exists()).toBe(true)
   })
 })
+
+describe('ScenarioLauncher — the browser\'s CPUs', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.unstubAllGlobals()
+    setDeviceMemory(undefined)
+    getMySessionsMock.mockResolvedValue([])
+  })
+
+  it('points to Firefox on a lab in the browser when the page is not isolated (Safari)', async () => {
+    vi.stubGlobal('crossOriginIsolated', false)
+    listScenariosMock.mockResolvedValue([SMALL, { id: 'sc-incus', name: 'incus', title: 'Incus lab', launchable: true }])
+    const wrapper = mountLauncher()
+    await flushPromises()
+    const badges = wrapper.findAll('[data-testid="scenario-one-cpu-badge"]')
+    expect(badges).toHaveLength(1)
+    expect(badges[0].text()).toBe('Faster in Firefox')
+  })
+
+  it('says nothing where the page is isolated', async () => {
+    vi.stubGlobal('crossOriginIsolated', true)
+    listScenariosMock.mockResolvedValue([SMALL])
+    const wrapper = mountLauncher()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="scenario-one-cpu-badge"]').exists()).toBe(false)
+  })
+
+  it('shows the size once, next to the memory badge', async () => {
+    vi.stubGlobal('crossOriginIsolated', true)
+    listScenariosMock.mockResolvedValue([{ ...SMALL, resolved_size: 'S', instance_type: 'S' }])
+    const wrapper = mountLauncher()
+    await flushPromises()
+    expect(wrapper.findAll('.os-badge').filter(b => b.text() === 'S')).toHaveLength(1)
+  })
+})
