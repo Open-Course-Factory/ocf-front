@@ -78,6 +78,8 @@ export interface SeedScenario {
   machine?: 'incus' | 'local' | 'by_account';
   machine_display?: 'terminal' | 'desktop';
   machine_apps?: string[];
+  /** The boot settings it overrides; the others are the platform's. */
+  machine_boot?: Partial<Record<'jit' | 'verbose' | 'display' | 'sound' | 'console_hidden', boolean>>;
   session_user?: number; // the uid the learner's console runs as; absent, root
   setup_script?: string;
   intro_text?: string;

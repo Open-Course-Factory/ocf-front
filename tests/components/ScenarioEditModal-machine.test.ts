@@ -82,3 +82,36 @@ describe('ScenarioEditModal — apps the desktop offers', () => {
     }
   })
 })
+
+describe('ScenarioEditModal — how the desktop\'s machine boots', () => {
+  const choice = (wrapper: ReturnType<typeof mountModal>['wrapper'], key: string) =>
+    wrapper.get(`[data-testid="scenario-machine-boot-${key}"]`)
+
+  it('is offered only for a desktop in the browser', () => {
+    expect(mountModal({ machine: 'local', machine_display: 'desktop' }).wrapper.find('[data-testid="scenario-machine-boot"]').exists()).toBe(true)
+    expect(mountModal({ machine: 'local' }).wrapper.find('[data-testid="scenario-machine-boot"]').exists()).toBe(false)
+    expect(mountModal({ machine: 'incus', machine_display: 'desktop' }).wrapper.find('[data-testid="scenario-machine-boot"]').exists()).toBe(false)
+  })
+
+  it('shows the scenario\'s overrides, and the platform\'s default elsewhere', () => {
+    const { wrapper } = mountModal({ machine: 'local', machine_display: 'desktop', machine_boot: '{"jit":false,"sound":true}' })
+    expect((choice(wrapper, 'jit').element as HTMLSelectElement).value).toBe('off')
+    expect((choice(wrapper, 'sound').element as HTMLSelectElement).value).toBe('on')
+    expect((choice(wrapper, 'verbose').element as HTMLSelectElement).value).toBe('default')
+  })
+
+  it('stores only the settings the author chose, and none as empty', async () => {
+    const { wrapper, editingScenario } = mountModal({ machine: 'local', machine_display: 'desktop' })
+    await choice(wrapper, 'verbose').setValue('on')
+    await choice(wrapper, 'console_hidden').setValue('off')
+    expect(JSON.parse(editingScenario.machine_boot as string)).toEqual({ verbose: true, console_hidden: false })
+    await choice(wrapper, 'verbose').setValue('default')
+    await choice(wrapper, 'console_hidden').setValue('default')
+    expect(editingScenario.machine_boot).toBe('')
+  })
+
+  it('never offers the kernel command line', () => {
+    const { wrapper } = mountModal({ machine: 'local', machine_display: 'desktop' })
+    expect(wrapper.find('[data-testid="scenario-machine-boot-append"]').exists()).toBe(false)
+  })
+})

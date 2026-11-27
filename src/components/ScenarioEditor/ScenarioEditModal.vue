@@ -512,6 +512,27 @@
         </div>
       </div>
 
+      <!-- How the desktop's machine boots, where the lab needs other than the
+           platform's settings. -->
+      <details v-if="model.machine !== 'incus' && machineDisplay === 'desktop'" class="form-group ocf-machine-boot" data-testid="scenario-machine-boot">
+        <summary>{{ t('scenarioEditor.machineBoot') }}</summary>
+        <p class="form-hint">{{ t('scenarioEditor.machineBootHint') }}</p>
+        <div v-for="key in MACHINE_BOOT_KEYS" :key="key" class="form-group">
+          <label :for="`scenario-machine-boot-${key}`">{{ t(`scenarioEditor.machineBoot_${key}`) }}</label>
+          <select
+            :id="`scenario-machine-boot-${key}`"
+            class="form-control"
+            :value="machineBootChoice(key)"
+            :data-testid="`scenario-machine-boot-${key}`"
+            @change="setMachineBootChoice(key, ($event.target as HTMLSelectElement).value as BootChoice)"
+          >
+            <option value="default">{{ t('scenarioEditor.machineBootDefault') }}</option>
+            <option value="on">{{ t('scenarioEditor.machineBootOn') }}</option>
+            <option value="off">{{ t('scenarioEditor.machineBootOff') }}</option>
+          </select>
+        </div>
+      </details>
+
       <div class="form-group checkbox-group">
         <label class="checkbox-label" for="scenario-port-exposure">
           <input id="scenario-port-exposure" type="checkbox" v-model="model.port_exposure_allowed" />
@@ -731,6 +752,36 @@ function toggleMachineApp(app: string, checked: boolean) {
   model.value.machine_apps = next.length ? JSON.stringify(next) : ''
 }
 
+// The boot settings a desktop scenario overrides: machine_boot, a JSON object
+// sent as a string as machine_apps is, holding only the keys the author set;
+// the others take the platform's (UnkernelIntegration.vue). The kernel
+// command line is not offered: it stays the platform administrators'.
+const MACHINE_BOOT_KEYS = ['jit', 'verbose', 'display', 'sound', 'console_hidden'] as const
+type BootKey = typeof MACHINE_BOOT_KEYS[number]
+type BootChoice = 'default' | 'on' | 'off'
+
+/** The stored overrides. Unparseable reads as none. */
+const machineBootOverrides = computed<Record<string, unknown>>(() => {
+  try {
+    const parsed = JSON.parse(model.value.machine_boot || '{}')
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
+  } catch {
+    return {}
+  }
+})
+
+function machineBootChoice(key: BootKey): BootChoice {
+  const value = machineBootOverrides.value[key]
+  return typeof value === 'boolean' ? (value ? 'on' : 'off') : 'default'
+}
+
+function setMachineBootChoice(key: BootKey, choice: BootChoice) {
+  const next = { ...machineBootOverrides.value }
+  if (choice === 'default') delete next[key]
+  else next[key] = choice === 'on'
+  model.value.machine_boot = Object.keys(next).length ? JSON.stringify(next) : ''
+}
+
 /** The languages the vocabulary has a box for; the scenario's own if it offers none. */
 const lexiconLocales = computed<string[]>(() =>
   offeredLocales.value.length ? offeredLocales.value : [props.defaultLocale || 'en']
@@ -903,6 +954,12 @@ watch(() => props.visible, (vis) => {
 .ocf-scn-shared i { color: var(--color-warning); margin-top: 0.15rem; }
 .ocf-scn-shared strong { color: var(--color-text-primary); }
 .ocf-scn-shared p { margin: 0.25rem 0 0; font-size: 0.9rem; color: var(--color-text-secondary); }
+
+.ocf-machine-boot > summary {
+  cursor: pointer;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
 
 .ocf-languages {
   padding-bottom: 0.5rem;
