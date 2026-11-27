@@ -114,11 +114,14 @@
 
       <!-- A machine in the browser lives as long as its tab: said before it
            happens, and asked again on leaving the page. -->
-      <div v-if="isSessionActive && machine === 'local'" class="recording-info-notice local-machine-notice">
+      <div v-if="isSessionActive && machine === 'local' && !localMachineNoticeDismissed" class="recording-info-notice local-machine-notice">
         <div class="recording-notice-content">
           <i class="fas fa-laptop"></i>
           <span>{{ t('sessionView.localMachineNotice') }}</span>
         </div>
+        <button class="recording-notice-dismiss" @click="dismissLocalMachineNotice" :aria-label="t('sessionView.dismissLocalMachineNotice')">
+          {{ t('sessionView.gotIt') }}
+        </button>
       </div>
 
       <!-- Scenario briefing: a modal read once at the start of a run, then out
@@ -471,6 +474,7 @@ const { t } = useTranslations({
       learnMore: 'Learn more',
       gotIt: 'Got it',
       dismissNotice: 'Dismiss recording notice',
+      dismissLocalMachineNotice: 'Dismiss the notice about the machine in your browser',
       resumeFailed: 'Resume failed',
       rebuildFailed: 'Your environment could not be rebuilt. Your progress is kept — try again, or start over.',
       deleteFailed: 'Delete failed',
@@ -530,6 +534,7 @@ const { t } = useTranslations({
       learnMore: 'En savoir plus',
       gotIt: 'Compris',
       dismissNotice: 'Fermer la notification d\'enregistrement',
+      dismissLocalMachineNotice: 'Fermer l\'avis sur la machine de votre navigateur',
       resumeFailed: 'Échec de la reprise',
       rebuildFailed: 'Votre environnement n\'a pas pu être reconstruit. Votre progression est conservée — réessayez, ou recommencez.',
       deleteFailed: 'Échec de la suppression',
@@ -578,6 +583,15 @@ const recordingNoticeDismissed = ref(localStorage.getItem(RECORDING_NOTICE_KEY) 
 function dismissRecordingNotice() {
   recordingNoticeDismissed.value = true
   localStorage.setItem(RECORDING_NOTICE_KEY, '1')
+}
+
+// The notice about a machine in the browser, closed once for every run.
+const LOCAL_MACHINE_NOTICE_KEY = 'ocf-local-machine-notice-dismissed'
+const localMachineNoticeDismissed = ref(localStorage.getItem(LOCAL_MACHINE_NOTICE_KEY) === '1')
+
+function dismissLocalMachineNotice() {
+  localMachineNoticeDismissed.value = true
+  localStorage.setItem(LOCAL_MACHINE_NOTICE_KEY, '1')
 }
 
 // Get session ID from route

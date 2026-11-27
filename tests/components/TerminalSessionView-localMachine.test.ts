@@ -122,6 +122,7 @@ describe('TerminalSessionView on a local machine', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     agent.booted = undefined
+    localStorage.removeItem('ocf-local-machine-notice-dismissed')
     mockAxiosGet.mockImplementation(async (url: string) => url === '/terminals/user-sessions'
       ? { data: [{ session_id: route.sessionId, state: 'running', expires_at: new Date(Date.now() + 3_600_000).toISOString() }] }
       : { data: {} })
@@ -216,6 +217,23 @@ describe('TerminalSessionView on a local machine', () => {
 
     await agentEnds('ended')
     expect(mockAxiosGet).toHaveBeenCalledWith('/terminals/user-sessions')
+  })
+
+  it('lets the learner close the notice for good, for every run', async () => {
+    route.sessionId = 'local-abc'
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect(wrapper.find('.local-machine-notice').exists()).toBe(true)
+    await wrapper.get('.local-machine-notice button').trigger('click')
+    expect(wrapper.find('.local-machine-notice').exists()).toBe(false)
+    wrapper.unmount()
+
+    route.sessionId = 'local-other'
+    const next = mountView()
+    await flushPromises()
+    expect(next.find('.local-machine-notice').exists()).toBe(false)
+    next.unmount()
   })
 
   it('warns that a reload restarts the machine, and asks before leaving the page', async () => {
