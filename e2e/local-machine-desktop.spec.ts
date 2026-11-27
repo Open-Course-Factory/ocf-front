@@ -169,6 +169,13 @@ test('a lab that offers apps shows the desktop, with only those apps to install'
   expect(new URLSearchParams(pageSearch).get('mem')).toBe('1024');
   await shot('1-desktop');
 
+  // Full screen puts the desktop's iframe on the whole screen; leaving it
+  // gives the run page back.
+  await page.getByTestId('desktop-fullscreen').click();
+  await expect.poll(() => page.evaluate(() => document.fullscreenElement?.className ?? '')).toBe('ocf-desktop-frame');
+  await page.evaluate(() => document.exitFullscreen());
+  await expect.poll(() => page.evaluate(() => document.fullscreenElement === null)).toBe(true);
+
   await desktop.locator('#win-terminal-1 .wm-body').click();
   await page.keyboard.press('Control+Shift+O');
   // The launcher shows the page's own apps and a folder per group that has an

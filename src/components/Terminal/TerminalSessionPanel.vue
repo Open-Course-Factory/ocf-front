@@ -30,6 +30,17 @@
         :terminal="sessionInfo.session_id"
         :covered="!!$slots['console-overlay']"
         :hold="holdConsole"
+        :title="sessionInfo?.name || ('Terminal ' + (sessionInfo?.session_id?.substring(0, 8) || ''))"
+        :session-info="sessionInfo"
+        :show-stop-button="showStopButton"
+        :is-stopping="isStopping"
+        :can-stop="canStop"
+        :show-destroy-button="showDestroyButton"
+        :is-destroying="isDestroying"
+        @stop="$emit('stop')"
+        @destroy="$emit('destroy')"
+        @session-warning="$emit('session-warning', $event)"
+        @session-expired="$emit('session-expired')"
       />
       <TerminalViewer
         v-else

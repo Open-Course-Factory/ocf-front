@@ -263,6 +263,8 @@ async function bootDesktop(terminal: string, apps: string[], opts: LocalMachineO
   frame.src = desktopPageUrl(apps, opts, memoryMiB)
   frame.title = 'Linux'
   frame.className = 'ocf-desktop-frame'
+  // Its own full-screen control, and the slot's, need the iframe to allow it.
+  frame.allow = 'fullscreen'
   frame.style.cssText = 'position:fixed;border:0;visibility:hidden;left:0;top:0;width:800px;height:600px;'
   document.body.appendChild(frame)
   desktopFailures.delete(terminal)

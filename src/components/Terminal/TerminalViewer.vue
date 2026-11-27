@@ -44,13 +44,7 @@
         </span>
       </div>
 
-      <span
-        class="network-indicator"
-        :class="hasNetwork ? 'network-on' : 'network-off'"
-        :title="hasNetwork ? t('terminal.networkOn') : t('terminal.networkOff')"
-      >
-        <i :class="hasNetwork ? 'fas fa-globe' : 'fas fa-ban'"></i>
-      </span>
+      <NetworkIndicator :on="hasNetwork" />
 
       <ExposedPortsChip
         v-if="exposedPortsEnabled"
@@ -169,13 +163,7 @@
             {{ isConnecting ? t('terminal.connecting') : t('terminal.disconnected') }}
           </span>
         </div>
-        <span
-          class="network-indicator"
-          :class="hasNetwork ? 'network-on' : 'network-off'"
-          :title="hasNetwork ? t('terminal.networkOn') : t('terminal.networkOff')"
-        >
-          <i :class="hasNetwork ? 'fas fa-globe' : 'fas fa-ban'"></i>
-        </span>
+        <NetworkIndicator :on="hasNetwork" />
         <ExposedPortsChip
           v-if="exposedPortsEnabled"
           :session-id="sessionInfo?.session_id"
@@ -298,6 +286,7 @@ import {
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
 import RecordingIndicator from './RecordingIndicator.vue'
+import NetworkIndicator from './NetworkIndicator.vue'
 import SessionCountdown from './SessionCountdown.vue'
 import TerminalEndStateOverlay from './TerminalEndStateOverlay.vue'
 import SupervisionChip from './SupervisionChip.vue'
@@ -443,8 +432,6 @@ const { t } = useTranslations({
       stopDisabledProvisioning: 'The scenario is still being set up — Stop will be available once it is ready.',
       destroy: 'Destroy',
       destroyTooltip: 'Destroy this session permanently (container and data will be lost).',
-      networkOn: 'Internet access: on',
-      networkOff: 'Internet access: off',
       popOut: 'Open the terminal in its own window',
       popIn: 'Put the terminal back in the page',
       supervisionWatched: 'A trainer is watching this session',
@@ -488,8 +475,6 @@ const { t } = useTranslations({
       stopDisabledProvisioning: 'Le scénario est encore en cours de préparation — vous pourrez l\'arrêter dès qu\'il sera prêt.',
       destroy: 'Détruire',
       destroyTooltip: 'Détruire définitivement cette session (le conteneur et ses données seront perdus).',
-      networkOn: 'Accès internet : activé',
-      networkOff: 'Accès internet : désactivé',
       popOut: 'Ouvrir le terminal dans une fenêtre séparée',
       popIn: 'Remettre le terminal dans la page',
       recording: 'REC',
@@ -1451,24 +1436,6 @@ defineExpose({
 .btn:hover {
   opacity: 0.9;
   transform: translateY(-1px);
-}
-
-/* Internet-access indicator in the status bar. Globe = on (success),
-   crossed = off (muted). Sits alongside the recording / countdown badges. */
-.network-indicator {
-  display: inline-flex;
-  align-items: center;
-  font-size: var(--font-size-sm);
-  line-height: 1;
-  cursor: default;
-}
-
-.network-indicator.network-on {
-  color: var(--color-success);
-}
-
-.network-indicator.network-off {
-  color: var(--color-text-muted);
 }
 
 .text-muted {

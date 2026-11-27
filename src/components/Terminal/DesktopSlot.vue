@@ -2,42 +2,126 @@
   The place of the run's desktop, where the console would be. The desktop's
   iframe stays a child of <body> (moving an iframe reloads its page): this
   keeps it laid over the slot, and hides it while something covers the slot
-  (the build overlay, a banner).
+  (the build overlay, a banner). Its header is the console's (TerminalViewer):
+  the run's name, the network, the countdown, Stop, with Full screen where the
+  console has pop out: the desktop cannot pop out, since moving its iframe to
+  another window would reload it and lose the machine.
 -->
 <template>
-  <div ref="slotEl" class="ocf-desktop-slot" data-testid="desktop-slot">
-    <div v-if="failed" class="ocf-desktop-waiting ocf-desktop-failed" role="alert" data-testid="desktop-failed">
-      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
-      <p>{{ t('desktopSlot.failed') }}</p>
+  <SettingsCard class="ocf-desktop-card" :title="title" icon="fas fa-desktop" single-line-title data-testid="desktop-slot">
+    <template #headerActions>
+      <NetworkIndicator :on="hasNetwork" />
+      <button
+        type="button"
+        class="ocf-desktop-fullscreen"
+        :disabled="!frame"
+        :title="t('desktopSlot.fullScreen')"
+        :aria-label="t('desktopSlot.fullScreen')"
+        data-testid="desktop-fullscreen"
+        @click="fullScreen"
+      >
+        <i class="fas fa-expand" aria-hidden="true"></i>
+      </button>
+      <SessionCountdown
+        v-if="sessionInfo?.expires_at"
+        :expires-at="sessionInfo.expires_at"
+        @warning="emit('session-warning', $event)"
+        @expired="emit('session-expired')"
+      />
+      <Button
+        v-if="showStopButton && frame"
+        variant="danger"
+        size="sm"
+        :icon="isStopping ? 'fas fa-spinner fa-spin' : 'fas fa-stop'"
+        :disabled="isStopping || !canStop"
+        :title="canStop ? t('desktopSlot.stop') : t('desktopSlot.stopDisabledProvisioning')"
+        @click="emit('stop')"
+      >
+        {{ t('desktopSlot.stop') }}
+      </Button>
+      <Button
+        v-if="showDestroyButton && frame"
+        variant="danger"
+        size="sm"
+        :icon="isDestroying ? 'fas fa-spinner fa-spin' : 'fas fa-trash'"
+        :disabled="isDestroying"
+        :title="t('desktopSlot.destroyTooltip')"
+        @click="emit('destroy')"
+      >
+        {{ t('desktopSlot.destroy') }}
+      </Button>
+    </template>
+
+    <div ref="areaEl" class="ocf-desktop-area">
+      <div v-if="failed" class="ocf-desktop-waiting ocf-desktop-failed" role="alert" data-testid="desktop-failed">
+        <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+        <p>{{ t('desktopSlot.failed') }}</p>
+      </div>
+      <div v-else-if="!frame" class="ocf-desktop-waiting" role="status">
+        <i class="fas fa-desktop" aria-hidden="true"></i>
+        <span class="visually-hidden">{{ t('desktopSlot.starting') }}</span>
+      </div>
     </div>
-    <div v-else-if="!frame" class="ocf-desktop-waiting" role="status">
-      <i class="fas fa-desktop" aria-hidden="true"></i>
-      <span class="visually-hidden">{{ t('desktopSlot.starting') }}</span>
-    </div>
-  </div>
+  </SettingsCard>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watchEffect } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue'
+import SettingsCard from '../UI/SettingsCard.vue'
+import Button from '../UI/Button.vue'
+import SessionCountdown from './SessionCountdown.vue'
+import NetworkIndicator from './NetworkIndicator.vue'
+import { sessionHasNetwork } from '../../utils/sessionState'
 import { desktopFailures, desktopFrames, desktopLearnerTerminal, onDesktopFrames } from '../../services/domain/terminal/localMachine'
 import { useTranslations } from '../../composables/useTranslations'
 
 // hold: the run is being built; the learner's terminal opens after, as the
 // console's shell does (TerminalSessionPanel holdConsole).
-const props = defineProps<{ terminal: string; covered: boolean; hold: boolean }>()
+const props = withDefaults(defineProps<{
+  terminal: string
+  covered: boolean
+  hold: boolean
+  title: string
+  sessionInfo?: any
+  showStopButton?: boolean
+  isStopping?: boolean
+  canStop?: boolean
+  showDestroyButton?: boolean
+  isDestroying?: boolean
+}>(), { sessionInfo: undefined, showStopButton: false, isStopping: false, canStop: true, showDestroyButton: false, isDestroying: false })
+
+// As the console's: the panel turns them into the page's own handlers.
+const emit = defineEmits<{
+  stop: []
+  destroy: []
+  'session-warning': [level: 'info' | 'warning' | 'danger']
+  'session-expired': []
+}>()
+
+const hasNetwork = computed(() => sessionHasNetwork(props.sessionInfo))
 
 const { t } = useTranslations({
   en: { desktopSlot: {
     starting: 'The desktop is starting.',
+    fullScreen: 'Full screen (Esc to come back to the instructions)',
+    stop: 'Stop',
+    stopDisabledProvisioning: 'The scenario is still being set up. You can stop it once it is ready.',
+    destroy: 'Destroy',
+    destroyTooltip: 'Destroy this session for good: its machine and data are lost.',
     failed: 'The desktop did not start. Reload the page to try again.'
   } },
   fr: { desktopSlot: {
     starting: 'Le bureau démarre.',
+    fullScreen: 'Plein écran (Échap pour revenir aux consignes)',
+    stop: 'Arrêter',
+    stopDisabledProvisioning: "Le scénario est encore en préparation. Vous pourrez l'arrêter dès qu'il sera prêt.",
+    destroy: 'Détruire',
+    destroyTooltip: 'Détruire définitivement cette session : sa machine et ses données sont perdues.',
     failed: "Le bureau n'a pas démarré. Rechargez la page pour réessayer."
   } }
 })
 
-const slotEl = ref<HTMLElement | null>(null)
+const areaEl = ref<HTMLElement | null>(null)
 const frame = ref<HTMLIFrameElement | null>(null)
 const failed = ref(false)
 
@@ -48,7 +132,7 @@ function read() {
 
 function place() {
   const f = frame.value
-  const el = slotEl.value
+  const el = areaEl.value
   if (!f || !el) return
   const r = el.getBoundingClientRect()
   f.style.left = `${r.left}px`
@@ -56,6 +140,12 @@ function place() {
   f.style.width = `${r.width}px`
   f.style.height = `${r.height}px`
   f.style.visibility = props.covered || r.width === 0 ? 'hidden' : 'visible'
+}
+
+// The desktop's iframe fills the screen (it was created with
+// allow="fullscreen"); Esc gives the page back.
+function fullScreen() {
+  frame.value?.requestFullscreen().catch(() => {})
 }
 
 let raf = 0
@@ -85,13 +175,44 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.ocf-desktop-slot {
-  position: relative;
-  width: 100%;
+.ocf-desktop-card {
   height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.ocf-desktop-card :deep(.card-body) {
+  flex: 1;
+  display: flex;
+  padding: 0;
+}
+.ocf-desktop-fullscreen {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: var(--border-width-thin) solid var(--color-border-light);
+  border-radius: var(--border-radius-full);
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+.ocf-desktop-fullscreen:hover:not(:disabled) {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.ocf-desktop-fullscreen:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.ocf-desktop-area {
+  position: relative;
+  flex: 1;
   min-height: 480px;
   background: var(--terminal-bg);
-  border-radius: var(--border-radius-md);
 }
 .ocf-desktop-waiting {
   position: absolute;
