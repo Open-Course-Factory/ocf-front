@@ -45,10 +45,15 @@ function asAdmin() {
   return { Authorization: `Bearer ${admin!.token}` };
 }
 
+// The switch as the spec found it, given back at the end: a stack someone
+// is trying by hand keeps the machines it had.
+let switchBefore: boolean | undefined;
+
 async function setLocalMachinesSwitch(enabled: boolean): Promise<void> {
   const list = await admin!.api.get(`${API}/features?key=local_machines`, { headers: asAdmin() });
-  const flag = (await list.json()).data.find((f: { key: string }) => f.key === 'local_machines');
+  const flag = (await list.json()).data.find((f: { key: string; enabled: boolean }) => f.key === 'local_machines');
   expect(flag, 'the local machines switch is seeded').toBeTruthy();
+  switchBefore ??= flag.enabled;
   const res = await admin!.api.patch(`${API}/features/${flag.id}`, { headers: asAdmin(), data: { enabled } });
   expect(res.ok(), await res.text()).toBeTruthy();
 }
@@ -189,7 +194,7 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   if (admin) {
-    await setLocalMachinesSwitch(false).catch(() => {});
+    if (switchBefore !== undefined) await setLocalMachinesSwitch(switchBefore).catch(() => {});
     if (planId) await setPlanLocalMachines(planSettingBefore).catch(() => {});
     for (const id of scenarioIds) {
       await cleanupScenarioSession(learner, id).catch(() => {});
