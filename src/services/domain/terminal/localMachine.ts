@@ -227,12 +227,15 @@ export async function pasteOnDesktop(terminal: string, command: string): Promise
 // page asks. Every boot setting is given, even a default one: the page takes
 // a setting the URL leaves out from what its Settings saved in this browser.
 // No guest GL or Vulkan: our build of the page has neither renderer.
+// Always Debian on the overlay root: an empty root= overrides a Safe mode
+// (root=initramfs) this browser once saved, which boots the plain image.
 export function desktopPageUrl(apps: string[], opts: LocalMachineOptions, run: Omit<MachineRun, 'apps'> = {}): string {
   const { memoryMiB, cpus = 1, boot = DEFAULT_MACHINE_BOOT } = run
   const backend = opts.net?.backend as { servers?: string, routes?: Record<string, string> } | undefined
   const flag = (on: boolean) => (on ? '1' : '0')
   const query = new URLSearchParams({
     data: '0', askleave: '0', autosuspend: '0', gl: '0', vk: '0',
+    distro: 'debian', root: '',
     worker: flag(opts.worker),
     apps: apps.join(','),
     image: new URL(opts.distroUrl, window.location.origin).href,

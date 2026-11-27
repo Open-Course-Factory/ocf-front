@@ -58,6 +58,13 @@ describe('the desktop page URL', () => {
       .toEqual({ cpus: '1', jit: '1', verbose: '0', display: '1', sound: '1', autohide: '0', append: '' })
   })
 
+  it('boots Debian on the overlay root, whatever this browser saved', () => {
+    const q = query(desktopPageUrl([], { distroUrl: '/d.erofs', worker: true }))
+    expect(q.get('distro')).toBe('debian')
+    expect(q.has('root')).toBe(true)
+    expect(q.get('root')).toBe('')
+  })
+
   it('asks for no guest GL or Vulkan, which our page cannot render', () => {
     const q = query(desktopPageUrl([], { distroUrl: '/d.erofs', worker: true }))
     expect(q.get('gl')).toBe('0')
