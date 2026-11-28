@@ -34,10 +34,10 @@
         size="sm"
         :icon="isStopping ? 'fas fa-spinner fa-spin' : 'fas fa-stop'"
         :disabled="isStopping || !canStop"
-        :title="canStop ? t('desktopSlot.stop') : t('desktopSlot.stopDisabledProvisioning')"
+        :title="sessionControls.stopTitle(canStop)"
         @click="emit('stop')"
       >
-        {{ t('desktopSlot.stop') }}
+        {{ sessionControls.stop() }}
       </Button>
       <Button
         v-if="showDestroyButton && frame"
@@ -45,10 +45,10 @@
         size="sm"
         :icon="isDestroying ? 'fas fa-spinner fa-spin' : 'fas fa-trash'"
         :disabled="isDestroying"
-        :title="t('desktopSlot.destroyTooltip')"
+        :title="sessionControls.destroyTooltip()"
         @click="emit('destroy')"
       >
-        {{ t('desktopSlot.destroy') }}
+        {{ sessionControls.destroy() }}
       </Button>
     </template>
 
@@ -75,6 +75,7 @@ import { sessionHasNetwork } from '../../utils/sessionState'
 import { desktopLearnerTerminal } from '../../services/domain/terminal/localMachine'
 import { desktopFailures, desktopFrames, onDesktopFrames } from '../../services/domain/terminal/localMachineDesktop'
 import { useTranslations } from '../../composables/useTranslations'
+import { useSessionControlTexts } from '../../composables/useSessionControlTexts'
 
 // hold: the run is being built; the learner's terminal opens after, as the
 // console's shell does (TerminalSessionPanel holdConsole).
@@ -105,22 +106,16 @@ const { t } = useTranslations({
   en: { desktopSlot: {
     starting: 'The desktop is starting.',
     fullScreen: 'Full screen (Esc to come back to the instructions)',
-    stop: 'Stop',
-    stopDisabledProvisioning: 'The scenario is still being set up. You can stop it once it is ready.',
-    destroy: 'Destroy',
-    destroyTooltip: 'Destroy this session for good: its machine and data are lost.',
     failed: 'The desktop did not start. Reload the page to try again.'
   } },
   fr: { desktopSlot: {
     starting: 'Le bureau démarre.',
     fullScreen: 'Plein écran (Échap pour revenir aux consignes)',
-    stop: 'Arrêter',
-    stopDisabledProvisioning: "Le scénario est encore en préparation. Vous pourrez l'arrêter dès qu'il sera prêt.",
-    destroy: 'Détruire',
-    destroyTooltip: 'Détruire définitivement cette session : sa machine et ses données sont perdues.',
     failed: "Le bureau n'a pas démarré. Rechargez la page pour réessayer."
   } }
 })
+
+const sessionControls = useSessionControlTexts()
 
 const areaEl = ref<HTMLElement | null>(null)
 const frame = ref<HTMLIFrameElement | null>(null)

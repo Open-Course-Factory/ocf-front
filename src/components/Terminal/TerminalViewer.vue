@@ -85,7 +85,7 @@
         :title="stopTitle"
         @click="emit('stop')"
       >
-        {{ t('terminal.stop') }}
+        {{ sessionControls.stop() }}
       </Button>
       <Button
         v-if="showDestroyButton && isConnected"
@@ -93,10 +93,10 @@
         size="sm"
         :icon="isDestroying ? 'fas fa-spinner fa-spin' : 'fas fa-trash'"
         :disabled="isDestroying"
-        :title="t('terminal.destroyTooltip')"
+        :title="sessionControls.destroyTooltip()"
         @click="emit('destroy')"
       >
-        {{ t('terminal.destroy') }}
+        {{ sessionControls.destroy() }}
       </Button>
     </template>
 
@@ -213,7 +213,7 @@
           v-if="showDestroyButton && isConnected"
           class="btn btn-sm btn-danger"
           :disabled="isDestroying"
-          :title="t('terminal.destroyTooltip')"
+          :title="sessionControls.destroyTooltip()"
           @click="emit('destroy')"
         >
           <i :class="isDestroying ? 'fas fa-spinner fa-spin' : 'fas fa-trash'"></i>
@@ -268,6 +268,7 @@ import { ref, shallowRef, computed, onMounted, onBeforeUnmount, nextTick, watch 
 import '@xterm/xterm/css/xterm.css'
 import { useRoute } from 'vue-router'
 import { useCurrentUserStore } from '../../stores/currentUser'
+import { useSessionControlTexts } from '../../composables/useSessionControlTexts'
 import { useTranslations } from '../../composables/useTranslations'
 import { useNotification } from '../../composables/useNotification'
 import { useEndStateConfig, type EndStateReason, type EndStateActionKey } from '../../composables/useEndStateConfig'
@@ -429,10 +430,6 @@ const { t } = useTranslations({
       sessionInfoError: 'Unable to verify session: {message}',
       retry: 'Retry',
       reloadPage: 'Reload Page',
-      stop: 'Stop',
-      stopDisabledProvisioning: 'The scenario is still being set up — Stop will be available once it is ready.',
-      destroy: 'Destroy',
-      destroyTooltip: 'Destroy this session permanently (container and data will be lost).',
       popOut: 'Open the terminal in its own window',
       popIn: 'Put the terminal back in the page',
       supervisionWatched: 'A trainer is watching this session',
@@ -472,10 +469,6 @@ const { t } = useTranslations({
       sessionInfoError: 'Impossible de vérifier la session: {message}',
       retry: 'Réessayer',
       reloadPage: 'Recharger la Page',
-      stop: 'Arrêter',
-      stopDisabledProvisioning: 'Le scénario est encore en cours de préparation — vous pourrez l\'arrêter dès qu\'il sera prêt.',
-      destroy: 'Détruire',
-      destroyTooltip: 'Détruire définitivement cette session (le conteneur et ses données seront perdus).',
       popOut: 'Ouvrir le terminal dans une fenêtre séparée',
       popIn: 'Remettre le terminal dans la page',
       recording: 'REC',
@@ -514,9 +507,8 @@ const effectiveEndReason = computed<EndStateReason | ''>(() => {
   return props.endReason
 })
 
-const stopTitle = computed(() =>
-  props.canStop ? t('terminal.stop') : t('terminal.stopDisabledProvisioning')
-)
+const sessionControls = useSessionControlTexts()
+const stopTitle = computed(() => sessionControls.stopTitle(props.canStop))
 
 const activeEndState = computed(() => {
   const reason = effectiveEndReason.value
