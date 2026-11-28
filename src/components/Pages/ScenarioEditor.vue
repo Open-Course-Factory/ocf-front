@@ -279,6 +279,7 @@ import { useScenarioHealth } from '../../composables/useScenarioHealth'
 import { useUnsavedChangesGuard } from '../../composables/useUnsavedChangesGuard'
 import { withoutUnseenScripts } from '../../utils/scenarioStepPayload'
 import { previewOptions, previewRefusalKey } from '../../utils/scenarioPreview'
+import { runPageRoute } from '../../utils/runPageRoute'
 import {
   draftStep,
   insertStep,
@@ -1123,11 +1124,7 @@ const handleConfirmPreview = async () => {
       query: { scenarioId: selectedScenarioId.value }
     }).fullPath
     showPreviewConfirmModal.value = false
-    await router.push({
-      name: 'TerminalSessionView',
-      params: { sessionId: result.terminal_session_id },
-      query: { returnTo }
-    })
+    await router.push(runPageRoute(result, { returnTo }))
   } catch (err: any) {
     const data = err?.response?.data
     if (err?.response?.status === 409 && data?.reason === 'session_exists' && data?.session_id) {

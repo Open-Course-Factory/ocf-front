@@ -24,6 +24,7 @@ export function previewRefusalKey(status: number | undefined, data: any, fromSte
   if (status === 403 && data?.source !== 'budget') return 'scenarioEditor.previewErrorForbidden'
   if (status === 409 && data?.reason === 'session_exists') return 'scenarioEditor.previewErrorSessionExists'
   if (status === 422 && data?.reason === 'local_machine_unavailable') return 'scenarioEditor.previewErrorLocalMachineUnavailable'
+  if (status === 409 && data?.reason === 'local_machine_busy') return 'scenarioEditor.previewErrorLocalMachineBusy'
   return null
 }
 

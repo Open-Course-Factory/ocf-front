@@ -299,6 +299,13 @@ export interface AvailableScenario extends ScenarioInfo {
   // Set by the launcher, not ocf-core: why this browser cannot run that
   // machine (localMachineUnavailable), sent with the launch.
   local_machine_unavailable?: LocalMachineUnavailable
+  // Where a launch would put the run and why, as on LaunchScenarioResponse.
+  // Absent when the card is blocked before a machine is chosen.
+  machine?: 'incus' | 'local'
+  machine_reason?: MachineReason
+  // The scenario's own setting (Scenario.Machine): a By account lab that this
+  // browser cannot run goes to a container, a Local one cannot start.
+  machine_setting?: 'incus' | 'local' | 'by_account'
   [key: string]: any
 }
 
@@ -342,7 +349,15 @@ export interface LaunchScenarioResponse {
   // Where the run runs: "local" for a machine in the learner's browser,
   // which the run page boots and builds the run through.
   machine?: 'incus' | 'local'
+  machine_reason?: MachineReason
 }
+
+/**
+ * Why a run went where it did, when the learner should know: "quota", a By
+ * account run sent to the browser because the plan's containers are all in
+ * use (ocf-core services.MachineDecision.Reason).
+ */
+export type MachineReason = 'quota'
 
 export const scenarioSessionService = {
   async getMyScenarioSessions(): Promise<MyScenarioSession[]> {

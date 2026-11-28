@@ -113,11 +113,13 @@
 
 
       <!-- A machine in the browser lives as long as its tab: said before it
-           happens, and asked again on leaving the page. -->
-      <div v-if="isSessionActive && machine === 'local' && !localMachineNoticeDismissed" class="recording-info-notice local-machine-notice">
+           happens, and asked again on leaving the page. A By account run the
+           quota sent here says so too, in the same place, for this page. -->
+      <div v-if="isSessionActive && machine === 'local' && (!localMachineNoticeDismissed || showsQuotaNotice)" class="recording-info-notice local-machine-notice">
         <div class="recording-notice-content">
           <i class="fas fa-laptop"></i>
-          <span>{{ t('sessionView.localMachineNotice') }}</span>
+          <span v-if="showsQuotaNotice" data-testid="quota-fallback-notice">{{ t('sessionView.quotaFallbackNotice') }}</span>
+          <span v-if="!localMachineNoticeDismissed">{{ t('sessionView.localMachineNotice') }}</span>
         </div>
         <button class="recording-notice-dismiss" @click="dismissLocalMachineNotice" :aria-label="t('sessionView.dismissLocalMachineNotice')">
           {{ t('sessionView.gotIt') }}
@@ -477,6 +479,7 @@ const { t } = useTranslations({
       gotIt: 'Got it',
       dismissNotice: 'Dismiss recording notice',
       dismissLocalMachineNotice: 'Dismiss the notice about the machine in your browser',
+      quotaFallbackNotice: 'This lab runs in your browser because your machine quota is full. For a more reliable machine, stop another session and launch the lab again.',
       resumeFailed: 'Resume failed',
       rebuildFailed: 'Your environment could not be rebuilt. Your progress is kept — try again, or start over.',
       deleteFailed: 'Delete failed',
@@ -537,6 +540,7 @@ const { t } = useTranslations({
       gotIt: 'Compris',
       dismissNotice: 'Fermer la notification d\'enregistrement',
       dismissLocalMachineNotice: 'Fermer l\'avis sur la machine de votre navigateur',
+      quotaFallbackNotice: 'Ce lab tourne dans votre navigateur, car votre quota de machines est plein. Pour une machine plus fiable, arrêtez une autre session puis relancez le lab.',
       resumeFailed: 'Échec de la reprise',
       rebuildFailed: 'Votre environnement n\'a pas pu être reconstruit. Votre progression est conservée — réessayez, ou recommencez.',
       deleteFailed: 'Échec de la suppression',
@@ -591,7 +595,13 @@ function dismissRecordingNotice() {
 const LOCAL_MACHINE_NOTICE_KEY = 'ocf-local-machine-notice-dismissed'
 const localMachineNoticeDismissed = ref(localStorage.getItem(LOCAL_MACHINE_NOTICE_KEY) === '1')
 
+// From the launch's answer (runPageRoute): the run went to the browser because
+// the plan's containers were all in use.
+const quotaNoticeDismissed = ref(false)
+const showsQuotaNotice = computed(() => route.query.machine_reason === 'quota' && !quotaNoticeDismissed.value)
+
 function dismissLocalMachineNotice() {
+  quotaNoticeDismissed.value = true
   localMachineNoticeDismissed.value = true
   localStorage.setItem(LOCAL_MACHINE_NOTICE_KEY, '1')
 }

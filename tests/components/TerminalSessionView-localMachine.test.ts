@@ -34,8 +34,9 @@ vi.mock('axios', () => ({
 const mockRouterPush = vi.fn()
 const mockRouterReplace = vi.fn()
 const route = vi.hoisted(() => ({ sessionId: 'local-abc' }))
+const routeQuery = vi.hoisted((): Record<string, string> => ({}))
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ params: { sessionId: route.sessionId }, query: {} }),
+  useRoute: () => ({ params: { sessionId: route.sessionId }, query: routeQuery }),
   useRouter: () => ({ push: mockRouterPush, replace: mockRouterReplace }),
   createRouter: vi.fn(),
   createWebHistory: vi.fn()
@@ -241,6 +242,15 @@ describe('TerminalSessionView on a local machine', () => {
 
     await agentEnds('ended')
     expect(mockAxiosGet).toHaveBeenCalledWith('/terminals/user-sessions')
+  })
+
+  it('says the run is in the browser because the machine quota is full, when the launch said so', async () => {
+    route.sessionId = 'local-abc'
+    routeQuery.machine_reason = 'quota'
+    const wrapper = mountView()
+    await flushPromises()
+    expect(wrapper.get('[data-testid="quota-fallback-notice"]').text()).toContain('your machine quota is full')
+    delete routeQuery.machine_reason
   })
 
   it('lets the learner close the notice for good, for every run', async () => {

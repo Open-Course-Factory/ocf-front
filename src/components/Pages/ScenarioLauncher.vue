@@ -136,6 +136,13 @@
           </span>
         </div>
 
+        <!-- A By account lab whose containers are all in use runs in the
+             browser: said before the learner starts it. -->
+        <p v-if="!isBlocked(scenario) && scenario.machine_reason === 'quota'" class="ocf-machine-hint" data-testid="scenario-quota-hint">
+          <i class="fas fa-laptop" aria-hidden="true"></i>
+          {{ t('launcher.quotaFallback') }}
+        </p>
+
         <!-- Unavailability explanation -->
         <div v-if="isBlocked(scenario)" class="unavailable-notice" data-testid="scenario-unavailable-notice">
           <div class="unavailable-notice-content">
@@ -320,6 +327,7 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { scenarioSessionService, pollProvisioningStatus } from '../../services/domain/scenario'
+import { runPageRoute } from '../../utils/runPageRoute'
 import type { AvailableScenario } from '../../services/domain/scenario'
 import { computerGiBNeeded, localMachineUnavailable, LOCAL_MACHINE_PLAIN_MIB } from '../../services/domain/terminal/localMachineFit'
 import { useOrganizationsStore } from '../../stores/organizations'
@@ -396,6 +404,10 @@ const { t } = useTranslations({
       unavailableBrowserHint: 'Use Chrome or Edge 137 or later, or Firefox 153 or later.',
       unavailableDevice: 'This lab runs in your browser, and a phone or tablet cannot start its machine.',
       unavailableDeviceHint: 'Use a computer.',
+      unavailableNeedsContainer: 'This lab must run in a container, and it is set to run in the browser.',
+      unavailableDesktop: 'This lab runs on a desktop, which is switched off on this platform.',
+      unavailableAskTrainer: 'Ask your trainer.',
+      quotaFallback: 'Your machine quota is full: this lab will run in your browser. For a more reliable machine, stop another session first.',
       ramNeeded: '{gb} GB of RAM',
       ramTitle: 'This lab runs in your browser: your computer needs at least this much memory.',
       oneCpu: 'Faster in Firefox',
@@ -455,6 +467,10 @@ const { t } = useTranslations({
       unavailableBrowserHint: 'Utilisez Chrome ou Edge 137 ou plus récent, ou Firefox 153 ou plus récent.',
       unavailableDevice: 'Ce lab tourne dans votre navigateur, et un téléphone ou une tablette ne peut pas lancer sa machine.',
       unavailableDeviceHint: 'Utilisez un ordinateur.',
+      unavailableNeedsContainer: 'Ce lab doit tourner dans un conteneur, et il est réglé pour tourner dans le navigateur.',
+      unavailableDesktop: 'Ce lab tourne sur un bureau, désactivé sur cette plateforme.',
+      unavailableAskTrainer: 'Demandez à votre formateur.',
+      quotaFallback: 'Votre quota de machines est plein : ce lab tournera dans votre navigateur. Pour une machine plus fiable, arrêtez d\'abord une autre session.',
       ramNeeded: '{gb} Go de mémoire vive',
       oneCpu: 'Plus rapide dans Firefox',
       oneCpuTitle: 'Ce lab tourne dans votre navigateur. Ici, il n\'a qu\'un processeur ; dans Firefox, Chrome ou Edge, il en a plusieurs et va plus vite.',
@@ -718,6 +734,9 @@ function getBlockReasonIcon(scenario: any): string {
       return 'fas fa-lock'
     case 'local_machine_unavailable':
       return scenario.local_machine_unavailable === 'memory' ? 'fas fa-memory' : 'fas fa-laptop'
+    case 'needs_container':
+    case 'desktop_unavailable':
+      return 'fas fa-server'
     case 'plan':
       return 'fas fa-lock'
     case 'no_distribution':
@@ -755,6 +774,10 @@ function getUnavailableReason(scenario: any): string {
         return t('launcher.unavailableComputer', { gb: computerGiBNeeded(scenario.local_machine_memory_mib) })
       }
       return t(scenario.local_machine_unavailable === 'device' ? 'launcher.unavailableDevice' : 'launcher.unavailableBrowser')
+    case 'needs_container':
+      return t('launcher.unavailableNeedsContainer')
+    case 'desktop_unavailable':
+      return t('launcher.unavailableDesktop')
     case 'offline':
     default:
       return t('launcher.unavailableOffline')
@@ -783,6 +806,9 @@ function getUnavailableHint(scenario: any): string {
     case 'local_machine_unavailable':
       if (scenario.local_machine_unavailable === 'memory') return t('launcher.unavailableComputerHint')
       return t(scenario.local_machine_unavailable === 'device' ? 'launcher.unavailableDeviceHint' : 'launcher.unavailableBrowserHint')
+    case 'needs_container':
+    case 'desktop_unavailable':
+      return t('launcher.unavailableAskTrainer')
     case 'offline':
     default:
       return t('launcher.unavailableOfflineHint')
@@ -820,13 +846,15 @@ async function loadScenarios() {
 // (plan rule 7: never a silent fallback). A Local lab it cannot run is
 // unavailable here, and its card says why. A By account lab goes to a
 // container instead: the launch tells ocf-core why (local_machine_unavailable),
-// and the card loses the badges of a machine in the browser.
+// and the card loses what it says of a machine in the browser. Same rule as
+// ocf-core's RunMachine with local_machine_unavailable (runMachine.go); a card
+// without machine_setting is taken for Local, the safe side.
 function withThisBrowser(scenario: AvailableScenario): AvailableScenario {
-  if (!scenario.launchable || !scenario.local_machine_memory_mib) return scenario
+  if (!scenario.launchable || scenario.machine !== 'local') return scenario
   const unavailable = localMachineUnavailable(scenario.local_machine_memory_mib)
   if (!unavailable) return scenario
-  if (scenario.machine === 'by_account') {
-    return { ...scenario, local_machine_memory_mib: undefined, local_machine_unavailable: unavailable }
+  if (scenario.machine_setting === 'by_account') {
+    return { ...scenario, machine: 'incus', machine_reason: undefined, local_machine_memory_mib: undefined, local_machine_unavailable: unavailable }
   }
   return { ...scenario, launchable: false, block_reason: 'local_machine_unavailable', local_machine_unavailable: unavailable }
 }
@@ -866,7 +894,7 @@ async function handleLaunchScenario(scenario: any) {
     provisioningMessage.value = ''
     provisioningPhase.value = ''
     provisioningSessionId.value = ''
-    router.push({ name: 'TerminalSessionView', params: { sessionId: result.terminal_session_id } })
+    router.push(runPageRoute(result))
   } catch (err: any) {
     if (abortController.signal.aborted) return
     provisioningMessage.value = ''
@@ -1195,6 +1223,16 @@ watch(currentOrgId, () => {
   font-size: var(--font-size-xs);
   color: var(--color-warning-text);
   line-height: var(--line-height-normal);
+}
+
+.ocf-machine-hint {
+  margin: var(--spacing-xs) var(--spacing-md) 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-info-bg);
+  border: 1px solid var(--color-info-border);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-info-text);
+  font-size: var(--font-size-xs);
 }
 
 .unavailable-notice-hint {

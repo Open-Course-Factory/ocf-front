@@ -95,8 +95,8 @@ function mountLauncher() {
   })
 }
 
-const BIG = { id: 'sc-big', name: 'big', title: 'Big lab', launchable: true, local_machine_memory_mib: 4096 }
-const SMALL = { id: 'sc-small', name: 'small', title: 'Small lab', launchable: true, local_machine_memory_mib: 1024 }
+const BIG = { id: 'sc-big', name: 'big', title: 'Big lab', launchable: true, machine: 'local', local_machine_memory_mib: 4096 }
+const SMALL = { id: 'sc-small', name: 'small', title: 'Small lab', launchable: true, machine: 'local', local_machine_memory_mib: 1024 }
 
 function setDeviceMemory(gb: number | undefined) {
   Object.defineProperty(navigator, 'deviceMemory', { value: gb, configurable: true })
@@ -201,7 +201,7 @@ describe('ScenarioLauncher — a browser that cannot run the machine', () => {
   })
 
   it('refuses a Local lab and says which browser can run it', async () => {
-    listScenariosMock.mockResolvedValue([{ ...SMALL, machine: 'local' }])
+    listScenariosMock.mockResolvedValue([{ ...SMALL, machine_setting: 'local' }])
     const wrapper = mountLauncher()
     await flushPromises()
     expect(wrapper.find('[data-testid="scenario-launch-btn"]').exists()).toBe(false)
@@ -212,10 +212,11 @@ describe('ScenarioLauncher — a browser that cannot run the machine', () => {
 
   it('launches a By account lab, tells ocf-core why, and drops the browser badges', async () => {
     launchScenarioMock.mockResolvedValue({ scenario_session_id: 'run-1', terminal_session_id: 'sess-1', status: 'active', machine: 'incus' })
-    listScenariosMock.mockResolvedValue([{ ...BIG, machine: 'by_account' }])
+    listScenariosMock.mockResolvedValue([{ ...BIG, machine_setting: 'by_account', machine_reason: 'quota' }])
     const wrapper = mountLauncher()
     await flushPromises()
     expect(wrapper.find('[data-testid="scenario-ram-badge"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="scenario-quota-hint"]').exists()).toBe(false)
     await wrapper.find('[data-testid="scenario-launch-btn"]').trigger('click')
     await flushPromises()
     expect(launchScenarioMock).toHaveBeenCalledWith('sc-big', expect.objectContaining({ local_machine_unavailable: 'browser' }))
@@ -224,11 +225,55 @@ describe('ScenarioLauncher — a browser that cannot run the machine', () => {
   it('explains ocf-core\'s refusal of a Local lab the card let through', async () => {
     setJspi(true)
     launchScenarioMock.mockRejectedValue({ response: { status: 422, data: { reason: 'local_machine_unavailable', error_message: 'x' } } })
-    listScenariosMock.mockResolvedValue([{ ...SMALL, machine: 'local' }])
+    listScenariosMock.mockResolvedValue([SMALL])
     const wrapper = mountLauncher()
     await flushPromises()
     await wrapper.find('[data-testid="scenario-launch-btn"]').trigger('click')
     await flushPromises()
     expect(showErrorSpy).toHaveBeenCalledWith(expect.stringContaining('this browser or device cannot start its machine'))
+  })
+})
+
+describe('ScenarioLauncher — where a By account lab runs', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setJspi(true)
+    setDeviceMemory(undefined)
+    getMySessionsMock.mockResolvedValue([])
+  })
+
+  it('says a lab goes to the browser because the machine quota is full', async () => {
+    listScenariosMock.mockResolvedValue([{ ...SMALL, machine_setting: 'by_account', machine_reason: 'quota' }])
+    const wrapper = mountLauncher()
+    await flushPromises()
+    expect(wrapper.get('[data-testid="scenario-quota-hint"]').text()).toContain('Your machine quota is full')
+    expect(wrapper.find('[data-testid="scenario-launch-btn"]').exists()).toBe(true)
+  })
+
+  it('opens the run page saying why the run went to the browser', async () => {
+    launchScenarioMock.mockResolvedValue({ scenario_session_id: 'run-q', terminal_session_id: 'local-q', status: 'active', machine: 'local', machine_reason: 'quota' })
+    listScenariosMock.mockResolvedValue([{ ...SMALL, machine_setting: 'by_account', machine_reason: 'quota' }])
+    const wrapper = mountLauncher()
+    await flushPromises()
+    await wrapper.find('[data-testid="scenario-launch-btn"]').trigger('click')
+    await flushPromises()
+    expect(mockRouterPush).toHaveBeenCalledWith({ name: 'TerminalSessionView', params: { sessionId: 'local-q' }, query: { machine_reason: 'quota' } })
+  })
+
+  it('says a lab that must run in a container cannot start in the browser', async () => {
+    listScenariosMock.mockResolvedValue([{ id: 'sc-x', name: 'x', title: 'Exam', launchable: false, block_reason: 'needs_container' }])
+    const wrapper = mountLauncher()
+    await flushPromises()
+    expect(wrapper.get('[data-testid="scenario-unavailable-notice"]').text()).toContain('This lab must run in a container')
+  })
+
+  it('explains that a lab already runs in the browser', async () => {
+    launchScenarioMock.mockRejectedValue({ response: { status: 409, data: { reason: 'local_machine_busy', error_message: 'x' } } })
+    listScenariosMock.mockResolvedValue([SMALL])
+    const wrapper = mountLauncher()
+    await flushPromises()
+    await wrapper.find('[data-testid="scenario-launch-btn"]').trigger('click')
+    await flushPromises()
+    expect(showErrorSpy).toHaveBeenCalledWith('A lab is already running in your browser. Finish it before you launch another one.')
   })
 })
