@@ -4,7 +4,7 @@
  * foreground scripts), and it runs them in the machine it booted.
  */
 import { describe, it, expect, vi } from 'vitest'
-import { answerAgentRequest, type AgentMachine } from '../../src/services/domain/terminal/localMachine'
+import { answerAgentRequest, encodeAgentReply, type AgentMachine } from '../../src/services/domain/terminal/localMachine'
 
 function machine(result: Partial<{ stdout: string; stderr: string; exitCode: number | null; signal: number | null }> | Error) {
   const exec = vi.fn(async () => {
@@ -59,5 +59,28 @@ describe('answerAgentRequest', () => {
   it('refuses an unknown request', async () => {
     const reply = await answerAgentRequest(machine({}), null, { id: 6, op: 'format-disk' })
     expect(reply).toMatchObject({ id: 6, error: expect.any(String) })
+  })
+})
+
+// ocf-core keeps 64 KiB of each stream and ends a connection whose message
+// passes 256 KiB (src/scenarios/services/localAgents.go).
+describe('encodeAgentReply', () => {
+  const bytes = (text: string) => new TextEncoder().encode(text).length
+
+  it('sends a small answer as it is', () => {
+    const reply = { id: 1, exit_code: 0, stdout: 'out', stderr: '' }
+    expect(JSON.parse(encodeAgentReply(reply))).toEqual(reply)
+  })
+
+  it('keeps the first 64 KiB of each stream of a large answer', () => {
+    const sent = JSON.parse(encodeAgentReply({ id: 2, exit_code: 0, stdout: 'a'.repeat(300 << 10), stderr: 'b'.repeat(100 << 10) }))
+    expect(sent.stdout).toBe('a'.repeat(64 << 10))
+    expect(sent.stderr).toBe('b'.repeat(64 << 10))
+  })
+
+  it('stays under the message limit when escaping swells the output', () => {
+    const message = encodeAgentReply({ id: 3, exit_code: 0, stdout: '\u0001'.repeat(64 << 10), stderr: '\u0001'.repeat(64 << 10) })
+    expect(bytes(message)).toBeLessThanOrEqual(256 << 10)
+    expect(JSON.parse(message).id).toBe(3)
   })
 })

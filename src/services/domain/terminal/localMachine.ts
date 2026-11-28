@@ -560,6 +560,28 @@ export async function answerAgentRequest(
   return { id: req.id, error: `unknown request ${req.op}` }
 }
 
+// ocf-core keeps the first MaxAgentOutput bytes of each stream, and ends a
+// connection whose message passes MaxAgentMessage (localAgents.go).
+const AGENT_OUTPUT_KEPT = 64 << 10
+const AGENT_MESSAGE_MAX = 256 << 10
+const utf8 = new TextEncoder()
+
+function firstBytes(text: unknown, limit: number): unknown {
+  if (typeof text !== 'string' || text.length <= limit / 3) return text
+  return new TextDecoder().decode(utf8.encode(text).subarray(0, limit))
+}
+
+/**
+ * An answer as ocf-core takes it: each stream cut to what it keeps, and less
+ * when JSON escaping (control characters) would still pass its limit.
+ */
+export function encodeAgentReply(reply: Record<string, unknown>): string {
+  for (let kept = AGENT_OUTPUT_KEPT; ; kept >>= 1) {
+    const message = JSON.stringify({ ...reply, stdout: firstBytes(reply.stdout, kept), stderr: firstBytes(reply.stderr, kept) })
+    if (kept === 0 || utf8.encode(message).length <= AGENT_MESSAGE_MAX) return message
+  }
+}
+
 const AGENT_RETRY_MS = 3000
 const OTHER_TAB_BELIEVED_AFTER = 3
 
@@ -652,7 +674,7 @@ export function startLocalAgent(
         return
       }
       const reply = await answerAgentRequest(vm, consolePty, req)
-      if (opened.readyState === WebSocket.OPEN) opened.send(JSON.stringify(reply))
+      if (opened.readyState === WebSocket.OPEN) opened.send(encodeAgentReply(reply))
     }
     opened.onclose = (event) => {
       if (agentSocket === opened) agentSocket = null
