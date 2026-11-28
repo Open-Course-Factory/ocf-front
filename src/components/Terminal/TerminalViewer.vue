@@ -273,7 +273,7 @@ import { useNotification } from '../../composables/useNotification'
 import { useEndStateConfig, type EndStateReason, type EndStateActionKey } from '../../composables/useEndStateConfig'
 import { getTerminalTheme } from '../../utils/terminalTheme'
 import { terminalKeyHandler } from '../../utils/terminalShortcuts'
-import { webSocketAuthProtocols } from '../../utils/webSocketAuth'
+import { apiWebSocketUrl, webSocketAuthProtocols } from '../../utils/webSocketAuth'
 import { canConnectToTerminal, isSessionActive, preConnectError, sessionHasNetwork } from '../../utils/sessionState'
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import { openLocalConsole, openRelayedConsole } from '../../services/domain/terminal/localMachine'
@@ -854,12 +854,8 @@ async function connectToTerminal() {
       socket.value = null
     }
 
-    // Build WebSocket URL
-    const protocol = import.meta.env.VITE_PROTOCOL === 'https' ? 'wss' : 'ws'
-    const apiUrl = import.meta.env.VITE_API_URL
     const token = userStore.secretToken
-
-    const wsUrl = `${protocol}://${apiUrl}/api/v1/terminals/${displaySessionId.value}/console?width=${terminal.value.cols}&height=${terminal.value.rows}`
+    const wsUrl = apiWebSocketUrl(`/terminals/${displaySessionId.value}/console?width=${terminal.value.cols}&height=${terminal.value.rows}`)
     if (!token) {
       console.warn('No authentication token available for WebSocket connection')
     }

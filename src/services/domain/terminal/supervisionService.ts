@@ -25,6 +25,7 @@
  */
 
 import axios from 'axios'
+import { apiWebSocketUrl } from '../../../utils/webSocketAuth'
 
 export interface LiveSession {
   session_id: string
@@ -46,12 +47,8 @@ export const supervisionService = {
 /**
  * Build the supervise WebSocket URL for a learner session. Role and control are
  * enforced server-side by ocf-core, so the client URL just targets
- * /terminals/:id/supervise. Mirrors the console URL builder in TerminalViewer:
- * the /api/v1/ prefix is explicit (WS bypasses the axios interceptor) and the
- * scheme is wss iff VITE_PROTOCOL is https.
+ * /terminals/:id/supervise.
  */
 export function buildSuperviseWsUrl(sessionId: string): string {
-  const protocol = import.meta.env.VITE_PROTOCOL === 'https' ? 'wss' : 'ws'
-  const apiUrl = import.meta.env.VITE_API_URL
-  return `${protocol}://${apiUrl}/api/v1/terminals/${sessionId}/supervise`
+  return apiWebSocketUrl(`/terminals/${sessionId}/supervise`)
 }
