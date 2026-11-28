@@ -7,12 +7,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const bootOptions: unknown[] = []
-const kernels: { stop: ReturnType<typeof vi.fn>; spawn: ReturnType<typeof vi.fn>; exec: ReturnType<typeof vi.fn> }[] = []
+type Exit = { kind: string; reason: string }
+const kernels: { stop: ReturnType<typeof vi.fn>; spawn: ReturnType<typeof vi.fn>; exec: ReturnType<typeof vi.fn>; exit(e: Exit): void }[] = []
+// What checkSupport says is missing, when the next boot is to fail.
+let unsupported: string[] = []
 vi.mock('unkernel', () => ({
-  checkSupport: async () => ({ ok: true, problems: [] }),
+  checkSupport: async () => ({ ok: unsupported.length === 0, problems: unsupported }),
   createKernel: async (opts: unknown) => {
     bootOptions.push(opts)
+    let exit!: (e: Exit) => void
+    const exited = new Promise<Exit>(r => { exit = r })
     const kernel = {
+      exited,
+      exit,
       spawn: vi.fn(async () => ({
         output: new ReadableStream<Uint8Array>(),
         write: vi.fn().mockResolvedValue(undefined),
@@ -46,7 +53,7 @@ class FakeWebSocket {
 import { openLocalConsole, setConsoleUser, startLocalAgent, AGENT_CLOSE, setMachineRun } from '../../src/services/domain/terminal/localMachine'
 
 // These runs are console ones.
-for (const terminal of ['local-a', 'local-b1', 'local-b2', 'local-c', 'local-e', 'local-f', 'local-g', 'local-m', 'local-o']) setMachineRun(terminal, { apps: null })
+for (const terminal of ['local-a', 'local-b1', 'local-b2', 'local-c', 'local-e', 'local-f', 'local-g', 'local-m', 'local-o', 'local-x1', 'local-x2', 'local-x3', 'local-x4']) setMachineRun(terminal, { apps: null })
 
 const opts = { distroUrl: '/x.erofs', worker: false }
 const settle = () => vi.advanceTimersByTimeAsync(0)
@@ -61,6 +68,48 @@ describe('the machine of a local run', () => {
   })
   afterEach(() => {
     vi.useRealTimers()
+    unsupported = []
+  })
+
+  // Plan rule 7: the learner reads the browser's reason at once, instead of
+  // a build that times out a minute later.
+  it('ends at once with the browser\'s reason when the machine cannot boot', async () => {
+    unsupported = ['no JSPI']
+    const onEnd = vi.fn()
+    startLocalAgent('run-x1', 'local-x1', 'tok', onEnd, opts)
+    await settle()
+    expect(onEnd).toHaveBeenCalledWith('boot_failed', 'no JSPI')
+    expect(FakeWebSocket.instances).toHaveLength(0)
+  })
+
+  it('ends when the machine dies, and lets ocf-core know the tab has let go', async () => {
+    const onEnd = vi.fn()
+    startLocalAgent('run-x2', 'local-x2', 'tok', onEnd, opts)
+    await settle()
+    FakeWebSocket.instances[0].open()
+    kernels[0].exit({ kind: 'fatal', reason: 'out of memory' })
+    await settle()
+    expect(onEnd).toHaveBeenCalledWith('crashed', 'out of memory')
+    expect(FakeWebSocket.instances[0].readyState).toBe(3)
+  })
+
+  it('tells a machine the learner shut down from one that died', async () => {
+    const onEnd = vi.fn()
+    startLocalAgent('run-x3', 'local-x3', 'tok', onEnd, opts)
+    await settle()
+    kernels[0].exit({ kind: 'halt', reason: 'power off' })
+    await settle()
+    expect(onEnd).toHaveBeenCalledWith('halted', 'power off')
+  })
+
+  it('says nothing when the tab stopped the machine itself', async () => {
+    const onEnd = vi.fn()
+    const agent = startLocalAgent('run-x4', 'local-x4', 'tok', onEnd, opts)
+    await settle()
+    agent.stop()
+    kernels[0].exit({ kind: 'stopped', reason: 'stop()' })
+    await settle()
+    expect(onEnd).not.toHaveBeenCalled()
   })
 
   it('is one machine for the console and the agent of a terminal, named to ocf-core', async () => {

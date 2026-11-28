@@ -57,6 +57,18 @@ const endStateTranslations = {
         title: 'Open in another tab',
         body: 'This scenario\'s machine is open in another tab of your browser. Continue in that tab.'
       },
+      machine_failed: {
+        title: 'The machine could not start',
+        body: 'This lab runs in your browser, which could not start its machine ({detail}). Use a computer with Chrome or Edge 137 or later, or Firefox 153 or later. Your progress is kept.'
+      },
+      machine_crashed: {
+        title: 'The machine stopped',
+        body: 'The machine stopped: not enough memory. Close other tabs and reload the page.'
+      },
+      machine_halted: {
+        title: 'The machine is shut down',
+        body: 'The machine was shut down. Reload the page: it is rebuilt at your current step.'
+      },
       backToSessions: 'Back to Sessions',
       backToScenarios: 'Back to Scenarios',
       expiredScenario: 'Your terminal session has reached its time limit. You can relaunch the scenario from the scenario list.',
@@ -111,6 +123,18 @@ const endStateTranslations = {
         title: 'Ouvert dans un autre onglet',
         body: 'La machine de ce scénario est ouverte dans un autre onglet de votre navigateur. Continuez dans cet onglet.'
       },
+      machine_failed: {
+        title: 'La machine n\'a pas pu démarrer',
+        body: 'Ce lab tourne dans votre navigateur, qui n\'a pas pu lancer sa machine ({detail}). Utilisez un ordinateur avec Chrome ou Edge 137 ou plus récent, ou Firefox 153 ou plus récent. Votre progression est conservée.'
+      },
+      machine_crashed: {
+        title: 'La machine s\'est arrêtée',
+        body: 'La machine s\'est arrêtée : mémoire insuffisante. Fermez d\'autres onglets et rechargez la page.'
+      },
+      machine_halted: {
+        title: 'La machine est éteinte',
+        body: 'La machine a été éteinte. Rechargez la page : elle est reconstruite à l\'étape en cours.'
+      },
       backToSessions: 'Retour aux sessions',
       backToScenarios: 'Retour aux scénarios',
       expiredScenario: 'Votre session terminal a atteint sa limite de temps. Vous pouvez relancer le scénario depuis la liste des scénarios.',
@@ -119,7 +143,8 @@ const endStateTranslations = {
   }
 }
 
-export type EndStateReason = 'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed' | 'disconnected' | 'run_over' | 'open_elsewhere'
+export type EndStateReason = 'completed' | 'abandoned' | 'expired' | 'stopped' | 'revoked' | 'setup_failed' | 'disconnected' | 'run_over'
+  | 'open_elsewhere' | 'machine_failed' | 'machine_crashed' | 'machine_halted'
 
 // Action buttons trigger an in-place handler (emitted by the overlay) instead of
 // navigating. The consumer wires the concrete handler for each key.
@@ -146,6 +171,8 @@ export interface EndStateOptions {
   hasScenario?: boolean
   // The session's machine still runs, so the learner can go back to it.
   canContinue?: boolean
+  // What the browser said when a machine in it could not start.
+  machineDetail?: string
 }
 
 export function useEndStateConfig() {
@@ -247,6 +274,31 @@ export function useEndStateConfig() {
       tone: 'info',
       title: t('endState.open_elsewhere.title'),
       body: t('endState.open_elsewhere.body'),
+      primary: { kind: 'route', label: t('endState.backToScenarios'), route: { name: 'ScenarioLauncher' } }
+    }),
+    // A machine in this browser that could not boot (plan rule 7): the
+    // browser's own reason, and the run's terminal is given back.
+    machine_failed: ({ machineDetail }) => ({
+      icon: 'fas fa-laptop',
+      tone: 'danger',
+      title: t('endState.machine_failed.title'),
+      body: t('endState.machine_failed.body', { detail: machineDetail ?? '' }),
+      primary: { kind: 'route', label: t('endState.backToScenarios'), route: { name: 'ScenarioLauncher' } }
+    }),
+    // A machine in this browser that died: its worker ran out of memory, or
+    // its kernel failed. A reload rebuilds the run at its step.
+    machine_crashed: () => ({
+      icon: 'fas fa-memory',
+      tone: 'danger',
+      title: t('endState.machine_crashed.title'),
+      body: t('endState.machine_crashed.body'),
+      primary: { kind: 'route', label: t('endState.backToScenarios'), route: { name: 'ScenarioLauncher' } }
+    }),
+    machine_halted: () => ({
+      icon: 'fas fa-power-off',
+      tone: 'info',
+      title: t('endState.machine_halted.title'),
+      body: t('endState.machine_halted.body'),
       primary: { kind: 'route', label: t('endState.backToScenarios'), route: { name: 'ScenarioLauncher' } }
     })
   }

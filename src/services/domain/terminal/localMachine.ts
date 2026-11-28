@@ -47,6 +47,8 @@ export interface AgentMachine {
 interface Machine extends AgentMachine {
   spawn(file?: string, args?: readonly string[], opts?: { cols?: number; rows?: number; user?: string | number }): Promise<ConsolePty>
   stop(): Promise<unknown>
+  /** Settles when the kernel exits: `stopped` when this tab stopped it. */
+  exited?: Promise<{ kind: string; reason: string }>
 }
 
 // In a worker, the kernel leaves the page's thread alone: on the page's own
@@ -578,8 +580,11 @@ export const AGENT_CLOSE = {
   machineLost: 4410
 } as const
 
-/** Why ocf-core let the agent go for good. */
-export type AgentEnd = 'ended' | 'other_tab' | 'lost'
+/**
+ * Why the agent ended for good: what ocf-core said (ended, other_tab, lost),
+ * or what became of the machine (boot_failed, crashed, halted).
+ */
+export type AgentEnd = 'ended' | 'other_tab' | 'lost' | 'boot_failed' | 'crashed' | 'halted'
 
 const AGENT_ENDS: Record<number, AgentEnd> = {
   [AGENT_CLOSE.ended]: 'ended',
@@ -592,15 +597,16 @@ const AGENT_ENDS: Record<number, AgentEnd> = {
  * needed, and reconnects until stop() or until ocf-core lets it go for good:
  * then the machine is stopped and onEnd says why. ocf-core runs the run's
  * setup and checks through it, so it must be up before the console is opened:
- * the run is built while the learner waits. A machine that cannot boot is not
- * retried: the console says why, and ocf-core fails the build instead of
- * waiting forever.
+ * the run is built while the learner waits. A machine that cannot boot, or
+ * that dies, is not retried: onEnd says so at once, with the browser's
+ * reason (plan rule 7), rather than leave a build to time out or a console
+ * to go quiet.
  */
 export function startLocalAgent(
   runId: string,
   terminal: string,
   token: string | null | undefined,
-  onEnd: (why: AgentEnd) => void,
+  onEnd: (why: AgentEnd, detail?: string) => void,
   opts: LocalMachineOptions = defaultOptions()
 ): { stop(): void } {
   let stopped = false
@@ -610,6 +616,15 @@ export function startLocalAgent(
   // connection close, and be told the run is open in another tab: believed
   // when said that many times in a row.
   let otherTabAnswers = 0
+  let watchingExit = false
+
+  const end = (...why: Parameters<typeof onEnd>) => {
+    stopped = true
+    if (retry) clearTimeout(retry)
+    socket?.close()
+    stopMachineOf(terminal)
+    onEnd(...why)
+  }
 
   const connect = async () => {
     const { boot, machine, mirrorKey } = machineOf(terminal, opts)
@@ -617,10 +632,17 @@ export function startLocalAgent(
     try {
       vm = await machine
     } catch (err) {
-      console.error('local machine failed to boot:', err)
+      if (!stopped) end('boot_failed', err instanceof Error ? err.message : String(err))
       return
     }
     if (stopped) return
+    if (!watchingExit) {
+      watchingExit = true
+      // A worker that runs out of memory, a kernel panic, or `poweroff`.
+      vm.exited?.then(exit => {
+        if (!stopped && exit.kind !== 'stopped') end(exit.kind === 'halt' ? 'halted' : 'crashed', exit.reason)
+      }, () => {})
+    }
     const url = apiWebSocketUrl(`/scenario-sessions/${runId}/agent?boot=${encodeURIComponent(boot)}`)
     const opened = new WebSocket(url, webSocketAuthProtocols(token))
     socket = opened
@@ -643,18 +665,16 @@ export function startLocalAgent(
       if (agentSocket === opened) agentSocket = null
       socket = null
       if (stopped) return
-      const end = AGENT_ENDS[event.code]
+      const why = AGENT_ENDS[event.code]
       // ocf-core refuses after the upgrade, so a refused connection opens
       // too: only a connection that ends otherwise has served.
-      otherTabAnswers = end === 'other_tab' ? otherTabAnswers + 1 : 0
-      const believed = end !== 'other_tab' || otherTabAnswers >= OTHER_TAB_BELIEVED_AFTER
-      if (!end || !believed) {
+      otherTabAnswers = why === 'other_tab' ? otherTabAnswers + 1 : 0
+      const believed = why !== 'other_tab' || otherTabAnswers >= OTHER_TAB_BELIEVED_AFTER
+      if (!why || !believed) {
         retry = setTimeout(connect, AGENT_RETRY_MS)
         return
       }
-      stopped = true
-      stopMachineOf(terminal)
-      onEnd(end)
+      end(why)
     }
   }
   connect()

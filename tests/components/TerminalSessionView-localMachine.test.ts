@@ -183,11 +183,36 @@ describe('TerminalSessionView on a local machine', () => {
   })
 
   // The agent's end, as startLocalAgent reports it.
-  async function agentEnds(why: string) {
-    const onEnd = agent.start.mock.calls[0][3] as (why: string) => void
-    onEnd(why)
+  async function agentEnds(why: string, detail?: string) {
+    const onEnd = agent.start.mock.calls[0][3] as (why: string, detail?: string) => void
+    onEnd(why, detail)
     await flushPromises()
   }
+
+  // Plan rule 7: the browser's reason at once, and the terminal given back so
+  // the run's budget is free, not a build that times out a minute later.
+  it('says why the machine could not start, and gives its terminal back', async () => {
+    route.sessionId = 'local-abc'
+    const wrapper = mountView()
+    await flushPromises()
+
+    await agentEnds('boot_failed', 'WebAssembly JSPI is not available')
+    const banner = wrapper.find('[data-testid="local-machine-banner"]')
+    expect(banner.text()).toContain('The machine could not start')
+    expect(banner.text()).toContain('WebAssembly JSPI is not available')
+    const { terminalService } = await import('../../src/services/domain/terminal/terminalService')
+    expect(terminalService.deleteSession).toHaveBeenCalledWith('local-abc')
+  })
+
+  it('says the machine stopped for lack of memory when it dies', async () => {
+    route.sessionId = 'local-abc'
+    const wrapper = mountView()
+    await flushPromises()
+
+    await agentEnds('crashed', 'out of memory')
+    expect(wrapper.find('[data-testid="local-machine-banner"]').text())
+      .toContain('The machine stopped: not enough memory. Close other tabs and reload the page.')
+  })
 
   it('rebuilds the run on a new machine when the tab booted a new one (a reload)', async () => {
     route.sessionId = 'local-abc'

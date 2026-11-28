@@ -221,7 +221,20 @@
             <!-- A paused run: laid over its dead console rather than inserted
                  above it, so nothing on the page moves when the run pauses. The
                  scenario panel stays beside it, on the step Resume goes back to. -->
-            <template v-if="showsPausedBanner" #console-overlay>
+            <!-- What became of a machine in this browser: open in another tab,
+                 unable to boot, dead. First: nothing else can be done here. -->
+            <template v-if="localMachineBanner" #console-overlay>
+              <div :class="['session-end-banner', 'end-banner--' + localMachineBanner.tone]" role="status" data-testid="local-machine-banner">
+                <div class="end-banner-left">
+                  <i :class="localMachineBanner.icon" class="end-banner-icon" aria-hidden="true"></i>
+                  <div class="end-banner-text">
+                    <strong class="end-banner-title">{{ localMachineBanner.title }}</strong>
+                    <span class="end-banner-body">{{ localMachineBanner.body }}</span>
+                  </div>
+                </div>
+              </div>
+            </template>
+            <template v-else-if="showsPausedBanner" #console-overlay>
               <SessionPausedBanner
                 ref="pausedOverlayBannerRef"
                 scenario
@@ -247,18 +260,6 @@
                  until it is over. -->
             <template v-else-if="showsBuild" #console-overlay>
               <ScenarioProvisioningOverlay :phase="scenarioProvisioningPhase" />
-            </template>
-            <!-- The run's machine is open in another tab, which keeps it. -->
-            <template v-else-if="elsewhereBanner" #console-overlay>
-              <div class="session-end-banner end-banner--info" role="status">
-                <div class="end-banner-left">
-                  <i :class="elsewhereBanner.icon" class="end-banner-icon" aria-hidden="true"></i>
-                  <div class="end-banner-text">
-                    <strong class="end-banner-title">{{ elsewhereBanner.title }}</strong>
-                    <span class="end-banner-body">{{ elsewhereBanner.body }}</span>
-                  </div>
-                </div>
-              </div>
             </template>
           </TerminalSessionPanel>
         </div>
@@ -604,9 +605,12 @@ const machine = isLocalSessionId(sessionId) ? 'local' : 'incus'
 // A run whose scenario offers apps shows unkernel's desktop, not the console.
 const desktopRun = ref(false)
 let localAgent: { stop(): void } | null = null
-// ocf-core serves a run's machine to one tab: another one has it.
-const localMachineElsewhere = ref(false)
-const elsewhereBanner = computed(() => localMachineElsewhere.value ? getEndStateConfig('open_elsewhere') : null)
+// What ended this tab's part in the run: another tab has its machine
+// (ocf-core serves it to one), or the machine could not boot or died.
+const localMachineEnd = ref<{ reason: EndStateReason, detail?: string } | null>(null)
+const localMachineBanner = computed(() => localMachineEnd.value
+  ? getEndStateConfig(localMachineEnd.value.reason, { machineDetail: localMachineEnd.value.detail })
+  : null)
 
 // Supervisor mode reads the class, never the learner's own session list.
 const {
@@ -1401,13 +1405,24 @@ onMounted(() => {
   else loadSession()
 })
 
-// What ocf-core let the agent go for: a reload booted an empty machine (the
-// run is rebuilt at its step, the learner was warned), another tab has the
-// run, or the run ended on the server (the page reads what became of it).
-function onLocalAgentEnd(why: AgentEnd) {
-  if (why === 'lost') rebuildRun()
-  else if (why === 'other_tab') localMachineElsewhere.value = true
-  else loadSession()
+// What ended the agent: a reload booted an empty machine (the run is rebuilt
+// at its step, the learner was warned), the run ended on the server (the page
+// reads what became of it), or the banner says it: another tab has the run,
+// or the machine could not boot or died. A machine that cannot boot gives its
+// terminal back at once, as Stop does, so the run's budget is free and the
+// run can be rebuilt from a browser that can run it.
+const LOCAL_MACHINE_END_STATES: Partial<Record<AgentEnd, EndStateReason>> = {
+  other_tab: 'open_elsewhere',
+  boot_failed: 'machine_failed',
+  crashed: 'machine_crashed',
+  halted: 'machine_halted'
+}
+function onLocalAgentEnd(why: AgentEnd, detail?: string) {
+  if (why === 'lost') return rebuildRun()
+  const reason = LOCAL_MACHINE_END_STATES[why]
+  if (!reason) return loadSession()
+  localMachineEnd.value = { reason, detail }
+  if (why === 'boot_failed') terminalService.deleteSession(sessionId).catch(() => {})
 }
 
 watch(scenarioSessionId, (runId) => {
@@ -1421,7 +1436,7 @@ const stopConsoleRelay = machine === 'local' ? serveConsoleRelay(sessionId) : nu
 
 // The browser asks before a reload or a close takes the machine away.
 function askBeforeLeaving(event: BeforeUnloadEvent) {
-  if (isSessionActive.value && !localMachineElsewhere.value) event.preventDefault()
+  if (isSessionActive.value && !localMachineEnd.value) event.preventDefault()
 }
 if (machine === 'local') window.addEventListener('beforeunload', askBeforeLeaving)
 

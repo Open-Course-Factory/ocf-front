@@ -34,7 +34,26 @@ function postedBody(): Record<string, unknown> {
   return mockPost.mock.calls[0][1]
 }
 
+// unkernel needs JSPI; Node only has it from version 24.
+const wasm = WebAssembly as unknown as Record<string, unknown>
+function setJspi(on: boolean) {
+  for (const name of ['promising', 'Suspending']) {
+    if (on) Object.defineProperty(wasm, name, { value: () => {}, configurable: true })
+    else delete wasm[name]
+  }
+}
+
 describe('scenarioSessionService.previewScenario', () => {
+  // A browser that can run a machine says nothing about it.
+  beforeEach(() => setJspi(true))
+
+  // ocf-core then sends a By account scenario to a container (plan rule 7).
+  it('says when this browser cannot run a machine of its own', async () => {
+    setJspi(false)
+    await scenarioSessionService.previewScenario('scn-1')
+    expect(postedBody()).toEqual({ local_machine_unavailable: 'browser' })
+  })
+
   it('sends the step to start from, alongside the organization it runs in', async () => {
     await scenarioSessionService.previewScenario('scn-1', { organization_id: 'org-1', from_step_order: 2 })
 
