@@ -1,5 +1,5 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vite'
+import { defineConfig, defaultAllowedOrigins } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import fs from 'fs'
 import path from 'path'
@@ -15,6 +15,13 @@ export default defineConfig({
   },
   server: {
     allowedHosts: true,
+    // A machine's Debian mirror can be asked cross-origin, as production asks
+    // its own hostname (VITE_LOCAL_MACHINE_MIRROR_URL=http://127.0.0.1:<port>
+    // while the app runs on localhost): the tab reads these back.
+    cors: {
+      origin: defaultAllowedOrigins,
+      exposedHeaders: ['Content-Range', 'Content-Length', 'Content-Encoding', 'ETag', 'Last-Modified', 'Accept-Ranges']
+    },
     // As nginx.conf: a cross-origin isolated page, so a machine in the
     // learner's browser can run on several CPUs (shared memory).
     headers: {

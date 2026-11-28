@@ -58,6 +58,21 @@ describe("the Debian mirror's key", () => {
     agent.stop()
   })
 
+  // Its own hostname in production: a guest's `..` stays on a host that
+  // serves the mirror alone, and its requests carry none of the app's cookies.
+  it('is asked on the mirror\'s own host when the build names one', async () => {
+    vi.stubEnv('VITE_LOCAL_MACHINE_MIRROR_URL', 'https://apt.example.test/')
+    setMachineRun('local-k4', { apps: null })
+    const agent = startLocalAgent('run-k4', 'local-k4', 'tok', () => {}, opts)
+    await settle()
+    FakeWebSocket.instances[0].open()
+
+    const key = announcedKey(FakeWebSocket.instances[0])
+    expect(booted[0].net!.backend.routes['deb.debian.org']).toBe(`https://apt.example.test/local-machine/apt/local-k4/${key}`)
+    agent.stop()
+    vi.unstubAllEnvs()
+  })
+
   it('is new for each machine', async () => {
     const first = startLocalAgent('run-k2', 'local-k2', 'tok', () => {}, opts)
     await settle()

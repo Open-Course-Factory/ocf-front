@@ -1,0 +1,54 @@
+# The Debian mirror of the machines that run in learners' browsers (plan rule
+# 11), included by the mirror's own server (local-machine-mirror-host.conf)
+# or, without one, by the app's (dev-like setups).
+#
+# A machine reaches deb.debian.org here, through the tab (unkernel's fetch
+# routes, debianMirrorNet in localMachine.ts), as
+# /local-machine/apt/<its terminal>/<its key>/debian/... (and
+# /debian-security/..., the image's security updates).
+# ocf-core says on every request whether that machine may: its run open, its
+# tab connected and the key the one that tab announced, the platform switch
+# on. The cache key leaves the machine out, so every learner shares one copy
+# of each package.
+#
+# The tab asks from the app's origin: CORS for the origins in
+# LOCAL_MACHINE_APP_ORIGINS ($lm_cors_origin, nginx.conf), with the headers
+# unkernel forwards and reads back. No cookies: the request is cross-origin.
+location ~ "^/local-machine/apt/(?<lm_terminal>local-[0-9a-f-]+)/(?<lm_key>[0-9a-f-]{36})(?<lm_path>/debian(-security)?/.*)$" {
+    add_header Access-Control-Allow-Origin $lm_cors_origin always;
+    add_header Access-Control-Allow-Methods "GET, HEAD, OPTIONS" always;
+    add_header Access-Control-Allow-Headers "Range, If-Range, If-Modified-Since, If-None-Match" always;
+    add_header Access-Control-Expose-Headers "Content-Range, Content-Length, Content-Encoding, ETag, Last-Modified, Accept-Ranges" always;
+    add_header Access-Control-Max-Age "600" always;
+    add_header Vary "Origin" always;
+    # The preflight that If-* headers cause: answered before the access check.
+    if ($request_method = OPTIONS) {
+        return 204;
+    }
+    # GET covers HEAD; OPTIONS reaches the preflight answer above.
+    limit_except GET OPTIONS { deny all; }
+    auth_request /_local_machine_apt_access;
+    # The name is resolved per request, through the pod's own DNS servers
+    # (nginx/start.sh reads them from resolv.conf): the front starts even
+    # when DNS or egress is down, and follows Debian's CDN as it moves.
+    # IPv4 only, as cluster egress may have no IPv6.
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=300s ipv6=off;
+    set $debian_mirror deb.debian.org;
+    proxy_pass http://$debian_mirror$lm_path;
+    proxy_set_header Host deb.debian.org;
+    proxy_cache local_apt;
+    proxy_cache_key $lm_path;
+    proxy_cache_lock on;
+    # Debian says how long each file keeps; a package list without a word
+    # is kept a few minutes.
+    proxy_cache_valid 200 5m;
+}
+
+location = /_local_machine_apt_access {
+    internal;
+    proxy_pass ${INCUS_PROXY_TARGET}/api/v1/local-machines/mirror-access;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+    proxy_set_header X-Local-Machine $lm_terminal;
+    proxy_set_header X-Local-Machine-Key $lm_key;
+}

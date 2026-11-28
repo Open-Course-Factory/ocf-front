@@ -396,14 +396,20 @@ export function setConsoleUser(terminal: string, uid: number | undefined) {
 // ocf-core know (the agent announces it). A worker takes routes on a Wisp
 // backend alone, so it names one that answers nothing: the machine reaches no
 // other host.
+// In production the mirror has its own hostname (VITE_LOCAL_MACHINE_MIRROR_URL,
+// nginx/local-machine-mirror.locations): unkernel appends the guest's path to
+// the route as a string, so a `..` there must land on a host that serves
+// nothing else, and that host gets none of the app's cookies. Empty: this
+// origin (dev).
 export function debianMirrorNet(terminal: string, key: string): NetSpec {
   const origin = window.location.origin
+  const mirror = (import.meta.env.VITE_LOCAL_MACHINE_MIRROR_URL || origin).replace(/\/+$/, '')
   return {
     kind: 'net',
     backend: {
       kind: 'wisp',
       servers: `${origin.replace(/^http/, 'ws')}/local-machine/no-wisp/`,
-      routes: { 'deb.debian.org': `${origin}/local-machine/apt/${terminal}/${key}` }
+      routes: { 'deb.debian.org': `${mirror}/local-machine/apt/${terminal}/${key}` }
     }
   }
 }

@@ -13,6 +13,10 @@ ARG VITE_FEATURE_TERMINALS_ENABLED="true"
 # /local-machine/debian.erofs on the front's own origin, which this image
 # does not hold.
 ARG VITE_LOCAL_MACHINE_DISTRO_URL=""
+# The Debian mirror of those machines, on its own hostname (nginx/start.sh,
+# LOCAL_MACHINE_MIRROR_HOST below): an origin, no path. Empty means the
+# front's own origin.
+ARG VITE_LOCAL_MACHINE_MIRROR_URL="https://apt.labinux.com"
 
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -25,16 +29,17 @@ RUN npm run build
 # === Runtime stage ===
 FROM nginx:1.31-alpine
 
-# Runtime-configurable proxy target for Incus UI
-# (envsubst replaces ${INCUS_PROXY_TARGET} in nginx config at container startup)
+# Runtime configuration, rendered into nginx's config at container start
+# (nginx/start.sh says what each variable does).
 ENV INCUS_PROXY_TARGET="http://ocf:8080"
+ENV LOCAL_MACHINE_MIRROR_HOST="apt.labinux.com"
+ENV LOCAL_MACHINE_APP_ORIGINS="https://app.labinux.com https://ocf.labinux.com"
 
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY nginx.conf /etc/nginx/templates/default.conf
+COPY nginx/local-machine-mirror.locations nginx/local-machine-mirror-host.conf /etc/nginx/templates/
+COPY --chmod=755 nginx/start.sh /usr/local/bin/ocf-front-nginx
 
 EXPOSE 80
 
-# Scope envsubst to ONLY our variables — otherwise it corrupts nginx builtins ($uri, $host, etc.)
-# NGINX_LOCAL_RESOLVERS: the pod's DNS servers, for names nginx resolves per
-# request (IPv6 servers go in brackets).
-CMD ["/bin/sh", "-c", "export NGINX_LOCAL_RESOLVERS=$(awk '$1 == \"nameserver\" { printf \"%s \", ($2 ~ /:/) ? \"[\" $2 \"]\" : $2 }' /etc/resolv.conf) && envsubst '${INCUS_PROXY_TARGET} ${NGINX_LOCAL_RESOLVERS}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+CMD ["/usr/local/bin/ocf-front-nginx"]
