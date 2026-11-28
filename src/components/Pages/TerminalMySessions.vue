@@ -626,7 +626,7 @@ import { extractErrorMessage } from '../../utils/formatters'
 import { useResumeRejection } from '../../composables/useResumeRejection'
 import { getEffectiveSessionState, sessionHasNetwork, type EffectiveSessionState, type SessionLifecycleFields } from '../../utils/sessionState'
 import { terminalWindowUrl, TERMINAL_WINDOW_FEATURES } from '../../composables/useTerminalPopout'
-import { isLocalSessionId } from '../../services/domain/terminal/localMachine'
+import { isLocalSessionId } from '../../services/domain/terminal/localSessionId'
 
 const { showConfirm, showError } = useNotification()
 const { handleResumeRejection } = useResumeRejection()

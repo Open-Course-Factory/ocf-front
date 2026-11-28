@@ -24,7 +24,6 @@ vi.mock('axios', () => ({
 
 const host = vi.hoisted(() => ({ run: vi.fn(), release: vi.fn() }))
 vi.mock('../../src/services/domain/terminal/localMachine', () => ({
-  isLocalSessionId: (id?: string) => !!id && id.startsWith('local-'),
   hostLocalRun: (...args: unknown[]) => { host.run(...args); return host.release }
 }))
 vi.mock('../../src/stores/currentUser', () => ({ useCurrentUserStore: () => ({ secretToken: 'tok' }) }))

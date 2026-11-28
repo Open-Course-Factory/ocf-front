@@ -88,7 +88,6 @@ const agent = vi.hoisted(() => ({
   booted: undefined as string[] | null | undefined
 }))
 vi.mock('../../src/services/domain/terminal/localMachine', () => ({
-  isLocalSessionId: (id: string) => id.startsWith('local-'),
   startLocalAgent: (...args: unknown[]) => { agent.start(...args); return { stop: agent.stop } },
   setConsoleUser: (...args: unknown[]) => agent.consoleUser(...args),
   setMachineRun: async (terminal: string, run: { apps: string[] | null }) => { agent.run(terminal, run); return agent.booted === undefined ? run : { apps: agent.booted } },

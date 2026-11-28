@@ -11,13 +11,6 @@ import { relayedPty, serveRelay } from './localConsoleRelay'
 import { SharedShell } from './sharedShell'
 import { apiWebSocketUrl, webSocketAuthProtocols } from '../../../utils/webSocketAuth'
 
-/** A terminal session whose machine runs in the browser, as ocf-core names it. */
-export const LOCAL_SESSION_PREFIX = 'local-'
-
-export function isLocalSessionId(sessionId: string | null | undefined): boolean {
-  return !!sessionId && sessionId.startsWith(LOCAL_SESSION_PREFIX)
-}
-
 export interface LocalMachineOptions {
   /** The distro image (erofs), served with Range support. */
   distroUrl: string

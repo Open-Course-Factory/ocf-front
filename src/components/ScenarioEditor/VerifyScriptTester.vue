@@ -55,7 +55,8 @@ import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useTranslations } from '../../composables/useTranslations'
 import { scenarioSessionService, pollProvisioningStatus, type TestVerifyResponse } from '../../services/domain/scenario/scenarioSessionService'
 import { testVerifyRefusalKey } from '../../utils/scenarioPreview'
-import { hostLocalRun, isLocalSessionId } from '../../services/domain/terminal/localMachine'
+import { hostLocalRun } from '../../services/domain/terminal/localMachine'
+import { isLocalSessionId } from '../../services/domain/terminal/localSessionId'
 import { useCurrentUserStore } from '../../stores/currentUser'
 
 const { t } = useTranslations({

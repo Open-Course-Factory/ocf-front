@@ -52,7 +52,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import TerminalViewer from '../Terminal/TerminalViewer.vue'
 import { POP_IN_MESSAGE, POPOUT_QUERY } from '../../composables/useTerminalPopout'
-import { isLocalSessionId } from '../../services/domain/terminal/localMachine'
+import { isLocalSessionId } from '../../services/domain/terminal/localSessionId'
 
 const route = useRoute()
 
