@@ -5,7 +5,6 @@
  * resize frames, same close codes as tt-backend sends.
  */
 import { describe, it, expect, vi } from 'vitest'
-import { ref } from 'vue'
 import { LocalConsoleSocket, type ConsolePty, type PtyEnd } from '../../src/services/domain/terminal/localConsoleSocket'
 
 function deferred<T>() {
@@ -63,14 +62,6 @@ describe('LocalConsoleSocket', () => {
     await settle()
     expect(socket.readyState).toBe(WebSocket.OPEN)
     expect(events).toEqual([{ type: 'open', target: socket }])
-  })
-
-  it('stays the same object inside a Vue ref, so the viewer\'s event.target guard matches', async () => {
-    const holder = ref<unknown>(null)
-    const { socket, events } = openSocket()
-    holder.value = socket
-    await settle()
-    expect(events[0].target).toBe(holder.value)
   })
 
   it('delivers the pty output as text messages, UTF-8 split across chunks included', async () => {

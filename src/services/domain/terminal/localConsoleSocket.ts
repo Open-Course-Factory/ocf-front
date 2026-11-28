@@ -63,9 +63,21 @@ function nextTask(): Promise<void> {
   })
 }
 
-type Handler<E extends Event> = ((this: LocalConsoleSocket, ev: E) => unknown) | null
+/** What TerminalViewer uses of a console's socket: a WebSocket, or a LocalConsoleSocket. */
+export interface ConsoleSocket {
+  readonly readyState: number
+  binaryType: BinaryType
+  onopen: ((ev: Event) => unknown) | null
+  onmessage: ((ev: MessageEvent) => unknown) | null
+  onclose: ((ev: CloseEvent) => unknown) | null
+  onerror: ((ev: Event) => unknown) | null
+  send(data: string | ArrayBuffer | ArrayBufferView<ArrayBuffer>): void
+  close(code?: number, reason?: string): void
+}
 
-export class LocalConsoleSocket {
+type Handler<E extends Event> = ((ev: E) => unknown) | null
+
+export class LocalConsoleSocket implements ConsoleSocket {
   static readonly CONNECTING = 0
   static readonly OPEN = 1
   static readonly CLOSING = 2
@@ -91,13 +103,6 @@ export class LocalConsoleSocket {
    */
   constructor(openPty: () => Promise<ConsolePty>, private readonly yieldToPage: () => Promise<void> = nextTask) {
     openPty().then(pty => this.start(pty), err => this.fail(err))
-  }
-
-  // Vue makes a plain class instance reactive when it is stored in a ref, and
-  // the viewer drops events whose target is not `socket.value`: a proxy would
-  // never match. A non-plain type keeps the instance raw, like a WebSocket.
-  get [Symbol.toStringTag]() {
-    return 'WebSocket'
   }
 
   send(data: string | ArrayBuffer | ArrayBufferView): void {

@@ -86,14 +86,6 @@ class FakeWebSocket {
   static instances: FakeWebSocket[] = []
   static OPEN = 1
 
-  // Vue makes plain class instances reactive when they are stored in a ref,
-  // and the viewer's onclose guard compares `event.target !== socket.value`
-  // by identity — a proxy would never match and every close would be ignored.
-  // Reporting a non-plain type keeps this object raw, exactly like the real
-  // host WebSocket.
-  get [Symbol.toStringTag]() {
-    return 'WebSocket'
-  }
   onopen: (() => void) | null = null
   onclose: ((event: unknown) => void) | null = null
   onmessage: ((event: unknown) => void) | null = null

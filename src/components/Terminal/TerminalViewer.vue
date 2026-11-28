@@ -264,7 +264,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { ref, shallowRef, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import '@xterm/xterm/css/xterm.css'
 import { useRoute } from 'vue-router'
 import { useCurrentUserStore } from '../../stores/currentUser'
@@ -277,6 +277,7 @@ import { apiWebSocketUrl, webSocketAuthProtocols } from '../../utils/webSocketAu
 import { canConnectToTerminal, isSessionActive, preConnectError, sessionHasNetwork } from '../../utils/sessionState'
 import { terminalService } from '../../services/domain/terminal/terminalService'
 import { openLocalConsole, openRelayedConsole } from '../../services/domain/terminal/localMachine'
+import type { ConsoleSocket } from '../../services/domain/terminal/localConsoleSocket'
 import { RELAY_NO_MACHINE } from '../../services/domain/terminal/localConsoleRelay'
 import {
   createSupervisionMessageHandler,
@@ -529,7 +530,9 @@ const activeEndState = computed(() => {
 // State
 const terminal = ref<any>(null)
 const terminalRef = ref<HTMLElement | null>(null)
-const socket = ref<WebSocket | null>(null)
+// Shallow: the handlers compare their socket with it, which a reactive proxy
+// would never equal.
+const socket = shallowRef<ConsoleSocket | null>(null)
 const isWsOpen = ref(false)
 const isConnecting = ref(false)
 const showReconnectButton = ref(false)
@@ -863,9 +866,10 @@ async function connectToTerminal() {
     // Create WebSocket connection. A local machine's console behaves as one
     // (LocalConsoleSocket), so nothing below this line knows the difference.
     const openConsole = props.relayed ? openRelayedConsole : openLocalConsole
-    socket.value = props.machine === 'local'
-      ? openConsole(String(displaySessionId.value), terminal.value.cols, terminal.value.rows, xtermDrained) as unknown as WebSocket
+    const opened: ConsoleSocket = props.machine === 'local'
+      ? openConsole(String(displaySessionId.value), terminal.value.cols, terminal.value.rows, xtermDrained)
       : new WebSocket(wsUrl, webSocketAuthProtocols(token))
+    socket.value = opened
 
     socket.value.onopen = () => {
       isWsOpen.value = true
@@ -900,7 +904,7 @@ async function connectToTerminal() {
       // fires asynchronously AFTER cleanup()/reconnect() closed it, and the
       // never-opened case would otherwise fall into the auto-retry branch —
       // scheduling a reconnect on an unmounted component (zombie socket).
-      if (event.target !== socket.value) return
+      if (opened !== socket.value) return
 
       const wasConnected = isWsOpen.value
       isWsOpen.value = false
@@ -1001,7 +1005,7 @@ async function connectToTerminal() {
     }
 
     socket.value.onerror = (err) => {
-      if (err.target !== socket.value) return
+      if (opened !== socket.value) return
       console.error('WebSocket error:', err)
       isWsOpen.value = false
       isConnecting.value = false
