@@ -61,8 +61,9 @@ let learner: ApiSession;
 const scenarioIds: string[] = [];
 let planId = '';
 let planSettingBefore = 'off';
-let flagId = '';
-let flagBefore = false;
+// The desktop runs only when both platform switches are on.
+const FLAG_KEYS = ['local_machines', 'local_machine_desktop'];
+const flagsBefore: { id: string; enabled: boolean }[] = [];
 
 test.beforeAll(async () => {
   admin = await adminSession();
@@ -70,11 +71,12 @@ test.beforeAll(async () => {
   if (!admin) return;
   const asAdmin = { Authorization: `Bearer ${admin.token}` };
 
-  const flags = await admin.api.get(`${API}/features?key=local_machines`, { headers: asAdmin });
-  const flag = (await flags.json()).data.find((f: { key: string }) => f.key === 'local_machines');
-  flagId = flag.id;
-  flagBefore = flag.enabled;
-  expect((await admin.api.patch(`${API}/features/${flag.id}`, { headers: asAdmin, data: { enabled: true } })).ok()).toBeTruthy();
+  for (const key of FLAG_KEYS) {
+    const flags = await admin.api.get(`${API}/features?key=${key}`, { headers: asAdmin });
+    const flag = (await flags.json()).data.find((f: { key: string }) => f.key === key);
+    flagsBefore.push({ id: flag.id, enabled: flag.enabled });
+    expect((await admin.api.patch(`${API}/features/${flag.id}`, { headers: asAdmin, data: { enabled: true } })).ok()).toBeTruthy();
+  }
 
   const current = await learner.api.get(`${API}/user-subscriptions/current`, { headers: { Authorization: `Bearer ${learner.token}` } });
   const subscription = await current.json();
@@ -127,7 +129,7 @@ test.afterAll(async () => {
   for (const id of scenarioIds) await deleteScenarioById(admin, id);
   const asAdmin = { Authorization: `Bearer ${admin.token}` };
   await admin.api.patch(`${API}/subscription-plans/${planId}`, { headers: asAdmin, data: { local_machines: planSettingBefore } });
-  await admin.api.patch(`${API}/features/${flagId}`, { headers: asAdmin, data: { enabled: flagBefore } });
+  for (const { id, enabled } of flagsBefore) await admin.api.patch(`${API}/features/${id}`, { headers: asAdmin, data: { enabled } });
 });
 
 test('a lab that offers apps shows the desktop, with only those apps to install', async ({ page }, info) => {

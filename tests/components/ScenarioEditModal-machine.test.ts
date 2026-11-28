@@ -8,6 +8,12 @@ import { mount, flushPromises } from '@vue/test-utils'
 const get = vi.fn().mockResolvedValue({ data: { apps: ['nvim', 'python', 'postgres'] } })
 vi.mock('axios', () => ({ default: { get: (...args: unknown[]) => get(...args) } }))
 import { createTestI18n } from '../helpers/entityModalHelper'
+import { ref } from 'vue'
+
+const desktopFlag = ref(true)
+vi.mock('../../src/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ createReactiveFlag: () => desktopFlag }),
+}))
 
 import ScenarioEditModal from '../../src/components/ScenarioEditor/ScenarioEditModal.vue'
 
@@ -46,6 +52,26 @@ describe('ScenarioEditModal — terminal or desktop', () => {
     expect((select.element as HTMLSelectElement).value).toBe('terminal')
     await select.setValue('desktop')
     expect(editingScenario.machine_display).toBe('desktop')
+  })
+
+  const desktopOption = (wrapper: ReturnType<typeof mountModal>['wrapper']) =>
+    wrapper.get('[data-testid="scenario-machine-display"]').find('option[value="desktop"]')
+
+  it('offers the desktop only when the platform switches it on', () => {
+    desktopFlag.value = true
+    expect(desktopOption(mountModal({ machine: 'local' }).wrapper).attributes('disabled')).toBeUndefined()
+    desktopFlag.value = false
+    expect(desktopOption(mountModal({ machine: 'local' }).wrapper).exists()).toBe(false)
+    desktopFlag.value = true
+  })
+
+  it('keeps a desktop scenario\'s value while the switch is off, and says so', () => {
+    desktopFlag.value = false
+    const { wrapper } = mountModal({ machine: 'local', machine_display: 'desktop' })
+    expect((wrapper.get('[data-testid="scenario-machine-display"]').element as HTMLSelectElement).value).toBe('desktop')
+    expect(desktopOption(wrapper).attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="scenario-machine-display-off"]').exists()).toBe(true)
+    desktopFlag.value = true
   })
 
   it('asks nothing for a lab in a container', () => {

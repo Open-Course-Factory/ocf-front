@@ -5,9 +5,14 @@
  * step form is no longer a modal; useUnsavedChangesGuard covers it.)
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { computed } from 'vue'
 import { createTestI18n } from '../helpers/entityModalHelper'
+
+vi.mock('../../src/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ createReactiveFlag: () => computed(() => true) })
+}))
 
 import ScenarioEditModal from '../../src/components/ScenarioEditor/ScenarioEditModal.vue'
 

@@ -489,9 +489,11 @@
         <label for="scenario-machine-display">{{ t('scenarioEditor.machineDisplay') }}</label>
         <select id="scenario-machine-display" v-model="machineDisplay" class="form-control" data-testid="scenario-machine-display">
           <option value="terminal">{{ t('scenarioEditor.machineDisplayTerminal') }}</option>
-          <option value="desktop">{{ t('scenarioEditor.machineDisplayDesktop') }}</option>
+          <!-- Switch off: a desktop scenario keeps its value; ocf-core, not this form, hides it from learners. -->
+          <option v-if="desktopEnabled || machineDisplay === 'desktop'" value="desktop" :disabled="!desktopEnabled">{{ t('scenarioEditor.machineDisplayDesktop') }}</option>
         </select>
         <span class="form-hint">{{ t('scenarioEditor.machineDisplayHint') }}</span>
+        <span v-if="!desktopEnabled && machineDisplay === 'desktop'" class="form-hint" data-testid="scenario-machine-display-off">{{ t('scenarioEditor.machineDisplayDesktopOff') }}</span>
       </div>
 
       <!-- What the desktop offers to install, from the platform's list: a
@@ -578,6 +580,7 @@ import LexiconEditor from './LexiconEditor.vue'
 import MessageEditor from './MessageEditor.vue'
 import { useScenarioLexicon, languageName, type ScenarioLexicon } from '../../composables/useScenarioLexicon'
 import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
+import { useFeatureFlags } from '../../composables/useFeatureFlags'
 import type { Size } from '../../types/terminal'
 import { formatMcpuAsVcpu, effectiveCpuMcpu } from '../../utils/formatters'
 
@@ -714,6 +717,9 @@ const offeredLocales = computed<string[]>(() => {
     return []
   }
 })
+
+// The platform's desktop switch (local_machine_desktop).
+const desktopEnabled = useFeatureFlags().createReactiveFlag('local_machine_desktop')
 
 // Terminal or desktop, for a machine in the browser. Empty is the terminal.
 const machineDisplay = computed<'terminal' | 'desktop'>({
