@@ -5,6 +5,7 @@ import { useToast } from '../../../composables/useToast'
 import { extractErrorMessage } from '../../../utils/formatters'
 import { localMachineBootService } from '../../../services/domain/admin/localMachineBootService'
 import type { MachineBoot } from '../../../services/domain/scenario/scenarioSessionService'
+import { MACHINE_BOOT_FLAGS, useMachineBootFlagLabel, type MachineBootFlag } from '../../../composables/useMachineBootFlags'
 import SettingsCard from '../../UI/SettingsCard.vue'
 import Button from '../../UI/Button.vue'
 import ErrorAlert from '../../UI/ErrorAlert.vue'
@@ -14,14 +15,9 @@ const { t } = useTranslations({
   en: { unkernel: {
     title: 'unkernel integration',
     description: 'How a machine that runs in the learner\'s browser boots, for every scenario that does not say otherwise. Its CPUs and memory come from the size of its scenario.',
-    jit: 'JIT compiler',
     jitHint: 'Faster: the code the machine runs often is compiled to WebAssembly.',
-    verbose: 'Verbose boot',
     verboseHint: 'Every kernel message is shown in the console.',
-    display: 'Display',
     displayHint: 'A screen for graphical programs.',
-    sound: 'Sound card',
-    consoleHidden: 'Hide the console once the machine has booted',
     consoleHiddenHint: 'On a desktop only. Learners get the desktop only when the local_machine_desktop feature flag is on.',
     append: 'Kernel command line',
     appendHint: 'Empty: the kernel\'s own command line.',
@@ -34,14 +30,9 @@ const { t } = useTranslations({
   fr: { unkernel: {
     title: 'Intégration unkernel',
     description: 'Comment démarre une machine qui tourne dans le navigateur de l\'apprenant, pour tout scénario qui ne dit pas autre chose. Ses processeurs et sa mémoire viennent de la taille de son scénario.',
-    jit: 'Compilateur JIT',
     jitHint: 'Plus rapide : le code que la machine exécute souvent est compilé en WebAssembly.',
-    verbose: 'Démarrage détaillé',
     verboseHint: 'La console affiche chaque message du noyau.',
-    display: 'Écran',
     displayHint: 'Un écran pour les programmes graphiques.',
-    sound: 'Carte son',
-    consoleHidden: 'Masquer la console une fois la machine démarrée',
     consoleHiddenHint: 'Sur un bureau seulement. Les apprenants n\'ont le bureau que si le feature flag local_machine_desktop est activé.',
     append: 'Ligne de commande du noyau',
     appendHint: 'Vide : la ligne de commande propre au noyau.',
@@ -54,13 +45,13 @@ const { t } = useTranslations({
 })
 const toast = useToast()
 
-const FLAGS = [
-  { key: 'jit', label: 'unkernel.jit', hint: 'unkernel.jitHint' },
-  { key: 'verbose', label: 'unkernel.verbose', hint: 'unkernel.verboseHint' },
-  { key: 'display', label: 'unkernel.display', hint: 'unkernel.displayHint' },
-  { key: 'sound', label: 'unkernel.sound', hint: '' },
-  { key: 'console_hidden', label: 'unkernel.consoleHidden', hint: 'unkernel.consoleHiddenHint' }
-] as const
+const flagLabel = useMachineBootFlagLabel()
+const FLAG_HINTS: Partial<Record<MachineBootFlag, string>> = {
+  jit: 'unkernel.jitHint',
+  verbose: 'unkernel.verboseHint',
+  display: 'unkernel.displayHint',
+  console_hidden: 'unkernel.consoleHiddenHint'
+}
 
 const draft = ref<MachineBoot | null>(null)
 const loading = ref(true)
@@ -97,12 +88,12 @@ async function save() {
       <ErrorAlert :message="error" @dismiss="error = ''" />
       <form v-if="draft" data-testid="unkernel-boot-form" @submit.prevent="save">
         <fieldset :disabled="saving" class="ocf-unkernel-fieldset">
-          <div v-for="flag in FLAGS" :key="flag.key" class="form-group">
+          <div v-for="flag in MACHINE_BOOT_FLAGS" :key="flag" class="form-group">
             <label class="checkbox-label">
-              <input v-model="draft[flag.key]" type="checkbox" :data-testid="`unkernel-${flag.key}`" />
-              <span>{{ t(flag.label) }}</span>
+              <input v-model="draft[flag]" type="checkbox" :data-testid="`unkernel-${flag}`" />
+              <span>{{ flagLabel(flag) }}</span>
             </label>
-            <small v-if="flag.hint" class="form-text">{{ t(flag.hint) }}</small>
+            <small v-if="FLAG_HINTS[flag]" class="form-text">{{ t(FLAG_HINTS[flag]!) }}</small>
           </div>
           <div class="form-group">
             <label for="unkernel-append">{{ t('unkernel.append') }}</label>

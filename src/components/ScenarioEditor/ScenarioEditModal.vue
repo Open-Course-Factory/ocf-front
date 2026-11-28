@@ -523,8 +523,8 @@
       <details v-if="model.machine !== 'incus' && machineDisplay === 'desktop'" class="form-group ocf-machine-boot" data-testid="scenario-machine-boot">
         <summary>{{ t('scenarioEditor.machineBoot') }}</summary>
         <p class="form-hint">{{ t('scenarioEditor.machineBootHint') }}</p>
-        <div v-for="key in MACHINE_BOOT_KEYS" :key="key" class="form-group">
-          <label :for="`scenario-machine-boot-${key}`">{{ t(`scenarioEditor.machineBoot_${key}`) }}</label>
+        <div v-for="key in MACHINE_BOOT_FLAGS" :key="key" class="form-group">
+          <label :for="`scenario-machine-boot-${key}`">{{ machineBootFlagLabel(key) }}</label>
           <select
             :id="`scenario-machine-boot-${key}`"
             class="form-control"
@@ -585,6 +585,7 @@ import MessageEditor from './MessageEditor.vue'
 import { useScenarioLexicon, languageName, type ScenarioLexicon } from '../../composables/useScenarioLexicon'
 import { useScenarioEditorI18n } from '../../composables/useScenarioEditorI18n'
 import { useFeatureFlags } from '../../composables/useFeatureFlags'
+import { MACHINE_BOOT_FLAGS, useMachineBootFlagLabel, type MachineBootFlag } from '../../composables/useMachineBootFlags'
 import type { Size } from '../../types/terminal'
 import { formatMcpuAsVcpu, effectiveCpuMcpu } from '../../utils/formatters'
 
@@ -768,8 +769,7 @@ function toggleMachineApp(app: string, checked: boolean) {
 // sent as a string as machine_apps is, holding only the keys the author set;
 // the others take the platform's (UnkernelIntegration.vue). The kernel
 // command line is not offered: it stays the platform administrators'.
-const MACHINE_BOOT_KEYS = ['jit', 'verbose', 'display', 'sound', 'console_hidden'] as const
-type BootKey = typeof MACHINE_BOOT_KEYS[number]
+const machineBootFlagLabel = useMachineBootFlagLabel()
 type BootChoice = 'default' | 'on' | 'off'
 
 /** The stored overrides. Unparseable reads as none. */
@@ -782,12 +782,12 @@ const machineBootOverrides = computed<Record<string, unknown>>(() => {
   }
 })
 
-function machineBootChoice(key: BootKey): BootChoice {
+function machineBootChoice(key: MachineBootFlag): BootChoice {
   const value = machineBootOverrides.value[key]
   return typeof value === 'boolean' ? (value ? 'on' : 'off') : 'default'
 }
 
-function setMachineBootChoice(key: BootKey, choice: BootChoice) {
+function setMachineBootChoice(key: MachineBootFlag, choice: BootChoice) {
   const next = { ...machineBootOverrides.value }
   if (choice === 'default') delete next[key]
   else next[key] = choice === 'on'

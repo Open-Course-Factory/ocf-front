@@ -225,11 +225,6 @@ export function useScenarioEditorI18n() {
       machineBootDefault: 'Platform default',
       machineBootOn: 'On',
       machineBootOff: 'Off',
-      machineBoot_jit: 'JIT compiler',
-      machineBoot_verbose: 'Verbose boot',
-      machineBoot_display: 'Display',
-      machineBoot_sound: 'Sound card',
-      machineBoot_console_hidden: 'Hide the console once the machine has booted',
       isPublic: 'Public (available to all users)',
       // Export
       exportNeedsScenario: 'Select a scenario to export it',
@@ -472,11 +467,6 @@ export function useScenarioEditorI18n() {
       machineBootDefault: 'Valeur de la plateforme',
       machineBootOn: 'Activé',
       machineBootOff: 'Désactivé',
-      machineBoot_jit: 'Compilateur JIT',
-      machineBoot_verbose: 'Démarrage détaillé',
-      machineBoot_display: 'Écran',
-      machineBoot_sound: 'Carte son',
-      machineBoot_console_hidden: 'Masquer la console une fois la machine démarrée',
       isPublic: 'Public (disponible pour tous les utilisateurs)',
       // Export
       exportNeedsScenario: 'Sélectionnez un scénario pour l\'exporter',
