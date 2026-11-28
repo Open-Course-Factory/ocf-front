@@ -6,20 +6,7 @@
  */
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { serveRelay, relayedPty, RELAY_NO_MACHINE } from '../../src/services/domain/terminal/localConsoleRelay'
-import type { ConsolePty, PtyEnd } from '../../src/services/domain/terminal/localConsoleSocket'
-
-function fakePty() {
-  let push!: ReadableStreamDefaultController<Uint8Array>
-  let end!: (e: PtyEnd) => void
-  const pty = {
-    output: new ReadableStream<Uint8Array>({ start(c) { push = c } }),
-    write: vi.fn().mockResolvedValue(undefined),
-    resize: vi.fn(),
-    close: vi.fn(async () => { end({ type: 'closed' }) }),
-    ended: new Promise<PtyEnd>(r => { end = r })
-  }
-  return { pty: pty satisfies ConsolePty, push: (s: string) => push.enqueue(new TextEncoder().encode(s)), finish: (e: PtyEnd) => { push.close(); end(e) } }
-}
+import { fakePty } from '../helpers/fakePty'
 
 const stops: (() => void)[] = []
 afterEach(() => { while (stops.length) stops.pop()!() })
@@ -43,7 +30,7 @@ describe('the console relay', () => {
     const chunk = await reader.read()
     expect(new TextDecoder().decode(chunk.value)).toBe('hello')
 
-    shell.finish({ type: 'exit', code: 0 })
+    shell.end({ type: 'exit', code: 0 })
     expect(await reader.read()).toMatchObject({ done: true })
     expect(await pty.ended).toEqual({ type: 'exit', code: 0 })
   })

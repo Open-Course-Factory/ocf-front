@@ -6,6 +6,7 @@
  */
 import { describe, it, expect, vi } from 'vitest'
 import { LocalConsoleSocket, type ConsolePty, type PtyEnd } from '../../src/services/domain/terminal/localConsoleSocket'
+import { fakePty } from '../helpers/fakePty'
 
 function deferred<T>() {
   let resolve!: (v: T) => void
@@ -15,33 +16,6 @@ function deferred<T>() {
 }
 
 const enc = new TextEncoder()
-
-// A pty whose output the test feeds chunk by chunk, counting how often the
-// socket pulls, and whose end the test decides.
-function fakePty() {
-  let controller!: ReadableStreamDefaultController<Uint8Array>
-  const ended = deferred<PtyEnd>()
-  let pulls = 0
-  const pty = {
-    output: new ReadableStream<Uint8Array>({
-      start(c) { controller = c },
-      pull() { pulls++ }
-    }, { highWaterMark: 0 }),
-    write: vi.fn().mockResolvedValue(undefined),
-    resize: vi.fn(),
-    close: vi.fn(async () => {
-      ended.resolve({ type: 'closed' })
-      try { controller.close() } catch { /* already closed */ }
-    }),
-    ended: ended.promise
-  } satisfies ConsolePty
-  return {
-    pty,
-    push: (text: string | Uint8Array) => controller.enqueue(typeof text === 'string' ? enc.encode(text) : text),
-    end: (end: PtyEnd) => { controller.close(); ended.resolve(end) },
-    get pulls() { return pulls }
-  }
-}
 
 const settle = () => new Promise(r => setTimeout(r, 0))
 
