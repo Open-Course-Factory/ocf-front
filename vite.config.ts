@@ -54,7 +54,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/local-machine\/apt\/[^/]+\/[^/]+/, ''),
         bypass: async (req, res) => {
-          const [, machine, key] = /^\/local-machine\/apt\/(local-[0-9a-f-]+)\/([0-9a-f-]{36})\/debian(-security)?\/[A-Za-z0-9._~+/-]+$/.exec(req.url || '') ?? []
+          // Matched decoded, as nginx matches $uri: apt asks for `%2b` in
+          // package names whose version has a `+`.
+          let path = ''
+          try { path = decodeURIComponent(req.url || '') } catch { /* refused below */ }
+          const [, machine, key] = /^\/local-machine\/apt\/(local-[0-9a-f-]+)\/([0-9a-f-]{36})\/debian(-security)?\/[A-Za-z0-9._~+/-]+$/.exec(path) ?? []
           const core = process.env.VITE_E2E_PROXY_TARGET || 'http://localhost:8080'
           const access = machine
             ? await fetch(`${core}/api/v1/local-machines/mirror-access`, { headers: { 'X-Local-Machine': machine, 'X-Local-Machine-Key': key } }).catch(() => null)
