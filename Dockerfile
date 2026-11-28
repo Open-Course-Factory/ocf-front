@@ -12,7 +12,8 @@ ARG VITE_FEATURE_TERMINALS_ENABLED="true"
 # erofs file, served with Range support). Empty means
 # /local-machine/debian.erofs on the front's own origin, which this image
 # does not hold.
-ARG VITE_LOCAL_MACHINE_DISTRO_URL=""
+# Must match the image local-machine-image's CI publishes (runbook): its name carries its sha256.
+ARG VITE_LOCAL_MACHINE_DISTRO_URL="https://ocf-local-machine-prod.s3.fr-par.scw.cloud/local-machine/debian-labs-10f92ee85980ace6.erofs"
 # The Debian mirror of those machines, on its own hostname (nginx/start.sh,
 # LOCAL_MACHINE_MIRROR_HOST below): an origin, no path. Empty means the
 # front's own origin.
