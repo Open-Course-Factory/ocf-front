@@ -46,6 +46,7 @@ export function useScenarioRunRecovery() {
         setupFailed: 'Scenario setup failed. The environment could not be prepared.',
         setupTimeout: 'Scenario setup timed out. Please try again.',
         launchError: 'The scenario could not be launched. Please try again.',
+        localMachineUnavailable: 'This lab runs in your browser, and this browser or device cannot start its machine. Use a computer with Chrome or Edge 137 or later, or Firefox 153 or later.',
         startOverTitle: 'Start over',
         startOverConfirm: 'Abandon this run and start the scenario again from the beginning? Your progress in this run will be lost.',
         abandonFailed: 'Failed to abandon the run.'
@@ -65,6 +66,7 @@ export function useScenarioRunRecovery() {
         setupFailed: 'La préparation du scénario a échoué. L\'environnement n\'a pas pu être configuré.',
         setupTimeout: 'La préparation du scénario a expiré. Veuillez réessayer.',
         launchError: 'Le scénario n\'a pas pu être lancé. Veuillez réessayer.',
+        localMachineUnavailable: 'Ce lab tourne dans votre navigateur, et ce navigateur ou cet appareil ne peut pas lancer sa machine. Utilisez un ordinateur avec Chrome ou Edge 137 ou plus récent, ou Firefox 153 ou plus récent.',
         startOverTitle: 'Recommencer',
         startOverConfirm: 'Abandonner cette session et recommencer le scénario depuis le début ? Votre progression dans cette session sera perdue.',
         abandonFailed: 'Impossible d\'abandonner la session.'
@@ -81,6 +83,8 @@ export function useScenarioRunRecovery() {
     if (isBudgetRejection(err)) return t('runRecovery.budgetLaunch')
     if (data.reason === 'not_in_plan') return t('runRecovery.notInPlan')
     if (isExamAlreadySubmitted(err)) return t('runRecovery.examAlreadySubmitted')
+    // A Local lab this browser cannot run (plan rule 7): ocf-core's 422.
+    if (data.reason === 'local_machine_unavailable') return t('runRecovery.localMachineUnavailable')
     if (action === 'launch') {
       if (data.reason === 'session_exists') return t('runRecovery.alreadyRunning')
       if (err?.message === 'SETUP_FAILED') return t('runRecovery.setupFailed')

@@ -123,9 +123,10 @@
             {{ t('launcher.ramNeeded', { gb: computerGiBNeeded(scenario.local_machine_memory_mib) }) }}
           </span>
           <!-- A machine in a browser that cannot isolate the page (Safari)
-               runs on one CPU: point to Firefox. -->
+               runs on one CPU: point to Firefox. Not when it cannot run at
+               all: the notice below says which browsers can. -->
           <span
-            v-if="scenario.local_machine_memory_mib && oneCpuOnly()"
+            v-if="scenario.local_machine_memory_mib && !scenario.local_machine_unavailable && oneCpuOnly()"
             class="os-badge os-badge--warning"
             data-testid="scenario-one-cpu-badge"
             :title="t('launcher.oneCpuTitle')"
@@ -320,7 +321,7 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { scenarioSessionService, pollProvisioningStatus } from '../../services/domain/scenario'
 import type { AvailableScenario } from '../../services/domain/scenario'
-import { computerGiBNeeded, computerTooSmall, LOCAL_MACHINE_PLAIN_MIB } from '../../services/domain/terminal/localMachineFit'
+import { computerGiBNeeded, localMachineUnavailable, LOCAL_MACHINE_PLAIN_MIB } from '../../services/domain/terminal/localMachineFit'
 import { useOrganizationsStore } from '../../stores/organizations'
 import { useSubscriptionsStore } from '../../stores/subscriptions'
 import { useTranslations } from '../../composables/useTranslations'
@@ -391,6 +392,10 @@ const { t } = useTranslations({
       unavailableServerNotAllowedHint: 'Ask your trainer to choose another server, or Automatic.',
       unavailableComputer: 'This lab runs in your browser and needs a computer with at least {gb} GB of RAM. Your computer has less.',
       unavailableComputerHint: 'Use a computer with more memory.',
+      unavailableBrowser: 'This lab runs in your browser, which cannot start its machine.',
+      unavailableBrowserHint: 'Use Chrome or Edge 137 or later, or Firefox 153 or later.',
+      unavailableDevice: 'This lab runs in your browser, and a phone or tablet cannot start its machine.',
+      unavailableDeviceHint: 'Use a computer.',
       ramNeeded: '{gb} GB of RAM',
       ramTitle: 'This lab runs in your browser: your computer needs at least this much memory.',
       oneCpu: 'Faster in Firefox',
@@ -446,6 +451,10 @@ const { t } = useTranslations({
       unavailableServerNotAllowedHint: 'Demandez à votre formateur de choisir un autre serveur, ou le mode Automatique.',
       unavailableComputer: 'Ce lab tourne dans votre navigateur et demande un ordinateur avec au moins {gb} Go de mémoire vive. Votre ordinateur en a moins.',
       unavailableComputerHint: 'Utilisez un ordinateur qui a plus de mémoire.',
+      unavailableBrowser: 'Ce lab tourne dans votre navigateur, qui ne peut pas lancer sa machine.',
+      unavailableBrowserHint: 'Utilisez Chrome ou Edge 137 ou plus récent, ou Firefox 153 ou plus récent.',
+      unavailableDevice: 'Ce lab tourne dans votre navigateur, et un téléphone ou une tablette ne peut pas lancer sa machine.',
+      unavailableDeviceHint: 'Utilisez un ordinateur.',
       ramNeeded: '{gb} Go de mémoire vive',
       oneCpu: 'Plus rapide dans Firefox',
       oneCpuTitle: 'Ce lab tourne dans votre navigateur. Ici, il n\'a qu\'un processeur ; dans Firefox, Chrome ou Edge, il en a plusieurs et va plus vite.',
@@ -707,8 +716,8 @@ function getBlockReasonIcon(scenario: any): string {
       return 'fas fa-battery-quarter'
     case 'size_over_plan':
       return 'fas fa-lock'
-    case 'computer_too_small':
-      return 'fas fa-memory'
+    case 'local_machine_unavailable':
+      return scenario.local_machine_unavailable === 'memory' ? 'fas fa-memory' : 'fas fa-laptop'
     case 'plan':
       return 'fas fa-lock'
     case 'no_distribution':
@@ -741,8 +750,11 @@ function getUnavailableReason(scenario: any): string {
       return t('launcher.unavailableNoDistribution')
     case 'server_not_allowed':
       return t('launcher.unavailableServerNotAllowed')
-    case 'computer_too_small':
-      return t('launcher.unavailableComputer', { gb: computerGiBNeeded(scenario.local_machine_memory_mib) })
+    case 'local_machine_unavailable':
+      if (scenario.local_machine_unavailable === 'memory') {
+        return t('launcher.unavailableComputer', { gb: computerGiBNeeded(scenario.local_machine_memory_mib) })
+      }
+      return t(scenario.local_machine_unavailable === 'device' ? 'launcher.unavailableDevice' : 'launcher.unavailableBrowser')
     case 'offline':
     default:
       return t('launcher.unavailableOffline')
@@ -768,8 +780,9 @@ function getUnavailableHint(scenario: any): string {
       return t('launcher.unavailableNoDistributionHint')
     case 'server_not_allowed':
       return t('launcher.unavailableServerNotAllowedHint')
-    case 'computer_too_small':
-      return t('launcher.unavailableComputerHint')
+    case 'local_machine_unavailable':
+      if (scenario.local_machine_unavailable === 'memory') return t('launcher.unavailableComputerHint')
+      return t(scenario.local_machine_unavailable === 'device' ? 'launcher.unavailableDeviceHint' : 'launcher.unavailableBrowserHint')
     case 'offline':
     default:
       return t('launcher.unavailableOfflineHint')
@@ -794,17 +807,28 @@ async function loadScenarios() {
         .catch(() => {})
     ])
     if (gen !== loadGeneration) return
-    // A lab whose machine this computer cannot hold is unavailable here, for
-    // the browser says so: the card says why, as for any other reason.
-    scenarios.value = scenarioData.map(s => s.launchable && computerTooSmall(s.local_machine_memory_mib)
-      ? { ...s, launchable: false, block_reason: 'computer_too_small' }
-      : s)
+    scenarios.value = scenarioData.map(withThisBrowser)
   } catch (err: any) {
     if (gen !== loadGeneration) return
     error.value = err.response?.data?.error_message || t('launcher.loading')
   } finally {
     if (gen === loadGeneration) isLoading.value = false
   }
+}
+
+// A lab whose machine would run in this browser, judged by this browser
+// (plan rule 7: never a silent fallback). A Local lab it cannot run is
+// unavailable here, and its card says why. A By account lab goes to a
+// container instead: the launch tells ocf-core why (local_machine_unavailable),
+// and the card loses the badges of a machine in the browser.
+function withThisBrowser(scenario: AvailableScenario): AvailableScenario {
+  if (!scenario.launchable || !scenario.local_machine_memory_mib) return scenario
+  const unavailable = localMachineUnavailable(scenario.local_machine_memory_mib)
+  if (!unavailable) return scenario
+  if (scenario.machine === 'by_account') {
+    return { ...scenario, local_machine_memory_mib: undefined, local_machine_unavailable: unavailable }
+  }
+  return { ...scenario, launchable: false, block_reason: 'local_machine_unavailable', local_machine_unavailable: unavailable }
 }
 
 async function handleLaunchScenario(scenario: any) {
@@ -820,7 +844,8 @@ async function handleLaunchScenario(scenario: any) {
   try {
     const result = await scenarioSessionService.launchScenario(scenario.id, {
       organization_id: currentOrgId.value || undefined,
-      locale: localeFor(scenario) || undefined
+      locale: localeFor(scenario) || undefined,
+      local_machine_unavailable: scenario.local_machine_unavailable
     })
     provisioningSessionId.value = result.scenario_session_id
     provisioningPhase.value = result.provisioning_phase || ''

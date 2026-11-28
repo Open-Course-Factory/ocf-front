@@ -1,7 +1,9 @@
 /**
  * A lab that runs in the learner's browser takes its machine's memory out of
  * their computer: above 2 GiB its card says how much RAM the computer needs,
- * and a computer the browser says is smaller cannot start it.
+ * and a computer the browser says is smaller cannot start it. A browser
+ * without JSPI cannot start any: a Local lab's card says so, a By account lab
+ * goes to a container.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -100,9 +102,19 @@ function setDeviceMemory(gb: number | undefined) {
   Object.defineProperty(navigator, 'deviceMemory', { value: gb, configurable: true })
 }
 
+// unkernel needs JSPI; Node only has it from version 24.
+const wasm = WebAssembly as unknown as Record<string, unknown>
+function setJspi(on: boolean) {
+  for (const name of ['promising', 'Suspending']) {
+    if (on) Object.defineProperty(wasm, name, { value: () => {}, configurable: true })
+    else delete wasm[name]
+  }
+}
+
 describe('ScenarioLauncher — the computer\'s memory', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    setJspi(true)
     getMySessionsMock.mockResolvedValue([])
   })
 
@@ -124,6 +136,15 @@ describe('ScenarioLauncher — the computer\'s memory', () => {
     await flushPromises()
     expect(wrapper.findAll('[data-testid="scenario-launch-btn"]')).toHaveLength(1)
     expect(wrapper.text()).toContain('needs a computer with at least 8 GB of RAM. Your computer has less.')
+  })
+
+  // Chrome never says more than 8: a 32 GB laptop reads 8.
+  it('lets a computer the browser caps at 8 GB start a lab of any size', async () => {
+    setDeviceMemory(8)
+    listScenariosMock.mockResolvedValue([{ ...BIG, local_machine_memory_mib: 8192 }])
+    const wrapper = mountLauncher()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="scenario-launch-btn"]').exists()).toBe(true)
   })
 
   it('only warns when the browser does not say (Firefox, Safari)', async () => {
@@ -168,5 +189,46 @@ describe('ScenarioLauncher — the browser\'s CPUs', () => {
     const wrapper = mountLauncher()
     await flushPromises()
     expect(wrapper.findAll('.os-badge').filter(b => b.text() === 'S')).toHaveLength(1)
+  })
+})
+
+describe('ScenarioLauncher — a browser that cannot run the machine', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setJspi(false)
+    setDeviceMemory(undefined)
+    getMySessionsMock.mockResolvedValue([])
+  })
+
+  it('refuses a Local lab and says which browser can run it', async () => {
+    listScenariosMock.mockResolvedValue([{ ...SMALL, machine: 'local' }])
+    const wrapper = mountLauncher()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="scenario-launch-btn"]').exists()).toBe(false)
+    const notice = wrapper.find('[data-testid="scenario-unavailable-notice"]')
+    expect(notice.text()).toContain('This lab runs in your browser, which cannot start its machine.')
+    expect(notice.text()).toContain('Use Chrome or Edge 137 or later, or Firefox 153 or later.')
+  })
+
+  it('launches a By account lab, tells ocf-core why, and drops the browser badges', async () => {
+    launchScenarioMock.mockResolvedValue({ scenario_session_id: 'run-1', terminal_session_id: 'sess-1', status: 'active', machine: 'incus' })
+    listScenariosMock.mockResolvedValue([{ ...BIG, machine: 'by_account' }])
+    const wrapper = mountLauncher()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="scenario-ram-badge"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="scenario-launch-btn"]').trigger('click')
+    await flushPromises()
+    expect(launchScenarioMock).toHaveBeenCalledWith('sc-big', expect.objectContaining({ local_machine_unavailable: 'browser' }))
+  })
+
+  it('explains ocf-core\'s refusal of a Local lab the card let through', async () => {
+    setJspi(true)
+    launchScenarioMock.mockRejectedValue({ response: { status: 422, data: { reason: 'local_machine_unavailable', error_message: 'x' } } })
+    listScenariosMock.mockResolvedValue([{ ...SMALL, machine: 'local' }])
+    const wrapper = mountLauncher()
+    await flushPromises()
+    await wrapper.find('[data-testid="scenario-launch-btn"]').trigger('click')
+    await flushPromises()
+    expect(showErrorSpy).toHaveBeenCalledWith(expect.stringContaining('this browser or device cannot start its machine'))
   })
 })

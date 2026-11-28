@@ -256,6 +256,7 @@ export function useScenarioEditorI18n() {
       previewBlockedByRun: 'You already have a run of this scenario in progress, outside preview. Starting the preview abandons that run: its progress is lost.',
       previewAbandonRunAction: 'Abandon that run and preview',
       previewErrorSessionExists: 'You already have a run of this scenario in progress, outside preview. Finish or abandon it, then try again.',
+      previewErrorLocalMachineUnavailable: 'This scenario runs its machine in the browser, and this browser or device cannot start it. Use a computer with Chrome or Edge 137 or later, or Firefox 153 or later.',
     }
   },
   fr: {
@@ -501,6 +502,7 @@ export function useScenarioEditorI18n() {
       previewBlockedByRun: 'Vous avez déjà une partie de ce scénario en cours, hors prévisualisation. Démarrer la prévisualisation abandonne cette partie : sa progression est perdue.',
       previewAbandonRunAction: 'Abandonner cette partie et prévisualiser',
       previewErrorSessionExists: 'Vous avez déjà une partie de ce scénario en cours, hors prévisualisation. Terminez-la ou abandonnez-la, puis réessayez.',
+      previewErrorLocalMachineUnavailable: 'Ce scénario lance sa machine dans le navigateur, et ce navigateur ou cet appareil ne peut pas la démarrer. Utilisez un ordinateur avec Chrome ou Edge 137 ou plus récent, ou Firefox 153 ou plus récent.',
     }
   }
   })

@@ -4,6 +4,7 @@
  */
 
 import axios from 'axios'
+import { localMachineUnavailable, type LocalMachineUnavailable } from '../terminal/localMachineFit'
 
 export interface CurrentStepResponse {
   step_order: number
@@ -295,6 +296,9 @@ export interface AvailableScenario extends ScenarioInfo {
   // The memory of the machine a run would get in the learner's browser;
   // absent when it would run in a container.
   local_machine_memory_mib?: number
+  // Set by the launcher, not ocf-core: why this browser cannot run that
+  // machine (localMachineUnavailable), sent with the launch.
+  local_machine_unavailable?: LocalMachineUnavailable
   [key: string]: any
 }
 
@@ -359,9 +363,14 @@ export const scenarioSessionService = {
     return response.data?.data || response.data || []
   },
 
-  async launchScenario(scenarioId: string, options?: { backend?: string; organization_id?: string; locale?: string }): Promise<LaunchScenarioResponse> {
+  // A launch or a preview says whether this browser can run a machine of its
+  // own (plan rule 7): ocf-core then sends a By account scenario to a
+  // container, and refuses a Local one (422, reason local_machine_unavailable).
+  // Without the lab's memory, only the browser and the device are judged.
+  async launchScenario(scenarioId: string, options?: { backend?: string; organization_id?: string; locale?: string; local_machine_unavailable?: LocalMachineUnavailable }): Promise<LaunchScenarioResponse> {
     const response = await axios.post('/scenario-sessions/launch', {
       scenario_id: scenarioId,
+      local_machine_unavailable: localMachineUnavailable(),
       ...options
     }, { timeout: 180000 })
     return response.data
@@ -371,7 +380,7 @@ export const scenarioSessionService = {
     // Trainer-side preview: backend POST /scenarios/:id/preview creates a real
     // terminal + scenario session bypassing the assignment check.
     // Long timeout matches launchScenario — terminal provisioning takes time.
-    const response = await axios.post(`/scenarios/${scenarioId}/preview`, options || {}, { timeout: 180000 })
+    const response = await axios.post(`/scenarios/${scenarioId}/preview`, { local_machine_unavailable: localMachineUnavailable(), ...options }, { timeout: 180000 })
     return response.data
   },
 

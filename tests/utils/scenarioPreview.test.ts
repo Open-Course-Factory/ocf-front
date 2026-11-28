@@ -63,12 +63,13 @@ describe('scenario preview — the request carries the chosen step', () => {
 })
 
 describe('scenario preview — a refused preview says why', () => {
-  const REFUSALS = ['previewErrorUnknownStep', 'previewErrorForbidden', 'previewErrorSessionExists'] as const
+  const REFUSALS = ['previewErrorUnknownStep', 'previewErrorForbidden', 'previewErrorSessionExists', 'previewErrorLocalMachineUnavailable'] as const
 
   it('maps each refusal the author can act on to its message', () => {
     expect(previewRefusalKey(400, {}, 2)).toBe('scenarioEditor.previewErrorUnknownStep')
     expect(previewRefusalKey(403, { error_message: 'Not authorized' }, null)).toBe('scenarioEditor.previewErrorForbidden')
     expect(previewRefusalKey(409, { reason: 'session_exists' }, 0)).toBe('scenarioEditor.previewErrorSessionExists')
+    expect(previewRefusalKey(422, { reason: 'local_machine_unavailable' }, null)).toBe('scenarioEditor.previewErrorLocalMachineUnavailable')
   })
 
   // The terminal budget is shared: the backend's sentence says what to free,
