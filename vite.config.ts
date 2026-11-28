@@ -37,7 +37,14 @@ export default defineConfig({
         target: process.env.VITE_INCUS_PROXY_TARGET
           || `http://${process.env.VITE_API_URL || 'localhost:8080'}`,
         changeOrigin: true,
-        ws: true
+        ws: true,
+        // As nginx.conf: the frame of an isolated page needs COEP too, and
+        // server.headers does not reach proxied responses.
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            proxyRes.headers['cross-origin-embedder-policy'] = 'credentialless'
+          })
+        }
       },
       // Debian packages for a machine in the learner's browser, as nginx.conf
       // serves them in production: ocf-core says first whether that machine
