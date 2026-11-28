@@ -7,6 +7,7 @@ import {
   deleteScenarioById,
   cleanupScenarioSession,
   getMyScenarioSessions,
+  endLocalRuns,
   type ApiSession,
 } from './helpers/scenarioApi';
 import { adminSession } from './helpers/freshUsers';
@@ -191,6 +192,12 @@ test.beforeAll(async () => {
     ],
   })).id);
 });
+
+// One live run in the browser per learner: whatever a test leaves, ended or
+// failed, must not refuse the next test's launch.
+test.afterEach(async () => {
+  await endLocalRuns(learner);
+})
 
 test.afterAll(async () => {
   if (admin) {

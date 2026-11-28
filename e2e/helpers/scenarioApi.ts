@@ -374,6 +374,21 @@ export async function cleanupScenarioSession(session: ApiSession, scenarioId: st
 }
 
 /**
+ * Ends every run of the learner whose machine runs in the browser, as Stop
+ * does (DELETE /terminals/:id): a learner has one such run live at a time
+ * (ocf-core answers 409 local_machine_busy), so a test that leaves one,
+ * failed or completed, would refuse the next test's launch. Never throws.
+ */
+export async function endLocalRuns(session: ApiSession): Promise<void> {
+  for (const s of await getMyScenarioSessions(session)) {
+    if (!s.terminal_session_id?.startsWith('local-')) continue;
+    await session.api
+      .delete(`${API_BASE}/terminals/${s.terminal_session_id}`, { headers: authHeaders(session) })
+      .catch(() => {});
+  }
+}
+
+/**
  * Sets or lifts a learner's session block in a class (ocf-core #580) — teardown
  * only, so a failed run never leaves the persona blocked. Never throws.
  */
