@@ -4,7 +4,8 @@
  * would let the machine reach another host.
  */
 import { describe, it, expect, vi } from 'vitest'
-import { consoleKernelOptions, debianMirrorNet, desktopFrames, desktopLearnerTerminal, desktopPageUrl, desktopShell, setConsoleUser } from '../../src/services/domain/terminal/localMachine'
+import { consoleKernelOptions, debianMirrorNet, desktopLearnerTerminal, setConsoleUser } from '../../src/services/domain/terminal/localMachine'
+import { desktopFrames, desktopPageUrl, desktopShell } from '../../src/services/domain/terminal/localMachineDesktop'
 
 const query = (url: string) => new URL(url, window.location.origin).searchParams
 

@@ -72,7 +72,8 @@ import Button from '../UI/Button.vue'
 import SessionCountdown from './SessionCountdown.vue'
 import NetworkIndicator from './NetworkIndicator.vue'
 import { sessionHasNetwork } from '../../utils/sessionState'
-import { desktopFailures, desktopFrames, desktopLearnerTerminal, onDesktopFrames } from '../../services/domain/terminal/localMachine'
+import { desktopLearnerTerminal } from '../../services/domain/terminal/localMachine'
+import { desktopFailures, desktopFrames, onDesktopFrames } from '../../services/domain/terminal/localMachineDesktop'
 import { useTranslations } from '../../composables/useTranslations'
 
 // hold: the run is being built; the learner's terminal opens after, as the

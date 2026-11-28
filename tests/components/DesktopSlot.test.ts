@@ -6,16 +6,15 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 
-vi.mock('../../src/services/domain/terminal/localMachine', async () => {
-  const frames = new Map<string, HTMLIFrameElement>()
-  return {
-    desktopFrames: frames,
-    desktopFailures: new Set<string>(),
-    onDesktopFrames: () => () => {},
-    desktopLearnerTerminal: vi.fn().mockResolvedValue(1),
-  }
-})
-import { desktopFrames } from '../../src/services/domain/terminal/localMachine'
+vi.mock('../../src/services/domain/terminal/localMachineDesktop', () => ({
+  desktopFrames: new Map<string, HTMLIFrameElement>(),
+  desktopFailures: new Set<string>(),
+  onDesktopFrames: () => () => {},
+}))
+vi.mock('../../src/services/domain/terminal/localMachine', () => ({
+  desktopLearnerTerminal: vi.fn().mockResolvedValue(1),
+}))
+import { desktopFrames } from '../../src/services/domain/terminal/localMachineDesktop'
 import DesktopSlot from '../../src/components/Terminal/DesktopSlot.vue'
 
 function mountSlot() {
