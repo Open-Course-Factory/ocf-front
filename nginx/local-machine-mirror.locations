@@ -14,7 +14,7 @@
 # The tab asks from the app's origin: CORS for the origins in
 # LOCAL_MACHINE_APP_ORIGINS ($lm_cors_origin, nginx.conf), with the headers
 # unkernel forwards and reads back. No cookies: the request is cross-origin.
-location ~ "^/local-machine/apt/(?<lm_terminal>local-[0-9a-f-]+)/(?<lm_key>[0-9a-f-]{36})(?<lm_path>/debian(-security)?/.*)$" {
+location ~ "^/local-machine/apt/(?<lm_terminal>local-[0-9a-f-]+)/(?<lm_key>[0-9a-f-]{36})(?<lm_path>/debian(-security)?/[A-Za-z0-9._~+/-]+)$" {
     add_header Access-Control-Allow-Origin $lm_cors_origin always;
     add_header Access-Control-Allow-Methods "GET, HEAD, OPTIONS" always;
     add_header Access-Control-Allow-Headers "Range, If-Range, If-Modified-Since, If-None-Match" always;
@@ -27,6 +27,14 @@ location ~ "^/local-machine/apt/(?<lm_terminal>local-[0-9a-f-]+)/(?<lm_key>[0-9a
     }
     # GET covers HEAD; OPTIONS reaches the preflight answer above.
     limit_except GET OPTIONS { deny all; }
+    # One learner's machine (or its key, taken out of the tab into curl)
+    # cannot hold the pod everyone loads the app from: requests and
+    # connections per terminal, bytes per connection (zones in nginx.conf).
+    limit_req zone=local_apt_requests burst=60 nodelay;
+    limit_conn local_apt_connections 6;
+    limit_req_status 429;
+    limit_conn_status 429;
+    limit_rate 2m;
     auth_request /_local_machine_apt_access;
     # The name is resolved per request, through the pod's own DNS servers
     # (nginx/start.sh reads them from resolv.conf): the front starts even
@@ -35,10 +43,19 @@ location ~ "^/local-machine/apt/(?<lm_terminal>local-[0-9a-f-]+)/(?<lm_key>[0-9a
     resolver ${NGINX_LOCAL_RESOLVERS} valid=300s ipv6=off;
     set $debian_mirror deb.debian.org;
     proxy_pass http://$debian_mirror$lm_path;
+    # None of the learner's headers go upstream (their Referer may hold the
+    # key, their User-Agent is theirs): Range and If-* are answered here,
+    # from the cache, which asks upstream itself when a copy has expired.
+    proxy_pass_request_headers off;
     proxy_set_header Host deb.debian.org;
     proxy_cache local_apt;
     proxy_cache_key $lm_path;
     proxy_cache_lock on;
+    proxy_cache_revalidate on;
+    # ponytail: a file of 100 MB or more is passed on but not kept, so one
+    # learner cannot churn the cache with huge packages; a hard size refusal
+    # needs a module nginx does not ship.
+    proxy_no_cache $local_apt_too_big;
     # Debian says how long each file keeps; a package list without a word
     # is kept a few minutes.
     proxy_cache_valid 200 5m;
