@@ -146,9 +146,16 @@ function fullScreen() {
 
 // The slot moves and resizes with the page around it: the panel's width and
 // anything above it that grows or shrinks (a closed notice) resize the slot
-// or the page, a scroll moves it. Placed again on each, never every frame.
-const resized = new ResizeObserver(place)
-watch([frame, () => props.covered], place)
+// or the page, a scroll moves it. Placed again on each, never every frame,
+// and at the next frame: resizing the iframe from a ResizeObserver callback
+// makes the desktop page's own observers report a loop, which it takes for
+// a fatal error.
+let placing = 0
+function placeSoon() {
+  if (!placing) placing = requestAnimationFrame(() => { placing = 0; place() })
+}
+const resized = new ResizeObserver(placeSoon)
+watch([frame, () => props.covered], placeSoon)
 
 watchEffect(() => {
   // A failure leaves the desktop without it: Verify still runs, and a click on
@@ -162,14 +169,15 @@ onMounted(() => {
   resized.observe(areaEl.value!)
   resized.observe(document.body)
   // Capture: a scroll in any of the page's scrolling boxes, not the window's alone.
-  window.addEventListener('scroll', place, { capture: true, passive: true })
-  window.addEventListener('resize', place)
+  window.addEventListener('scroll', placeSoon, { capture: true, passive: true })
+  window.addEventListener('resize', placeSoon)
 })
 onBeforeUnmount(() => {
   stopListening()
   resized.disconnect()
-  window.removeEventListener('scroll', place, { capture: true })
-  window.removeEventListener('resize', place)
+  cancelAnimationFrame(placing)
+  window.removeEventListener('scroll', placeSoon, { capture: true })
+  window.removeEventListener('resize', placeSoon)
   if (frame.value) frame.value.style.visibility = 'hidden'
 })
 </script>
