@@ -531,6 +531,9 @@ export function startLocalAgent(
     }
     opened.onclose = (event) => {
       if (agentSocket === opened) agentSocket = null
+      // ocf-core closes a stale connection (1000) when the same machine
+      // reconnects: a socket already replaced has nothing more to say.
+      if (socket !== opened) return
       socket = null
       if (stopped) return
       const why = AGENT_ENDS[event.code]
