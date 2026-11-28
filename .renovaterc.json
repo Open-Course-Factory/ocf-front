@@ -32,6 +32,13 @@
       "groupName": "playwright"
     },
     {
+      "description": "unkernel runs every lab set to a machine in the browser: each update is replayed on every Local scenario in a browser first, so it moves by hand, never in the weekly group.",
+      "matchPackageNames": [
+        "unkernel"
+      ],
+      "enabled": false
+    },
+    {
       "description": "TypeScript 7 drops typescript/lib/tsc, which vue-tsc loads; lift once vue-tsc runs on the native compiler.",
       "matchPackageNames": [
         "typescript"

@@ -39,3 +39,6 @@ playwright-report/
 .e2e-core/
 .playwright-browsers/
 test-results-video/
+
+# The local machines' Debian image for dev (fetched, never committed)
+/public/local-machine

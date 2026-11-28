@@ -10,3 +10,4 @@ tests/
 e2e/
 playwright-report/
 .claude/
+public/local-machine
