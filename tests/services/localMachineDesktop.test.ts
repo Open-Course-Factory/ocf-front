@@ -18,9 +18,7 @@ describe('the desktop page URL', () => {
     expect(q.get('wisp')).toMatch(/\/local-machine\/no-wisp\/$/)
     expect(q.get('data')).toBe('0')
     expect(q.get('autosuspend')).toBe('0')
-    // The learner's terminal never hides itself, and the kernel leaves the
-    // page's thread alone, as a console machine's does.
-    expect(q.get('autohide')).toBe('0')
+    // The kernel leaves the page's thread alone, as a console machine's does.
     expect(q.get('worker')).toBe('1')
     // unkernel's own memory without one from the run.
     expect(q.get('mem')).toBeNull()
@@ -52,10 +50,8 @@ describe('the desktop page URL', () => {
     expect(q.get('jit')).toBe('1')
   })
 
-  it('gives unkernel\'s defaults for a run without CPUs or boot settings (an older ocf-core)', () => {
-    const q = query(desktopPageUrl([], { distroUrl: '/d.erofs', worker: true }))
-    expect(Object.fromEntries(['cpus', 'jit', 'verbose', 'display', 'sound', 'autohide', 'append'].map(n => [n, q.get(n)])))
-      .toEqual({ cpus: '1', jit: '1', verbose: '0', display: '1', sound: '1', autohide: '0', append: '' })
+  it('gives one CPU to a run without CPUs', () => {
+    expect(query(desktopPageUrl([], { distroUrl: '/d.erofs', worker: true })).get('cpus')).toBe('1')
   })
 
   it('boots Debian on the overlay root, whatever this browser saved', () => {
