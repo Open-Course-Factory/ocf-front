@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
 import SettingsCard from '../UI/SettingsCard.vue'
 import Button from '../UI/Button.vue'
 import SessionCountdown from './SessionCountdown.vue'
@@ -148,13 +148,11 @@ function fullScreen() {
   frame.value?.requestFullscreen().catch(() => {})
 }
 
-let raf = 0
-// The slot moves and resizes with the page around it (the panel's width, a
-// scroll, the window): follow it every frame, one getBoundingClientRect each.
-function follow() {
-  place()
-  raf = requestAnimationFrame(follow)
-}
+// The slot moves and resizes with the page around it: the panel's width and
+// anything above it that grows or shrinks (a closed notice) resize the slot
+// or the page, a scroll moves it. Placed again on each, never every frame.
+const resized = new ResizeObserver(place)
+watch([frame, () => props.covered], place)
 
 watchEffect(() => {
   // A failure leaves the desktop without it: Verify still runs, and a click on
@@ -165,16 +163,27 @@ watchEffect(() => {
 const stopListening = onDesktopFrames(read)
 onMounted(() => {
   read()
-  follow()
+  resized.observe(areaEl.value!)
+  resized.observe(document.body)
+  // Capture: a scroll in any of the page's scrolling boxes, not the window's alone.
+  window.addEventListener('scroll', place, { capture: true, passive: true })
+  window.addEventListener('resize', place)
 })
 onBeforeUnmount(() => {
   stopListening()
-  cancelAnimationFrame(raf)
+  resized.disconnect()
+  window.removeEventListener('scroll', place, { capture: true })
+  window.removeEventListener('resize', place)
   if (frame.value) frame.value.style.visibility = 'hidden'
 })
 </script>
 
 <style scoped>
+/* The iframe lies on <body>, out of the page's flow: while the learner drags
+   the panel's edge (TerminalSessionView), it must not swallow the mouse. */
+:global(.ocf-panel-resizing .ocf-desktop-frame) {
+  pointer-events: none;
+}
 .ocf-desktop-card {
   height: 100%;
   display: flex;

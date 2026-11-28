@@ -1339,6 +1339,8 @@ const scenarioPanelStyle = computed(() => ({
 
 function startPanelResize(event: MouseEvent) {
   isPanelResizing.value = true
+  // The desktop's iframe would take the drag over (DesktopSlot.vue).
+  document.body.classList.add('ocf-panel-resizing')
   const startX = event.clientX
   const startWidth = scenarioPanelWidth.value
 
@@ -1349,6 +1351,7 @@ function startPanelResize(event: MouseEvent) {
 
   function onMouseUp() {
     isPanelResizing.value = false
+    document.body.classList.remove('ocf-panel-resizing')
     localStorage.setItem(PANEL_WIDTH_KEY, String(scenarioPanelWidth.value))
     document.removeEventListener('mousemove', onMouseMove)
     document.removeEventListener('mouseup', onMouseUp)
