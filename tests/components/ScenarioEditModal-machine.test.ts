@@ -11,8 +11,11 @@ import { createTestI18n } from '../helpers/entityModalHelper'
 import { ref } from 'vue'
 
 const desktopFlag = ref(true)
+const localMachinesFlag = ref(true)
 vi.mock('../../src/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({ createReactiveFlag: () => desktopFlag }),
+  useFeatureFlags: () => ({
+    createReactiveFlag: (flag: string) => (flag === 'local_machines' ? localMachinesFlag : desktopFlag)
+  }),
 }))
 
 import ScenarioEditModal from '../../src/components/ScenarioEditor/ScenarioEditModal.vue'
@@ -31,6 +34,26 @@ function mountModal(scenario: Record<string, unknown>) {
 }
 
 describe('ScenarioEditModal — machine', () => {
+  // Machines in the browser are switched off on most platforms: the authors
+  // there have only containers, and nothing to choose.
+  it('asks nothing while machines in the browser are switched off', () => {
+    localMachinesFlag.value = false
+    const { wrapper } = mountModal({ machine: 'incus' })
+    expect(wrapper.find('#scenario-machine').exists()).toBe(false)
+    localMachinesFlag.value = true
+  })
+
+  it('keeps a scenario\'s machine in the browser while switched off, and says it runs in a container', () => {
+    localMachinesFlag.value = false
+    const { wrapper } = mountModal({ machine: 'local' })
+    const select = wrapper.get('#scenario-machine')
+    expect((select.element as HTMLSelectElement).value).toBe('local')
+    expect(select.get('option[value="local"]').attributes('disabled')).toBeDefined()
+    expect(select.find('option[value="by_account"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="scenario-machine-off"]').exists()).toBe(true)
+    localMachinesFlag.value = true
+  })
+
   it('offers the three machines and shows the scenario\'s', () => {
     const { wrapper } = mountModal({ machine: 'local' })
     const select = wrapper.get('#scenario-machine')

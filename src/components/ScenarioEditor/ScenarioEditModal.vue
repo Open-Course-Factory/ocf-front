@@ -475,14 +475,18 @@
         <span class="form-hint">{{ t('scenarioEditor.crashTrapsHint') }}</span>
       </div>
 
-      <div class="form-group">
+      <!-- Switch off (local_machines): nothing to choose, unless the scenario
+           already runs in the browser, which keeps its value; ocf-core sends
+           its runs to a container meanwhile. As the desktop option below. -->
+      <div v-if="localMachinesEnabled || model.machine !== 'incus'" class="form-group">
         <label for="scenario-machine">{{ t('scenarioEditor.machine') }}</label>
         <select id="scenario-machine" v-model="model.machine" class="form-control">
           <option value="incus">{{ t('scenarioEditor.machineIncus') }}</option>
-          <option value="local">{{ t('scenarioEditor.machineLocal') }}</option>
-          <option value="by_account">{{ t('scenarioEditor.machineByAccount') }}</option>
+          <option v-if="localMachinesEnabled || model.machine === 'local'" value="local" :disabled="!localMachinesEnabled">{{ t('scenarioEditor.machineLocal') }}</option>
+          <option v-if="localMachinesEnabled || model.machine === 'by_account'" value="by_account" :disabled="!localMachinesEnabled">{{ t('scenarioEditor.machineByAccount') }}</option>
         </select>
         <span class="form-hint">{{ t('scenarioEditor.machineHint') }}</span>
+        <span v-if="!localMachinesEnabled" class="form-hint" data-testid="scenario-machine-off">{{ t('scenarioEditor.machineOff') }}</span>
       </div>
 
       <div v-if="model.machine !== 'incus'" class="form-group">
@@ -718,7 +722,9 @@ const offeredLocales = computed<string[]>(() => {
   }
 })
 
-// The platform's desktop switch (local_machine_desktop).
+// The platform's switches: machines in the browser (local_machines), and
+// their desktop (local_machine_desktop).
+const localMachinesEnabled = useFeatureFlags().createReactiveFlag('local_machines')
 const desktopEnabled = useFeatureFlags().createReactiveFlag('local_machine_desktop')
 
 // Terminal or desktop, for a machine in the browser. Empty is the terminal.

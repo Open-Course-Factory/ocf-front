@@ -24,6 +24,7 @@ import { computed, ref } from 'vue'
 import { useBaseStore } from "./baseStore"
 import { useOrganizationsStore } from "./organizations"
 import { useStoreTranslations } from '../composables/useTranslations'
+import { useFeatureFlags } from '../composables/useFeatureFlags'
 import { field, buildFieldList } from '../utils/fieldBuilder'
 import { formatMcpuAsVcpu, effectiveCpuMcpu } from '../utils/formatters'
 import axios from 'axios'
@@ -162,6 +163,10 @@ export const useScenariosStore = defineStore('scenarios', () => {
     // Scenarios archive through the framework routes (ocf-core#489).
     base.archivable.value = true
 
+    // Where a scenario runs is a choice only while machines in the browser
+    // are switched on (local_machines); otherwise every run is a container's.
+    const localMachinesEnabled = useFeatureFlags().createReactiveFlag('local_machines')
+
     const fieldList = computed(() => buildFieldList([
         field('id').hidden().readonly(),
         field('name', t('scenarios.name')).input().visible().creatable().required(),
@@ -225,11 +230,13 @@ export const useScenariosStore = defineStore('scenarios', () => {
         field('flags_enabled', t('scenarios.flagsEnabled')).checkbox().visible().creatable().updatable(),
         field('crash_traps', t('scenarios.crashTraps')).checkbox().visible().creatable().updatable(),
         field('port_exposure_allowed', t('scenarios.portExposureAllowed')).checkbox().visible().creatable().updatable(),
-        field('machine', t('scenarios.machine')).select().visible().creatable().updatable().withOptions([
-            { value: 'incus', text: t('scenarios.machineIncus') },
-            { value: 'local', text: t('scenarios.machineLocal') },
-            { value: 'by_account', text: t('scenarios.machineByAccount') }
-        ]),
+        ...(localMachinesEnabled.value ? [
+            field('machine', t('scenarios.machine')).select().visible().creatable().updatable().withOptions([
+                { value: 'incus', text: t('scenarios.machineIncus') },
+                { value: 'local', text: t('scenarios.machineLocal') },
+                { value: 'by_account', text: t('scenarios.machineByAccount') }
+            ])
+        ] : []),
         field('allowed_flag_paths', t('scenarios.allowed_flag_paths')).input().visible().creatable().updatable()
             .hint(t('scenarios.allowedFlagPathsHelp')),
         field('intro_text', t('scenarios.introText')).textarea().hidden(),

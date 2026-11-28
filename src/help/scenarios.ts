@@ -72,7 +72,8 @@ export function registerScenariosHelp(store: ReturnType<typeof useHelpRegistrySt
           en: 'Scenarios whose machine starts in your browser tab: reload, second tab, pop-out window, and what trainers should know.',
           fr: 'Les scénarios dont la machine démarre dans l\'onglet de votre navigateur : rechargement, second onglet, fenêtre séparée, et ce que les formateurs doivent savoir.'
         },
-        icon: 'fas fa-laptop'
+        icon: 'fas fa-laptop',
+        featureFlag: 'local_machines'
       }
     ]
   })

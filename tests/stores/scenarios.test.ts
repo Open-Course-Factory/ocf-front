@@ -26,6 +26,11 @@ vi.mock('../../src/composables/useTranslations', () => ({
   useStoreTranslations: () => ({ t: (key: string) => key, te: () => true, locale: ref('en') })
 }))
 
+const localMachinesFlag = ref(false)
+vi.mock('../../src/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ createReactiveFlag: () => localMachinesFlag })
+}))
+
 import axios from 'axios'
 import { useScenariosStore } from '../../src/stores/scenarios'
 
@@ -66,6 +71,17 @@ describe('scenarios store', () => {
       ['crash_traps', { type: 'checkbox', toBeSet: true, toBeEdited: true }]
     ])('configures %s as the form expects', (name, config) => {
       expect(useScenariosStore().fieldList.get(name)).toMatchObject(config)
+    })
+
+    // Machines in the browser are switched off on most platforms: no
+    // column, no field, for a choice nobody there has.
+    it('offers where a scenario runs only while machines in the browser are switched on', () => {
+      localMachinesFlag.value = false
+      expect(useScenariosStore().fieldList.has('machine')).toBe(false)
+      setActivePinia(createPinia())
+      localMachinesFlag.value = true
+      expect(useScenariosStore().fieldList.get('machine')!.options.map((o: any) => o.value)).toEqual(['incus', 'local', 'by_account'])
+      localMachinesFlag.value = false
     })
 
     // The backend still persists gsh_enabled so existing archives round-trip,

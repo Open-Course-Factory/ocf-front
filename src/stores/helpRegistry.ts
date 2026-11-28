@@ -34,6 +34,8 @@ export interface HelpItem {
   description: BilingualText
   icon: string
   component?: () => Promise<any>
+  /** Listed only while this platform switch is on. */
+  featureFlag?: string
 }
 
 export interface HelpSection {
@@ -63,10 +65,10 @@ export const useHelpRegistryStore = defineStore('helpRegistry', () => {
 
   const filteredSections = computed(() => {
     const { isEnabled } = useFeatureFlags()
-    return sections.value.filter(section => {
-      if (!section.featureFlag) return true
-      return isEnabled(section.featureFlag)
-    })
+    const shown = (item: { featureFlag?: string }) => !item.featureFlag || isEnabled(item.featureFlag)
+    return sections.value
+      .filter(shown)
+      .map(section => ({ ...section, items: section.items.filter(shown) }))
   })
 
   const navItems = computed(() => {
